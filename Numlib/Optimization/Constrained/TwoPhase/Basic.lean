@@ -1,0 +1,514 @@
+import Numlib.Optimization.Constrained.TargetResidual
+import Numlib.Optimization.Complexity.Telescoping
+
+/-!
+# Targets of two-phase target-following methods
+
+The two-phase methods TPp-GC (Algorithm 7.2.1) and TPqp-GC (Algorithm 14.3.2) of
+[cartis2022evaluation] for `min f(x)` subject to `x ∈ 𝒳`, `c(x) = 0` first find an approximately
+feasible point `x₁` (`‖c(x₁)‖ ≤ θε₀`), then follow a decreasing sequence of targets `t_k`: at outer
+iteration `k` an inner method decreases the residual `‖r(x, t_k)‖` (`Constrained.targetResidual`)
+from `x_k` to `x_{k+1}`, and the target is reset either by (7.2.11) (case (a), the residual became
+small) or by the reflection (7.2.13) (case (b), `f(x_{k+1}) < t_k`). This file records the
+bookkeeping of the targets, independently of the inner method, proves their properties
+(Lemmas 7.2.3 and 7.2.4, used verbatim for TPqp-GC), and provides the counting lemmas behind the
+telescoping arguments of Lemmas 7.2.6 and 14.3.8. The outer loop itself is
+`Constrained.IsTargetFollowingRun` (`Numlib.Optimization.Constrained.TwoPhase.Run`), its complexity
+is in `Numlib.Optimization.Constrained.TwoPhase.Complexity`.
+
+## Main definitions
+
+* `Constrained.IsTargetSequence f c θ ε₀ x t Ka K`: outer iterates `x`, targets `t` and the set
+  `Ka` of case-(a) iterations satisfy Steps 0 and 2 of Phase 2 for the outer iterations
+  `k ∈ [1, K)`.
+
+## Main results
+
+* `Constrained.IsTargetSequence.props`: Lemma 7.2.3 ((7.2.26)–(7.2.31));
+* `Constrained.IsTargetSequence.card_mul_le_of_target_drop`: iterations lowering the target by `τ`
+  number at most `(f_up - f_low + 1)/τ`;
+* `Constrained.IsTargetSequence.card_Ka_le`: Lemma 7.2.4, `|𝒦_a| ≤ (f_up - f_low + 1)/((1-θ)ε₀)`;
+* `Constrained.IsTargetSequence.sum_max_sub_le`: the residual decrease above `θε₀` over the outer
+  iterations `[1, K]` is at most `(1 - θ)ε₀ (|𝒦_a ∩ [1, K)| + 1)`;
+* `Constrained.le_card_add_sum_of_cover`: counting the outer iterations by case-(a), bad and
+  productive ones;
+* `Constrained.sub_ge_of_residual_decrease`, `Constrained.sub_ge_of_merit_decrease`: a merit
+  decrease guaranteed by the inner method lowers the residual by a fixed amount;
+* `Constrained.card_le_of_residual_block`: the number of "good" successful inner iterations
+  between two consecutive case-(a) iterations is `O((1-θ) max_l ε₀^{2-π_l} ε_l^{-π_l})`
+  (Lemmas 7.2.6 and 14.3.8).
+
+## Implementation notes
+
+Step 2(a) of Algorithm 7.2.1 is printed with `‖r(x_{k+1}, t_k)‖ < θε₀`, while the inner stopping
+test (7.2.10) uses `≤ θε₀`; Algorithm 14.3.2 uses `<` in both places. The predicate `Ka` is left
+as a parameter constrained only by the two cases: case (a) (`Ka k`) needs
+`‖r(x_{k+1}, t_k)‖ ≤ θε₀`, case (b) (`¬ Ka k`) needs `‖r(x_{k+1}, t_k)‖ ≥ θε₀` and
+`f(x_{k+1}) < t_k`. This covers both variants. The terminating case (c) does not occur before the
+horizon `K`.
+-/
+open Finset
+open scoped Topology
+
+namespace Constrained
+
+variable {E F : Type*} [NormedAddCommGroup F]
+
+/-- **Outer bookkeeping of Phase 2** of TPp-GC (Algorithm 7.2.1) and TPqp-GC (Algorithm 14.3.2)
+of [cartis2022evaluation]. For outer iterates `x`, targets `t`, a horizon `K` and the set `Ka` of
+case-(a) iterations (the book's `𝒦_a`, (7.2.25), (14.3.36)):
+* Step 0: `‖c(x₁)‖ ≤ θε₀` (Phase 1 did not terminate) and `t₁ = f(x₁) - √(ε₀² - ‖c(x₁)‖²)`;
+* Step 1, for `1 ≤ k < K`: the inner method does not increase the residual,
+  `‖r(x_{k+1}, t_k)‖ ≤ ‖r(x_k, t_k)‖`;
+* Step 2(a), for `1 ≤ k < K` with `Ka k`: `‖r(x_{k+1}, t_k)‖ ≤ θε₀` and
+  `t_{k+1} = f(x_{k+1}) - √(ε₀² - ‖c(x_{k+1})‖²)` (7.2.11);
+* Step 2(b), for `1 ≤ k < K` with `¬ Ka k`: `‖r(x_{k+1}, t_k)‖ ≥ θε₀`, `f(x_{k+1}) < t_k` and
+  `t_{k+1} = 2 f(x_{k+1}) - t_k` (7.2.13).
+Algorithm 7.2.1 with the corrected Step 2(a) takes `Ka k ↔ ‖r(x_{k+1}, t_k)‖ ≤ θε₀`;
+Algorithm 14.3.2 takes `Ka k ↔ ‖r(x_{k+1}, t_k)‖ < θε₀`. -/
+structure IsTargetSequence (f : E → ℝ) (c : E → F) (θ ε₀ : ℝ) (x : ℕ → E) (t : ℕ → ℝ)
+    (Ka : ℕ → Prop) (K : ℕ) : Prop where
+  /-- Phase 1 ended with `‖c(x₁)‖ ≤ θε₀`. -/
+  norm_one_le : ‖c (x 1)‖ ≤ θ * ε₀
+  /-- Step 0: `t₁ = f(x₁) - √(ε₀² - ‖c(x₁)‖²)`. -/
+  target_one : t 1 = f (x 1) - √(ε₀ ^ 2 - ‖c (x 1)‖ ^ 2)
+  /-- Step 1: the inner method does not increase the residual. -/
+  residual_succ_le : ∀ k, 1 ≤ k → k < K →
+    targetResidual f c (t k) (x (k + 1)) ≤ targetResidual f c (t k) (x k)
+  /-- Step 2(a) is entered only when `‖r(x_{k+1}, t_k)‖ ≤ θε₀`. -/
+  residual_le_of_Ka : ∀ k, 1 ≤ k → k < K → Ka k → targetResidual f c (t k) (x (k + 1)) ≤ θ * ε₀
+  /-- Step 2(a): the target update (7.2.11). -/
+  target_succ_of_Ka : ∀ k, 1 ≤ k → k < K → Ka k →
+    t (k + 1) = f (x (k + 1)) - √(ε₀ ^ 2 - ‖c (x (k + 1))‖ ^ 2)
+  /-- Step 2(b) is entered only when `‖r(x_{k+1}, t_k)‖ ≥ θε₀`. -/
+  le_residual_of_not_Ka : ∀ k, 1 ≤ k → k < K → ¬ Ka k →
+    θ * ε₀ ≤ targetResidual f c (t k) (x (k + 1))
+  /-- Step 2(b) is entered only when `f(x_{k+1}) < t_k`. -/
+  lt_target_of_not_Ka : ∀ k, 1 ≤ k → k < K → ¬ Ka k → f (x (k + 1)) < t k
+  /-- Step 2(b): the target update (7.2.13). -/
+  target_succ_of_not_Ka : ∀ k, 1 ≤ k → k < K → ¬ Ka k → t (k + 1) = 2 * f (x (k + 1)) - t k
+
+namespace IsTargetSequence
+
+variable {f : E → ℝ} {c : E → F} {θ ε₀ : ℝ} {x : ℕ → E} {t : ℕ → ℝ} {Ka : ℕ → Prop} {K : ℕ}
+  {k : ℕ}
+
+/-- A target sequence up to `K` is one up to any earlier horizon. -/
+theorem mono (h : IsTargetSequence f c θ ε₀ x t Ka K) {K' : ℕ} (hK : K' ≤ K) :
+    IsTargetSequence f c θ ε₀ x t Ka K' where
+  norm_one_le := h.norm_one_le
+  target_one := h.target_one
+  residual_succ_le k h1 hk := h.residual_succ_le k h1 (hk.trans_le hK)
+  residual_le_of_Ka k h1 hk := h.residual_le_of_Ka k h1 (hk.trans_le hK)
+  target_succ_of_Ka k h1 hk := h.target_succ_of_Ka k h1 (hk.trans_le hK)
+  le_residual_of_not_Ka k h1 hk := h.le_residual_of_not_Ka k h1 (hk.trans_le hK)
+  lt_target_of_not_Ka k h1 hk := h.lt_target_of_not_Ka k h1 (hk.trans_le hK)
+  target_succ_of_not_Ka k h1 hk := h.target_succ_of_not_Ka k h1 (hk.trans_le hK)
+
+/-- `f(x_k) ≥ t_k` for `1 ≤ k ≤ K` ([cartis2022evaluation], (7.2.26)). -/
+theorem sub_target_nonneg (h : IsTargetSequence f c θ ε₀ x t Ka K) (hk1 : 1 ≤ k)
+    (hkK : k ≤ K) : 0 ≤ f (x k) - t k := by
+  obtain rfl | ⟨j, rfl, hj⟩ : k = 1 ∨ ∃ j, k = j + 1 ∧ 1 ≤ j := by
+    rcases Nat.lt_or_ge 1 k with hk | hk
+    · exact Or.inr ⟨k - 1, by omega, by omega⟩
+    · exact Or.inl (by omega)
+  · rw [h.target_one, sub_sub_cancel]
+    exact Real.sqrt_nonneg _
+  · by_cases ha : Ka j
+    · rw [h.target_succ_of_Ka j hj (by omega) ha, sub_sub_cancel]
+      exact Real.sqrt_nonneg _
+    · rw [h.target_succ_of_not_Ka j hj (by omega) ha]
+      linarith [h.lt_target_of_not_Ka j hj (by omega) ha]
+
+/-- After a case-(a) iteration the residual is reset to `ε₀` ([cartis2022evaluation], (7.2.27)). -/
+theorem residual_succ_of_Ka (h : IsTargetSequence f c θ ε₀ x t Ka K) (hθ : θ ≤ 1)
+    (hε₀ : 0 ≤ ε₀) (hk1 : 1 ≤ k) (hkK : k < K) (ha : Ka k) :
+    targetResidual f c (t (k + 1)) (x (k + 1)) = ε₀ := by
+  rw [h.target_succ_of_Ka k hk1 hkK ha]
+  refine targetResidual_sub_sqrt hε₀ ?_
+  calc ‖c (x (k + 1))‖ ≤ targetResidual f c (t k) (x (k + 1)) := norm_le_targetResidual
+    _ ≤ θ * ε₀ := h.residual_le_of_Ka k hk1 hkK ha
+    _ ≤ ε₀ := mul_le_of_le_one_left hε₀ hθ
+
+/-- After a case-(b) iteration the residual is unchanged by the target update
+([cartis2022evaluation], (7.2.28), (7.2.41)). -/
+theorem residual_succ_of_not_Ka (h : IsTargetSequence f c θ ε₀ x t Ka K) (hk1 : 1 ≤ k)
+    (hkK : k < K) (ha : ¬ Ka k) :
+    targetResidual f c (t (k + 1)) (x (k + 1)) = targetResidual f c (t k) (x (k + 1)) := by
+  rw [h.target_succ_of_not_Ka k hk1 hkK ha, targetResidual_two_mul_sub]
+
+/-- The residual `‖r(x_k, t_k)‖` is at most `ε₀` for `1 ≤ k ≤ K` ([cartis2022evaluation],
+(7.2.27)–(7.2.28)). -/
+theorem residual_le (h : IsTargetSequence f c θ ε₀ x t Ka K) (hθ : θ ≤ 1) (hε₀ : 0 ≤ ε₀)
+    (hk1 : 1 ≤ k) (hkK : k ≤ K) : targetResidual f c (t k) (x k) ≤ ε₀ := by
+  induction k, hk1 using Nat.le_induction with
+  | base =>
+    rw [h.target_one, targetResidual_sub_sqrt hε₀
+      (h.norm_one_le.trans (mul_le_of_le_one_left hε₀ hθ))]
+  | succ j hj ih =>
+    by_cases ha : Ka j
+    · exact (h.residual_succ_of_Ka hθ hε₀ hj (by omega) ha).le
+    · rw [h.residual_succ_of_not_Ka hj (by omega) ha]
+      exact (h.residual_succ_le j hj (by omega)).trans (ih (by omega))
+
+/-- `‖c(x_k)‖ ≤ ε₀` for `1 ≤ k ≤ K` ([cartis2022evaluation], (7.2.29)). -/
+theorem norm_le (h : IsTargetSequence f c θ ε₀ x t Ka K) (hθ : θ ≤ 1) (hε₀ : 0 ≤ ε₀)
+    (hk1 : 1 ≤ k) (hkK : k ≤ K) : ‖c (x k)‖ ≤ ε₀ :=
+  norm_le_targetResidual.trans (h.residual_le hθ hε₀ hk1 hkK)
+
+/-- `f(x_k) - t_k ≤ ε₀` for `1 ≤ k ≤ K` ([cartis2022evaluation], (7.2.29)). -/
+theorem sub_target_le (h : IsTargetSequence f c θ ε₀ x t Ka K) (hθ : θ ≤ 1) (hε₀ : 0 ≤ ε₀)
+    (hk1 : 1 ≤ k) (hkK : k ≤ K) : f (x k) - t k ≤ ε₀ :=
+  sub_le_targetResidual.trans (h.residual_le hθ hε₀ hk1 hkK)
+
+/-- A case-(a) iteration decreases the target by at least `(1 - θ)ε₀` ([cartis2022evaluation],
+(7.2.30), via Lemma B.7.1). -/
+theorem sub_target_succ_ge_of_Ka (h : IsTargetSequence f c θ ε₀ x t Ka K) (hθ0 : 0 ≤ θ)
+    (hθ : θ ≤ 1) (hε₀ : 0 ≤ ε₀) (hk1 : 1 ≤ k) (hkK : k < K) (ha : Ka k) :
+    (1 - θ) * ε₀ ≤ t k - t (k + 1) := by
+  have hr := h.residual_le_of_Ka k hk1 hkK ha
+  have huv : (f (x (k + 1)) - t k) ^ 2 + ‖c (x (k + 1))‖ ^ 2 ≤ (θ * ε₀) ^ 2 := by
+    rw [add_comm, ← targetResidual_sq]
+    exact pow_le_pow_left₀ targetResidual_nonneg hr 2
+  have key := neg_add_sqrt_sq_sub_sq_ge (mul_nonneg hθ0 hε₀) (mul_le_of_le_one_left hε₀ hθ) huv
+  rw [h.target_succ_of_Ka k hk1 hkK ha]
+  linarith
+
+/-- The targets decrease strictly ([cartis2022evaluation], Lemma 7.2.3). -/
+theorem target_succ_lt (h : IsTargetSequence f c θ ε₀ x t Ka K) (hθ0 : 0 ≤ θ) (hθ : θ < 1)
+    (hε₀ : 0 < ε₀) (hk1 : 1 ≤ k) (hkK : k < K) : t (k + 1) < t k := by
+  by_cases ha : Ka k
+  · have := h.sub_target_succ_ge_of_Ka hθ0 hθ.le hε₀.le hk1 hkK ha
+    nlinarith
+  · rw [h.target_succ_of_not_Ka k hk1 hkK ha]
+    linarith [h.lt_target_of_not_Ka k hk1 hkK ha]
+
+/-- The targets are nonincreasing on `[1, K]`. -/
+theorem target_le_of_le (h : IsTargetSequence f c θ ε₀ x t Ka K) (hθ0 : 0 ≤ θ) (hθ : θ < 1)
+    (hε₀ : 0 < ε₀) {i j : ℕ} (hi : 1 ≤ i) (hij : i ≤ j) (hjK : j ≤ K) : t j ≤ t i := by
+  induction j, hij using Nat.le_induction with
+  | base => exact le_rfl
+  | succ j hij ih =>
+    exact (h.target_succ_lt hθ0 hθ hε₀ (hi.trans hij) (by omega)).le.trans (ih (by omega))
+
+/-- Under f.B.Fb (`f_low ≤ f ≤ f_up` on the points of `X` with `‖c‖ ≤ ε₀`) and `ε₀ ≤ 1`, the
+targets stay in `[f_low - 1, f_up]` ([cartis2022evaluation], (7.2.31)). -/
+theorem target_mem_Icc (h : IsTargetSequence f c θ ε₀ x t Ka K) (hθ : θ ≤ 1) (hε₀ : 0 ≤ ε₀)
+    (hε₀1 : ε₀ ≤ 1) {X : Set E} {flow fup : ℝ} (hxX : ∀ k, 1 ≤ k → k ≤ K → x k ∈ X)
+    (hB : ∀ z ∈ X, ‖c z‖ ≤ ε₀ → flow ≤ f z ∧ f z ≤ fup) (hk1 : 1 ≤ k) (hkK : k ≤ K) :
+    t k ∈ Set.Icc (flow - 1) fup := by
+  have hb := hB (x k) (hxX k hk1 hkK) (h.norm_le hθ hε₀ hk1 hkK)
+  have h1 := h.sub_target_nonneg hk1 hkK
+  have h2 := h.sub_target_le hθ hε₀ hk1 hkK
+  constructor <;> linarith [hb.1, hb.2]
+
+/-- **Lemma 7.2.3** of [cartis2022evaluation] (valid verbatim for TPqp-GC). For a target
+sequence with `0 ≤ θ < 1` and `ε₀ > 0`: the targets decrease strictly on `[1, K]`; for
+`1 ≤ k ≤ K`, `0 ≤ f(x_k) - t_k ≤ ε₀` and `‖c(x_k)‖ ≤ ε₀` ((7.2.26), (7.2.29)); for `1 ≤ k < K`,
+`‖r(x_{k+1}, t_{k+1})‖ = ε₀` and `t_k - t_{k+1} ≥ (1-θ)ε₀` if `k ∈ 𝒦_a` ((7.2.27), (7.2.30)),
+`‖r(x_{k+1}, t_{k+1})‖ = ‖r(x_{k+1}, t_k)‖ ≤ ε₀` otherwise ((7.2.28)); and, under f.B.Fb with
+`ε₀ ≤ 1`, `t_k ∈ [f_low - 1, f_up]` ((7.2.31)). -/
+theorem props (h : IsTargetSequence f c θ ε₀ x t Ka K) (hθ0 : 0 ≤ θ) (hθ : θ < 1)
+    (hε₀ : 0 < ε₀) :
+    (∀ k, 1 ≤ k → k < K → t (k + 1) < t k) ∧
+    (∀ k, 1 ≤ k → k ≤ K → 0 ≤ f (x k) - t k ∧ f (x k) - t k ≤ ε₀ ∧ ‖c (x k)‖ ≤ ε₀) ∧
+    (∀ k, 1 ≤ k → k < K → Ka k →
+      targetResidual f c (t (k + 1)) (x (k + 1)) = ε₀ ∧ (1 - θ) * ε₀ ≤ t k - t (k + 1)) ∧
+    (∀ k, 1 ≤ k → k < K → ¬ Ka k →
+      targetResidual f c (t (k + 1)) (x (k + 1)) = targetResidual f c (t k) (x (k + 1)) ∧
+        targetResidual f c (t (k + 1)) (x (k + 1)) ≤ ε₀) ∧
+    (ε₀ ≤ 1 → ∀ (X : Set E) (flow fup : ℝ), (∀ k, 1 ≤ k → k ≤ K → x k ∈ X) →
+      (∀ z ∈ X, ‖c z‖ ≤ ε₀ → flow ≤ f z ∧ f z ≤ fup) →
+      ∀ k, 1 ≤ k → k ≤ K → t k ∈ Set.Icc (flow - 1) fup) :=
+  ⟨fun _ hk1 hkK => h.target_succ_lt hθ0 hθ hε₀ hk1 hkK,
+    fun _ hk1 hkK => ⟨h.sub_target_nonneg hk1 hkK, h.sub_target_le hθ.le hε₀.le hk1 hkK,
+      h.norm_le hθ.le hε₀.le hk1 hkK⟩,
+    fun _ hk1 hkK ha => ⟨h.residual_succ_of_Ka hθ.le hε₀.le hk1 hkK ha,
+      h.sub_target_succ_ge_of_Ka hθ0 hθ.le hε₀.le hk1 hkK ha⟩,
+    fun k hk1 hkK ha => ⟨h.residual_succ_of_not_Ka hk1 hkK ha,
+      h.residual_le hθ.le hε₀.le (by omega) (by omega)⟩,
+    fun hε₀1 _ _ _ hxX hB _ hk1 hkK => h.target_mem_Icc hθ.le hε₀.le hε₀1 hxX hB hk1 hkK⟩
+
+/-- **Telescoping the targets**: under f.B.Fb (`f_low ≤ f ≤ f_up` on the points of `X` with
+`‖c‖ ≤ ε₀`), `0 ≤ θ < 1` and `0 < ε₀ ≤ 1`, if every outer iteration of a set `S ⊆ [1, K)` lowers the
+target by at least `τ`, then `|S| τ ≤ f_up - f_low + 1`: the targets do not increase and stay in
+`[f_low - 1, f_up]`. -/
+theorem card_mul_le_of_target_drop (h : IsTargetSequence f c θ ε₀ x t Ka K) (hθ0 : 0 ≤ θ)
+    (hθ : θ < 1) (hε₀ : 0 < ε₀) (hε₀1 : ε₀ ≤ 1) (hK : 1 ≤ K) {X : Set E} {flow fup : ℝ}
+    (hxX : ∀ k, 1 ≤ k → k ≤ K → x k ∈ X) (hB : ∀ z ∈ X, ‖c z‖ ≤ ε₀ → flow ≤ f z ∧ f z ≤ fup)
+    {S : Finset ℕ} (hS : S ⊆ Ico 1 K) {τ : ℝ} (hτ : ∀ k ∈ S, τ ≤ t k - t (k + 1)) :
+    S.card * τ ≤ fup - flow + 1 := by
+  have h1 : ∑ _k ∈ S, τ ≤ ∑ k ∈ S, (t k - t (k + 1)) := sum_le_sum hτ
+  have h2 : ∑ k ∈ S, (t k - t (k + 1)) ≤ ∑ k ∈ Ico 1 K, (t k - t (k + 1)) :=
+    sum_le_sum_of_subset_of_nonneg hS fun k hk _ => by
+      rw [mem_Ico] at hk
+      exact sub_nonneg.2 (h.target_succ_lt hθ0 hθ hε₀ hk.1 hk.2).le
+  have htel : ∑ k ∈ Ico 1 K, (t k - t (k + 1)) = t 1 - t K := by
+    have := sum_Ico_sub (f := t) hK
+    rw [← neg_sub (t K), ← this, ← sum_neg_distrib]
+    simp
+  rw [sum_const, nsmul_eq_mul] at h1
+  rw [htel] at h2
+  have ht1 := h.target_mem_Icc hθ.le hε₀.le hε₀1 hxX hB le_rfl hK
+  have htK := h.target_mem_Icc hθ.le hε₀.le hε₀1 hxX hB hK le_rfl
+  linarith [ht1.2, htK.1]
+
+/-- **Lemma 7.2.4** of [cartis2022evaluation]: under f.B.Fb (`f_low ≤ f ≤ f_up` on the points
+of `X` with `‖c‖ ≤ ε₀`), `0 ≤ θ < 1` and `0 < ε₀ ≤ 1`, the number of case-(a) iterations among
+the outer iterations `k ∈ [1, K)` is at most `(f_up - f_low + 1)/((1 - θ)ε₀)`. (Theorem 14.3.9's
+`f_up - f_low - 1` is a sign slip for this `+ 1`.) -/
+theorem card_Ka_le [DecidablePred Ka] (h : IsTargetSequence f c θ ε₀ x t Ka K) (hθ0 : 0 ≤ θ)
+    (hθ : θ < 1) (hε₀ : 0 < ε₀) (hε₀1 : ε₀ ≤ 1) (hK : 1 ≤ K) {X : Set E} {flow fup : ℝ}
+    (hxX : ∀ k, 1 ≤ k → k ≤ K → x k ∈ X) (hB : ∀ z ∈ X, ‖c z‖ ≤ ε₀ → flow ≤ f z ∧ f z ≤ fup) :
+    (((Ico 1 K).filter Ka).card : ℝ) ≤ (fup - flow + 1) / ((1 - θ) * ε₀) := by
+  rw [le_div_iff₀ (mul_pos (sub_pos.2 hθ) hε₀)]
+  refine h.card_mul_le_of_target_drop hθ0 hθ hε₀ hε₀1 hK hxX hB (filter_subset _ _) fun k hk => ?_
+  rw [mem_filter, mem_Ico] at hk
+  exact h.sub_target_succ_ge_of_Ka hθ0 hθ.le hε₀.le hk.1.1 hk.1.2 hk.2
+
+/-- The number of case-(a) iterations in `[1, K + 1)` is that in `[1, K)` plus `1` if `K` is a
+case-(a) iteration. -/
+private theorem card_filter_Ico_succ (Ka : ℕ → Prop) [DecidablePred Ka] {K : ℕ} (hK1 : 1 ≤ K) :
+    (((Finset.Ico 1 (K + 1)).filter Ka).card : ℝ) =
+      ((Finset.Ico 1 K).filter Ka).card + if Ka K then 1 else 0 := by
+  rw [← Nat.succ_eq_add_one, Nat.Ico_succ_right_eq_insert_Ico hK1, Finset.filter_insert]
+  split_ifs with ha
+  · rw [Finset.card_insert_of_notMem (by simp)]; push_cast; ring
+  · simp
+
+/-- **Telescoping over the outer iterations** (the sums behind (7.2.37)–(7.2.39) and (14.3.69)–
+(14.3.71) of [cartis2022evaluation]). With `a_k = max(‖r(x_k, t_k)‖, θε₀)` and
+`b_k = max(‖r(x_{k+1}, t_k)‖, θε₀)`, for `1 ≤ K`:
+`∑_{k ∈ [1, K]} (a_k - b_k) + b_K ≤ a_1 + (1 - θ) ε₀ |𝒦_a ∩ [1, K)|`. -/
+theorem sum_max_sub_add_le [DecidablePred Ka] (h : IsTargetSequence f c θ ε₀ x t Ka K)
+    (hθ : θ ≤ 1) (hε₀ : 0 ≤ ε₀) (hK1 : 1 ≤ K) :
+    ∑ k ∈ Finset.Icc 1 K,
+        (max (targetResidual f c (t k) (x k)) (θ * ε₀) -
+          max (targetResidual f c (t k) (x (k + 1))) (θ * ε₀)) +
+      max (targetResidual f c (t K) (x (K + 1))) (θ * ε₀) ≤
+      max (targetResidual f c (t 1) (x 1)) (θ * ε₀) +
+        (1 - θ) * ε₀ * ((Finset.Ico 1 K).filter Ka).card := by
+  induction K, hK1 using Nat.le_induction with
+  | base => simp
+  | succ K hK1 ih =>
+    have ih := ih (h.mono K.le_succ)
+    have hθε : θ * ε₀ ≤ ε₀ := mul_le_of_le_one_left hε₀ hθ
+    rw [Finset.sum_Icc_succ_top (by omega), card_filter_Ico_succ Ka hK1]
+    have key : max (targetResidual f c (t (K + 1)) (x (K + 1))) (θ * ε₀) -
+        max (targetResidual f c (t K) (x (K + 1))) (θ * ε₀) ≤
+        (1 - θ) * ε₀ * (if Ka K then 1 else 0) := by
+      split_ifs with ha
+      · rw [h.residual_succ_of_Ka hθ hε₀ hK1 K.lt_succ_self ha, max_eq_left hθε,
+          max_eq_right (h.residual_le_of_Ka K hK1 K.lt_succ_self ha)]
+        linarith
+      · rw [h.residual_succ_of_not_Ka hK1 K.lt_succ_self ha]
+        simp
+    linarith
+
+/-- **The outer telescoping bound**: `∑_{k ∈ [1, K]} (a_k - b_k) ≤ (1 - θ) ε₀ (|𝒦_a ∩ [1, K)| + 1)`
+for `1 ≤ K`, `0 ≤ θ ≤ 1`, `ε₀ ≥ 0` (notation of `sum_max_sub_add_le`): a decrease of the
+residual above `θε₀` within the inner runs can accumulate only `(1 - θ)ε₀` per block between two
+case-(a) iterations. -/
+theorem sum_max_sub_le [DecidablePred Ka] (h : IsTargetSequence f c θ ε₀ x t Ka K)
+    (hθ0 : 0 ≤ θ) (hθ : θ ≤ 1) (hε₀ : 0 ≤ ε₀) (hK1 : 1 ≤ K) :
+    ∑ k ∈ Finset.Icc 1 K,
+        (max (targetResidual f c (t k) (x k)) (θ * ε₀) -
+          max (targetResidual f c (t k) (x (k + 1))) (θ * ε₀)) ≤
+      (1 - θ) * ε₀ * (((Finset.Ico 1 K).filter Ka).card + 1) := by
+  have hs := h.sum_max_sub_add_le hθ hε₀ hK1
+  have ha1 : max (targetResidual f c (t 1) (x 1)) (θ * ε₀) ≤ ε₀ :=
+    max_le (h.residual_le hθ hε₀ le_rfl hK1) (mul_le_of_le_one_left hε₀ hθ)
+  have hbK := le_max_right (targetResidual f c (t K) (x (K + 1))) (θ * ε₀)
+  have : 0 ≤ θ * ε₀ := mul_nonneg hθ0 hε₀
+  nlinarith
+
+end IsTargetSequence
+
+/-- **Counting the outer iterations** (Lemmas 7.2.6 and 14.3.8 of [cartis2022evaluation]): if every
+outer iteration `k ∈ [1, K)` is a case-(a) iteration (`A k`), a "bad" iteration (`B k`), or
+contains at least one counted inner iteration (`1 ≤ g k`), then
+`K ≤ |A ∩ [1, K)| + ∑_{k ∈ [1, K]} g k + |B ∩ [1, K)| + 1`. -/
+theorem le_card_add_sum_of_cover (A B : ℕ → Prop) [DecidablePred A] [DecidablePred B]
+    (g : ℕ → ℕ) {K : ℕ} (hcov : ∀ k ∈ Finset.Ico 1 K, A k ∨ B k ∨ 1 ≤ g k) :
+    K ≤ ((Finset.Ico 1 K).filter A).card + ∑ k ∈ Finset.Icc 1 K, g k +
+      ((Finset.Ico 1 K).filter B).card + 1 := by
+  classical
+  have hsub : Finset.Ico 1 K ⊆ ((Finset.Ico 1 K).filter A ∪ (Finset.Ico 1 K).filter B) ∪
+      (Finset.Ico 1 K).filter (fun k => 1 ≤ g k) := by
+    intro k hk
+    simp only [Finset.mem_union, Finset.mem_filter]
+    rcases hcov k hk with ha | hb | hg
+    · exact Or.inl (Or.inl ⟨hk, ha⟩)
+    · exact Or.inl (Or.inr ⟨hk, hb⟩)
+    · exact Or.inr ⟨hk, hg⟩
+  have hcard := (Finset.card_le_card hsub).trans
+    ((Finset.card_union_le _ _).trans (Nat.add_le_add_right (Finset.card_union_le _ _) _))
+  have hgood : ((Finset.Ico 1 K).filter (fun k => 1 ≤ g k)).card ≤ ∑ k ∈ Finset.Icc 1 K, g k := by
+    rw [Finset.card_eq_sum_ones]
+    calc ∑ _k ∈ (Finset.Ico 1 K).filter (fun k => 1 ≤ g k), 1
+        ≤ ∑ k ∈ (Finset.Ico 1 K).filter (fun k => 1 ≤ g k), g k :=
+          Finset.sum_le_sum fun k hk => (Finset.mem_filter.1 hk).2
+      _ ≤ ∑ k ∈ Finset.Icc 1 K, g k :=
+          Finset.sum_le_sum_of_subset ((Finset.filter_subset _ _).trans
+            Finset.Ico_subset_Icc_self)
+  rw [Nat.card_Ico] at hcard
+  omega
+
+
+/-! ### Counting inner iterations within a block -/
+
+section Block
+
+/-- A sequence that is nonincreasing at every step before `N` is antitone on `[0, N]`. -/
+theorem antitone_of_succ_le {ρ : ℕ → ℝ} {N : ℕ} (hmono : ∀ i < N, ρ (i + 1) ≤ ρ i) {i j : ℕ}
+    (hij : i ≤ j) (hjN : j ≤ N) : ρ j ≤ ρ i := by
+  induction j, hij using Nat.le_induction with
+  | base => exact le_rfl
+  | succ j hij ih => exact (hmono j (by omega)).trans (ih (by omega))
+
+/-- The decrease of one "good" iteration in the block argument of [cartis2022evaluation],
+Lemmas 7.2.6 and 14.3.8 (Appendix B, proof of Lemma 14.3.8). If `θ ε₀ ≤ ρ' ≤ ρ ≤ ε₀`,
+`0 ≤ π ≤ π_max`, `0 < θ ≤ 1`, `e > 0`, and `κ (ρ' e)^π ≤ ρ²/2 - ρ'²/2`, then
+`ρ - ρ' ≥ κ θ^{π_max} ε₀^{π-1} e^π`: indeed `(ρ - ρ') ρ ≥ ½ (ρ² - ρ'²) ≥ κ (θ ε₀ e)^π` and
+`ρ ≤ ε₀`. -/
+theorem sub_ge_of_residual_decrease {ρ ρ' θ ε₀ κ π πmax e : ℝ} (hθ0 : 0 < θ) (hθ1 : θ ≤ 1)
+    (hε₀ : 0 < ε₀) (hκ : 0 < κ) (hπ : 0 ≤ π) (hπmax : π ≤ πmax) (he : 0 < e)
+    (hlow : θ * ε₀ ≤ ρ') (hρρ' : ρ' ≤ ρ) (hρ : ρ ≤ ε₀)
+    (hdec : κ * (ρ' * e) ^ π ≤ ρ ^ 2 / 2 - ρ' ^ 2 / 2) :
+    κ * θ ^ πmax * (ε₀ ^ (π - 1) * e ^ π) ≤ ρ - ρ' := by
+  have hρ'0 : 0 < ρ' := lt_of_lt_of_le (mul_pos hθ0 hε₀) hlow
+  have hρ0 : 0 < ρ := hρ'0.trans_le hρρ'
+  -- `(ρ - ρ') ρ ≥ ρ²/2 - ρ'²/2 ≥ κ (θ ε₀ e)^π`
+  have h1 : κ * (ρ' * e) ^ π ≤ (ρ - ρ') * ρ := by nlinarith
+  have h2 : (θ * ε₀ * e) ^ π ≤ (ρ' * e) ^ π :=
+    Real.rpow_le_rpow (by positivity) (by gcongr) hπ
+  -- `(θ ε₀ e)^π = θ^π ε₀^{π-1} e^π ε₀`
+  have h3 : (θ * ε₀ * e) ^ π = θ ^ π * (ε₀ ^ (π - 1) * e ^ π) * ε₀ := by
+    rw [Real.mul_rpow (by positivity) he.le, Real.mul_rpow hθ0.le hε₀.le,
+      Real.rpow_sub_one hε₀.ne']
+    field_simp
+  have h4 : θ ^ πmax ≤ θ ^ π := Real.rpow_le_rpow_of_exponent_ge hθ0 hθ1 hπmax
+  have hA : 0 ≤ ε₀ ^ (π - 1) * e ^ π := by positivity
+  have hsub : 0 ≤ ρ - ρ' := sub_nonneg.2 hρρ'
+  have h5 : κ * θ ^ π * (ε₀ ^ (π - 1) * e ^ π) * ε₀ ≤ (ρ - ρ') * ε₀ := by
+    calc κ * θ ^ π * (ε₀ ^ (π - 1) * e ^ π) * ε₀ = κ * (θ * ε₀ * e) ^ π := by rw [h3]; ring
+      _ ≤ κ * (ρ' * e) ^ π := by gcongr
+      _ ≤ (ρ - ρ') * ρ := h1
+      _ ≤ (ρ - ρ') * ε₀ := mul_le_mul_of_nonneg_left hρ hsub
+  calc κ * θ ^ πmax * (ε₀ ^ (π - 1) * e ^ π) ≤ κ * θ ^ π * (ε₀ ^ (π - 1) * e ^ π) := by gcongr
+    _ ≤ ρ - ρ' := le_of_mul_le_mul_right h5 hε₀
+
+/-- `ε₀^{π-1} e^π ≥ ε₀ / M` whenever `ε₀^{2-π} e^{-π} ≤ M`. -/
+theorem div_le_rpow_mul_rpow {ε₀ e π M : ℝ} (hε₀ : 0 < ε₀) (he : 0 < e)
+    (hM : ε₀ ^ (2 - π) * e ^ (-π) ≤ M) : ε₀ / M ≤ ε₀ ^ (π - 1) * e ^ π := by
+  have hQ : 0 < ε₀ ^ (2 - π) * e ^ (-π) := by positivity
+  have hprod : ε₀ ^ (π - 1) * e ^ π * (ε₀ ^ (2 - π) * e ^ (-π)) = ε₀ := by
+    calc ε₀ ^ (π - 1) * e ^ π * (ε₀ ^ (2 - π) * e ^ (-π))
+        = ε₀ ^ ((π - 1) + (2 - π)) * e ^ (π + -π) := by
+          rw [Real.rpow_add hε₀, Real.rpow_add he]; ring
+      _ = ε₀ := by norm_num
+  calc ε₀ / M ≤ ε₀ / (ε₀ ^ (2 - π) * e ^ (-π)) := div_le_div_of_nonneg_left hε₀.le hQ hM
+    _ = ε₀ ^ (π - 1) * e ^ π := by rw [div_eq_iff hQ.ne', hprod]
+
+/-- The decrease of one "good" iteration in the form of (14.2.11) ([cartis2022evaluation], proof of
+Lemma 14.3.8, (B.14.20)–(B.14.21)): the merit decrease is measured with the residual `r` at the
+start of the inner call, `κ (β r ε)^π ≤ ρ²/2 - ρ'²/2`. If `θ ε₀ ≤ r ≤ ε₀`, `ρ' ≤ ρ ≤ r`,
+`0 < βθ ≤ 1`, `0 ≤ π ≤ π_max`, `κ > 0`, `ε > 0` and `ε₀^{2-π} ε^{-π} ≤ M`, then
+`ρ - ρ' ≥ κ (βθ)^{π_max} ε₀ / M`: the merit decrease is at least `κ (βθ)^{π_max} ε₀² / M`, and
+`ρ + ρ' ≤ 2ε₀`. -/
+theorem sub_ge_of_merit_decrease {ρ ρ' r β θ ε₀ κ π πmax ε M : ℝ} (hβ : 0 < β) (hθ : 0 < θ)
+    (hβθ : β * θ ≤ 1) (hε₀ : 0 < ε₀) (hκ : 0 < κ) (hπ : 0 ≤ π) (hπmax : π ≤ πmax) (hε : 0 < ε)
+    (hM0 : 0 < M) (hM : ε₀ ^ (2 - π) * ε ^ (-π) ≤ M) (hr_ge : θ * ε₀ ≤ r) (hr_le : r ≤ ε₀)
+    (hρr : ρ ≤ r) (hρ'ρ : ρ' ≤ ρ)
+    (hdec : κ * (β * r * ε) ^ π ≤ ρ ^ 2 / 2 - ρ' ^ 2 / 2) :
+    κ * (β * θ) ^ πmax * ε₀ / M ≤ ρ - ρ' := by
+  have hbase : (β * θ * (ε₀ * ε)) ^ π ≤ (β * r * ε) ^ π := by
+    refine Real.rpow_le_rpow (by positivity) ?_ hπ
+    have : β * (θ * ε₀) * ε ≤ β * r * ε := by gcongr
+    linarith
+  have hpow : (β * θ) ^ πmax ≤ (β * θ) ^ π :=
+    Real.rpow_le_rpow_of_exponent_ge (by positivity) hβθ hπmax
+  have hεε : ε₀ ^ 2 / M ≤ (ε₀ * ε) ^ π := by
+    rw [div_le_iff₀ hM0]
+    have e : (ε₀ * ε) ^ π * (ε₀ ^ (2 - π) * ε ^ (-π)) = ε₀ ^ 2 := by
+      rw [Real.mul_rpow hε₀.le hε.le, Real.rpow_sub hε₀, Real.rpow_neg hε.le]
+      have : (0 : ℝ) < ε₀ ^ π := Real.rpow_pos_of_pos hε₀ _
+      have : (0 : ℝ) < ε ^ π := Real.rpow_pos_of_pos hε _
+      rw [show ((2 : ℝ)) = ((2 : ℕ) : ℝ) by norm_num, Real.rpow_natCast]
+      field_simp
+    calc ε₀ ^ 2 = (ε₀ * ε) ^ π * (ε₀ ^ (2 - π) * ε ^ (-π)) := e.symm
+      _ ≤ (ε₀ * ε) ^ π * M := by gcongr
+  have hDmin : κ * (β * θ) ^ πmax * (ε₀ ^ 2 / M) ≤ ρ ^ 2 / 2 - ρ' ^ 2 / 2 := by
+    refine le_trans ?_ hdec
+    rw [Real.mul_rpow (by positivity) (by positivity)] at hbase
+    calc κ * (β * θ) ^ πmax * (ε₀ ^ 2 / M)
+        ≤ κ * ((β * θ) ^ π * (ε₀ * ε) ^ π) := by
+          rw [mul_assoc]
+          gcongr
+      _ ≤ κ * (β * r * ε) ^ π := by gcongr
+  have hsum_le : ρ + ρ' ≤ 2 * ε₀ := by linarith
+  have hgd : κ * (β * θ) ^ πmax * ε₀ / M = κ * (β * θ) ^ πmax * (ε₀ ^ 2 / M) / ε₀ := by
+    field_simp
+  rw [hgd, div_le_iff₀ hε₀]
+  have hd0 : 0 ≤ ρ - ρ' := sub_nonneg.2 hρ'ρ
+  nlinarith [mul_le_mul_of_nonneg_left hsum_le hd0]
+
+/-- **Counting "good" inner iterations in a block** (the telescoping argument of
+[cartis2022evaluation], Lemmas 7.2.6 and 14.3.8). Let `ρ` (the residuals `‖r(x_{j,i}, t_j)‖` of
+the inner iterates of a block, concatenated) be nonincreasing on `[0, N]` with `ρ_0 ≤ ε₀` and
+`ρ_N ≥ θ ε₀` (`0 < θ ≤ 1`, `ε₀ > 0`), and let `T ⊆ [0, N)` be a set of iterations at which, for
+some `l ∈ L` (the criticality orders), `ρ_i²/2 - ρ_{i+1}²/2 ≥ κ (ρ_{i+1} ε_l)^{π_l}` (the merit
+decrease `μ(x_{j,i}) - μ(x_{j,i+1})` guaranteed by the inner method at a successful iteration
+whose new iterate fails the criticality test), with `κ > 0`, `0 ≤ π_l ≤ π_max`, `ε_l > 0`. If
+`ε₀^{2-π_l} ε_l^{-π_l} ≤ M` for every `l ∈ L`, then `|T| ≤ (1 - θ) M / (κ θ^{π_max})`.
+
+Only the iterations of `T` are counted: the book's `|𝓘_k^s|` also contains the `i = 0` entries
+and the last successful iteration of case-(b) calls that end on the criticality test, which must be
+counted separately. For TPp-GC (`L = {1}`, `π = (p+1)/p`, `κ = κ₁`) the constant is
+`κ₁⁻¹ θ^{-(p+1)/p}`, sharper than the book's `κ₁⁻¹ θ^{-(p+2)/p}` (7.2.47); for TPqp-GC
+(`κ = κ^μ_decr β^{π_max}`) it is the book's `[κ^μ_decr]⁻¹ (βθ)^{-π_max}` of (14.3.71). The
+book's proof bounds `‖r(x_{j,s})‖^{π_l-1}` from below by `ε₀^{π_l-1}`, which is invalid
+(only `(θε₀)^{π_l-1}` is available, (B.14.20)), but the constant is correct, via
+`ρ_{i+1}^π / ρ_i ≥ (θε₀)^π / ε₀`; the ratio condition `ρ_{i+1} ≥ θ ρ_i` is not needed. -/
+theorem card_le_of_residual_block {ι : Type*} {ρ : ℕ → ℝ} {N : ℕ} {T : Finset ℕ} {L : Finset ι}
+    {π ε : ι → ℝ} {θ ε₀ κ πmax M : ℝ} (hθ0 : 0 < θ) (hθ1 : θ ≤ 1) (hε₀ : 0 < ε₀) (hκ : 0 < κ)
+    (hL : L.Nonempty) (hπ : ∀ l ∈ L, 0 ≤ π l ∧ π l ≤ πmax) (hε : ∀ l ∈ L, 0 < ε l)
+    (hM : ∀ l ∈ L, ε₀ ^ (2 - π l) * ε l ^ (-π l) ≤ M)
+    (hT : T ⊆ range N) (hmono : ∀ i < N, ρ (i + 1) ≤ ρ i) (h0 : ρ 0 ≤ ε₀) (hN : θ * ε₀ ≤ ρ N)
+    (hdec : ∀ i ∈ T, ∃ l ∈ L, κ * (ρ (i + 1) * ε l) ^ π l ≤ ρ i ^ 2 / 2 - ρ (i + 1) ^ 2 / 2) :
+    (T.card : ℝ) ≤ (1 - θ) / (κ * θ ^ πmax) * M := by
+  obtain ⟨l₀, hl₀⟩ := hL
+  have hM0 : 0 < M := lt_of_lt_of_le (by have := hε l₀ hl₀; positivity) (hM l₀ hl₀)
+  have hθp : 0 < θ ^ πmax := Real.rpow_pos_of_pos hθ0 _
+  set δ := κ * θ ^ πmax * (ε₀ / M) with hδ
+  have hδ0 : 0 < δ := by positivity
+  -- every iteration of `T` decreases `ρ` by at least `δ`
+  have hstep : ∀ i ∈ T, δ ≤ ρ i - ρ (i + 1) := by
+    intro i hi
+    have hiN : i < N := mem_range.1 (hT hi)
+    obtain ⟨l, hl, hdl⟩ := hdec i hi
+    have hlow : θ * ε₀ ≤ ρ (i + 1) := hN.trans (antitone_of_succ_le hmono (by omega) le_rfl)
+    have hρi : ρ i ≤ ε₀ := (antitone_of_succ_le hmono (Nat.zero_le i) hiN.le).trans h0
+    have key := sub_ge_of_residual_decrease hθ0 hθ1 hε₀ hκ (hπ l hl).1
+      (hπ l hl).2 (hε l hl) hlow (hmono i hiN) hρi hdl
+    have hq := div_le_rpow_mul_rpow hε₀ (hε l hl) (hM l hl)
+    calc δ ≤ κ * θ ^ πmax * (ε₀ ^ (π l - 1) * ε l ^ π l) := by
+          rw [hδ]; gcongr
+      _ ≤ ρ i - ρ (i + 1) := key
+  -- telescoping
+  have hsum : ∑ i ∈ T, (ρ i - ρ (i + 1)) ≤ ρ 0 - ρ N := by
+    rw [← sum_range_sub' ρ N]
+    exact sum_le_sum_of_subset_of_nonneg hT fun i hi _ =>
+      sub_nonneg.2 (hmono i (mem_range.1 hi))
+  have hcard : T.card * δ ≤ (1 - θ) * ε₀ := by
+    have : ∑ _i ∈ T, δ ≤ ∑ i ∈ T, (ρ i - ρ (i + 1)) := sum_le_sum hstep
+    rw [sum_const, nsmul_eq_mul] at this
+    linarith
+  rw [← le_div_iff₀ hδ0] at hcard
+  refine hcard.trans (le_of_eq ?_)
+  rw [hδ]
+  field_simp
+
+end Block
+
+end Constrained

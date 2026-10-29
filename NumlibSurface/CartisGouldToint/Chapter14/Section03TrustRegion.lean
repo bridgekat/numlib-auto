@@ -453,7 +453,7 @@ theorem IsTPqpGCPhase2.le_targetResidual (h : IsTPqpGCPhase2 f c X q θ β ε x�
     intro hK
     have T := h.isTargetSequence hK
     have hs : ¬ D.Stop f c X q θ ε k := hK k hk1 (Nat.lt_succ_self k)
-    rcases IsTPqpGCPhase2.isKa_or_isKb_of_not_stop hs with ha | hb
+    rcases Constrained.TargetFollowingSeq.ka_or_kb_of_not_stop hs with ha | hb
     · rw [T.residual_succ_of_Ka h.θ_lt_one.le h.ε₀_pos.le hk1 (Nat.lt_succ_self k) ha]
       exact hθε
     · have hna : ¬ D.IsKa f c θ ε k := fun ha => absurd hb.1 (not_le.2 ha)

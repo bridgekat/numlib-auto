@@ -17,6 +17,8 @@ unchanged at unsuccessful iterations (the iterate is not updated).
 * `Optimization.card_mul_le_sub_of_decrease`, `Optimization.card_mul_le_of_decrease`: the same
   for any subset `T` of iterations of a nonincreasing sequence (e.g. "good" successful
   iterations).
+* `Optimization.exists_last_succ`: if unsuccessful steps do not move, a final point different
+  from the first one was reached by a successful step.
 -/
 
 open Finset
@@ -85,5 +87,22 @@ theorem card_le_div_of_decrease {T : Finset ℕ} (hc : 0 < c) (hT : T ⊆ range 
     (T.card : ℝ) ≤ (φ 0 - φlow) / c := by
   rw [le_div_iff₀ hc, mul_comm]
   exact card_mul_le_of_decrease hT hmono hdec hlow
+
+/-- In a sequence whose unsuccessful steps do not move, a final point different from the first one
+was reached by a successful step: some successful `i < N` has `y_{i+1} = y_N`. -/
+theorem exists_last_succ {α : Type*} {y : ℕ → α} {succ : ℕ → Prop} :
+    ∀ N, (∀ i < N, ¬ succ i → y (i + 1) = y i) → y N ≠ y 0 →
+      ∃ i < N, succ i ∧ y (i + 1) = y N := by
+  intro N
+  induction N with
+  | zero => exact fun _ h0 => absurd rfl h0
+  | succ N ih =>
+    intro hstay hne
+    by_cases hs : succ N
+    · exact ⟨N, N.lt_succ_self, hs, rfl⟩
+    · have heq := hstay N N.lt_succ_self hs
+      obtain ⟨i, hi, hsi, hyi⟩ := ih (fun j hj => hstay j (hj.trans N.lt_succ_self))
+        (heq ▸ hne)
+      exact ⟨i, hi.trans N.lt_succ_self, hsi, hyi.trans heq.symm⟩
 
 end Optimization
