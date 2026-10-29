@@ -352,4 +352,25 @@ theorem exists_isTRRun (P : TRParams) {Inv : E → Prop} {test : E → Prop}
 
 end Existence
 
+/-- While every iteration at the starting point of a trust-region run is unsuccessful as long as
+its radius is at least `γ₁^i Δ₀`, the run stays at its starting point and `Δ_i ≥ γ₁^i Δ₀`, up to
+iteration `L` and before termination. -/
+theorem IsTRRun.eq_zero_of_unsucc {E : Type*} [Add E] {P : TRParams} {stop step : ℕ → Prop}
+    {ρ : ℕ → ℝ} {x s : ℕ → E} {Δ : ℕ → ℝ} (h : IsTRRun P stop step ρ x s Δ) {L : ℕ}
+    (hunsucc : ∀ i < L, (∀ l ≤ i, ¬ stop l) → x i = x 0 → P.γ₁ ^ i * P.Δ₀ ≤ Δ i →
+      ρ i < P.η₁) :
+    ∀ i ≤ L, (∀ l < i, ¬ stop l) → x i = x 0 ∧ P.γ₁ ^ i * P.Δ₀ ≤ Δ i := by
+  intro i
+  induction i with
+  | zero => intro _ _; exact ⟨rfl, by rw [pow_zero, one_mul, h.delta_zero]⟩
+  | succ i ih =>
+    intro hiL hstop
+    have hk : ∀ l ≤ i, ¬ stop l := fun l hl => hstop l (by omega)
+    obtain ⟨hxi, hΔi⟩ := ih (by omega) fun l hl => hk l hl.le
+    have hρ := hunsucc i (by omega) hk hxi hΔi
+    refine ⟨(h.eq_of_not_succ hk hρ).trans hxi, ?_⟩
+    calc P.γ₁ ^ (i + 1) * P.Δ₀ = P.γ₁ * (P.γ₁ ^ i * P.Δ₀) := by ring
+      _ ≤ P.γ₁ * Δ i := mul_le_mul_of_nonneg_left hΔi P.γ₁_pos.le
+      _ ≤ Δ (i + 1) := ((h.accept i hk).2.unsuccessful hρ).1
+
 end Optimization

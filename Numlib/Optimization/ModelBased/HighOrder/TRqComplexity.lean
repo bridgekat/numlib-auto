@@ -89,6 +89,9 @@ noncomputable def kappaATRq (f : E → ℝ) (P : TRqParams) (q : ℕ) (L : ℕ �
 noncomputable def kappaBTRq (P : TRqParams) : ℝ :=
   1 / |Real.log P.γ₂|
 
+theorem kappaBTRq_nonneg (P : TRqParams) : 0 ≤ kappaBTRq P := by
+  unfold kappaBTRq; positivity
+
 /-- The constant `κ^C_{TRq} = |log(ς κ_Δ/Δ₀)|/|log γ₂| + 1` of Theorem 12.2.5. -/
 noncomputable def kappaCTRq (f : E → ℝ) (P : TRqParams) (q : ℕ) (L : ℕ → ℝ) (ϑ : ℝ)
     (x₀ : E) : ℝ :=

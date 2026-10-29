@@ -1,0 +1,44 @@
+namespace = "Constrained"
+
+[[node]]
+id = "targetCrit"
+source = "Cartis–Gould–Toint, (14.3.34)"
+
+[[node]]
+id = "targetCrit.mono"
+
+[[node]]
+id = "HighOrderTargetSeq"
+source = "Cartis–Gould–Toint, Algorithm 14.3.2 (Phase 2)"
+
+[[node]]
+id = "HighOrderTargetSeq.toTargetFollowingSeq"
+
+[[node]]
+id = "HighOrderTargetSeq.InnerTest"
+source = "Cartis–Gould–Toint, (14.3.19) in Step 1 of Algorithm 14.3.2"
+
+[[node]]
+id = "IsHighOrderTargetRun"
+source = "Cartis–Gould–Toint, Algorithm 14.3.2 (Phase 2)"
+
+[[node]]
+id = "IsHighOrderTargetRun.toRun"
+
+[[node]]
+id = "IsHighOrderTargetRun.output_spec"
+source = "Cartis–Gould–Toint, (14.3.48), (14.3.49), (14.3.52)"
+
+[[node]]
+id = "IsHighOrderTargetRun.kaCount_le"
+source = "Cartis–Gould–Toint, Lemma 7.2.4 for TPqp-GC"
+
+[[node]]
+id = "InnerCall"
+
+[[node]]
+id = "HighOrderTargetSeq.exists_run_of_oracle"
+
+[[node]]
+id = "HighOrderTargetSeq.kbCount"
+source = "Cartis–Gould–Toint, (14.3.36), the number of case-(b) outer iterations"

@@ -180,6 +180,32 @@ theorem arqpPiOf_of_neg {u : Prop} [Decidable u] (hu : ¬ u) (p j : ℕ) :
     arqpPiOf u p j = (j : ℝ) * (p + 1) / p := by
   rw [arqpPiOf, ite_eq_right hu]
 
+/-- The first ARqp-SC exponent is `π_1 = (p+1)/p` in both radii modes. -/
+theorem arqpPiOf_one (u : Prop) [Decidable u] {p : ℕ} (hp : 1 ≤ p) :
+    arqpPiOf u p 1 = ((p : ℝ) + 1) / p := by
+  by_cases hu : u
+  · rw [arqpPiOf_of_pos hu, Nat.sub_add_cancel hp]; push_cast; ring
+  · rw [arqpPiOf_of_neg hu]; ring
+
+/-- The ARqp-SC exponent of order `1` ((14.2.12), either radii mode) is `(p+1)/p ≤ 3/2` for
+`p ≥ 2`, so the order part of `theorem_14_3_9_false` applies to it. -/
+theorem arqpPiOf_one_le (unit : Prop) [Decidable unit] {p : ℕ} (hp : 2 ≤ p) :
+    arqpPiOf unit p 1 ≤ 3 / 2 := by
+  rw [arqpPiOf_one unit (by omega)]
+  have : (2 : ℝ) ≤ p := by exact_mod_cast hp
+  rw [div_le_iff₀ (by linarith)]
+  linarith
+
+/-- The ARqp-SC exponent of order `1` ((14.2.12), either radii mode) is `(p+1)/p ≥ 4/3` for
+`1 ≤ p ≤ 3`; with `arqpPiOf_one_le` it lies in `[4/3, 3/2]` for `p ∈ {2, 3}`. -/
+theorem four_thirds_le_arqpPiOf_one (unit : Prop) [Decidable unit] {p : ℕ} (hp1 : 1 ≤ p)
+    (hp : p ≤ 3) : 4 / 3 ≤ arqpPiOf unit p 1 := by
+  rw [arqpPiOf_one unit hp1]
+  have h3 : (p : ℝ) ≤ 3 := by exact_mod_cast hp
+  have h1 : (1 : ℝ) ≤ p := by exact_mod_cast hp1
+  rw [le_div_iff₀ (by linarith)]
+  linarith
+
 theorem arqpPiOf_nonneg (u : Prop) [Decidable u] (p j : ℕ) : 0 ≤ arqpPiOf u p j := by
   unfold arqpPiOf
   split_ifs <;> positivity
@@ -217,6 +243,14 @@ noncomputable def kappaAARqpOf (u : Prop) [Decidable u] (P : ARqpParams) (L : �
 /-- The constant `κ^c_{ARqp} = (|log γ₁| + log(σ_max/σ₀))/log γ₂ + 2` of Theorem 12.2.14. -/
 noncomputable def kappaCARqp (P : ARqpParams) (L : ℕ → ℝ) (p : ℕ) : ℝ :=
   (|Real.log P.γ₁| + Real.log (arSigmaMax P.toARParams (L p) / P.σ₀)) / Real.log P.γ₂ + 2
+
+theorem kappaAARqpOf_def (u : Prop) [Decidable u] (P : ARqpParams) (L : ℕ → ℝ) (p q : ℕ) :
+    kappaAARqpOf u P L p q = kappaSARqpOf u P L p q * (1 + |Real.log P.γ₁| / Real.log P.γ₂) := rfl
+
+theorem kappaCARqp_def (P : ARqpParams) (L : ℕ → ℝ) (p : ℕ) :
+    kappaCARqp P L p =
+      (|Real.log P.γ₁| + Real.log (arSigmaMax P.toARParams (L p) / P.σ₀)) / Real.log P.γ₂ + 2 :=
+  rfl
 
 theorem arqpKappaDmOf_pos {P : ARqpParams} {L : ℕ → ℝ} {p q : ℕ} (u : Prop) [Decidable u]
     (hσmin : 0 < P.σmin) (hθς : P.θ < P.ς) (hL : 1 ≤ L p) : 0 < arqpKappaDmOf u P L p q := by

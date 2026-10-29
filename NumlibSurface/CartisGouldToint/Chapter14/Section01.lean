@@ -245,8 +245,7 @@ with `L_{f,p} ≥ 1` and `L_{c,p} ≥ 0`. Under the global f.D1pL and c.D1pL it 
 and any anchor set (`AnchoredCompositeBounds.of_global`). The book's f.D1pLaB.X with constants
 `L_{f,j}` (anchored Lipschitz, (14.2.9)) and `B_{f,j}` (bounds, (14.2.10)) on `A = 𝓛_f(x₀)` gives
 it with the constants `max(L_{f,i}, B_{f,i+1})` (the bound of order `i` enters as the constant of
-order `i - 1`); for `c = 0`, `h = 0` this is `AssumptionD1qLaBX.anchoredCompositeBounds`
-(`Chapter14.Section03Anchored`). -/
+order `i - 1`). -/
 structure AnchoredCompositeBounds (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (X₀ A : Set ℝⁿ) (p : ℕ)
     (Lf Lc : ℕ → ℝ) : Prop where
   isOpen : IsOpen X₀

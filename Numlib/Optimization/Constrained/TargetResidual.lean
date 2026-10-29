@@ -253,6 +253,16 @@ theorem fderiv_targetMerit (hf : DifferentiableAt ℝ f x) (hc : DifferentiableA
       (f x - t) • fderiv ℝ f x + (innerSL ℝ (c x)).comp (fderiv ℝ c x) :=
   (hasFDerivAt_targetMerit hf.hasFDerivAt hc.hasFDerivAt).fderiv
 
+/-- The first-order Taylor decrement of the merit function:
+`-∇ₓμ₂(x, t)[d] = -((f(x) - t) ∇f(x)[d] + ⟪c(x), Dc(x)[d]⟫)`. -/
+theorem taylorDecrement_one_targetMerit {f' : E →L[ℝ] ℝ} {c' : E →L[ℝ] F}
+    (hf : HasFDerivAt f f' x) (hc : HasFDerivAt c c' x) (d : E) :
+    (ftaylorSeries ℝ (targetMerit f c t) x).taylorDecrement 1 d =
+      -((f x - t) * f' d + ⟪c x, c' d⟫) := by
+  rw [FormalMultilinearSeries.taylorDecrement_one_apply]
+  simp only [ftaylorSeries, iteratedFDeriv_one_apply, (hasFDerivAt_targetMerit hf hc).fderiv]
+  simp
+
 /-- At the target `t = f(x)` the derivative of `μ₂(·, t)` is that of `Φ₂ = ½ ‖c‖²`
 ([cartis2022evaluation], proof of Lemma 7.2.1, case `f(x_ε) = t_ε`). -/
 theorem fderiv_targetMerit_of_eq (hf : DifferentiableAt ℝ f x) (hc : DifferentiableAt ℝ c x)

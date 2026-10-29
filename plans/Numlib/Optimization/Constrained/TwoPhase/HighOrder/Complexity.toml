@@ -1,0 +1,89 @@
+namespace = "Constrained"
+
+[[node]]
+id = "HighOrderTargetSeq.IsMeritContract"
+source = "Cartis–Gould–Toint, Lemmas 14.2.2–14.2.3 for μ(·, t_k)"
+
+[[node]]
+id = "HighOrderTargetSeq.IsEndCritContract"
+source = "Cartis–Gould–Toint, proof of Lemma 14.3.8"
+
+[[node]]
+id = "HighOrderTargetSeq.IsInnerTestContract"
+source = "Cartis–Gould–Toint, Lemma 14.2.2 for INNER on μ(·, t_k)"
+
+[[node]]
+id = "HighOrderTargetSeq.IsCertified"
+
+[[node]]
+id = "goodBound"
+source = "Cartis–Gould–Toint, (14.3.71)"
+
+[[node]]
+id = "goodDecr"
+
+[[node]]
+id = "HighOrderTargetSeq.IsMeritContract.toContract"
+
+[[node]]
+id = "IsHighOrderTargetRun.complexity"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 (Phase 2), with the bad iterations as a parameter"
+
+[[node]]
+id = "jetApprox_targetMerit"
+
+[[node]]
+id = "IsHighOrderTargetRun.target_drop_of_innerTest"
+
+[[node]]
+id = "IsHighOrderTargetRun.card_kb_innerTest_le"
+
+[[node]]
+id = "IsHighOrderTargetRun.kbCount_le_of_certified"
+
+[[node]]
+id = "IsHighOrderTargetRun.complexity_of_certified"
+
+[[node]]
+id = "HighOrderTargetSeq.IsEndCritContract.toInnerTestContract"
+
+[[node]]
+id = "HighOrderTargetSeq.IsInnerTestContract.toEndCritContract"
+
+[[node]]
+id = "IsHighOrderTargetRun.complexity_of_innerTest"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 (Phase 2), corrected"
+
+[[node]]
+id = "IsHighOrderTargetRun.exists_const_order_of_innerTest"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 (Phase 2), order form"
+
+[[node]]
+id = "HighOrderTargetSeq.IsInnerTestContract.mono_radius"
+
+[[node]]
+id = "IsHighOrderTargetRun.residual_drop"
+
+[[node]]
+id = "IsHighOrderTargetRun.complexity_of_badCount_le"
+
+[[node]]
+id = "IsHighOrderTargetRun.target_drop_of_certified"
+
+[[node]]
+id = "IsHighOrderTargetRun.kbCount_le_of_certified_margin"
+
+[[node]]
+id = "IsHighOrderTargetRun.complexity_of_certified_margin"
+
+[[node]]
+id = "IsHighOrderTargetRun.complexity_of_innerTest_card"
+
+[[node]]
+id = "IsHighOrderTargetRun.exists_const_order_of_card"
+
+[[node]]
+id = "IsHighOrderTargetRun.exists_const_order_of_innerTest_calls"
+
+[[node]]
+id = "IsHighOrderTargetRun.exists_const_order_of_innerTest_unc"

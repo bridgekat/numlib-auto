@@ -87,3 +87,12 @@ source = "Cartis–Gould–Toint, proof of Theorem 12.2.14"
 [[node]]
 id = "IsARqpRun.complexity"
 source = "Cartis–Gould–Toint, Theorem 12.2.14, Theorem 14.2.4"
+
+[[node]]
+id = "arqpPiOf_one"
+
+[[node]]
+id = "arqpPiOf_one_le"
+
+[[node]]
+id = "four_thirds_le_arqpPiOf_one"

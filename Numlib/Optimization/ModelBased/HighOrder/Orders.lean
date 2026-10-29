@@ -49,6 +49,13 @@ theorem finMax_le (hb : b ≤ c) (hu : ∀ j ∈ Finset.Icc 1 q, u j ≤ c) : fi
   · obtain ⟨j, hj, rfl⟩ := Finset.mem_image.1 hy
     exact hu j hj
 
+/-- `finMax b u q` depends only on the values `u j`, `j ∈ [1 : q]`. -/
+theorem finMax_congr {u u' : ℕ → ℝ} (h : ∀ j ∈ Finset.Icc 1 q, u j = u' j) :
+    finMax b u q = finMax b u' q := by
+  unfold finMax
+  congr 2
+  exact Finset.image_congr fun j hj => h j hj
+
 /-- For `q ≥ 1` and `u_j ≥ b`, `finMax b u q` is the maximum of `u` over `[1:q]`. -/
 theorem exists_finMax_eq (hq : 1 ≤ q) (hu : ∀ j ∈ Finset.Icc 1 q, b ≤ u j) :
     ∃ j ∈ Finset.Icc 1 q, finMax b u q = u j := by

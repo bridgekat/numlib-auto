@@ -140,67 +140,31 @@ where one exists:
   origin is a minimizer, not a saddle point.
 * **Theorem 14.3.4** (and Lemma 14.3.7, Theorem 14.3.9): the proof uses
   `∑_k max_j ≤ max_j ∑_k`, which is false; the bounds hold with `∑_j` for `max_j`.
-* **Lemma 14.3.5**: (14.3.43) and (14.3.46) are false (e.g. `c ≡ 0`, `X = [-1, 1]`,
-  `f(x) = x/4 - 25x²/8`, `Chapter14.lemma_14_3_5_counterexample`); they are corrected with terms
-  of order `(‖∇f‖δ)²/(f(x_ε) - t_ε)`.
-  When Phase 2 ends with `f(x_ε) = t_ε`, only the first-order part of (14.3.41) follows.
-* **Lemma 14.3.8, Theorem 14.3.9**: TPqp-GC has the same counting gap as TPp-GC: the bad outer
-  iterations are not bounded by the book's argument, and `Chapter14.theorem_14_3_9` carries
-  their number as a parameter; the decreases used by the proof do not bound it
-  (`Chapter14.lemma_14_3_8_proof_gap_counterexample`, whose INNER calls are not genuine INNER
-  runs). With the INNER contract as Lemma 14.2.2 states it (decrease unless INNER's own test
-  holds, `Chapter14.IsInnerPhaseRunStrong`) Phase 2 terminates within an explicit bound without
-  the parameter for every `β ≤ θ` (`Chapter14.IsTPqpGCPhase2.complexity_of_strong`; the extra
-  term's order depends on INNER's radii; it is within the book's order for the exponents `j + 1`,
-  and for the ARqp-SC exponents exactly when `q = p`).
-  INNER's
-  certificate closes the gap when the derivatives of `f` are bounded: for `β < θ` every case-(b)
-  iteration lowers the target by a fixed amount (`Chapter14.IsTPqpGCPhase2.kbCount_le`), for
-  `β = θ` all but one per block do (`Chapter14.IsTPqpGCPhase2.kbCount_le_of_le`), and the
-  constructed runs with INNER = ARqp-SC terminate within explicit bounds without the parameter
-  (`Chapter14.exists_algorithm_14_3_2_complexity_certified`,
-  `Chapter14.exists_algorithm_14_3_2_complexity_strong`,
-  `Chapter14.exists_algorithm_14_3_2_complexity_unit`).
-  **Theorem 14.3.9 fails for a nonspecific INNER under the per-call reading** of its INNER
-  hypotheses; the bound holds with the extra term of
-  `Chapter14.IsTPqpGCPhase2.complexity_of_strong` (`Chapter14.theorem_14_3_9_false`: for `q = 1`,
-  `π₁ ∈ [4/3, 3/2]`, runs whose INNER calls satisfy on the run (14.3.19), (14.3.20)–(14.3.21) and
-  (14.2.11), (14.2.13) with `t`-independent constants — not a regularization algorithm of
-  (14.2.12) — exceed the printed bounds for every choice of their constants). Read uniformly over
-  all admissible inputs, the cost hypothesis cannot be met by any INNER on that problem for
-  `π₁ < 2` (`Chapter14.theorem_14_3_9_cost_hypothesis_unsatisfiable`), and the theorem is vacuous
-  under that reading. For every run whose INNER calls are genuine ARqp-SC runs (run as ARqpC-SC
-  with `c = 0`, `h = 0`) the theorem holds in the printed order for the exponents `j + 1`
-  (`Chapter14.theorem_14_3_9_arqpc`; the ARqpC-SC entry of (14.2.12) for `q ≥ 2` or `X`
-  nonconvex) and for the ARqp-SC exponents `j(p+1)/p` when `q = p`
-  (`Chapter14.theorem_14_3_9_arqp`, `Chapter14.theorem_14_3_9_arqp_unit`); for `q < p` with the
-  ARqp-SC exponents (including the ARqpC-SC entry `(p+1)/p` for `q = 1`, `X` convex, `p ≥ 2`)
-  the proved bound (`Chapter14.theorem_14_3_9_arqp_corrected`) has an extra term outside the
-  printed order (`Chapter14.exists_tpqpOrderF_lt_arqp`); for `q = 1`, `p ≥ 4` and `q = 2`,
-  `p ≥ 5` genuine runs attain it and the printed theorem is false for INNER = ARqp-SC
-  (`Chapter14.theorem_14_3_9_arqp_counterexample`, `Chapter14.theorem_14_3_9_arqp_printed_false`).
-  With INNER of trust-region type (genuine TRq-SC runs) it holds with the
-  exponents `π_j = q + 1` of Lemma 12.2.4 (the printed TRq-SC entry `j + 1` of (14.2.12) only for
-  `q = 1`) and a factor `1 + |log(ε₀ ε_min)|` on the evaluations of `(f, c)`, from the restarts of
-  the trust-region radius (`Chapter14.theorem_14_3_9_trq`, `Chapter14.theorem_14_3_9_trq_one`).
-  The factor is needed for `q = 1` (`Chapter14.theorem_14_3_9_trq_log_necessary`), and the
-  TRq-SC row `j + 1` of (14.2.12), which contradicts the book's own Theorem 14.2.4 table, is
-  false as a per-iteration decrease for `q = 2` with `κ_decr` depending only on the algorithm
-  parameters and the f.D1qLaB.X constants, as in (12.2.14)
-  (`Chapter14.lemma_14_2_2_trq_printed_false_uniform`). For whole runs the printed TRq-SC order is
-  false for every `q ≥ 2`, even with the factor `1 + |log(ε₀ ε_min)|`, for runs ending in Phase 1
-  and in Phase 2, on fixed problems satisfying all hypotheses
-  (`Chapter14.theorem_14_3_9_trq_printed_false`,
-  `Chapter14.theorem_14_3_9_trq_printed_false_phase2`).
-* **(14.3.20)–(14.3.21)**: the multiplicative INNER cost contract is false when every `π_j < 2`
-  (`q = 1`, `p ≥ 2` with INNER = ARqp-SC;
-  `Chapter14.exists_algorithm_14_3_1_cost_contract_counterexample`: a call costs at least one
-  evaluation while the bound tends to `0` with `‖r(x^S)‖`); the additive constants of footnote 114
-  must be kept, and the additive form is proved (`Chapter14.theorem_14_3_4_add`,
-  `Chapter14.lemma_14_3_7_add`); its extra `O(|log ε₀|)` lies within the order of
-  Theorem 14.3.9 (`Chapter14.exists_const_order_arqp`). The contract can hold on the calls of a
-  given run (as in `Chapter14.theorem_14_3_9_false`) but not uniformly in `ε`
-  (`Chapter14.theorem_14_3_9_cost_hypothesis_unsatisfiable`).
+* **(14.3.20)–(14.3.21)**: the multiplicative INNER cost contract is false for INNER = ARqp-SC
+  with `q = 1`, `p ≥ 2`, and for any INNER spending at least one evaluation per call when every
+  `π_j < 2` (`Chapter14.exists_algorithm_14_3_1_cost_contract_counterexample`); it holds for
+  ARqp-SC with the ARqp-SC exponents when `q ≥ 2`
+  (`Chapter14.IsARqpSCOutputCost.cost_le_arqp_anchored`). The additive form with the constants of
+  Theorem 14.2.4 is proved and used (`Chapter14.theorem_14_3_4_add`).
+* **Lemma 14.3.5**: (14.3.43) and (14.3.46) are false (`Chapter14.lemma_14_3_5_counterexample`);
+  they are corrected with terms of order `(‖∇f‖δ)²/(f(x_ε) - t_ε)`.
+* **Lemma 14.3.8**: the decreases used by its proof do not bound the outer iterations whose INNER
+  call ends right after its only successful step; Phase-2 sequences satisfying them may never
+  terminate (`Chapter14.lemma_14_3_8_proof_gap_counterexample`).
+* **Theorem 14.3.9** is proved for INNER satisfying Lemma 14.2.2 as stated (decrease unless
+  INNER's own test (14.3.19) holds) with radii `ρ` bounded below, with an extra term
+  `O(ε₀^{-1} + max_j (ε₀ ε_j ρ_j^{j-1})^{-1})` (`Chapter14.theorem_14_3_9`). As printed it fails
+  for a nonspecific INNER under the per-call reading of its INNER hypotheses
+  (`Chapter14.theorem_14_3_9_false`) and is vacuous for `π₁ < 2` under the uniform reading
+  (`Chapter14.theorem_14_3_9_cost_hypothesis_unsatisfiable`). For runs of ARqp-SC it holds in the
+  printed order for the exponents `j + 1` and, with `j(p+1)/p`, for `q = p`
+  (`Chapter14.theorem_14_3_9_arqpc`, `Chapter14.theorem_14_3_9_arqp`); for `q = 1`, `p ≥ 4` and
+  `q = 2`, `p ≥ 5` it fails for runs that re-initialise `μ` at Step 2.1 of Algorithm 14.1.2
+  (`Chapter14.theorem_14_3_9_arqp_printed_false`; with `μ` bounded below the question is open).
+  For runs of TRq-SC it holds with `π_j = q + 1` and a factor `1 + |log(ε₀ ε_min)|`
+  (`Chapter14.theorem_14_3_9_trq`), needed for `q = 1`; the printed order fails for every `q ≥ 2`
+  on fixed problems (`Chapter14.theorem_14_3_9_trq_printed_false`), and the TRq-SC row `j + 1` of
+  (14.2.12) fails per iteration for `q = 2` (`Chapter14.lemma_14_2_2_trq_printed_false_uniform`).
 * **Lemma B.4.1 (B.4.3)**: false for `β < 1` (`AppendixB.lemma_B_4_1_iii_false`); true for `β = 1`,
   the case the book uses.
 * **Theorem 9.3.2** is false with the Euclidean `λ_min` when `M ≠ I`, and **Theorem 9.3.1** omits

@@ -1,6 +1,8 @@
 import Numlib.Optimization.Constrained.TwoPhase.Basic
 import Numlib.Optimization.Constrained.TwoPhase.Run
 import Numlib.Optimization.Constrained.TwoPhase.Complexity
+import Numlib.Optimization.Constrained.TwoPhase.HighOrder.Basic
+import Numlib.Optimization.Constrained.TwoPhase.HighOrder.Complexity
 
 /-!
 # Two-phase target-following methods
@@ -14,5 +16,11 @@ Umbrella module for the analysis of the two-phase target-following methods of
 * `Numlib.Optimization.Constrained.TwoPhase.Run`: the outer loop of Phase 2
   (`Constrained.TargetFollowingSeq`, `Constrained.IsTargetFollowingRun`) and its output;
 * `Numlib.Optimization.Constrained.TwoPhase.Complexity`: the inner-method contract
-  (`Constrained.TargetFollowingSeq.IsInnerContract`) and the evaluation complexity of Phase 2.
+  (`Constrained.TargetFollowingSeq.IsInnerContract`) and the evaluation complexity of Phase 2;
+* `Numlib.Optimization.Constrained.TwoPhase.HighOrder.Basic`: the high-order run of TPqp-GC
+  (`Constrained.HighOrderTargetSeq`, `Constrained.IsHighOrderTargetRun`, the criticality test
+  `Constrained.targetCrit`) and the construction of runs from an inner oracle;
+* `Numlib.Optimization.Constrained.TwoPhase.HighOrder.Complexity`: the merit-decrease contracts of
+  the inner method and the evaluation complexity of the high-order run (Lemma 14.3.8 and
+  Theorem 14.3.9, corrected).
 -/

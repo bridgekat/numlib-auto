@@ -67,3 +67,7 @@ source = "Cartis–Gould–Toint, (14.3.58)–(14.3.59), proof of Lemma 14.3.5 (
 [[node]]
 id = "taylorMeasure_lagrangian_three_le_of_ker"
 source = "Cartis–Gould–Toint, (14.3.47)"
+
+[[node]]
+id = "taylorDecrement_one_targetMerit"
+source = "Cartis–Gould–Toint, (14.3.37)"
