@@ -1,3 +1,6 @@
+import Numlib.Algebra.Order.Archimedean
+import Numlib.Optimization.Complexity.SlowExample.Slit
+import NumlibSurface.CartisGouldToint.Chapter03.Section02
 import NumlibSurface.CartisGouldToint.Chapter14.Section02
 
 /-!
@@ -99,6 +102,9 @@ open Set Metric
 open scoped Nat
 
 namespace CartisGouldToint.Chapter14
+
+open Chapter02 (e₀ norm_e₀ inner_e₀_smul norm_smul_e₀)
+open Chapter03 (norm_eq_abs_inner_e₀)
 
 /-- **Theorem 14.2.4** of [cartis2022evaluation], sharpness: the orders of the TRq-SC row
 (`ε^{-(q+1)}`), of the ARqp-SC row for `q ≤ 2` (`ε^{-(p+1)/(p-q+1)}`) and of the ARqpC-SC row
@@ -300,19 +306,8 @@ section TRqDASharp
 open Chapter13 Optimization
 open scoped RealInnerProductSpace
 
-/-- The unit vector of `ℝ¹`. -/
-private noncomputable def u₁ : EuclideanSpace ℝ (Fin 1) := EuclideanSpace.single 0 1
-
-private theorem norm_u₁ : ‖u₁‖ = 1 := by simp [u₁]
-
-private theorem inner_smul_u₁ (r : ℝ) : ⟪u₁, r • u₁⟫ = r := by
-  rw [inner_smul_right, real_inner_self_eq_norm_sq, norm_u₁]; ring
-
-private theorem norm_smul_u₁ (r : ℝ) : ‖r • u₁‖ = |r| := by
-  rw [norm_smul, norm_u₁, mul_one, Real.norm_eq_abs]
-
-private theorem smul_u₁_succ (k : ℕ) (ε : ℝ) :
-    ((k : ℝ) * ε) • u₁ + ε • u₁ = (((k : ℝ) + 1) * ε) • u₁ := by
+private theorem smul_e₀_succ (k : ℕ) (ε : ℝ) :
+    ((k : ℝ) * ε) • e₀ + ε • e₀ = (((k : ℝ) + 1) * ε) • e₀ := by
   rw [← add_smul]; ring_nf
 
 /-- **The slow trust-region example on `ℝ¹`** (Theorem 12.2.6 lifted along `e₁`, scaled by
@@ -325,10 +320,10 @@ private theorem exists_slowTRq_ridge {q : ℕ} (hq : 1 ≤ q) :
     ∃ flow L : ℝ, 1 ≤ L ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 → ∀ lam : ℝ, 0 < lam → lam ≤ 1 →
       ∃ f : EuclideanSpace ℝ (Fin 1) → ℝ, (∀ y, flow ≤ f y) ∧ AssumptionD0qL f q (fun _ => L) ∧
         (∀ k ≤ ⌈(ε ^ (q + 1))⁻¹⌉₊, ∀ j ≤ q, ∀ d,
-          (ftaylorSeries ℝ f (((k : ℝ) * ε) • u₁)).taylorDecrement j d =
-            (if j = q then lam * ε * (2 - k / ⌈(ε ^ (q + 1))⁻¹⌉₊) else 0) * ⟪u₁, d⟫ ^ q) ∧
-        ∀ k < ⌈(ε ^ (q + 1))⁻¹⌉₊, f ((((k : ℝ) + 1) * ε) • u₁) =
-          f (((k : ℝ) * ε) • u₁) - lam * ε ^ (q + 1) * (2 - k / ⌈(ε ^ (q + 1))⁻¹⌉₊) := by
+          (ftaylorSeries ℝ f (((k : ℝ) * ε) • e₀)).taylorDecrement j d =
+            (if j = q then lam * ε * (2 - k / ⌈(ε ^ (q + 1))⁻¹⌉₊) else 0) * ⟪e₀, d⟫ ^ q) ∧
+        ∀ k < ⌈(ε ^ (q + 1))⁻¹⌉₊, f ((((k : ℝ) + 1) * ε) • e₀) =
+          f (((k : ℝ) * ε) • e₀) - lam * ε ^ (q + 1) * (2 - k / ⌈(ε ^ (q + 1))⁻¹⌉₊) := by
   obtain ⟨L, B, hL, hB, hG⟩ := exists_slowTRq_interpolant hq
   refine ⟨-B, max 1 (max L B), le_max_left _ _, fun ε hε hε1 lam hlam hlam1 => ?_⟩
   obtain ⟨G, hGc, hGL, hGB, hGd, hGf⟩ := hG ε (fun k => k * ε) hε hε1 fun k _ => by
@@ -337,13 +332,13 @@ private theorem exists_slowTRq_ridge {q : ℕ} (hq : 1 ≤ q) :
   have hgc : ContDiff ℝ q g := contDiff_const.mul hGc
   have hgj : ∀ j t, iteratedDeriv j g t = lam * iteratedDeriv j G t := fun j t =>
     iteratedDeriv_const_mul_field lam G
-  obtain ⟨hfc, hfb, hfl⟩ := ridge_const_mul_slow_bounds (G := G) (lam := lam) (e := u₁) hGc hB
-    hGL hGB hlam hlam1 norm_u₁.le
-  refine ⟨ridge g u₁, hfb, ⟨hfc, fun j hj => ⟨le_max_left _ _, hfl j hj⟩⟩,
+  obtain ⟨hfc, hfb, hfl⟩ := ridge_const_mul_slow_bounds (G := G) (lam := lam) (e := e₀) hGc hB
+    hGL hGB hlam hlam1 norm_e₀.le
+  refine ⟨ridge g e₀, hfb, ⟨hfc, fun j hj => ⟨le_max_left _ _, hfl j hj⟩⟩,
     fun k hk j hj d => ?_, fun k hk => ?_⟩
-  · have hspike : IsSpikeJetOf q g q ⟪u₁, ((k : ℝ) * ε) • u₁⟫
+  · have hspike : IsSpikeJetOf q g q ⟪e₀, ((k : ℝ) * ε) • e₀⟫
         (lam * (ε * (2 - k / ⌈(ε ^ (q + 1))⁻¹⌉₊) * q !)) := by
-      rw [inner_smul_u₁]
+      rw [inner_e₀_smul]
       refine ⟨by rw [hgj, (hGd k hk).2]; ring, fun i hi1 hiq hne => ?_⟩
       rw [hgj, (hGd k hk).1 i hi1 (lt_of_le_of_ne hiq hne), mul_zero]
     by_cases hjq : j = q
@@ -352,18 +347,10 @@ private theorem exists_slowTRq_ridge {q : ℕ} (hq : 1 ≤ q) :
       field_simp
     · rw [ite_eq_right hjq, zero_mul]
       exact taylorDecrement_ridge_of_lt hgc (lt_of_le_of_ne hj hjq) hspike d
-  · simp only [ridge_apply, inner_smul_u₁, hg]
+  · simp only [ridge_apply, inner_e₀_smul, hg]
     have := hGf k hk
     push_cast at this
     rw [this]; ring
-
-/-- The Taylor measure of a decrement `d ↦ a ⟪e₁, d⟫^q` (`a ≥ 0`) over the ball of radius `δ`. -/
-private theorem taylorMeasure_of_dec {D : FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin 1)) ℝ}
-    {j q : ℕ} {a δ : ℝ} (ha : 0 ≤ a) (hδ : 0 ≤ δ)
-    (hdec : ∀ d, D.taylorDecrement j d = a * ⟪u₁, d⟫ ^ q) :
-    taylorMeasure D j δ univ = a * δ ^ q := by
-  rw [taylorMeasure, show D.taylorDecrement j = fun d => a * ⟪u₁, d⟫ ^ q from funext hdec]
-  exact decrementMeasure_mul_inner_pow norm_u₁ ha hδ
 
 /-- Step-1 displacements achieving exactly the fraction `ς` of the measure. -/
 private theorem exists_slow_witness (D : FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin 1)) ℝ)
@@ -384,19 +371,20 @@ variable {P : TRqIDAParams} {ε lam c : ℝ} {x : ℕ → EuclideanSpace ℝ (Fi
 otherwise. -/
 private theorem slow_dec_dd (hε : 0 < ε) (hA : 0 ≤ lam * ε * c)
     (hdec : ∀ j ∈ Finset.Icc 1 P.q, ∀ d,
-      (D k).taylorDecrement j d = (if j = P.q then lam * ε * c else 0) * ⟪u₁, d⟫ ^ P.q)
+      (D k).taylorDecrement j d = (if j = P.q then lam * ε * c else 0) * ⟪e₀, d⟫ ^ P.q)
     (hdd : ∀ j ∈ Finset.Icc 1 P.q,
       IsApproxMeasureStep ((D k).taylorDecrement j) ε univ P.ς (dd k j) ∧
         (D k).taylorDecrement j (dd k j) = P.ς * taylorMeasure (D k) j ε univ)
     {j : ℕ} (hj : j ∈ Finset.Icc 1 P.q) :
     (D k).taylorDecrement j (dd k j) = P.ς * ((if j = P.q then lam * ε * c else 0) * ε ^ P.q) := by
-  rw [(hdd j hj).2, taylorMeasure_of_dec (by split_ifs <;> [exact hA; exact le_rfl]) hε.le
+  rw [(hdd j hj).2, taylorMeasure_eq_mul_pow_of_inner_pow norm_e₀ (by split_ifs <;>
+      [exact hA; exact le_rfl]) hε.le
     (hdec j hj)]
 
 /-- Along the slow example the test (13.1.14) holds at order `q` (`λ c > ½`). -/
 private theorem slow_trFail (hε : 0 < ε) (hϑ : P.ϑ = ε) (hlamc : 1 < 2 * (lam * c))
     (hdec : ∀ j ∈ Finset.Icc 1 P.q, ∀ d,
-      (D k).taylorDecrement j d = (if j = P.q then lam * ε * c else 0) * ⟪u₁, d⟫ ^ P.q)
+      (D k).taylorDecrement j d = (if j = P.q then lam * ε * c else 0) * ⟪e₀, d⟫ ^ P.q)
     (hdd : ∀ j ∈ Finset.Icc 1 P.q,
       IsApproxMeasureStep ((D k).taylorDecrement j) ε univ P.ς (dd k j) ∧
         (D k).taylorDecrement j (dd k j) = P.ς * taylorMeasure (D k) j ε univ)
@@ -419,13 +407,13 @@ which the iterate moves, `j_k = q`, accuracies passing (13.1.9) and the ratio `�
 private theorem slow_trqDAStep (hε : 0 < ε) (hϑ : P.ϑ = ε) (hΔmax : ε ≤ P.Δmax)
     (hlamc : 1 < 2 * (lam * c)) (hA : 0 ≤ lam * ε * c)
     (hdec : ∀ j ∈ Finset.Icc 1 P.q, ∀ d,
-      (D k).taylorDecrement j d = (if j = P.q then lam * ε * c else 0) * ⟪u₁, d⟫ ^ P.q)
+      (D k).taylorDecrement j d = (if j = P.q then lam * ε * c else 0) * ⟪e₀, d⟫ ^ P.q)
     (hdd : ∀ j ∈ Finset.Icc 1 P.q,
       IsApproxMeasureStep ((D k).taylorDecrement j) ε univ P.ς (dd k j) ∧
         (D k).taylorDecrement j (dd k j) = P.ς * taylorMeasure (D k) j ε univ)
     (hΔ : Δ k = ε) (hΔ1 : Δ (k + 1) = ε) (hh1 : h (k + 1) = h k)
     (hhk : ∀ i ∈ Finset.Icc 1 P.q, h k i ≤ P.κs * ε ^ (P.q - i + 1)) (hjk : jk k = P.q)
-    (hs : s k = ε • u₁) (hacc : ¬ acc k) (hx1 : x (k + 1) = x k + ε • u₁) (hρ : ρ k = 1) :
+    (hs : s k = ε • e₀) (hacc : ¬ acc k) (hx1 : x (k + 1) = x k + ε • e₀) (hρ : ρ k = 1) :
     TRqDAStep univ P (fun j => j ! * ε) x Δ h D dd jk s acc ρ k := by
   have hqm : P.q ∈ Finset.Icc 1 P.q := Finset.mem_Icc.2 ⟨P.one_le_q, le_rfl⟩
   have hς := P.ς_pos
@@ -444,12 +432,13 @@ private theorem slow_trqDAStep (hε : 0 < ε) (hϑ : P.ϑ = ε) (hΔmax : ε ≤
   · rw [hrad, setOf_add_mem_univ]; exact (hdd j hj).1
   · refine ⟨by rw [hjk]; exact hqm, by rw [hjk]; exact hfail,
       fun j hj hlt => hnot j hj (by rw [hjk] at hlt; exact hlt.ne), mem_univ _,
-      by rw [hs, hΔ, norm_smul_u₁, abs_of_pos hε], ?_, iff_of_false hacc ?_⟩
-    · rw [hjk, slow_dec_dd hε hA hdec hdd hqm, hs, hdec _ hqm, inner_smul_u₁, ite_eq_left rfl]
+      by rw [hs, hΔ, norm_smul_e₀, abs_of_pos hε], ?_, iff_of_false hacc ?_⟩
+    · rw [hjk, slow_dec_dd hε hA hdec hdd hqm, hs, hdec _ hqm, inner_e₀_smul,
+        ite_eq_left rfl]
       have : 0 ≤ lam * ε * c * ε ^ P.q := by positivity
       nlinarith
     · rintro ⟨i, hi, hlt⟩
-      rw [hs, norm_smul_u₁, abs_of_pos hε] at hlt
+      rw [hs, norm_smul_e₀, abs_of_pos hε] at hlt
       linarith [hhk i hi]
   · refine ⟨by rw [hρ, ite_eq_left hη, hs, hx1], ?_⟩
     rw [hρ, hΔ, hΔ1]
@@ -463,9 +452,9 @@ end SlowStep
 private theorem slow_ratio {f : EuclideanSpace ℝ (Fin 1) → ℝ}
     {D : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin 1)) ℝ}
     {x s : ℕ → EuclideanSpace ℝ (Fin 1)} {jk : ℕ → ℕ} {k q : ℕ} {ε lam c : ℝ} (hε : 0 < ε)
-    (hlam : 0 < lam) (hc : 0 < c) (hjk : jk k = q) (hs : s k = ε • u₁)
-    (hdec : (D k).taylorDecrement q (ε • u₁) = lam * ε * c * ε ^ q)
-    (hf : f (x k + ε • u₁) = f (x k) - lam * ε ^ (q + 1) * c) :
+    (hlam : 0 < lam) (hc : 0 < c) (hjk : jk k = q) (hs : s k = ε • e₀)
+    (hdec : (D k).taylorDecrement q (ε • e₀) = lam * ε * c * ε ^ q)
+    (hf : f (x k + ε • e₀) = f (x k) - lam * ε ^ (q + 1) * c) :
     trqRatio f D x s jk k = 1 := by
   rw [trqRatio_eq, reductionRatio, hjk, hs, hdec, hf]
   have : 0 < lam * ε * c * ε ^ q := by positivity
@@ -538,8 +527,8 @@ theorem theorem_14_2_4_sharp_trqida {q : ℕ} (hq : 1 ≤ q) :
   set κ := ⌈(ε ^ (P.q + 1))⁻¹⌉₊ with hκ
   clear_value κ
   have hϑε : epsMin P.q (fun j : ℕ => (j ! : ℝ) * ε) ≤ P.ϑ := by rw [hεmin, hϑ]
-  set xp : ℕ → EuclideanSpace ℝ (Fin 1) := fun k => ((k : ℝ) * ε) • u₁ with hxp
-  have hxp1 : ∀ k : ℕ, xp k + ε • u₁ = (((k : ℝ) + 1) * ε) • u₁ := fun k => smul_u₁_succ k ε
+  set xp : ℕ → EuclideanSpace ℝ (Fin 1) := fun k => ((k : ℝ) * ε) • e₀ with hxp
+  have hxp1 : ∀ k : ℕ, xp k + ε • e₀ = (((k : ℝ) + 1) * ε) • e₀ := fun k => smul_e₀_succ k ε
   obtain ⟨x', Δ', h', D', dd', jk', s', acc', hr, hD'⟩ :=
     exists_algorithm_13_1_1_exact (f := f) (κg := fun _ => 0) hεv hϑε (fun _ _ => le_rfl) (xp κ)
   have hw : ∀ k j, ∃ e, IsApproxMeasureStep ((ftaylorSeries ℝ f (xp k)).taylorDecrement j) ε univ
@@ -559,7 +548,7 @@ theorem theorem_14_2_4_sharp_trqida {q : ℕ} (hq : 1 ≤ q) :
   obtain ⟨jkv, hjkv⟩ : ∃ jkv : ℕ → ℕ, ∀ k, jkv k = if k < κ then P.q else jk' (k - κ) :=
     ⟨_, fun _ => rfl⟩
   obtain ⟨sv, hsv⟩ : ∃ sv : ℕ → EuclideanSpace ℝ (Fin 1),
-      ∀ k, sv k = if k < κ then ε • u₁ else s' (k - κ) := ⟨_, fun _ => rfl⟩
+      ∀ k, sv k = if k < κ then ε • e₀ else s' (k - κ) := ⟨_, fun _ => rfl⟩
   obtain ⟨accv, haccv⟩ : ∃ accv : ℕ → Prop, ∀ k, accv k = if k < κ then False else acc' (k - κ) :=
     ⟨_, fun _ => rfl⟩
   obtain ⟨Dv, hDv⟩ : ∃ Dv : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin 1)) ℝ,
@@ -577,11 +566,11 @@ theorem theorem_14_2_4_sharp_trqida {q : ℕ} (hq : 1 ≤ q) :
     · rw [hhv, ite_eq_left hk]
     · rw [hhv, ite_eq_right (lt_irrefl _), Nat.sub_self, hr.h_zero]
   have hdecX : ∀ k ≤ κ, ∀ j ∈ Finset.Icc 1 P.q, ∀ d, (Dv k).taylorDecrement j d =
-      (if j = P.q then 1 * ε * (2 - k / κ) else 0) * ⟪u₁, d⟫ ^ P.q := fun k hk j hj d => by
+      (if j = P.q then 1 * ε * (2 - k / κ) else 0) * ⟪e₀, d⟫ ^ P.q := fun k hk j hj d => by
     rw [hDv, hXle k hk]; exact hdec k hk j (Finset.mem_Icc.1 hj).2 d
   have hmeas : ∀ k ≤ κ, ∀ j ∈ Finset.Icc 1 P.q, taylorMeasure (Dv k) j ε univ =
       (if j = P.q then 1 * ε * (2 - k / κ) else 0) * ε ^ P.q := fun k hk j hj => by
-    refine taylorMeasure_of_dec ?_ hε.le (hdecX k hk j hj)
+    refine taylorMeasure_eq_mul_pow_of_inner_pow norm_e₀ ?_ hε.le (hdecX k hk j hj)
     split_ifs
     · have := hc0 k hk
       positivity
@@ -589,7 +578,7 @@ theorem theorem_14_2_4_sharp_trqida {q : ℕ} (hq : 1 ≤ q) :
   have hρ1 : ∀ k < κ, trqRatio f Dv X sv jkv k = 1 := fun k hk =>
     slow_ratio hε one_pos (zero_lt_one.trans (hc1 k hk)) (by rw [hjkv, ite_eq_left hk])
       (by rw [hsv, ite_eq_left hk])
-      (by rw [hdecX k hk.le P.q (Finset.mem_Icc.2 ⟨P.one_le_q, le_rfl⟩), inner_smul_u₁,
+      (by rw [hdecX k hk.le P.q (Finset.mem_Icc.2 ⟨P.one_le_q, le_rfl⟩), inner_e₀_smul,
         ite_eq_left rfl])
       (by rw [hXle k hk.le, hxp1, hfdec k hk])
   have hstep : ∀ k, TRqDAStep univ P (fun j => j ! * ε) X Δv hv Dv ddv jkv sv accv
@@ -703,8 +692,8 @@ theorem theorem_14_2_4_sharp_trqeda {q : ℕ} (hq : 1 ≤ q) :
   have hc0 : ∀ k ≤ κ, 0 ≤ 1 / 2 * ε * (2 - (k : ℝ) / κ) := fun k hk => by
     have := hc0' k hk
     positivity
-  set xp : ℕ → EuclideanSpace ℝ (Fin 1) := fun k => ((k : ℝ) * ε) • u₁ with hxp
-  have hxp1 : ∀ k : ℕ, xp k + ε • u₁ = (((k : ℝ) + 1) * ε) • u₁ := fun k => smul_u₁_succ k ε
+  set xp : ℕ → EuclideanSpace ℝ (Fin 1) := fun k => ((k : ℝ) * ε) • e₀ with hxp
+  have hxp1 : ∀ k : ℕ, xp k + ε • e₀ = (((k : ℝ) + 1) * ε) • e₀ := fun k => smul_e₀_succ k ε
   have hw : ∀ k j, ∃ e, IsApproxMeasureStep ((ftaylorSeries ℝ f (xp k)).taylorDecrement j) ε univ
       P.ς e ∧ (ftaylorSeries ℝ f (xp k)).taylorDecrement j e =
         P.ς * taylorMeasure (ftaylorSeries ℝ f (xp k)) j ε univ :=
@@ -714,23 +703,23 @@ theorem theorem_14_2_4_sharp_trqeda {q : ℕ} (hq : 1 ≤ q) :
       ∀ k, Dv k = ftaylorSeries ℝ f (xp k) := ⟨_, fun _ => rfl⟩
   have hqm : P.q ∈ Finset.Icc 1 P.q := Finset.mem_Icc.2 ⟨P.one_le_q, le_rfl⟩
   have hdecX : ∀ k ≤ κ, ∀ j ∈ Finset.Icc 1 P.q, ∀ d, (Dv k).taylorDecrement j d =
-      (if j = P.q then 1 / 2 * ε * (2 - k / κ) else 0) * ⟪u₁, d⟫ ^ P.q := fun k hk j hj d => by
+      (if j = P.q then 1 / 2 * ε * (2 - k / κ) else 0) * ⟪e₀, d⟫ ^ P.q := fun k hk j hj d => by
     rw [hDv]; exact hdec k hk j (Finset.mem_Icc.1 hj).2 d
   have hddX : ∀ k, ∀ j ∈ Finset.Icc 1 P.q,
       IsApproxMeasureStep ((Dv k).taylorDecrement j) ε univ P.ς (ddp k j) ∧
         (Dv k).taylorDecrement j (ddp k j) = P.ς * taylorMeasure (Dv k) j ε univ :=
     fun k j _ => by rw [hDv]; exact hddp k j
-  set sv : ℕ → EuclideanSpace ℝ (Fin 1) := fun _ => ε • u₁ with hsv
+  set sv : ℕ → EuclideanSpace ℝ (Fin 1) := fun _ => ε • e₀ with hsv
   set jkv : ℕ → ℕ := fun _ => P.q with hjkv
   set fx : ℕ → ℝ := fun k => f (xp k) with hfx
   set fxs : ℕ → ℝ := fun k => f (xp k + sv k) with hfxs
   have hdecs : ∀ k ≤ κ, (Dv k).taylorDecrement (jkv k) (sv k) =
       1 / 2 * ε * (2 - k / κ) * ε ^ P.q := fun k hk => by
-    rw [hdecX k hk _ hqm, inner_smul_u₁, ite_eq_left rfl]
+    rw [hdecX k hk _ hqm, inner_e₀_smul, ite_eq_left rfl]
   have hρ1 : ∀ k < κ, edaRatio fx fxs (fun i => (Dv i).taylorDecrement (jkv i) (sv i)) k = 1 :=
     fun k hk => slow_ratio (D := Dv) (x := xp) (f := f) (lam := 1 / 2) (c := 2 - k / κ) hε
       (by norm_num)
-      (zero_lt_one.trans (hc1 k hk)) rfl rfl (by rw [hdecX k hk.le _ hqm, inner_smul_u₁,
+      (zero_lt_one.trans (hc1 k hk)) rfl rfl (by rw [hdecX k hk.le _ hqm, inner_e₀_smul,
         ite_eq_left rfl]) (by rw [hxp1, hfdec k hk])
   have hstop : ∀ k ≤ κ, (edaStopTR P (fun j => j ! * ε) Dv (fun _ => ε) (fun _ => P.h₀) ddp k ↔
       k = κ) := by
@@ -809,11 +798,6 @@ section ARqpDASharp
 open Chapter13 Optimization
 open scoped RealInnerProductSpace
 
-/-- The norm of `ℝ¹` is the absolute value of the coordinate along `e₁`. -/
-private theorem norm_eq_abs_inner_u₁ (v : EuclideanSpace ℝ (Fin 1)) : ‖v‖ = |⟪u₁, v⟫| := by
-  rw [EuclideanSpace.norm_eq, Fin.sum_univ_one, Real.norm_eq_abs, sq_abs, Real.sqrt_sq_eq_abs]
-  simp [u₁, EuclideanSpace.inner_single_left]
-
 /-- **The slow regularization example on `ℝ¹`** (the data of Theorem 12.2.15 lifted along
 `e₁`, scaled by `λ ∈ (0, 1]`). For `1 ≤ q ≤ p` there are `f_low` and `L ≥ 1` such that, for
 every `ε ∈ (0, 1]`, with `k_ε = ⌈ε^{-(p+1)/(p-q+1)}⌉`, `a_k = λ (ε + ε (k_ε - k)/k_ε)` and points
@@ -827,8 +811,8 @@ private theorem exists_slowARqp_ridge {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p)
       (∀ k < ⌈ε ^ (-((p + 1 : ℝ) / ((p - q + 1 : ℕ) : ℝ)))⌉₊, xr (k + 1) = xr k +
         (lam * (ε + ε * ((⌈ε ^ (-((p + 1 : ℝ) / ((p - q + 1 : ℕ) : ℝ)))⌉₊ : ℝ) - k) /
           ⌈ε ^ (-((p + 1 : ℝ) / ((p - q + 1 : ℕ) : ℝ)))⌉₊)) ^ (1 / ((p - q + 1 : ℕ) : ℝ))) →
-      ∃ g : ℝ → ℝ, ContDiff ℝ p g ∧ (∀ y, flow ≤ ridge g u₁ y) ∧
-        AssumptionD0qL (ridge g u₁) p (fun _ => L) ∧
+      ∃ g : ℝ → ℝ, ContDiff ℝ p g ∧ (∀ y, flow ≤ ridge g e₀ y) ∧
+        AssumptionD0qL (ridge g e₀) p (fun _ => L) ∧
         (∀ k ≤ ⌈ε ^ (-((p + 1 : ℝ) / ((p - q + 1 : ℕ) : ℝ)))⌉₊, IsSpikeJetOf p g q (xr k)
           (lam * (ε + ε * ((⌈ε ^ (-((p + 1 : ℝ) / ((p - q + 1 : ℕ) : ℝ)))⌉₊ : ℝ) - k) /
             ⌈ε ^ (-((p + 1 : ℝ) / ((p - q + 1 : ℕ) : ℝ)))⌉₊))) ∧
@@ -842,8 +826,8 @@ private theorem exists_slowARqp_ridge {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p)
   have hgc : ContDiff ℝ p g := contDiff_const.mul hGc
   have hgj : ∀ j t, iteratedDeriv j g t = lam * iteratedDeriv j G t := fun j t =>
     iteratedDeriv_const_mul_field lam G
-  obtain ⟨hfc, hfb, hfl⟩ := ridge_const_mul_slow_bounds (G := G) (lam := lam) (e := u₁) hGc hB
-    hGL hGB hlam hlam1 norm_u₁.le
+  obtain ⟨hfc, hfb, hfl⟩ := ridge_const_mul_slow_bounds (G := G) (lam := lam) (e := e₀) hGc hB
+    hGL hGB hlam hlam1 norm_e₀.le
   refine ⟨g, hgc, hfb, ⟨hfc, fun j hj => ⟨le_max_left _ _, hfl j hj⟩⟩,
     fun k hk => ⟨?_, fun j hj1 hjp hjq => ?_⟩, fun k hk => ?_⟩
   · rw [hgj, (hGd k hk).1]; ring
@@ -863,10 +847,11 @@ variable {P : ARqpIDAParams} {ε a r : ℝ} {x : ℕ → EuclideanSpace ℝ (Fin
 at order `q`. -/
 private theorem slowAR_measure (ha : 0 ≤ a)
     (hdec : ∀ j ≤ P.q, ∀ d, (D k).taylorDecrement j d =
-      (if j = P.q then a / P.q ! else 0) * ⟪u₁, d⟫ ^ P.q) {j : ℕ} (hj : j ≤ P.q) {t : ℝ}
+      (if j = P.q then a / P.q ! else 0) * ⟪e₀, d⟫ ^ P.q) {j : ℕ} (hj : j ≤ P.q) {t : ℝ}
     (ht : 0 ≤ t) :
     taylorMeasure (D k) j t univ = (if j = P.q then a / P.q ! else 0) * t ^ P.q :=
-  taylorMeasure_of_dec (by split_ifs <;> positivity) ht (hdec j hj)
+  taylorMeasure_eq_mul_pow_of_inner_pow norm_e₀ (by split_ifs <;> positivity) ht (hdec
+      j hj)
 
 /-- `½ ς ε t/c < (a/c) t` for `a > ε/2`, `ς ≤ 1`, `t, c > 0`. -/
 private theorem slowAR_half_lt {ς ε a t c : ℝ} (hς1 : ς ≤ 1) (hε : 0 < ε) (ha : ε / 2 < a)
@@ -879,8 +864,8 @@ private theorem slowAR_half_lt {ς ε a t c : ℝ} (hς1 : ς ≤ 1) (hε : 0 < 
 /-- Along the slow regularization example the test (13.1.53) fails at order `q` with the
 displacement `r e₁` (`a > ε/2`). -/
 private theorem slowAR_not_pass (hε : 0 < ε) (ha : ε / 2 < a) (hr : 0 < r)
-    (hδ₁ : δ₁ k P.q = r) (hdd : dd k P.q = r • u₁)
-    (hdq : (D k).taylorDecrement P.q (r • u₁) = a / P.q ! * r ^ P.q) :
+    (hδ₁ : δ₁ k P.q = r) (hdd : dd k P.q = r • e₀)
+    (hdq : (D k).taylorDecrement P.q (r • e₀) = a / P.q ! * r ^ P.q) :
     ¬ arPass P (fun _ => ε) D δ₁ dd k P.q := by
   rw [arPass, hδ₁, hdd, hdq]
   exact not_le.2 (slowAR_half_lt P.ς_le_one hε ha (by positivity) (by positivity))
@@ -898,10 +883,10 @@ private theorem slow_arqpDAStep (hq2 : P.q ≤ 2) (hε : 0 < ε) (ha : ε / 2 < 
       σ k / ((P.p + 1)! : ℝ) * (2 * r) ^ (P.p + 1))
     (hδ : ∀ j ∈ Finset.Icc 1 P.q, δ k j = 1) (hδ1 : δ (k + 1) = δs k)
     (hδs : ∀ j ∈ Finset.Icc 1 P.q, δs k j = 1) (hδ₁ : δ₁ k = fun j => if j = P.q then r else 1)
-    (hdd : dd k = fun j => if j = P.q then r • u₁ else 0) (hjk : jk k = P.q)
+    (hdd : dd k = fun j => if j = P.q then r • e₀ else 0) (hjk : jk k = P.q)
     (hdec : ∀ j ≤ P.q, ∀ d, (D k).taylorDecrement j d =
-      (if j = P.q then a / P.q ! else 0) * ⟪u₁, d⟫ ^ P.q)
-    (hdecp : ∀ d, (D k).taylorDecrement P.p d = a / P.q ! * ⟪u₁, d⟫ ^ P.q)
+      (if j = P.q then a / P.q ! else 0) * ⟪e₀, d⟫ ^ P.q)
+    (hdecp : ∀ d, (D k).taylorDecrement P.p d = a / P.q ! * ⟪e₀, d⟫ ^ P.q)
     (hmin : IsMinOn (regularizedModel (D k) P.p (σ k)) univ (s k))
     (hs1 : ‖s k‖ < 1) (hhk : ∀ i ∈ Finset.Icc 1 P.p, h k i ≤ P.κs * ‖s k‖ ^ (P.p - i + 1))
     (hacc : ¬ acc k) (hx1 : x (k + 1) = x k + s k) (hσ1 : σ (k + 1) = σ k)
@@ -916,13 +901,13 @@ private theorem slow_arqpDAStep (hq2 : P.q ≤ 2) (hε : 0 < ε) (ha : ε / 2 < 
   have hσ0 : 0 ≤ σ k := P.σmin_pos.le.trans hσk
   have hη : P.η₁ ≤ 1 := P.η₁_le_η₂.trans P.η₂_lt_one.le
   -- Taylor decrements along `t e₁`
-  have hdq : ∀ t : ℝ, (D k).taylorDecrement P.q (t • u₁) = a / P.q ! * t ^ P.q := fun t => by
-    rw [hdec _ le_rfl, ite_eq_left rfl, inner_smul_u₁]
+  have hdq : ∀ t : ℝ, (D k).taylorDecrement P.q (t • e₀) = a / P.q ! * t ^ P.q := fun t => by
+    rw [hdec _ le_rfl, ite_eq_left rfl, inner_e₀_smul]
   have hdlt : ∀ j < P.q, ∀ d, (D k).taylorDecrement j d = 0 := fun j hj d => by
     rw [hdec j hj.le, ite_eq_right hj.ne, zero_mul]
-  have hM : ∀ t : ℝ, 0 ≤ t → arModelDec P D σ k (t • u₁) =
+  have hM : ∀ t : ℝ, 0 ≤ t → arModelDec P D σ k (t • e₀) =
       a / P.q ! * t ^ P.q - σ k / ((P.p + 1)! : ℝ) * t ^ (P.p + 1) := fun t ht => by
-    rw [arModelDec_eq, hdecp, inner_smul_u₁, norm_smul_u₁, abs_of_nonneg ht]
+    rw [arModelDec_eq, hdecp, inner_e₀_smul, norm_smul_e₀, abs_of_nonneg ht]
   -- the test (13.1.53) fails at order `q` with the displacement `r e₁`
   have hfail : ¬ arPass P (fun _ => ε) D δ₁ dd k P.q :=
     slowAR_not_pass hε ha hr (by rw [hδ₁]; simp) (by rw [hdd]; simp) (hdq r)
@@ -945,8 +930,8 @@ private theorem slow_arqpDAStep (hq2 : P.q ≤ 2) (hε : 0 < ε) (ha : ε / 2 < 
     by_cases hjq : j = P.q
     · subst hjq
       rw [ite_eq_left rfl] at hlt ⊢
-      refine ⟨h2r, ⟨(2 * r) • u₁, by rw [norm_smul_u₁, abs_of_pos (by positivity)], mem_univ _,
-        ?_, ?_⟩, u₁, norm_u₁.le, mem_univ _, ?_⟩
+      refine ⟨h2r, ⟨(2 * r) • e₀, by rw [norm_smul_e₀, abs_of_pos (by positivity)], mem_univ _,
+        ?_, ?_⟩, e₀, norm_e₀.le, mem_univ _, ?_⟩
       · rw [hdq]
         exact slowAR_half_lt hς1 hε ha (by positivity) hqf
       · rw [hM _ (by positivity)]
@@ -956,7 +941,7 @@ private theorem slow_arqpDAStep (hq2 : P.q ≤ 2) (hε : 0 < ε) (ha : ε / 2 < 
         have e : (a - P.ς * ε / 4) / P.q ! * (2 * r) ^ P.q =
             a / P.q ! * (2 * r) ^ P.q - (P.ς * ε / 4) / P.q ! * (2 * r) ^ P.q := by ring
         linarith
-      · have h1 : u₁ = (1 : ℝ) • u₁ := (one_smul ℝ u₁).symm
+      · have h1 : e₀ = (1 : ℝ) • e₀ := (one_smul ℝ e₀).symm
         rw [h1, hdq]
         exact slowAR_half_lt hς1 hε ha (by positivity) hqf
     · rw [ite_eq_right hjq] at hlt
@@ -974,7 +959,7 @@ private theorem slow_arqpDAStep (hq2 : P.q ≤ 2) (hε : 0 < ε) (ha : ε / 2 < 
     by_cases hjq : j = P.q
     · subst hjq
       simp only [ite_true]
-      refine ⟨⟨by rw [mem_closedBall_zero_iff, norm_smul_u₁, abs_of_pos hr], mem_univ _⟩, ?_⟩
+      refine ⟨⟨by rw [mem_closedBall_zero_iff, norm_smul_e₀, abs_of_pos hr], mem_univ _⟩, ?_⟩
       change P.ς * taylorMeasure (D k) P.q r univ ≤ _
       rw [slowAR_measure ha0.le hdec le_rfl hr.le, ite_eq_left rfl, hdq]
       have : 0 ≤ a / P.q ! * r ^ P.q := by positivity
@@ -1018,29 +1003,6 @@ private theorem slow_arqpDAStep (hq2 : P.q ≤ 2) (hε : 0 < ε) (ha : ε / 2 < 
   · rw [hρ, hx1, hσ1]
     exact arAcceptance_of_one_le P.toARParams le_rfl _ _ hσk hσ0
   · rw [hδ1, hρ, ite_eq_left ⟨hη, hs1⟩]
-
-/-- A radius `r ∈ (0, ½]` lies between consecutive dyadic radii reached by halving from `1`:
-`2^{-m} ≤ r < 2 · 2^{-m}` for some `m ≥ 1`. -/
-private theorem exists_dyadic_mem {r : ℝ} (hr : 0 < r) (hr1 : 2 * r ≤ 1) :
-    ∃ m : ℕ, 1 ≤ m ∧ 1 / 2 ^ m ≤ r ∧ r < 2 * (1 / 2 ^ m) := by
-  classical
-  have hex : ∃ m : ℕ, 1 / (2 : ℝ) ^ m ≤ r := by
-    obtain ⟨n, hn⟩ := exists_pow_lt_of_lt_one hr (by norm_num : (1 / 2 : ℝ) < 1)
-    exact ⟨n, by rw [one_div_pow] at hn; exact hn.le⟩
-  set m := Nat.find hex with hmdef
-  have hm : 1 / (2 : ℝ) ^ m ≤ r := Nat.find_spec hex
-  have hm1 : 1 ≤ m := by
-    by_contra h0
-    have : m = 0 := by omega
-    rw [this, pow_zero, div_one] at hm
-    linarith
-  refine ⟨m, hm1, hm, ?_⟩
-  have hlt : ¬ 1 / (2 : ℝ) ^ (m - 1) ≤ r := Nat.find_min hex (show m - 1 < m by omega)
-  rw [not_le] at hlt
-  have e : (1 : ℝ) / 2 ^ (m - 1) = 2 * (1 / 2 ^ m) := by
-    obtain ⟨k, hk⟩ : ∃ k, m = k + 1 := ⟨m - 1, by omega⟩
-    rw [hk, Nat.add_sub_cancel, pow_succ]; field_simp
-  rwa [e] at hlt
 
 /-- **The slow regularization run up to `k_ε`** (the example of Theorem 12.2.15 on `ℝ¹`, `f`
 scaled by `λ ∈ [½, 1]`, as a run of the ARqpIDA/ARqpEDA steps with unit radii, `q ≤ 2`). There
@@ -1150,26 +1112,26 @@ private theorem exists_slowARqp_run {p q : ℕ} (hq : 1 ≤ q) (hq2 : q ≤ 2) (
     Real.rpow_lt_one (ha_pos k hk).le (by linarith [ha_le k hk]) (by positivity)
   have ht_pos : ∀ k ≤ κ, 0 < t k := fun k hk => by linarith [ht_ge k hk]
   -- the function and its Taylor data
-  set f : EuclideanSpace ℝ (Fin 1) → ℝ := ridge g u₁ with hfdef
-  set X : ℕ → EuclideanSpace ℝ (Fin 1) := fun k => xr k • u₁ with hX
-  set s : ℕ → EuclideanSpace ℝ (Fin 1) := fun k => t k • u₁ with hs
+  set f : EuclideanSpace ℝ (Fin 1) → ℝ := ridge g e₀ with hfdef
+  set X : ℕ → EuclideanSpace ℝ (Fin 1) := fun k => xr k • e₀ with hX
+  set s : ℕ → EuclideanSpace ℝ (Fin 1) := fun k => t k • e₀ with hs
   have hXs : ∀ k, X (k + 1) = X k + s k := fun k => by
     simp only [hX, hs, hxr1, add_smul]
-  have hspX : ∀ k ≤ κ, IsSpikeJetOf P.p g P.q ⟪u₁, X k⟫ (a k) := fun k hk => by
-    rw [inner_smul_u₁]; exact hspike k hk
-  have hspXq : ∀ k ≤ κ, IsSpikeJetOf P.q g P.q ⟪u₁, X k⟫ (a k) := fun k hk =>
+  have hspX : ∀ k ≤ κ, IsSpikeJetOf P.p g P.q ⟪e₀, X k⟫ (a k) := fun k hk => by
+    rw [inner_e₀_smul]; exact hspike k hk
+  have hspXq : ∀ k ≤ κ, IsSpikeJetOf P.q g P.q ⟪e₀, X k⟫ (a k) := fun k hk =>
     ⟨(hspX k hk).1, fun j h1 hj hne => (hspX k hk).2 j h1 (hj.trans P.q_le_p) hne⟩
   have hgp : ContDiff ℝ P.p g := hgc
   have hgq : ContDiff ℝ P.q g := hgp.of_le (by exact_mod_cast P.q_le_p)
   have hdec : ∀ k ≤ κ, ∀ j ≤ P.q, ∀ d, (ftaylorSeries ℝ f (X k)).taylorDecrement j d =
-      (if j = P.q then a k / P.q ! else 0) * ⟪u₁, d⟫ ^ P.q := fun k hk j hj d => by
+      (if j = P.q then a k / P.q ! else 0) * ⟪e₀, d⟫ ^ P.q := fun k hk j hj d => by
     rcases hj.lt_or_eq with hjq | rfl
     · rw [ite_eq_right hjq.ne, zero_mul]
       exact taylorDecrement_ridge_of_lt hgq hjq (hspXq k hk) d
     · rw [ite_eq_left rfl, taylorDecrement_ridge_spike hgq P.one_le_q le_rfl (hspXq k hk)]
       ring
   have hdecp : ∀ k ≤ κ, ∀ d, (ftaylorSeries ℝ f (X k)).taylorDecrement P.p d =
-      a k / P.q ! * ⟪u₁, d⟫ ^ P.q := fun k hk d => by
+      a k / P.q ! * ⟪e₀, d⟫ ^ P.q := fun k hk d => by
     rw [taylorDecrement_ridge_spike hgp P.one_le_q P.q_le_p (hspX k hk)]
     ring
   have hmeas : ∀ k ≤ κ, ∀ j ∈ Finset.Icc 1 P.q, ∀ t' : ℝ, 0 ≤ t' →
@@ -1187,15 +1149,16 @@ private theorem exists_slowARqp_run {p q : ℕ} (hq : 1 ≤ q) (hq2 : q ≤ 2) (
       rw [hlam1', div_one] at hm
       intro y _
       simp only [mem_ofPred_eq]
-      rw [regularizedModel_ridge_spike norm_eq_abs_inner_u₁ hgp P.one_le_q P.q_le_p (hspX k hk),
-        ridge_apply, ridge_apply, show s k = t k • u₁ from rfl, inner_smul_u₁ (t k)]
+      rw [regularizedModel_ridge_spike norm_eq_abs_inner_e₀ hgp P.one_le_q P.q_le_p (hspX k hk),
+        ridge_apply, ridge_apply, show s k = t k • e₀ from rfl, inner_e₀_smul (t k)]
       exact (add_le_add_iff_left _).2 (isMinOn_iff.1 hm _ (mem_univ _))
-  have hnorm_s : ∀ k, ‖s k‖ = |t k| := fun k => norm_smul_u₁ _
+  have hnorm_s : ∀ k, ‖s k‖ = |t k| := fun k => norm_smul_e₀ _
   have hdecs : ∀ k ≤ κ, (ftaylorSeries ℝ f (X k)).taylorDecrement P.p (s k) =
-      a k / P.q ! * t k ^ P.q := fun k hk => by rw [hdecp k hk, hs, inner_smul_u₁]
+      a k / P.q ! * t k ^ P.q := fun k hk => by rw [hdecp k hk, hs, inner_e₀_smul]
   have hfval : ∀ k < κ, f (X k) - f (X k + s k) =
       (ftaylorSeries ℝ f (X k)).taylorDecrement P.p (s k) := fun k hk => by
-    rw [hdecs k hk.le, ← hXs, hfdef, ridge_apply, ridge_apply, hX, inner_smul_u₁, inner_smul_u₁,
+    rw [hdecs k hk.le, ← hXs, hfdef, ridge_apply, ridge_apply, hX, inner_e₀_smul,
+        inner_e₀_smul,
       hval k hk, hxr1]
     ring
   -- the Step-1 radii `r_k` at which the halving loop stops
@@ -1230,7 +1193,7 @@ private theorem exists_slowARqp_run {p q : ℕ} (hq : 1 ≤ q) (hq2 : q ≤ 2) (
   -- the dyadic radii `rd_k ∈ (r_k/2, r_k]` reached by halving from `1`
   have heq : ∀ k < κ, P.σ₀ / ((P.p + 1)! : ℝ) * r k ^ R = (a k - P.ς * ε / 4) / P.q ! :=
     fun k hk => by rw [hrR k hk, hM]; simp only; rw [hKσ]; field_simp
-  choose! md hmd using fun k (hk : k < κ) => exists_dyadic_mem (hr_pos k hk) (h2r k hk)
+  choose! md hmd using fun k (hk : k < κ) => exists_one_div_two_pow_le_lt (hr_pos k hk) (h2r k hk)
   set rd : ℕ → ℝ := fun k => 1 / 2 ^ md k with hrd
   have hrd_pos : ∀ k, 0 < rd k := fun k => by positivity
   have h2rd : ∀ k < κ, 2 * rd k ≤ 1 := fun k hk => by
@@ -1266,16 +1229,16 @@ private theorem exists_slowARqp_run {p q : ℕ} (hq : 1 ≤ q) (hq2 : q ≤ 2) (
   obtain ⟨δ₁, hδ₁⟩ : ∃ δ₁ : ℕ → ℕ → ℝ, ∀ k, δ₁ k =
       if k < κ then (fun j => if j = P.q then rd k else 1) else fun _ => 1 := ⟨_, fun _ => rfl⟩
   obtain ⟨dd, hdd⟩ : ∃ dd : ℕ → ℕ → EuclideanSpace ℝ (Fin 1), ∀ k, dd k =
-      if k < κ then (fun j => if j = P.q then rd k • u₁ else 0)
+      if k < κ then (fun j => if j = P.q then rd k • e₀ else 0)
       else fun j => if j = P.q then w k else 0 := ⟨_, fun _ => rfl⟩
   have hqm : P.q ∈ Finset.Icc 1 P.q := Finset.mem_Icc.2 ⟨P.one_le_q, le_rfl⟩
   have hεa : ∀ k < κ, ε / 2 < a k := fun k hk => by
     have h1 := ha_gt k hk
     have h2 : ε / 2 ≤ lam * ε := by nlinarith
     linarith
-  have hdecq : ∀ k ≤ κ, ∀ y : ℝ, (ftaylorSeries ℝ f (X k)).taylorDecrement P.q (y • u₁) =
+  have hdecq : ∀ k ≤ κ, ∀ y : ℝ, (ftaylorSeries ℝ f (X k)).taylorDecrement P.q (y • e₀) =
       a k / P.q ! * y ^ P.q := fun k hk y => by
-    rw [hdec k hk _ le_rfl, ite_eq_left rfl, inner_smul_u₁]
+    rw [hdec k hk _ le_rfl, ite_eq_left rfl, inner_e₀_smul]
   have hδ₁κ : δ₁ κ = fun _ => 1 := by rw [hδ₁, ite_eq_right (lt_irrefl κ)]
   have hddκ : dd κ = fun j => if j = P.q then w κ else 0 := by
     rw [hdd, ite_eq_right (lt_irrefl κ)]
@@ -1329,10 +1292,10 @@ private theorem slowTop_arqpDAStep {r' : ℝ} (hε : 0 < ε) (ha : ε / 2 < a) (
     (hr54 : σ k / ((P.p + 1)! : ℝ) * r ^ (P.p + 1) ≤ (a - P.ς * ε / 4) / P.q ! * r ^ P.q)
     (hδ : ∀ j ∈ Finset.Icc 1 P.q, δ k j = r) (hδ1 : δ (k + 1) = δs k) (hδ₁ : δ₁ k = δ k)
     (hδs : ∀ j ∈ Finset.Icc 1 P.q, δs k j = r')
-    (hdd : dd k = fun j => if j = P.q then r • u₁ else 0) (hjk : jk k = P.q)
+    (hdd : dd k = fun j => if j = P.q then r • e₀ else 0) (hjk : jk k = P.q)
     (hdec : ∀ j ≤ P.q, ∀ d, (D k).taylorDecrement j d =
-      (if j = P.q then a / P.q ! else 0) * ⟪u₁, d⟫ ^ P.q)
-    (hdecp : ∀ d, (D k).taylorDecrement P.p d = a / P.q ! * ⟪u₁, d⟫ ^ P.q)
+      (if j = P.q then a / P.q ! else 0) * ⟪e₀, d⟫ ^ P.q)
+    (hdecp : ∀ d, (D k).taylorDecrement P.p d = a / P.q ! * ⟪e₀, d⟫ ^ P.q)
     (hmin : IsMinOn (regularizedModel (D k) P.p (σ k)) univ (s k))
     (hmodel : ∀ ℓ ∈ Finset.Icc 1 P.q, ∀ d, ‖d‖ ≤ r' →
       (ftaylorSeries ℝ (regularizedModel (D k) P.p (σ k)) (s k)).taylorDecrement ℓ d ≤ 0)
@@ -1347,11 +1310,11 @@ private theorem slowTop_arqpDAStep {r' : ℝ} (hε : 0 < ε) (ha : ε / 2 < a) (
   have ha0 : 0 < a := by linarith
   have hσ0 : 0 ≤ σ k := P.σmin_pos.le.trans hσk
   have hη : P.η₁ ≤ 1 := P.η₁_le_η₂.trans P.η₂_lt_one.le
-  have hdq : ∀ t : ℝ, (D k).taylorDecrement P.q (t • u₁) = a / P.q ! * t ^ P.q := fun t => by
-    rw [hdec _ le_rfl, ite_eq_left rfl, inner_smul_u₁]
-  have hM : ∀ t : ℝ, 0 ≤ t → arModelDec P D σ k (t • u₁) =
+  have hdq : ∀ t : ℝ, (D k).taylorDecrement P.q (t • e₀) = a / P.q ! * t ^ P.q := fun t => by
+    rw [hdec _ le_rfl, ite_eq_left rfl, inner_e₀_smul]
+  have hM : ∀ t : ℝ, 0 ≤ t → arModelDec P D σ k (t • e₀) =
       a / P.q ! * t ^ P.q - σ k / ((P.p + 1)! : ℝ) * t ^ (P.p + 1) := fun t ht => by
-    rw [arModelDec_eq, hdecp, inner_smul_u₁, norm_smul_u₁, abs_of_nonneg ht]
+    rw [arModelDec_eq, hdecp, inner_e₀_smul, norm_smul_e₀, abs_of_nonneg ht]
   have hfail : ¬ arPass P (fun _ => ε) D δ₁ dd k P.q :=
     slowAR_not_pass hε ha hr (by rw [hδ₁, hδ _ hqm]) (by rw [hdd]; simp) (hdq r)
   have hpass_lt : ∀ j ∈ Finset.Icc 1 P.q, j < P.q → arPass P (fun _ => ε) D δ₁ dd k j := by
@@ -1373,7 +1336,7 @@ private theorem slowTop_arqpDAStep {r' : ℝ} (hε : 0 < ε) (ha : ε / 2 < a) (
     by_cases hjq : j = P.q
     · subst hjq
       simp only [ite_true]
-      refine ⟨⟨by rw [mem_closedBall_zero_iff, norm_smul_u₁, abs_of_pos hr], mem_univ _⟩, ?_⟩
+      refine ⟨⟨by rw [mem_closedBall_zero_iff, norm_smul_e₀, abs_of_pos hr], mem_univ _⟩, ?_⟩
       change P.ς * taylorMeasure (D k) P.q r univ ≤ _
       rw [slowAR_measure ha0.le hdec le_rfl hr.le, ite_eq_left rfl, hdq]
       have : 0 ≤ a / P.q ! * r ^ P.q := by positivity
@@ -1735,8 +1698,8 @@ private theorem exists_slowGrad_ridge {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p)
         ((ε ^ q + ε ^ ((q : ℝ) * p / p) * ((⌈ε ^ (-((q : ℝ) * (p + 1) / p))⌉₊ : ℝ) - k) /
           ⌈ε ^ (-((q : ℝ) * (p + 1) / p))⌉₊) / q !) / (3 / ((p : ℝ) + 2)) ^ p) ^
             (1 / (p : ℝ))) →
-      ∃ g : ℝ → ℝ, ContDiff ℝ p g ∧ (∀ y, flow ≤ ridge g u₁ y) ∧
-        AssumptionD0qL (ridge g u₁) p (fun _ => L) ∧
+      ∃ g : ℝ → ℝ, ContDiff ℝ p g ∧ (∀ y, flow ≤ ridge g e₀ y) ∧
+        AssumptionD0qL (ridge g e₀) p (fun _ => L) ∧
         (∀ k ≤ ⌈ε ^ (-((q : ℝ) * (p + 1) / p))⌉₊, IsSpikeJetOf p g 1 (xr k)
           ((ε ^ q + ε ^ ((q : ℝ) * p / p) * ((⌈ε ^ (-((q : ℝ) * (p + 1) / p))⌉₊ : ℝ) - k) /
             ⌈ε ^ (-((q : ℝ) * (p + 1) / p))⌉₊) / q ! / 2)) ∧
@@ -1751,8 +1714,8 @@ private theorem exists_slowGrad_ridge {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p)
   have hgc : ContDiff ℝ p g := contDiff_const.mul hGc
   have hgj : ∀ j t, iteratedDeriv j g t = 1 / 2 * iteratedDeriv j G t := fun j t =>
     iteratedDeriv_const_mul_field (1 / 2 : ℝ) G
-  obtain ⟨hfc, hfb, hfl⟩ := ridge_const_mul_slow_bounds (G := G) (lam := 1 / 2) (e := u₁) hGc hB
-    hGL hGB (by norm_num) (by norm_num) norm_u₁.le
+  obtain ⟨hfc, hfb, hfl⟩ := ridge_const_mul_slow_bounds (G := G) (lam := 1 / 2) (e := e₀) hGc hB
+    hGL hGB (by norm_num) (by norm_num) norm_e₀.le
   refine ⟨g, hgc, hfb, ⟨hfc, fun j hj => ⟨le_max_left _ _, hfl j hj⟩⟩,
     fun k hk => ⟨?_, fun j hj1 hjp hj => ?_⟩, fun k hk => ?_⟩
   · rw [hgj, iteratedDeriv_one, (hGd k hk).1]; ring
@@ -1785,13 +1748,14 @@ private theorem slowGrad_pow_le {j q : ℕ} (hε : 0 ≤ ε) (hε2 : ε ≤ 1 / 
 
 /-- The Step-1 decreases along the slow gradient example: `ς β ε` at every order. -/
 private theorem slowGrad_dec_dd (hε : 0 < ε) (hβ : 0 < β)
-    (hdec : ∀ j ∈ Finset.Icc 1 P.p, ∀ d, (D k).taylorDecrement j d = β * ⟪u₁, d⟫)
+    (hdec : ∀ j ∈ Finset.Icc 1 P.p, ∀ d, (D k).taylorDecrement j d = β * ⟪e₀, d⟫)
     (hdd : ∀ j ∈ Finset.Icc 1 P.q,
       IsApproxMeasureStep ((D k).taylorDecrement j) ε univ P.ς (dd k j) ∧
         (D k).taylorDecrement j (dd k j) = P.ς * taylorMeasure (D k) j ε univ)
     {j : ℕ} (hj : j ∈ Finset.Icc 1 P.q) :
     (D k).taylorDecrement j (dd k j) = P.ς * (β * ε) := by
-  rw [(hdd j hj).2, taylorMeasure_of_dec (q := 1) hβ.le hε.le fun d => by
+  rw [(hdd j hj).2, taylorMeasure_eq_mul_pow_of_inner_pow norm_e₀ (q := 1) hβ.le hε.le
+      fun d => by
     rw [hdec j (P.Icc_q_subset hj), pow_one], pow_one]
 
 /-- Along the slow gradient example the test (13.1.53) fails at order `q` (`β > ε^q/(2 q!)`). -/
@@ -1818,7 +1782,7 @@ private theorem slowGrad_arqpDAStep (hε : 0 < ε) (hε2 : ε ≤ 1 / 2)
     (hσ54 : σ k / ((P.p + 1)! : ℝ) ≤ 1 / (4 * P.q !))
     (hδ : ∀ j ∈ Finset.Icc 1 P.q, δ k j = ε) (hδ1 : δ (k + 1) = δs k) (hδ₁ : δ₁ k = δ k)
     (hδs : ∀ j ∈ Finset.Icc 1 P.q, δs k j = ε) (hjk : jk k = P.q)
-    (hdec : ∀ j ∈ Finset.Icc 1 P.p, ∀ d, (D k).taylorDecrement j d = β * ⟪u₁, d⟫)
+    (hdec : ∀ j ∈ Finset.Icc 1 P.p, ∀ d, (D k).taylorDecrement j d = β * ⟪e₀, d⟫)
     (hdd : ∀ j ∈ Finset.Icc 1 P.q,
       IsApproxMeasureStep ((D k).taylorDecrement j) ε univ P.ς (dd k j) ∧
         (D k).taylorDecrement j (dd k j) = P.ς * taylorMeasure (D k) j ε univ)
@@ -1866,11 +1830,11 @@ private theorem slowGrad_arqpDAStep (hε : 0 < ε) (hε2 : ε ≤ 1 / 2)
       have hdq := hdv hqm
       have hdp : (D k).taylorDecrement P.p (dd k P.q) = P.ς * (β * ε) := by
         rw [hdec _ (Finset.mem_Icc.2 ⟨P.one_le_p, le_rfl⟩), ← hdec _ (P.Icc_q_subset hqm), hdq]
-      have hin : ⟪u₁, dd k P.q⟫ = P.ς * ε := by
+      have hin : ⟪e₀, dd k P.q⟫ = P.ς * ε := by
         rw [hdec _ (P.Icc_q_subset hqm)] at hdq
-        have : β * ⟪u₁, dd k P.q⟫ = β * (P.ς * ε) := by rw [hdq]; ring
+        have : β * ⟪e₀, dd k P.q⟫ = β * (P.ς * ε) := by rw [hdq]; ring
         exact mul_left_cancel₀ hβ0.ne' this
-      rw [hdp, norm_eq_abs_inner_u₁, hin, abs_of_pos (by positivity)]
+      rw [hdp, norm_eq_abs_inner_e₀, hin, abs_of_pos (by positivity)]
       have hpow : (P.ς * ε) ^ (P.p + 1) ≤ P.ς * ε ^ (P.q + 1) := by
         rw [mul_pow]
         exact mul_le_mul (pow_le_of_le_one hς.le hς1 (by omega))
@@ -2060,15 +2024,15 @@ theorem theorem_14_2_4_sharp_arqpeda_otherwise {p q : ℕ} (hq : 1 ≤ q) (hqp :
     linarith
   -- the function and its Taylor data
   have hσ₀ : 0 < P.σ₀ := P.σ₀_pos
-  set f : EuclideanSpace ℝ (Fin 1) → ℝ := ridge g u₁ with hfdef
-  set X : ℕ → EuclideanSpace ℝ (Fin 1) := fun k => xr k • u₁ with hX
-  set s : ℕ → EuclideanSpace ℝ (Fin 1) := fun k => t k • u₁ with hs
+  set f : EuclideanSpace ℝ (Fin 1) → ℝ := ridge g e₀ with hfdef
+  set X : ℕ → EuclideanSpace ℝ (Fin 1) := fun k => xr k • e₀ with hX
+  set s : ℕ → EuclideanSpace ℝ (Fin 1) := fun k => t k • e₀ with hs
   have hXs : ∀ k, X (k + 1) = X k + s k := fun k => by
     simp only [hX, hs, hxr1, add_smul]
-  have hspX : ∀ k ≤ κ, IsSpikeJetOf P.p g 1 ⟪u₁, X k⟫ (βI k / 2) := fun k hk => by
-    rw [inner_smul_u₁]; exact hspike k hk
+  have hspX : ∀ k ≤ κ, IsSpikeJetOf P.p g 1 ⟪e₀, X k⟫ (βI k / 2) := fun k hk => by
+    rw [inner_e₀_smul]; exact hspike k hk
   have hdec : ∀ k ≤ κ, ∀ j ∈ Finset.Icc 1 P.p, ∀ d,
-      (ftaylorSeries ℝ f (X k)).taylorDecrement j d = βI k / 2 * ⟪u₁, d⟫ := fun k hk j hj d => by
+      (ftaylorSeries ℝ f (X k)).taylorDecrement j d = βI k / 2 * ⟪e₀, d⟫ := fun k hk j hj d => by
     obtain ⟨hj1, hjp⟩ := Finset.mem_Icc.1 hj
     rw [taylorDecrement_ridge_spike (hgc.of_le (by exact_mod_cast hjp)) le_rfl hj1
       ⟨(hspX k hk).1, fun i h1 hi hne => (hspX k hk).2 i h1 (hi.trans hjp) hne⟩ d]
@@ -2091,24 +2055,26 @@ theorem theorem_14_2_4_sharp_arqpeda_otherwise {p q : ℕ} (hq : 1 ≤ q) (hqp :
     rw [e] at hm
     intro y _
     simp only [mem_ofPred_eq]
-    rw [regularizedModel_ridge_spike norm_eq_abs_inner_u₁ hgc le_rfl hp (hspX k hk),
-      ridge_apply, ridge_apply, show s k = t k • u₁ from rfl, inner_smul_u₁ (t k)]
+    rw [regularizedModel_ridge_spike norm_eq_abs_inner_e₀ hgc le_rfl hp (hspX k hk),
+      ridge_apply, ridge_apply, show s k = t k • e₀ from rfl, inner_e₀_smul (t k)]
     exact (add_le_add_iff_left _).2 (isMinOn_iff.1 hm _ (mem_univ _))
   have hmodel : ∀ k ≤ κ, ∀ ℓ ∈ Finset.Icc 1 P.q, ∀ d, ‖d‖ ≤ ε →
       (ftaylorSeries ℝ (regularizedModel (ftaylorSeries ℝ f (X k)) P.p P.σ₀) (s k)).taylorDecrement
         ℓ d ≤ 0 := fun k hk ℓ hℓ d hd => by
-    have h := taylorDecrement_regularizedModel_ridge_linear_nonpos norm_u₁ norm_eq_abs_inner_u₁ hp
+    have h := taylorDecrement_regularizedModel_ridge_linear_nonpos norm_e₀
+        norm_eq_abs_inner_e₀ hp
       hgc (β := βI k / 2) (σ := P.σ₀) (δ := ε)
       (by have := hβ_pos k hk; positivity) hσ₀ (hspX k hk) (P.Icc_q_subset hℓ)
       (Or.inr (by rw [htk]; have := ht_ge k hk; nlinarith)) hd
     rwa [htk] at h
   have hdecs : ∀ k ≤ κ, (ftaylorSeries ℝ f (X k)).taylorDecrement P.p (s k) = βI k / 2 * t k :=
     fun k hk => by
-      rw [hdec k hk _ (Finset.mem_Icc.2 ⟨hp, le_rfl⟩), show s k = t k • u₁ from rfl,
-        inner_smul_u₁]
+      rw [hdec k hk _ (Finset.mem_Icc.2 ⟨hp, le_rfl⟩), show s k = t k • e₀ from rfl,
+        inner_e₀_smul]
   have hfval : ∀ k < κ, f (X k) - f (X k + s k) =
       (ftaylorSeries ℝ f (X k)).taylorDecrement P.p (s k) := fun k hk => by
-    rw [hdecs k hk.le, ← hXs, hfdef, ridge_apply, ridge_apply, hX, inner_smul_u₁, inner_smul_u₁,
+    rw [hdecs k hk.le, ← hXs, hfdef, ridge_apply, ridge_apply, hX, inner_e₀_smul,
+        inner_e₀_smul,
       hval k hk, hxr1]
     ring
   have hdpos : ∀ k ≤ κ, 0 < (ftaylorSeries ℝ f (X k)).taylorDecrement P.p (s k) := fun k hk => by
@@ -2174,10 +2140,10 @@ theorem theorem_14_2_4_sharp_arqpeda_otherwise {p q : ℕ} (hq : 1 ≤ q) (hqp :
       (fun _ => P.δ₀) (fun _ => P.δ₀) (fun _ => P.h₀) D w (fun _ => P.q) s (fun _ => False) ρ k :=
     fun k hk => slowGrad_arqpDAStep hε hε2 (hβ_gt k hk) (hβ_le k hk.le) hσ54 hδ₀ rfl rfl hδ₀ rfl
       (hdec k hk.le) (fun j _ => hw k j) (hmin k hk.le) (hmodel k hk.le)
-      (by rw [show s k = t k • u₁ from rfl, norm_smul_u₁, abs_of_pos (lt_of_lt_of_le hε
+      (by rw [show s k = t k • e₀ from rfl, norm_smul_e₀, abs_of_pos (lt_of_lt_of_le hε
         (hεt k hk.le))]; exact ht_lt k hk.le)
       (fun i hi => by
-        rw [show s k = t k • u₁ from rfl, norm_smul_u₁, abs_of_pos (lt_of_lt_of_le hε
+        rw [show s k = t k • e₀ from rfl, norm_smul_e₀, abs_of_pos (lt_of_lt_of_le hε
           (hεt k hk.le))]
         exact (hh₀ i hi).trans (mul_le_mul_of_nonneg_left
           (pow_le_pow_left₀ hε.le (hεt k hk.le) _) P.κs_pos.le))
@@ -2304,17 +2270,17 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise {p : ℕ} (hp : 3 ≤ p) :
   have ha_eq : a κ = ε := by simp only [ha]; rw [sub_self, mul_zero, zero_div, add_zero, one_mul]
   -- the function and its Taylor data
   subst hPp
-  set f : EuclideanSpace ℝ (Fin 1) → ℝ := ridge g u₁ with hfdef
-  set X : ℕ → EuclideanSpace ℝ (Fin 1) := fun k => xr k • u₁ with hX
-  set s : ℕ → EuclideanSpace ℝ (Fin 1) := fun k => t k • u₁ with hs
+  set f : EuclideanSpace ℝ (Fin 1) → ℝ := ridge g e₀ with hfdef
+  set X : ℕ → EuclideanSpace ℝ (Fin 1) := fun k => xr k • e₀ with hX
+  set s : ℕ → EuclideanSpace ℝ (Fin 1) := fun k => t k • e₀ with hs
   have hXs : ∀ k, X (k + 1) = X k + s k := fun k => by simp only [hX, hs, hxr1, add_smul]
-  have hspX : ∀ k ≤ κ, IsSpikeJetOf P.p g P.q ⟪u₁, X k⟫ (a k) := fun k hk => by
-    rw [inner_smul_u₁, hPq]; exact hspike k hk
+  have hspX : ∀ k ≤ κ, IsSpikeJetOf P.p g P.q ⟪e₀, X k⟫ (a k) := fun k hk => by
+    rw [inner_e₀_smul, hPq]; exact hspike k hk
   have hgp : ContDiff ℝ P.p g := hgc
   have hqp : P.q = P.p := hPq
   have hdec : ∀ k ≤ κ, ∀ j ≤ P.q, ∀ d, (ftaylorSeries ℝ f (X k)).taylorDecrement j d =
-      (if j = P.q then a k / P.q ! else 0) * ⟪u₁, d⟫ ^ P.q := fun k hk j hj d => by
-    have hspXq : IsSpikeJetOf P.q g P.q ⟪u₁, X k⟫ (a k) := by rw [hqp]; rw [hqp] at hspX
+      (if j = P.q then a k / P.q ! else 0) * ⟪e₀, d⟫ ^ P.q := fun k hk j hj d => by
+    have hspXq : IsSpikeJetOf P.q g P.q ⟪e₀, X k⟫ (a k) := by rw [hqp]; rw [hqp] at hspX
                                                               exact hspX k hk
     have hgq : ContDiff ℝ P.q g := by rw [hqp]; exact hgp
     rcases hj.lt_or_eq with hjq | rfl
@@ -2323,7 +2289,7 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise {p : ℕ} (hp : 3 ≤ p) :
     · rw [ite_eq_left rfl, taylorDecrement_ridge_spike hgq P.one_le_q le_rfl hspXq]
       ring
   have hdecp : ∀ k ≤ κ, ∀ d, (ftaylorSeries ℝ f (X k)).taylorDecrement P.p d =
-      a k / P.q ! * ⟪u₁, d⟫ ^ P.q := fun k hk d => by
+      a k / P.q ! * ⟪e₀, d⟫ ^ P.q := fun k hk d => by
     rw [taylorDecrement_ridge_spike hgp P.one_le_q P.q_le_p (hspX k hk)]
     ring
   have hmeas : ∀ k ≤ κ, ∀ j ∈ Finset.Icc 1 P.q, ∀ t' : ℝ, 0 ≤ t' →
@@ -2345,15 +2311,16 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise {p : ℕ} (hp : 3 ≤ p) :
     rw [e] at hm
     intro y _
     simp only [mem_ofPred_eq]
-    rw [regularizedModel_ridge_spike norm_eq_abs_inner_u₁ hgp P.one_le_q P.q_le_p (hspX k hk),
-      ridge_apply, ridge_apply, show s k = t k • u₁ from rfl, inner_smul_u₁ (t k)]
+    rw [regularizedModel_ridge_spike norm_eq_abs_inner_e₀ hgp P.one_le_q P.q_le_p (hspX k hk),
+      ridge_apply, ridge_apply, show s k = t k • e₀ from rfl, inner_e₀_smul (t k)]
     exact (add_le_add_iff_left _).2 (isMinOn_iff.1 hm _ (mem_univ _))
   have hmodel : ∀ k ≤ κ, ∀ ℓ ∈ Finset.Icc 1 P.q, ∀ d, ‖d‖ ≤ ε / P.p →
       (ftaylorSeries ℝ (regularizedModel (ftaylorSeries ℝ f (X k)) P.p P.σ₀) (s k)).taylorDecrement
         ℓ d ≤ 0 := fun k hk ℓ hℓ d hd => by
     have hℓp : ℓ ≤ P.p := (Finset.mem_Icc.1 hℓ).2.trans P.q_le_p
-    rw [show s k = t k • u₁ from rfl, taylorDecrement_regularizedModel_ridge_spike norm_u₁
-      norm_eq_abs_inner_u₁ hgp P.one_le_q P.q_le_p (hspX k hk) hℓp, ht_eq, hσ, hqp]
+    rw [show s k = t k • e₀ from rfl, taylorDecrement_regularizedModel_ridge_spike
+        norm_e₀
+      norm_eq_abs_inner_e₀ hgp P.one_le_q P.q_le_p (hspX k hk) hℓp, ht_eq, hσ, hqp]
     have h0 := taylorMeasure_topMonomialRegModel_eq_zero (p := P.p) (j := ℓ)
       ⟨(Finset.mem_Icc.1 hℓ).1, hℓp⟩ (a := a k) (δ := ε / P.p) (by linarith [ha_ge k hk])
       (by
@@ -2362,18 +2329,20 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise {p : ℕ} (hp : 3 ≤ p) :
         linarith [ha_ge k hk])
     have hle := taylorDecrement_le_taylorMeasure
       (ftaylorSeries ℝ (negMonomialRegModel P.p P.p P.p (a k)) (a k)) ℓ
-      (S := univ) (δ := ε / P.p) (d := ⟪u₁, d⟫)
-      ⟨mem_closedBall_zero_iff.2 (show ‖⟪u₁, d⟫‖ ≤ ε / P.p by
-        rw [Real.norm_eq_abs, ← norm_eq_abs_inner_u₁]; exact hd), mem_univ _⟩
+      (S := univ) (δ := ε / P.p) (d := ⟪e₀, d⟫)
+      ⟨mem_closedBall_zero_iff.2 (show ‖⟪e₀, d⟫‖ ≤ ε / P.p by
+        rw [Real.norm_eq_abs, ← norm_eq_abs_inner_e₀]; exact hd), mem_univ _⟩
     rw [h0] at hle
     exact hle
   have hnorm_s : ∀ k ≤ κ, ‖s k‖ = a k := fun k hk => by
-    rw [show s k = t k • u₁ from rfl, norm_smul_u₁, ht_eq, abs_of_pos (by linarith [ha_ge k hk])]
+    rw [show s k = t k • e₀ from rfl, norm_smul_e₀, ht_eq,
+      abs_of_pos (by linarith [ha_ge k hk])]
   have hdecs : ∀ k ≤ κ, (ftaylorSeries ℝ f (X k)).taylorDecrement P.p (s k) =
-      a k / P.q ! * t k ^ P.q := fun k hk => by rw [hdecp k hk, hs, inner_smul_u₁]
+      a k / P.q ! * t k ^ P.q := fun k hk => by rw [hdecp k hk, hs, inner_e₀_smul]
   have hfval : ∀ k < κ, f (X k) - f (X k + s k) =
       (ftaylorSeries ℝ f (X k)).taylorDecrement P.p (s k) := fun k hk => by
-    rw [hdecs k hk.le, ← hXs, hfdef, ridge_apply, ridge_apply, hX, inner_smul_u₁, inner_smul_u₁,
+    rw [hdecs k hk.le, ← hXs, hfdef, ridge_apply, ridge_apply, hX, inner_e₀_smul,
+        inner_e₀_smul,
       hval k hk, hxr1, hqp]
     ring
   have hdpos : ∀ k ≤ κ, 0 < (ftaylorSeries ℝ f (X k)).taylorDecrement P.p (s k) := fun k hk => by
@@ -2408,7 +2377,7 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise {p : ℕ} (hp : 3 ≤ p) :
   obtain ⟨hv, hhv⟩ : ∃ hv : ℕ → ℕ → ℝ, ∀ k, hv k = if k < κ then P.h₀ else h' (k - κ) :=
     ⟨_, fun _ => rfl⟩
   obtain ⟨ddv, hddv⟩ : ∃ ddv : ℕ → ℕ → EuclideanSpace ℝ (Fin 1),
-      ∀ k, ddv k = if k < κ then (fun j => if j = P.q then rad k • u₁ else 0) else dd' (k - κ) :=
+      ∀ k, ddv k = if k < κ then (fun j => if j = P.q then rad k • e₀ else 0) else dd' (k - κ) :=
     ⟨_, fun _ => rfl⟩
   obtain ⟨jkv, hjkv⟩ : ∃ jkv : ℕ → ℕ, ∀ k, jkv k = if k < κ then P.q else jk' (k - κ) :=
     ⟨_, fun _ => rfl⟩
@@ -2580,451 +2549,20 @@ The order `ε^{-q(p+1)/p}` of the lower-bound mode of the ARqpIDA-SC row is atta
 `1 ≤ q ≤ p` with the closed feasible set `X = {v 1 = 0} ∪ {ρ ≤ v 1}` of `ℝ²` (a line and a parallel
 half-plane at distance `ρ ∈ (ε, 2ε]`), by the slow example of Theorem 12.2.17 on the line. The
 half-plane makes the criterion `Chapter13.arTest_feasible` ("approximately optimal for some radii
-in `(0, 1]^q`") fail at the large radii, which the line alone cannot do. -/
+in `(0, 1]^q`") fail at the large radii, which the line alone cannot do. The measures and the
+criterion on this set are those of the backbone slit construction
+(`Optimization.slitSet`, `Optimization.not_isEpsDeltaApprox_slitSet`), with the profiles
+`Optimization.exists_slowGradSpike_interpolant` and `Optimization.exists_contDiff_isSpikeJetOf_one`.
+-/
 
 section ARqpIDAConstrained
 
 open Chapter13 Optimization
 open scoped RealInnerProductSpace
 
-/-- The first unit vector of `ℝ²`. -/
-private noncomputable def e₁ : EuclideanSpace ℝ (Fin 2) := EuclideanSpace.single 0 1
-
-/-- The second unit vector of `ℝ²`. -/
-private noncomputable def e₂ : EuclideanSpace ℝ (Fin 2) := EuclideanSpace.single 1 1
-
-private theorem inner_e₁ (v : EuclideanSpace ℝ (Fin 2)) : ⟪e₁, v⟫ = v 0 := by
-  simp [e₁, EuclideanSpace.inner_single_left]
-
-private theorem inner_e₂ (v : EuclideanSpace ℝ (Fin 2)) : ⟪e₂, v⟫ = v 1 := by
-  simp [e₂, EuclideanSpace.inner_single_left]
-
-private theorem norm_e₁ : ‖e₁‖ = 1 := by simp [e₁]
-
-private theorem norm_e₂ : ‖e₂‖ = 1 := by simp [e₂]
-
-private theorem inner_e₁_smul (c : ℝ) : ⟪e₁, c • e₁⟫ = c := by
-  rw [inner_e₁]; simp [e₁]
-
-private theorem inner_e₂_smul_e₁ (c : ℝ) : ⟪e₂, c • e₁⟫ = 0 := by
-  rw [inner_e₂]; simp [e₁]
-
-private theorem inner_e₁_smul_e₂ (c : ℝ) : ⟪e₁, c • e₂⟫ = 0 := by
-  rw [inner_e₁]; simp [e₂]
-
-private theorem inner_e₂_smul (c : ℝ) : ⟪e₂, c • e₂⟫ = c := by
-  rw [inner_e₂]; simp [e₂]
-
-private theorem norm_smul_e₁ (c : ℝ) : ‖c • e₁‖ = |c| := by
-  rw [norm_smul, norm_e₁, mul_one, Real.norm_eq_abs]
-
-private theorem norm_smul_e₂ (c : ℝ) : ‖c • e₂‖ = |c| := by
-  rw [norm_smul, norm_e₂, mul_one, Real.norm_eq_abs]
-
-/-- A vector orthogonal to `e₂` is a multiple of `e₁`. -/
-private theorem eq_smul_e₁ {v : EuclideanSpace ℝ (Fin 2)} (hv : ⟪e₂, v⟫ = 0) :
-    v = ⟪e₁, v⟫ • e₁ := by
-  rw [inner_e₂] at hv
-  rw [inner_e₁]
-  ext i
-  fin_cases i <;> simp [e₁, hv]
-
-private theorem abs_inner_e₁_le (v : EuclideanSpace ℝ (Fin 2)) : |⟪e₁, v⟫| ≤ ‖v‖ := by
-  simpa [norm_e₁] using abs_real_inner_le_norm e₁ v
-
-private theorem inner_e₂_le (v : EuclideanSpace ℝ (Fin 2)) : ⟪e₂, v⟫ ≤ ‖v‖ := by
-  simpa [norm_e₂] using real_inner_le_norm e₂ v
-
 section Slit
 
-variable {p : ℕ} {G H : ℝ → ℝ} {x : EuclideanSpace ℝ (Fin 2)} {α γ : ℝ}
-
-/-- A spike jet of order `p` restricts to a spike jet of order `j ≤ p`. -/
-private theorem isSpikeJetOf_restrict {q j : ℕ} {a : ℝ} (hd : IsSpikeJetOf p G q a α) (hj : j ≤ p) :
-    IsSpikeJetOf j G q a α :=
-  ⟨hd.1, fun i hi1 hij hiq => hd.2 i hi1 (hij.trans hj) hiq⟩
-
-/-- The Taylor polynomials of `G(⟪e₁, ·⟫) + H(⟪e₂, ·⟫)` at a point where `G` and `H` have gradient
-spikes `-α` and `-γ`: `T_j(x, w) = G(⟪e₁, x⟫) + H(⟪e₂, x⟫) - α ⟪e₁, w⟫ - γ ⟪e₂, w⟫`
-(`1 ≤ j ≤ p`). -/
-private theorem taylorPolynomial_slit (hG : ContDiff ℝ p G) (hH : ContDiff ℝ p H)
-    (hdG : IsSpikeJetOf p G 1 ⟪e₁, x⟫ α) (hdH : IsSpikeJetOf p H 1 ⟪e₂, x⟫ γ) {j : ℕ}
-    (hj1 : 1 ≤ j) (hjp : j ≤ p) (w : EuclideanSpace ℝ (Fin 2)) :
-    taylorPolynomial (ridge G e₁ + ridge H e₂) j x w =
-      G ⟪e₁, x⟫ + H ⟪e₂, x⟫ - α * ⟪e₁, w⟫ - γ * ⟪e₂, w⟫ := by
-  have hGj : ContDiff ℝ j G := hG.of_le (by exact_mod_cast hjp)
-  have hHj : ContDiff ℝ j H := hH.of_le (by exact_mod_cast hjp)
-  have hsum : taylorPolynomial (ridge G e₁ + ridge H e₂) j x w =
-      taylorPolynomial (ridge G e₁) j x w + taylorPolynomial (ridge H e₂) j x w := by
-    rw [taylorPolynomial_apply, taylorPolynomial_apply, taylorPolynomial_apply,
-      ← Finset.sum_add_distrib]
-    refine Finset.sum_congr rfl fun i hi => ?_
-    have hij : (i : WithTop ℕ∞) ≤ j := by exact_mod_cast Nat.lt_succ_iff.1 (Finset.mem_range.1 hi)
-    rw [iteratedFDeriv_add_apply ((contDiff_ridge hGj).contDiffAt.of_le hij)
-      ((contDiff_ridge hHj).contDiffAt.of_le hij), add_apply, smul_add]
-  rw [hsum, taylorPolynomial_ridge_spike hGj le_rfl hj1 (isSpikeJetOf_restrict hdG hjp),
-    taylorPolynomial_ridge_spike hHj le_rfl hj1 (isSpikeJetOf_restrict hdH hjp)]
-  simp only [pow_one, Nat.factorial_one, Nat.cast_one, div_one]
-  ring
-
-/-- The Taylor decrements of `G(⟪e₁, ·⟫) + H(⟪e₂, ·⟫)` at a point with gradient spikes:
-`ΔT_j(x, w) = α ⟪e₁, w⟫ + γ ⟪e₂, w⟫` (`1 ≤ j ≤ p`). -/
-private theorem taylorDecrement_slit (hG : ContDiff ℝ p G) (hH : ContDiff ℝ p H)
-    (hdG : IsSpikeJetOf p G 1 ⟪e₁, x⟫ α) (hdH : IsSpikeJetOf p H 1 ⟪e₂, x⟫ γ) {j : ℕ}
-    (hj1 : 1 ≤ j) (hjp : j ≤ p) (w : EuclideanSpace ℝ (Fin 2)) :
-    (ftaylorSeries ℝ (ridge G e₁ + ridge H e₂) x).taylorDecrement j w =
-      α * ⟪e₁, w⟫ + γ * ⟪e₂, w⟫ := by
-  rw [ftaylorSeries_taylorDecrement_eq, taylorPolynomial_slit hG hH hdG hdH hj1 hjp,
-    Pi.add_apply, ridge_apply, ridge_apply]
-  ring
-
-/-- The model (13.1.45) of `G(⟪e₁, ·⟫) + H(⟪e₂, ·⟫)` at a point with gradient spikes, on the
-line `⟪e₂, w⟫ = 0`: `m(w) = G(⟪e₁, x⟫) + H(⟪e₂, x⟫) + m₁(⟪e₁, w⟫)` with the one-dimensional model
-`m₁ t = -α t + σ |t|^{p+1}/(p+1)!`. -/
-private theorem regularizedModel_slit_line (hp : 1 ≤ p) (hG : ContDiff ℝ p G)
-    (hH : ContDiff ℝ p H) (hdG : IsSpikeJetOf p G 1 ⟪e₁, x⟫ α)
-    (hdH : IsSpikeJetOf p H 1 ⟪e₂, x⟫ γ) (σ : ℝ) {w : EuclideanSpace ℝ (Fin 2)}
-    (hw : ⟪e₂, w⟫ = 0) :
-    regularizedModel (ftaylorSeries ℝ (ridge G e₁ + ridge H e₂) x) p σ w =
-      G ⟪e₁, x⟫ + H ⟪e₂, x⟫ + negMonomialRegModel p 1 σ α ⟪e₁, w⟫ := by
-  have hn : ‖w‖ = |⟪e₁, w⟫| := by rw [eq_smul_e₁ hw, inner_e₁_smul, norm_smul_e₁]
-  rw [regularizedModel_def, ← taylorPolynomial_eq_taylorSum,
-    taylorPolynomial_slit hG hH hdG hdH hp le_rfl, hw, hn, negMonomialRegModel]
-  simp only [pow_one, Nat.factorial_one, Nat.cast_one, div_one]
-  ring
-
-/-- The Taylor decrements of the model at a point `t e₁` of the line, along a direction `d` of
-the line, are those of the one-dimensional model `m₁` at `t` along `⟪e₁, d⟫` (orders `ℓ ≤ p`). -/
-private theorem taylorDecrement_regularizedModel_slit (hp : 1 ≤ p) (hG : ContDiff ℝ p G)
-    (hH : ContDiff ℝ p H) (hdG : IsSpikeJetOf p G 1 ⟪e₁, x⟫ α)
-    (hdH : IsSpikeJetOf p H 1 ⟪e₂, x⟫ γ) (σ t : ℝ) {d : EuclideanSpace ℝ (Fin 2)}
-    (hd : ⟪e₂, d⟫ = 0) {ℓ : ℕ} (hℓ : ℓ ≤ p) :
-    (ftaylorSeries ℝ (regularizedModel (ftaylorSeries ℝ (ridge G e₁ + ridge H e₂) x) p σ)
-      (t • e₁)).taylorDecrement ℓ d =
-      (ftaylorSeries ℝ (negMonomialRegModel p 1 σ α) t).taylorDecrement ℓ ⟪e₁, d⟫ := by
-  set C := G ⟪e₁, x⟫ + H ⟪e₂, x⟫
-  have hline : ∀ τ : ℝ, regularizedModel (ftaylorSeries ℝ (ridge G e₁ + ridge H e₂) x) p σ
-      (t • e₁ + τ • d) = C + negMonomialRegModel p 1 σ α (t + τ * ⟪e₁, d⟫) := fun τ => by
-    have h1 : ⟪e₂, t • e₁ + τ • d⟫ = 0 := by
-      rw [inner_add_right, inner_e₂_smul_e₁, inner_smul_right, hd]; ring
-    rw [regularizedModel_slit_line hp hG hH hdG hdH σ h1, inner_add_right, inner_e₁_smul,
-      inner_smul_right]
-  rw [taylorDecrement_eq_of_line contDiff_regularizedModel
-    (contDiff_const.add (contDiff_negMonomialRegModel p 1 σ α)) hline hℓ, taylorDecrement_real,
-    taylorDecrement_real]
-  congr 1
-  refine Finset.sum_congr rfl fun i hi => ?_
-  rw [iteratedDeriv_const_add (by have := (Finset.mem_Icc.1 hi).1; omega)]
-
-/-- The feasible set of the slit example: the line `{⟪e₂, v⟫ = 0}` and the half-plane
-`{⟪e₂, v⟫ ≥ ρ}` at distance `ρ` from it. -/
-private def slitSet (ρ : ℝ) : Set (EuclideanSpace ℝ (Fin 2)) :=
-  {v | ⟪e₂, v⟫ = 0} ∪ {v | ρ ≤ ⟪e₂, v⟫}
-
-private theorem add_mem_slitSet_iff {ρ : ℝ} {x e : EuclideanSpace ℝ (Fin 2)} (hx : ⟪e₂, x⟫ = 0) :
-    x + e ∈ slitSet ρ ↔ ⟪e₂, e⟫ = 0 ∨ ρ ≤ ⟪e₂, e⟫ := by
-  simp only [slitSet, mem_union, mem_ofPred_eq, inner_add_right, hx, zero_add]
-
-/-- Near a point of the line, the slit set is the line: feasible displacements shorter than `ρ`
-are orthogonal to `e₂`. -/
-private theorem inner_e₂_eq_zero_of_mem {ρ : ℝ} {x e : EuclideanSpace ℝ (Fin 2)}
-    (hx : ⟪e₂, x⟫ = 0) (he : x + e ∈ slitSet ρ) (hρ : ‖e‖ < ρ) : ⟪e₂, e⟫ = 0 := by
-  rcases (add_mem_slitSet_iff hx).1 he with h | h
-  · exact h
-  · exact absurd (h.trans (inner_e₂_le e)) (not_le.2 hρ)
-
-private theorem smul_e₁_mem_slitSet {ρ : ℝ} {x : EuclideanSpace ℝ (Fin 2)} (hx : ⟪e₂, x⟫ = 0)
-    (c : ℝ) : x + c • e₁ ∈ slitSet ρ :=
-  (add_mem_slitSet_iff hx).2 (Or.inl (inner_e₂_smul_e₁ c))
-
-/-- **The slow gradient interpolant with a flat endpoint** (the data of Theorem 12.2.17 with
-`r = p`, followed by one more point). For `1 ≤ q ≤ p` and `σ > 0` there are `L, B ≥ 0` depending
-only on `p, q, σ` such that: for every `ε ∈ (0, 1]`, with `k_ε = ⌈ε^{-q(p+1)/p}⌉₊`,
-`β_k = (ε^q + ε^q (k_ε - k)/k_ε)/q!` and points `ξ_{k+1} = ξ_k + (p! β_k/σ)^{1/p}` (`k ≤ k_ε`),
-there is a `C^p` function `G` with `L`-Lipschitz `p`-th derivative, `|G^{(j)}| ≤ B` (`j ≤ p`),
-gradient spikes `G'(ξ_k) = -β_k` (other derivatives of orders `2, …, p` zero) for `k ≤ k_ε`, all
-derivatives of orders `1, …, p` zero at `ξ_{k_ε+1}`, and `G(ξ_{k+1}) = G(ξ_k) - β_k (ξ_{k+1} - ξ_k)`
-for `k ≤ k_ε`. -/
-private theorem exists_slitGrad_interpolant {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p) {σ : ℝ}
-    (hσ : 0 < σ) :
-    ∃ L B : ℝ, 0 ≤ L ∧ 0 ≤ B ∧ ∀ (ε : ℝ) (κ : ℕ) (ξ β : ℕ → ℝ), 0 < ε → ε ≤ 1 →
-      κ = ⌈ε ^ (-((q : ℝ) * (p + 1) / p))⌉₊ →
-      (∀ k, β k = (ε ^ q + ε ^ q * ((κ : ℝ) - k) / κ) / q !) →
-      (∀ k ≤ κ, ξ (k + 1) = ξ k + (p ! * β k / σ) ^ (1 / (p : ℝ))) →
-      ∃ G : ℝ → ℝ, ContDiff ℝ p G ∧
-        (∀ s t, |iteratedDeriv p G s - iteratedDeriv p G t| ≤ L * |s - t|) ∧
-        (∀ j ≤ p, ∀ t, |iteratedDeriv j G t| ≤ B) ∧
-        (∀ k ≤ κ, IsSpikeJetOf p G 1 (ξ k) (β k)) ∧ IsSpikeJetOf p G 1 (ξ (κ + 1)) 0 ∧
-        ∀ k ≤ κ, G (ξ (k + 1)) = G (ξ k) - β k * (ξ (k + 1) - ξ k) := by
-  have hp1 : 1 ≤ p := hq.trans hqp
-  have hp0 : p ≠ 0 := by omega
-  have hppos : (0 : ℝ) < p := by exact_mod_cast hp1
-  have hqf : (0 : ℝ) < q ! := by positivity
-  have hqf1 : (1 : ℝ) ≤ q ! := by exact_mod_cast Nat.factorial_pos q
-  have hpf : (0 : ℝ) < p ! := by positivity
-  set M : ℝ := 2 / q ! * (2 * p ! / (q ! * σ)) ^ (1 / (p : ℝ)) with hM
-  have hM0 : 0 ≤ M := by positivity
-  set κH : ℝ := max (3 * M) (max 2 (max ((2 * p ! / σ) ^ (1 / (p : ℝ))) (σ / p !))) with hκH
-  have hκM : 3 * M ≤ κH := le_max_left _ _
-  have hκ2 : 2 ≤ κH := (le_max_left _ _).trans (le_max_right _ _)
-  have hκs : (2 * p ! / σ) ^ (1 / (p : ℝ)) ≤ κH :=
-    (le_max_left _ _).trans ((le_max_right _ _).trans (le_max_right _ _))
-  have hκσ : σ / p ! ≤ κH :=
-    (le_max_right _ _).trans ((le_max_right _ _).trans (le_max_right _ _))
-  have hκ0 : 0 ≤ κH := by linarith
-  obtain ⟨L, B, hL, hB, hH⟩ := Hermite.exists_contDiff_interpolating_jets_bounded_of_forall_le p hκ0
-  refine ⟨L, B, hL, hB, fun ε κ ξ β hε hε1 hκdef hβ hξ => ?_⟩
-  set e : ℝ := (q : ℝ) * (p + 1) / p with he
-  have he0 : 0 ≤ e := by positivity
-  obtain ⟨hκ1, hκ2'⟩ := one_le_ceil_rpow_neg_and_mul_le hε hε1 he0
-  rw [← hκdef] at hκ1 hκ2'
-  have hκpos : (0 : ℝ) < κ := by exact_mod_cast hκ1
-  have hεq : 0 < ε ^ q := pow_pos hε q
-  have hεq1 : ε ^ q ≤ 1 := pow_le_one₀ hε.le hε1
-  have hεe1 : ε ^ e ≤ 1 := Real.rpow_le_one hε.le hε1 he0
-  have hqe : ε ^ q * (ε ^ q) ^ (1 / (p : ℝ)) = ε ^ e := by
-    rw [← Real.rpow_natCast, ← Real.rpow_mul hε.le, ← Real.rpow_add hε, he]
-    congr 1
-    field_simp
-  have hβb : ∀ k ≤ κ, ε ^ q / q ! ≤ β k ∧ β k ≤ 2 * ε ^ q / q ! := fun k hk => by
-    have hk' : (k : ℝ) ≤ κ := by exact_mod_cast hk
-    have h0 : 0 ≤ ε ^ q * ((κ : ℝ) - k) / κ := div_nonneg (mul_nonneg hεq.le (by linarith)) hκpos.le
-    have h1 : ε ^ q * ((κ : ℝ) - k) / κ ≤ ε ^ q := by
-      rw [div_le_iff₀ hκpos]; nlinarith [Nat.cast_nonneg (α := ℝ) k]
-    rw [hβ k]
-    constructor
-    · exact div_le_div_of_nonneg_right (by linarith) hqf.le
-    · exact div_le_div_of_nonneg_right (by linarith) hqf.le
-  have hβs : ∀ k, β k - β (k + 1) = ε ^ q / κ / q ! := fun k => by
-    rw [hβ, hβ]; push_cast; field_simp; ring
-  have hβpos : ∀ k ≤ κ, 0 < β k := fun k hk => lt_of_lt_of_le (by positivity) (hβb k hk).1
-  set β' : ℕ → ℝ := fun k => if k ≤ κ then β k else 0 with hβ'
-  set ts : ℕ → ℝ := fun k => (p ! * β k / σ) ^ (1 / (p : ℝ)) with hts
-  have hgap : ∀ k ≤ κ, ξ (k + 1) - ξ k = ts k := fun k hk => by rw [hξ k hk]; ring
-  have hspos : ∀ k ≤ κ, 0 < ts k := fun k hk => by
-    have := hβpos k hk
-    exact Real.rpow_pos_of_pos (by positivity) _
-  have htsp : ∀ k ≤ κ, ts k ^ p = p ! * β k / σ := fun k hk => by
-    have := hβpos k hk
-    simp only [hts]
-    rw [one_div, Real.rpow_inv_natCast_pow (by positivity) hp0]
-  have hsle : ∀ k ≤ κ, ts k ≤ (2 * p ! / σ) ^ (1 / (p : ℝ)) := fun k hk => by
-    have hb := (hβb k hk).2
-    have := hβpos k hk
-    refine Real.rpow_le_rpow (by positivity) ?_ (by positivity)
-    have : β k ≤ 2 := hb.trans (by rw [div_le_iff₀ hqf]; nlinarith)
-    exact div_le_div_of_nonneg_right (by nlinarith) hσ.le
-  set fv : ℕ → ℝ := fun k => -∑ i ∈ Finset.range k, β' i * ts i with hfv
-  set dv : ℕ → ℝ := fun k => -β' k with hdv
-  have hfs : ∀ k, fv (k + 1) = fv k - β' k * ts k := fun k => by
-    simp only [fv, Finset.sum_range_succ]; ring
-  have hdec : ∀ i < κ + 1, 0 ≤ β' i * ts i ∧ β' i * ts i ≤ M * ε ^ e := fun i hi => by
-    have hi' : i ≤ κ := by omega
-    obtain ⟨hb1, hb2⟩ := hβb i hi'
-    have hβ0 := hβpos i hi'
-    have hs0 := (hspos i hi').le
-    simp only [β', ite_eq_left hi']
-    refine ⟨by positivity, ?_⟩
-    have hsb : ts i ≤ (2 * p ! / (q ! * σ)) ^ (1 / (p : ℝ)) * (ε ^ q) ^ (1 / (p : ℝ)) := by
-      rw [← Real.mul_rpow (by positivity) hεq.le]
-      refine Real.rpow_le_rpow (by positivity) ?_ (by positivity)
-      calc p ! * β i / σ ≤ p ! * (2 * ε ^ q / q !) / σ := by gcongr
-        _ = 2 * p ! / (q ! * σ) * ε ^ q := by field_simp
-    calc β i * ts i ≤ 2 * ε ^ q / q ! *
-          ((2 * p ! / (q ! * σ)) ^ (1 / (p : ℝ)) * (ε ^ q) ^ (1 / (p : ℝ))) :=
-          mul_le_mul hb2 hsb hs0 (by positivity)
-      _ = M * (ε ^ q * (ε ^ q) ^ (1 / (p : ℝ))) := by rw [hM]; ring
-      _ = M * ε ^ e := by rw [hqe]
-  have hfb : ∀ k ≤ κ + 1, |fv k| ≤ 3 * M := fun k hk => by
-    simp only [fv, abs_neg]
-    refine abs_sum_range_le_of_le hdec ?_ hk
-    push_cast
-    nlinarith [mul_le_mul_of_nonneg_left hεe1 hM0, mul_le_mul_of_nonneg_left hκ2' hM0]
-  have hβ'2 : ∀ k, |β' k| ≤ 2 := fun k => by
-    simp only [β']
-    split_ifs with hk
-    · rw [abs_of_pos (hβpos k hk)]
-      exact (hβb k hk).2.trans (by rw [div_le_iff₀ hqf]; nlinarith)
-    · simp
-  obtain ⟨G, hGc, hGL, hGB, hGj, -, -⟩ := hH (κ + 1) ξ (spikeJet fv dv 1)
-    (fun k hk => by rw [← sub_pos, hgap k (by omega)]; exact hspos k (by omega))
-    (fun k hk => by rw [hgap k (by omega)]; exact (hsle k (by omega)).trans hκs)
-    (fun k hk j _ => by
-      unfold spikeJet
-      split_ifs
-      · exact (hfb k hk).trans hκM
-      · simp only [dv, abs_neg]; linarith [hβ'2 k]
-      · simpa using hκ0)
-    (fun k hk => by
-      have hk' : k ≤ κ := by omega
-      rw [hgap k hk']
-      have hs0 := (hspos k hk').le
-      refine hermite_consistency_spike le_rfl hp1 hs0 hκ0 ?_
-        (fun h => absurd h (lt_irrefl 1)) ?_
-      · rw [hfs]
-        simp only [dv]
-        have : fv k - β' k * ts k - (fv k + -β' k * ts k ^ 1 / (Nat.factorial 1 : ℝ)) = 0 := by
-          simp; ring
-        rw [this, abs_zero]
-        positivity
-      · rw [Nat.sub_add_cancel hp1, htsp k hk']
-        have hb : |dv (k + 1) - dv k| ≤ β k := by
-          simp only [dv, β', ite_eq_left hk']
-          rcases hk'.lt_or_eq with hlt | rfl
-          · rw [ite_eq_left (show k + 1 ≤ κ by omega),
-              show -β (k + 1) - -β k = β k - β (k + 1) by ring,
-              hβs, abs_of_nonneg (by positivity)]
-            calc ε ^ q / κ / q ! ≤ ε ^ q / q ! := by
-                  gcongr; exact div_le_self hεq.le (by exact_mod_cast hκ1)
-              _ ≤ β k := (hβb k hk').1
-          · rw [ite_eq_right (by omega), neg_zero, zero_sub, neg_neg, abs_of_pos (hβpos _ le_rfl)]
-        refine hb.trans ?_
-        have := hβpos k hk'
-        calc β k = σ / p ! * (p ! * β k / σ) := by field_simp
-          _ ≤ κH * (p ! * β k / σ) := mul_le_mul_of_nonneg_right hκσ (by positivity))
-  refine ⟨G, hGc, hGL, hGB, fun k hk => ⟨?_, fun j hj1 hjp hj => ?_⟩, ⟨?_, fun j hj1 hjp hj => ?_⟩,
-    fun k hk => ?_⟩
-  · obtain ⟨-, h1, -⟩ := iteratedDeriv_eq_of_spikeJet one_ne_zero hp1 hGj (k := k) (by omega)
-    rw [h1]; simp only [dv, β', ite_eq_left hk]
-  · obtain ⟨-, -, h2⟩ := iteratedDeriv_eq_of_spikeJet one_ne_zero hp1 hGj (k := k) (by omega)
-    exact h2 j hj1 hjp hj
-  · obtain ⟨-, h1, -⟩ := iteratedDeriv_eq_of_spikeJet one_ne_zero hp1 hGj (k := κ + 1) le_rfl
-    rw [h1]; simp only [dv, β', ite_eq_right (show ¬ κ + 1 ≤ κ by omega), neg_zero]
-  · obtain ⟨-, -, h2⟩ := iteratedDeriv_eq_of_spikeJet one_ne_zero hp1 hGj (k := κ + 1) le_rfl
-    exact h2 j hj1 hjp hj
-  · obtain ⟨h0, -, -⟩ := iteratedDeriv_eq_of_spikeJet one_ne_zero hp1 hGj (k := k) (by omega)
-    obtain ⟨h0', -, -⟩ := iteratedDeriv_eq_of_spikeJet one_ne_zero hp1 hGj (k := k + 1) (by omega)
-    rw [h0, h0', hfs, hgap k hk]
-    simp only [β', ite_eq_left hk]
-
-/-- **The wall of the slit example**: a `C^p` function `H` with Lipschitz `p`-th derivative and
-bounded derivatives (constants depending only on `p`) with `H'(0) = -1` and `H^{(j)}(0) = 0` for
-`2 ≤ j ≤ p`. -/
-private theorem exists_slitWall (p : ℕ) (hp : 1 ≤ p) :
-    ∃ L B : ℝ, 0 ≤ L ∧ 0 ≤ B ∧ ∃ H : ℝ → ℝ, ContDiff ℝ p H ∧
-      (∀ s t, |iteratedDeriv p H s - iteratedDeriv p H t| ≤ L * |s - t|) ∧
-      (∀ j ≤ p, ∀ t, |iteratedDeriv j H t| ≤ B) ∧ IsSpikeJetOf p H 1 0 1 := by
-  obtain ⟨L, B, hL, hB, hH⟩ :=
-    Hermite.exists_contDiff_interpolating_jets_bounded_of_forall_le p zero_le_one
-  set fv : ℕ → ℝ := fun k => -(k : ℝ)
-  set dv : ℕ → ℝ := fun k => if k = 0 then -1 else 0
-  obtain ⟨H, hHc, hHL, hHB, hHj, -, -⟩ := hH 1 (fun k => (k : ℝ)) (spikeJet fv dv 1)
-    (fun k hk => by push_cast; linarith) (fun k hk => by push_cast; linarith)
-    (fun k hk j _ => by
-      interval_cases k <;> (unfold spikeJet; split_ifs <;> simp [fv, dv]))
-    (fun k hk => by
-      obtain rfl : k = 0 := by omega
-      refine hermite_consistency_spike le_rfl hp (by norm_num) zero_le_one ?_
-        (fun h => absurd h (lt_irrefl 1)) ?_
-      · simp [fv, dv]
-      · simp [dv])
-  obtain ⟨-, h1, h2⟩ := iteratedDeriv_eq_of_spikeJet (x := fun k => (k : ℝ)) one_ne_zero hp hHj
-    (k := 0) (Nat.zero_le 1)
-  refine ⟨L, B, hL, hB, H, hHc, hHL, hHB, ?_, fun j hj1 hjp hj => ?_⟩
-  · simpa [dv] using h1
-  · simpa using h2 j hj1 hjp hj
-
-section SlitMeasure
-
-variable {D : FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin 2)) ℝ} {j : ℕ} {β ρ δ : ℝ}
-  {x : EuclideanSpace ℝ (Fin 2)}
-
-/-- On radii `δ < ρ` the measure of the decrement `β ⟪e₁, d⟫ + ⟪e₂, d⟫` (`β ≥ 0`) at a point of
-the line is `β δ`. -/
-private theorem slit_measure_lt (hβ : 0 ≤ β) (hδ : 0 ≤ δ) (hδρ : δ < ρ) (hx : ⟪e₂, x⟫ = 0)
-    (hdec : ∀ d, D.taylorDecrement j d = β * ⟪e₁, d⟫ + ⟪e₂, d⟫) :
-    taylorMeasure D j δ {e | x + e ∈ slitSet ρ} = β * δ := by
-  refine le_antisymm (decrementMeasure_le ⟨0, mem_closedBall_self hδ, by
-    simpa using smul_e₁_mem_slitSet (ρ := ρ) hx 0⟩ fun d hd => ?_) ?_
-  · have hdn : ‖d‖ ≤ δ := mem_closedBall_zero_iff.1 hd.1
-    rw [hdec, inner_e₂_eq_zero_of_mem hx hd.2 (hdn.trans_lt hδρ), add_zero]
-    exact mul_le_mul_of_nonneg_left ((le_abs_self _).trans ((abs_inner_e₁_le d).trans hdn)) hβ
-  · have := taylorDecrement_le_taylorMeasure D j (S := {e | x + e ∈ slitSet ρ}) (δ := δ)
-      (d := δ • e₁) ⟨by rw [mem_closedBall_zero_iff, norm_smul_e₁, abs_of_nonneg hδ],
-        smul_e₁_mem_slitSet hx δ⟩
-    rwa [hdec, inner_e₁_smul, inner_e₂_smul_e₁, add_zero] at this
-
-/-- On radii `δ ≥ ρ ≥ 0` the half-plane is reached: the measure of the decrement
-`β ⟪e₁, d⟫ + ⟪e₂, d⟫` at a point of the line is at least `ρ`. -/
-private theorem slit_measure_ge (hρ : 0 ≤ ρ) (hρδ : ρ ≤ δ) (hx : ⟪e₂, x⟫ = 0)
-    (hdec : ∀ d, D.taylorDecrement j d = β * ⟪e₁, d⟫ + ⟪e₂, d⟫) :
-    ρ ≤ taylorMeasure D j δ {e | x + e ∈ slitSet ρ} := by
-  have := taylorDecrement_le_taylorMeasure D j (S := {e | x + e ∈ slitSet ρ}) (δ := δ)
-    (d := ρ • e₂) ⟨by rw [mem_closedBall_zero_iff, norm_smul_e₂, abs_of_nonneg hρ]; exact hρδ,
-      (add_mem_slitSet_iff hx).2 (Or.inr (by rw [inner_e₂_smul]))⟩
-  rwa [hdec, inner_e₁_smul_e₂, inner_e₂_smul, mul_zero, zero_add] at this
-
-end SlitMeasure
-
-section SlitTest
-
-variable {D : FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin 2)) ℝ} {q : ℕ} {ε β ρ c : ℝ}
-  {x : EuclideanSpace ℝ (Fin 2)}
-
-/-- **The slit example fails the criterion at every radius** when `q ≥ 1`, `c > 0`, the radius
-of the half-plane is `ρ = ε (1 + c)^{1/n}` with `n = max(q - 1, 1)` and the gradient is
-`β ≥ ε^q (1 + c)/q!`: on radii `δ < ρ` the measure of order `q` is `β δ > ε δ^q/q!`, and on radii
-`δ ≥ ρ` it is at least `ρ > ε`. -/
-private theorem slit_not_approx (hε : 0 < ε) (hερ : ε < ρ)
-    (hρpow : ρ ^ max (q - 1) 1 = ε ^ max (q - 1) 1 * (1 + c)) (hc : 0 < c) (hβ0 : 0 ≤ β)
-    (hβ : ε ^ q * (1 + c) / q ! ≤ β) (hx : ⟪e₂, x⟫ = 0) (hq : 1 ≤ q)
-    (hdec : ∀ j ∈ Finset.Icc 1 q, ∀ d, D.taylorDecrement j d = β * ⟪e₁, d⟫ + ⟪e₂, d⟫)
-    (δ' : ℕ → ℝ) (hδ' : ∀ j ∈ Finset.Icc 1 q, δ' j ∈ Set.Ioc 0 1)
-    (ht : IsEpsDeltaApprox D {e | x + e ∈ slitSet ρ} q (fun _ => ε) δ') : False := by
-  have hqm : q ∈ Finset.Icc 1 q := Finset.mem_Icc.2 ⟨by omega, le_rfl⟩
-  have h1 := ht q hqm
-  obtain ⟨hδ0, hδ1⟩ := hδ' q hqm
-  have hqf : (0 : ℝ) < q ! := by positivity
-  set δq := δ' q
-  rcases lt_or_ge δq ρ with hδρ | hδρ
-  · rw [slit_measure_lt hβ0 hδ0.le hδρ hx (hdec q hqm)] at h1
-    rcases hq.eq_or_lt with rfl | hq2
-    · have h2 : ε ^ 1 * (1 + c) / (1 : ℕ)! * δq ≤ ε * δq ^ 1 / (1 : ℕ)! :=
-        (mul_le_mul_of_nonneg_right hβ hδ0.le).trans h1
-      simp only [pow_one, Nat.factorial_one, Nat.cast_one, div_one] at h2
-      nlinarith [mul_pos (mul_pos hε hδ0) hc]
-    have hq0 : q - 1 ≠ 0 := by omega
-    have hmax : max (q - 1) 1 = q - 1 := max_eq_left (by omega)
-    rw [hmax] at hρpow
-    have hqq : q = (q - 1) + 1 := by omega
-    have e1 : ε ^ q = ε ^ (q - 1) * ε := by rw [← pow_succ, ← hqq]
-    have e2 : δq ^ q = δq ^ (q - 1) * δq := by rw [← pow_succ, ← hqq]
-    have h2 : ε ^ q * (1 + c) / q ! * δq ≤ ε * δq ^ q / q ! :=
-      (mul_le_mul_of_nonneg_right hβ hδ0.le).trans h1
-    have h3 : ε ^ (q - 1) * (1 + c) * (ε * δq) ≤ δq ^ (q - 1) * (ε * δq) := by
-      rw [e1, e2] at h2
-      calc ε ^ (q - 1) * (1 + c) * (ε * δq) =
-            ε ^ (q - 1) * ε * (1 + c) / q ! * δq * q ! := by field_simp
-        _ ≤ ε * (δq ^ (q - 1) * δq) / q ! * q ! := mul_le_mul_of_nonneg_right h2 hqf.le
-        _ = δq ^ (q - 1) * (ε * δq) := by field_simp
-    have h4 := le_of_mul_le_mul_right h3 (mul_pos hε hδ0)
-    rw [← hρpow] at h4
-    exact absurd h4 (not_le.2 (pow_lt_pow_left₀ hδρ hδ0.le hq0))
-  · have h2 := slit_measure_ge (hε.trans hερ).le hδρ hx (hdec q hqm)
-    have h3 : ε * δq ^ q / q ! ≤ ε := by
-      have hδq : δq ^ q ≤ 1 := pow_le_one₀ hδ0.le hδ1
-      have : (1 : ℝ) ≤ q ! := by exact_mod_cast Nat.factorial_pos _
-      calc ε * δq ^ q / q ! ≤ ε * δq ^ q := div_le_self (by positivity) this
-        _ ≤ ε * 1 := mul_le_mul_of_nonneg_left hδq hε.le
-        _ = ε := mul_one ε
-    exact absurd (h2.trans (h1.trans h3)) (not_le.2 hερ)
-
-/-- **The slit example meets the criterion with radii `ε`** when `ε < ρ` and the gradient is
-`β ≤ ε^q/q!`: the measures at radius `ε` are `β ε ≤ ε ε^j/j!`. -/
-private theorem slit_approx (hε : 0 < ε) (hε1 : ε ≤ 1) (hερ : ε < ρ) (hβ0 : 0 ≤ β)
-    (hβ : β ≤ ε ^ q / q !) (hx : ⟪e₂, x⟫ = 0)
-    (hdec : ∀ j ∈ Finset.Icc 1 q, ∀ d, D.taylorDecrement j d = β * ⟪e₁, d⟫ + ⟪e₂, d⟫) :
-    IsEpsDeltaApprox D {e | x + e ∈ slitSet ρ} q (fun _ => ε) (fun _ => ε) := by
-  intro j hj
-  rw [slit_measure_lt hβ0 hε.le hερ hx (hdec j hj)]
-  have hj := Finset.mem_Icc.1 hj
-  have h1 : ε ^ q ≤ ε ^ j := pow_le_pow_of_le_one hε.le hε1 hj.2
-  have h2 : (j ! : ℝ) ≤ q ! := by exact_mod_cast Nat.factorial_le hj.2
-  have h3 : ε ^ q / q ! ≤ ε ^ j / j ! := div_le_div₀ (by positivity) h1 (by positivity) h2
-  calc β * ε ≤ ε ^ j / j ! * ε := mul_le_mul_of_nonneg_right (hβ.trans h3) hε.le
-    _ = ε * ε ^ j / j ! := by ring
-
-end SlitTest
+variable {e₁ e₂ : EuclideanSpace ℝ (Fin 2)}
 
 section SlitStep
 
@@ -3049,14 +2587,15 @@ private theorem slit_pow_le {j q : ℕ} (hε : 0 ≤ ε) (hε4 : ε ≤ 1 / 4) (
     _ ≤ ε ^ j / 4 / j ! := div_le_div_of_nonneg_left (by positivity) hj0 hjf
     _ = ε ^ j / j ! / 4 := by ring
 
-/-- **One trial iteration of the slit example is an ARqpIDA-SC step** on `X = slitSet ρ`
+/-- **One trial iteration of the slit example is an ARqpIDA-SC step** on `X = slitSet e₂ ρ`
 (tolerances `ε_j = ε ≤ 1/4`, `ε < ρ`): at a point of the line with Taylor decrements
 `β ⟪e₁, d⟫ + ⟪e₂, d⟫` at all orders `1, …, p`, `ε^q/q! < β ≤ 2 ε^q/q!`, radii
 `δ_k = δ^{(1)}_k = δ_{s_k} = ε` (no halving), Step-1 displacements `ς ε e₁` (the fraction `ς` of
 the measures `β ε`), a weight with `σ_k/(p+1)! ≤ 1/(2 q!)`, a short step `s_k = t e₁` minimizing
 the model on the line, whose model decrements of orders `1, …, q` along the line are nonpositive
 on the ball of radius `ε`, accuracies passing (13.1.46), and the ratio `ρ_k = 1`. -/
-private theorem slit_arqpDAStep (hε : 0 < ε) (hε4 : ε ≤ 1 / 4) (hερ : ε < ρ)
+private theorem slit_arqpDAStep (he₁ : ‖e₁‖ = 1) (he₂ : ‖e₂‖ = 1) (h12 : ⟪e₁, e₂⟫ = 0)
+    (hε : 0 < ε) (hε4 : ε ≤ 1 / 4) (hερ : ε < ρ)
     (hβ : ε ^ P.q / P.q ! ≤ β) (hβ1 : β ≤ 2 * ε ^ P.q / P.q !)
     (hσ54 : σ k / ((P.p + 1)! : ℝ) ≤ 1 / (2 * P.q !)) (hx : ⟪e₂, x k⟫ = 0)
     (hδ : ∀ j ∈ Finset.Icc 1 P.q, δ k j = ε) (hδ1 : δ (k + 1) = δs k) (hδ₁ : δ₁ k = δ k)
@@ -3071,7 +2610,13 @@ private theorem slit_arqpDAStep (hε : 0 < ε) (hε4 : ε ≤ 1 / 4) (hερ : ε
     (hs1 : ‖s k‖ < 1) (hhk : ∀ i ∈ Finset.Icc 1 P.p, h k i ≤ P.κs * ‖s k‖ ^ (P.p - i + 1))
     (hacc : ¬ acc k) (hx1 : x (k + 1) = x k + s k) (hσ1 : σ (k + 1) = σ k)
     (hσk : P.σmin ≤ σ k) (hh1 : h (k + 1) = h k) (hρ : ρr k = 1) :
-    ARqpDAStep (slitSet ρ) P (fun _ => ε) x σ δ δ₁ δs h D dd jk s acc ρr k := by
+    ARqpDAStep (slitSet e₂ ρ) P (fun _ => ε) x σ δ δ₁ δs h D dd jk s acc ρr k := by
+  have h11 : ∀ c : ℝ, ⟪e₁, c • e₁⟫ = c := fun c => by
+    rw [inner_smul_right, inner_self_eq_one_of_norm_eq_one he₁, mul_one]
+  have h21 : ∀ c : ℝ, ⟪e₂, c • e₁⟫ = 0 := fun c => by
+    rw [inner_smul_right, real_inner_comm, h12, mul_zero]
+  have hn1 : ∀ c : ℝ, ‖c • e₁‖ = |c| := fun c => by
+    rw [norm_smul, he₁, mul_one, Real.norm_eq_abs]
   have hqm : P.q ∈ Finset.Icc 1 P.q := Finset.mem_Icc.2 ⟨P.one_le_q, le_rfl⟩
   have hς := P.ς_pos
   have hς1 := P.ς_le_one
@@ -3081,7 +2626,7 @@ private theorem slit_arqpDAStep (hε : 0 < ε) (hε4 : ε ≤ 1 / 4) (hερ : ε
   have hη : P.η₁ ≤ 1 := P.η₁_le_η₂.trans P.η₂_lt_one.le
   have hdv : ∀ j ∈ Finset.Icc 1 P.q, (D k).taylorDecrement j (dd k j) = P.ς * (β * ε) :=
     fun j hj => by
-      rw [hdd, hdec j (P.Icc_q_subset hj), inner_e₁_smul, inner_e₂_smul_e₁]; ring
+      rw [hdd, hdec j (P.Icc_q_subset hj), h11, h21]; ring
   have hfail : ¬ arPass P (fun _ => ε) D δ₁ dd k P.q := by
     rw [arPass, hdv _ hqm, hδ₁, hδ _ hqm, not_le]
     have : ε * ε ^ P.q / P.q ! / 2 < β * ε := by
@@ -3099,7 +2644,7 @@ private theorem slit_arqpDAStep (hε : 0 < ε) (hε4 : ε ≤ 1 / 4) (hερ : ε
       exact mul_le_mul_of_nonneg_right (by linarith) hε.le
     rw [show P.ς * ε * ε ^ j / j ! / 2 = P.ς * (ε * ε ^ j / j ! / 2) by ring]
     exact mul_le_mul_of_nonneg_left h2 hς.le
-  have hxs : ⟪e₂, x k + s k⟫ = 0 := by rw [inner_add_right, hx, hs, inner_e₂_smul_e₁, add_zero]
+  have hxs : ⟪e₂, x k + s k⟫ = 0 := by rw [inner_add_right, hx, hs, h21, add_zero]
   refine ⟨⟨fun j hj => by rw [hδ₁, hδ j hj]; exact hε, fun j _ => by rw [hδ₁],
     fun j _ hlt => by rw [hδ₁] at hlt; exact absurd hlt (lt_irrefl _),
     fun j _ => ⟨0, by rw [hδ₁]; norm_num⟩, fun j hj => ?_⟩,
@@ -3109,12 +2654,17 @@ private theorem slit_arqpDAStep (hε : 0 < ε) (hε4 : ε ≤ 1 / 4) (hερ : ε
   · -- the Step-1 displacements
     rw [hδ₁, hδ j hj]
     have hn : dd k j ∈ closedBall (0 : EuclideanSpace ℝ (Fin 2)) ε := by
-      rw [hdd, mem_closedBall_zero_iff, norm_smul_e₁, abs_of_pos (by positivity)]
+      rw [hdd, mem_closedBall_zero_iff, hn1, abs_of_pos (by positivity)]
       nlinarith
-    refine ⟨⟨hn, by rw [hdd]; exact smul_e₁_mem_slitSet hx _⟩, ?_⟩
+    have hmem : x k + dd k j ∈ slitSet e₂ ρ := by
+      rw [hdd]
+      exact add_mem_slitSet_of_inner_eq_zero hx
+        (h21 _)
+    refine ⟨⟨hn, hmem⟩, ?_⟩
     rw [hdv j hj]
     change P.ς * taylorMeasure (D k) j ε _ ≤ _
-    rw [slit_measure_lt hβ0.le hε.le hερ hx (hdec j (P.Icc_q_subset hj))]
+    rw [taylorMeasure_slitSet_of_lt he₁ he₂.le h12 hβ0.le hε.le hερ hx (hdec j
+        (P.Icc_q_subset hj))]
   · -- Step 2
     refine ⟨by rw [hjk]; exact hqm, by rw [hjk]; exact hfail,
       fun j hj hlt => hpass_lt j hj (by rw [hjk] at hlt; exact hlt),
@@ -3122,7 +2672,8 @@ private theorem slit_arqpDAStep (hε : 0 < ε) (hε4 : ε ≤ 1 / 4) (hερ : ε
       Or.inl hxs, ?_, Or.inr fun ℓ hℓ => ?_, iff_of_false hacc ?_⟩
     · -- (13.1.54)
       rw [hjk, hδ₁, hδ _ hqm, arModelDec_eq, hdec _ (Finset.mem_Icc.2 ⟨P.one_le_p, le_rfl⟩),
-        hdd, inner_e₁_smul, inner_e₂_smul_e₁, norm_smul_e₁, abs_of_pos (by positivity)]
+        hdd, h11, h21, hn1, abs_of_pos (by
+            positivity)]
       have hpow : (P.ς * ε) ^ (P.p + 1) ≤ P.ς * ε ^ (P.q + 1) := by
         rw [mul_pow]
         exact mul_le_mul (pow_le_of_le_one hς.le hς1 (by omega))
@@ -3148,14 +2699,16 @@ private theorem slit_arqpDAStep (hε : 0 < ε) (hε4 : ε ≤ 1 / 4) (hερ : ε
       rw [hdd]
       linarith
     · have hℓ' : ∀ d ∈ closedBall (0 : EuclideanSpace ℝ (Fin 2)) ε ∩
-          {e | x k + s k + e ∈ slitSet ρ},
+          {e | x k + s k + e ∈ slitSet e₂ ρ},
           (ftaylorSeries ℝ (regularizedModel (D k) P.p (σ k)) (s k)).taylorDecrement ℓ d ≤ 0 :=
         fun d hd => hmodel ℓ hℓ d (mem_closedBall_zero_iff.1 hd.1)
-          (inner_e₂_eq_zero_of_mem hxs hd.2 ((mem_closedBall_zero_iff.1 hd.1).trans_lt hερ))
+          (inner_eq_zero_of_add_mem_slitSet he₂.le hxs hd.2 ((mem_closedBall_zero_iff.1
+              hd.1).trans_lt hερ))
       rw [hδs ℓ hℓ]
       have h0 : (0 : EuclideanSpace ℝ (Fin 2)) ∈ closedBall 0 ε ∩
-          {e | x k + s k + e ∈ slitSet ρ} :=
-        ⟨mem_closedBall_self hε.le, by simpa using smul_e₁_mem_slitSet (ρ := ρ) hxs 0⟩
+          {e | x k + s k + e ∈ slitSet e₂ ρ} :=
+        ⟨mem_closedBall_self hε.le,
+          by simpa using add_mem_slitSet_of_inner_eq_zero (ρ := ρ) hxs (inner_zero_right e₂)⟩
       refine ⟨⟨hε, by linarith⟩, 0, ⟨h0, ?_⟩, ?_⟩
       · rw [FormalMultilinearSeries.taylorDecrement_zero_right]
         exact mul_nonpos_of_nonneg_of_nonpos hς.le (decrementMeasure_le ⟨0, h0⟩ hℓ')
@@ -3173,12 +2726,12 @@ example): at a point of the line where the Taylor decrements are `⟪e₂, d⟫`
 `1, …, p`, with radii `δ_k = δ^{(1)}_k = ε < ρ` and zero Step-1 displacements, the test (13.1.53)
 holds at every order, and Step 5 keeps the iterate, the weight and the radii and multiplies the
 accuracies by `γ_h`. -/
-private theorem slit_acc_step (hε : 0 < ε) (hερ : ε < ρ) (hx : ⟪e₂, x k⟫ = 0)
+private theorem slit_acc_step (he₂ : ‖e₂‖ ≤ 1) (hε : 0 < ε) (hερ : ε < ρ) (hx : ⟪e₂, x k⟫ = 0)
     (hδ : ∀ j ∈ Finset.Icc 1 P.q, δ k j = ε) (hδ₁ : δ₁ k = δ k) (hdd : ∀ j, dd k j = 0)
     (hdec : ∀ j ∈ Finset.Icc 1 P.p, ∀ d, (D k).taylorDecrement j d = ⟪e₂, d⟫)
     (hacc : acc k) (hx1 : x (k + 1) = x k) (hδ1 : δ (k + 1) = δ k) (hσ1 : σ (k + 1) = σ k)
     (hh1 : ∀ i, h (k + 1) i = P.γh * h k i) :
-    ARqpDAStep (slitSet ρ) P (fun _ => ε) x σ δ δ₁ δs h D dd jk s acc ρr k := by
+    ARqpDAStep (slitSet e₂ ρ) P (fun _ => ε) x σ δ δ₁ δs h D dd jk s acc ρr k := by
   have hς := P.ς_pos
   have hpass : ∀ j ∈ Finset.Icc 1 P.q, arPass P (fun _ => ε) D δ₁ dd k j := fun j hj => by
     rw [arPass, hdd, FormalMultilinearSeries.taylorDecrement_zero_right, hδ₁, hδ j hj]
@@ -3190,12 +2743,13 @@ private theorem slit_acc_step (hε : 0 < ε) (hερ : ε < ρ) (hx : ⟪e₂, x 
     fun h' => absurd hacc h', fun h' => absurd hacc h', fun h' => absurd hacc h',
     fun _ => hx1, fun _ => hδ1, fun _ => hσ1, fun _ => hh1⟩
   rw [hδ₁, hδ j hj, hdd]
-  have h0 : (0 : EuclideanSpace ℝ (Fin 2)) ∈ closedBall 0 ε ∩ {e | x k + e ∈ slitSet ρ} :=
-    ⟨mem_closedBall_self hε.le, by simpa using smul_e₁_mem_slitSet (ρ := ρ) hx 0⟩
+  have h0 : (0 : EuclideanSpace ℝ (Fin 2)) ∈ closedBall 0 ε ∩ {e | x k + e ∈ slitSet e₂ ρ} :=
+    ⟨mem_closedBall_self hε.le,
+      by simpa using add_mem_slitSet_of_inner_eq_zero (ρ := ρ) hx (inner_zero_right e₂)⟩
   refine ⟨h0, ?_⟩
   rw [FormalMultilinearSeries.taylorDecrement_zero_right]
   refine mul_nonpos_of_nonneg_of_nonpos hς.le (decrementMeasure_le ⟨0, h0⟩ fun d hd => ?_)
-  rw [hdec j (P.Icc_q_subset hj), inner_e₂_eq_zero_of_mem hx hd.2
+  rw [hdec j (P.Icc_q_subset hj), inner_eq_zero_of_add_mem_slitSet he₂ hx hd.2
     ((mem_closedBall_zero_iff.1 hd.1).trans_lt hερ)]
 
 /-- The weight `σ = (3/(p+2))^p` of the slit example satisfies `σ/(p+1)! ≤ 1/(2 q!)` for
@@ -3269,6 +2823,12 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise_constrained {p q : ℕ} (hq : 1 �
           ε ^ (-((q : ℝ) * (p + 1) / p)) + 1 ≤ (derivEvalCount
             (fun i => acc i ∨ (¬ acc i ∧ P.η₁ ≤ arqpIDARatio f P D x s i))
               ⌈ε ^ (-((q : ℝ) * (p + 1) / p))⌉₊ : ℝ) := by
+  obtain ⟨e₁, he₁def⟩ : ∃ e : EuclideanSpace ℝ (Fin 2), e = EuclideanSpace.single 0 1 := ⟨_, rfl⟩
+  obtain ⟨e₂, he₂def⟩ : ∃ e : EuclideanSpace ℝ (Fin 2), e = EuclideanSpace.single 1 1 := ⟨_, rfl⟩
+  have hE : ‖e₁‖ = 1 ∧ ‖e₂‖ = 1 ∧ ⟪e₁, e₂⟫ = 0 := by
+    subst he₁def he₂def
+    exact ⟨by rw [PiLp.norm_single, norm_one], by rw [PiLp.norm_single, norm_one],
+      EuclideanSpace.inner_single_single_of_ne (by decide)⟩
   have hq1 : 1 ≤ q := hq
   have hp1 : 1 ≤ p := hq1.trans hqp
   have hp0 : p ≠ 0 := by omega
@@ -3280,8 +2840,8 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise_constrained {p q : ℕ} (hq : 1 �
     exact pow_le_one₀ (by positivity) (by rw [div_le_one (by positivity)]; linarith)
   have hpf : (0 : ℝ) < p ! := by positivity
   have hqf : (0 : ℝ) < q ! := by positivity
-  obtain ⟨LG, BG, hLG, hBG, hGint⟩ := exists_slitGrad_interpolant hq1 hqp hσI0
-  obtain ⟨LH, BH, hLH, hBH, H, hHc, hHL, hHB, hHd⟩ := exists_slitWall p hp1
+  obtain ⟨LG, BG, hLG, hBG, hGint⟩ := exists_slowGradSpike_interpolant hq1 hqp hσI0
+  obtain ⟨LH, BH, hLH, hBH, H, hHc, hHL, hHB, hHd⟩ := exists_contDiff_isSpikeJetOf_one p hp1
   set L : ℝ := max 1 (max LG BG) + max 1 (max LH BH) with hL
   refine ⟨-(BG + BH), L, min (1 / 4) (σI / (4 * p !)), ?_, by positivity,
     fun ε hε hε0 P hPp hPq hσ hδ₀ hh₀ => ?_⟩
@@ -3306,7 +2866,8 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise_constrained {p q : ℕ} (hq : 1 �
     have h0 : 0 ≤ ε ^ q * ((κ : ℝ) - k) / κ :=
       div_nonneg (mul_nonneg (by positivity) (by linarith)) hκpos.le
     have h1 : ε ^ q * ((κ : ℝ) - k) / κ ≤ ε ^ q := by
-      rw [div_le_iff₀ hκpos]; nlinarith [Nat.cast_nonneg (α := ℝ) k, pow_pos hε q]
+      rw [div_le_iff₀ hκpos]
+      exact mul_le_mul_of_nonneg_left (by linarith [Nat.cast_nonneg (α := ℝ) k]) (pow_pos hε q).le
     exact ⟨div_le_div_of_nonneg_right (by linarith) hqf.le,
       div_le_div_of_nonneg_right (by linarith) hqf.le⟩
   have hβlt : ∀ k < κ, ε ^ q * (1 + 1 / κ) / q ! ≤ β k := fun k hk => by
@@ -3316,7 +2877,8 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise_constrained {p q : ℕ} (hq : 1 �
       rw [mul_div_assoc]
       exact mul_le_mul_of_nonneg_left (div_le_div_of_nonneg_right (by linarith) hκpos.le)
         (by positivity)
-    nlinarith
+    rw [mul_add, mul_one]
+    linarith
   have hβκ : β κ = ε ^ q / q ! := by simp only [hβ, sub_self, mul_zero, zero_div, add_zero]
   have hβpos : ∀ k ≤ κ, 0 < β k := fun k hk => lt_of_lt_of_le (by positivity) (hβb k hk).1
   -- the steps
@@ -3344,7 +2906,8 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise_constrained {p q : ℕ} (hq : 1 �
     have := hts_ge k hk
     have : ε ≤ ε * ((p : ℝ) + 2) / 3 := by
       have : (1 : ℝ) ≤ p := by exact_mod_cast hp1
-      rw [le_div_iff₀ (by norm_num)]; nlinarith
+      rw [le_div_iff₀ (by norm_num)]
+      exact mul_le_mul_of_nonneg_left (by linarith) hε.le
     linarith
   have hts1 : ∀ k ≤ κ, ts k < 1 := fun k hk => by
     by_contra hcon
@@ -3357,18 +2920,20 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise_constrained {p q : ℕ} (hq : 1 �
       have : β k ≤ 2 * ε := hb.trans (by
         rw [div_le_iff₀ hqf]
         have : (1 : ℝ) ≤ q ! := by exact_mod_cast Nat.factorial_pos q
-        nlinarith)
+        calc 2 * ε ^ q ≤ 2 * ε * 1 := by linarith
+          _ ≤ 2 * ε * q ! := mul_le_mul_of_nonneg_left this (by positivity))
       have h4 : 4 * p ! * ε ≤ σI := by
         rw [le_div_iff₀ (by positivity)] at hεσ; linarith
-      nlinarith
+      calc p ! * β k ≤ p ! * (2 * ε) := mul_le_mul_of_nonneg_left this hpf.le
+        _ ≤ 1 / 2 * σI := by linarith
     linarith
   -- the function
   have hG1 : (fun t => 1 * G t) = G := funext fun t => one_mul _
   have hH1 : (fun t => 1 * H t) = H := funext fun t => one_mul _
   obtain ⟨hGr, hGb, hGl⟩ := ridge_const_mul_slow_bounds (G := G) (lam := 1) (e := e₁) hGc hBG
-    hGL hGB one_pos le_rfl norm_e₁.le
+    hGL hGB one_pos le_rfl hE.1.le
   obtain ⟨hHr, hHb, hHl⟩ := ridge_const_mul_slow_bounds (G := H) (lam := 1) (e := e₂) hHc hBH
-    hHL hHB one_pos le_rfl norm_e₂.le
+    hHL hHB one_pos le_rfl hE.2.1.le
   rw [hG1] at hGr hGb hGl
   rw [hH1] at hHr hHb hHl
   set f : EuclideanSpace ℝ (Fin 2) → ℝ := ridge G e₁ + ridge H e₂ with hfdef
@@ -3402,15 +2967,22 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise_constrained {p q : ℕ} (hq : 1 �
   have hρpow : ρ ^ max (q - 1) 1 = ε ^ max (q - 1) 1 * (1 + 1 / κ) := by
     rw [hρ, mul_pow, Real.rpow_inv_natCast_pow (by positivity) hq0]
   have hρ0 : 0 < ρ := hε.trans hερ
-  set X : Set (EuclideanSpace ℝ (Fin 2)) := slitSet ρ with hX
+  set X : Set (EuclideanSpace ℝ (Fin 2)) := slitSet e₂ ρ with hX
   have hXeq : X = {v | v 1 = 0} ∪ {v | ρ ≤ v 1} := by
-    ext v; simp only [hX, slitSet, inner_e₂]
-  have hXc : IsClosed X := by
-    rw [hXeq]
-    exact (isClosed_eq (by fun_prop) continuous_const).union (isClosed_le continuous_const
-      (by fun_prop))
+    ext v; simp [hX, slitSet, he₂def, EuclideanSpace.inner_single_left]
+  have hXc : IsClosed X := isClosed_slitSet e₂ ρ
   -- the run
   subst hPp hPq
+  have h11 : ∀ c : ℝ, ⟪e₁, c • e₁⟫ = c := fun c => by
+    rw [inner_smul_right, inner_self_eq_one_of_norm_eq_one hE.1, mul_one]
+  have h21 : ∀ c : ℝ, ⟪e₂, c • e₁⟫ = 0 := fun c => by
+    rw [inner_smul_right, real_inner_comm, hE.2.2, mul_zero]
+  have hn1 : ∀ c : ℝ, ‖c • e₁‖ = |c| := fun c => by
+    rw [norm_smul, hE.1, mul_one, Real.norm_eq_abs]
+  have hspan : ∀ v, ⟪e₂, v⟫ = 0 → ‖v‖ = |⟪e₁, v⟫| := fun v hv => by
+    rw [he₁def]
+    exact EuclideanSpace.norm_eq_abs_inner_single_of_forall_ne fun j hj => by
+      rw [Fin.eq_one_of_ne_zero j hj, ← he₂def]; exact hv
   obtain ⟨xv, hxv⟩ : ∃ xv : ℕ → EuclideanSpace ℝ (Fin 2), ∀ k, xv k = ξ (min k (κ + 1)) • e₁ :=
     ⟨_, fun _ => rfl⟩
   obtain ⟨δv, hδv⟩ : ∃ δv : ℕ → ℕ → ℝ, ∀ k, δv k = if k = 0 then P.δ₀ else fun _ => ε :=
@@ -3425,27 +2997,29 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise_constrained {p q : ℕ} (hq : 1 �
       ∀ k, sv k = if k ≤ κ then ts k • e₁ else 0 := ⟨_, fun _ => rfl⟩
   have hxle : ∀ k ≤ κ + 1, xv k = ξ k • e₁ := fun k hk => by rw [hxv, min_eq_left hk]
   have hxgt : ∀ k, κ + 1 ≤ k → xv k = ξ (κ + 1) • e₁ := fun k hk => by rw [hxv, min_eq_right hk]
-  have hx1 : ∀ k, ⟪e₂, xv k⟫ = 0 := fun k => by rw [hxv, inner_e₂_smul_e₁]
+  have hx1 : ∀ k, ⟪e₂, xv k⟫ = 0 := fun k => by rw [hxv, h21]
   have hHk : ∀ k, IsSpikeJetOf P.p H 1 ⟪e₂, xv k⟫ 1 := fun k => by rw [hx1]; exact hHd
   have hGk : ∀ k ≤ κ, IsSpikeJetOf P.p G 1 ⟪e₁, xv k⟫ (β k) := fun k hk => by
-    rw [hxle k (by omega), inner_e₁_smul]; exact hGs k hk
+    rw [hxle k (by omega), h11]; exact hGs k hk
   have hGz' : ∀ k, κ < k → IsSpikeJetOf P.p G 1 ⟪e₁, xv k⟫ 0 := fun k hk => by
-    rw [hxgt k hk, inner_e₁_smul]; exact hGz
+    rw [hxgt k hk, h11]; exact hGz
   have hdecT : ∀ k ≤ κ, ∀ j ∈ Finset.Icc 1 P.p, ∀ d,
       (Dv k).taylorDecrement j d = β k * ⟪e₁, d⟫ + ⟪e₂, d⟫ := fun k hk j hj d => by
-    rw [hDv, taylorDecrement_slit hGc hHc (hGk k hk) (hHk k) (Finset.mem_Icc.1 hj).1
+    rw [hDv, taylorDecrement_ridge_add_ridge hGc hHc (hGk k hk) (hHk k) (Finset.mem_Icc.1 hj).1
       (Finset.mem_Icc.1 hj).2, one_mul]
   have hdecZ : ∀ k, κ < k → ∀ j ∈ Finset.Icc 1 P.p, ∀ d,
       (Dv k).taylorDecrement j d = ⟪e₂, d⟫ := fun k hk j hj d => by
-    rw [hDv, taylorDecrement_slit hGc hHc (hGz' k hk) (hHk k) (Finset.mem_Icc.1 hj).1
+    rw [hDv, taylorDecrement_ridge_add_ridge hGc hHc (hGz' k hk) (hHk k) (Finset.mem_Icc.1 hj).1
       (Finset.mem_Icc.1 hj).2, one_mul, zero_mul, zero_add]
   have hfline : ∀ c : ℝ, f (c • e₁) = G c + H 0 := fun c => by
-    simp only [hfdef, Pi.add_apply, ridge_apply, inner_e₁_smul, inner_e₂_smul_e₁]
+    simp only [hfdef, Pi.add_apply, ridge_apply, h11,
+      h21]
   have hxs : ∀ k ≤ κ, xv (k + 1) = xv k + sv k := fun k hk => by
     rw [hxle (k + 1) (by omega), hxle k (by omega), hsv, ite_eq_left hk, hξ1, add_smul]
   have hdecs : ∀ k ≤ κ, (Dv k).taylorDecrement P.p (sv k) = β k * ts k := fun k hk => by
-    rw [hdecT k hk _ (Finset.mem_Icc.2 ⟨hp1, le_rfl⟩), hsv, ite_eq_left hk, inner_e₁_smul,
-      inner_e₂_smul_e₁, add_zero]
+    rw [hdecT k hk _ (Finset.mem_Icc.2 ⟨hp1, le_rfl⟩), hsv, ite_eq_left hk,
+        h11,
+      h21, add_zero]
   have hρ1 : ∀ k ≤ κ, arqpIDARatio f P Dv xv sv k = 1 := fun k hk => by
     have hpos : 0 < β k * ts k := mul_pos (hβpos k hk) (hts0 k hk)
     rw [arqpIDARatio, reductionRatio_def, hdecs k hk, ← hxs k hk, hxle k (by omega),
@@ -3462,16 +3036,19 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise_constrained {p q : ℕ} (hq : 1 �
       simp only [hts, Nat.sub_self, Nat.factorial_zero, Nat.cast_one, mul_one]
       congr 1; field_simp
     rw [e] at hm
-    rw [hsv, ite_eq_left hk, hDv, regularizedModel_slit_line hp1 hGc hHc (hGk k hk) (hHk k) _
-      (inner_e₂_smul_e₁ _), regularizedModel_slit_line hp1 hGc hHc (hGk k hk) (hHk k) _
-      (inner_e₂_smul_e₁ _), inner_e₁_smul, inner_e₁_smul]
+    rw [hsv, ite_eq_left hk, hDv, regularizedModel_ridge_add_ridge hspan hp1 hGc hHc (hGk k
+        hk) (hHk k) _
+      (h21 _), regularizedModel_ridge_add_ridge hspan hp1 hGc hHc (hGk k hk)
+          (hHk k) _
+      (h21 _), h11, h11]
     exact (add_le_add_iff_left _).2 (isMinOn_iff.1 hm _ (mem_univ _))
   have hmodel : ∀ k ≤ κ, ∀ ℓ ∈ Finset.Icc 1 P.q, ∀ d, ‖d‖ ≤ ε → ⟪e₂, d⟫ = 0 →
       (ftaylorSeries ℝ (regularizedModel (Dv k) P.p P.σ₀) (sv k)).taylorDecrement ℓ d ≤ 0 :=
     fun k hk ℓ hℓ d hd hd1 => by
       have hℓp : ℓ ≤ P.p := (Finset.mem_Icc.1 hℓ).2.trans P.q_le_p
       have hσ0 : 0 < P.σ₀ := by rw [hσ]; exact hσI0
-      rw [hsv, ite_eq_left hk, hDv, taylorDecrement_regularizedModel_slit hp1 hGc hHc (hGk k hk)
+      rw [hsv, ite_eq_left hk, hDv, taylorDecrement_regularizedModel_ridge_add_ridge hE.1
+          hE.2.2 hspan hp1 hGc hHc (hGk k hk)
         (hHk k) P.σ₀ (ts k) hd1 hℓp]
       have hm : negMonomialRegModel P.p 1 P.σ₀ (β k) =
           fun t : ℝ => -β k * t + P.σ₀ * |t| ^ (P.p + 1) / (P.p + 1)! := by
@@ -3486,7 +3063,8 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise_constrained {p q : ℕ} (hq : 1 �
       have hle := taylorDecrement_le_taylorMeasure
         (ftaylorSeries ℝ (fun t : ℝ => -β k * t + P.σ₀ * |t| ^ (P.p + 1) / (P.p + 1)!)
           ((β k * P.p ! / P.σ₀) ^ (1 / (P.p : ℝ)))) ℓ (S := univ) (δ := ε) (d := ⟪e₁, d⟫)
-        ⟨mem_closedBall_zero_iff.2 (by rw [Real.norm_eq_abs]; exact (abs_inner_e₁_le d).trans hd),
+        ⟨mem_closedBall_zero_iff.2 (by rw [Real.norm_eq_abs]; exact ((abs_real_inner_le_norm e₁
+            d).trans (by rw [hE.1, one_mul])).trans hd),
           mem_univ _⟩
       rw [h0] at hle
       rw [hm, ht]
@@ -3503,22 +3081,23 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise_constrained {p q : ℕ} (hq : 1 �
       · exact hδ₀ j hj
       · rfl
     by_cases hk : k ≤ κ
-    · refine slit_arqpDAStep (t := ts k) hε hε4 hερ (hβb k hk).1 (hβb k hk).2 hσ54 (hx1 k) hδk
+    · refine slit_arqpDAStep (t := ts k) hE.1 hE.2.1 hE.2.2 hε hε4 hερ (hβb k hk).1 (hβb k hk).2
+        hσ54 (hx1 k) hδk
         (by rw [hδv, ite_eq_right (Nat.succ_ne_zero k)]) rfl (fun _ _ => rfl)
         (fun j => by rw [hddv, ite_eq_left hk]) rfl (hdecT k hk)
         (by rw [hsv, ite_eq_left hk]) (hmin k hk) (hmodel k hk)
-        (by rw [hsv, ite_eq_left hk, norm_smul_e₁, abs_of_pos (hts0 k hk)]; exact hts1 k hk)
+        (by rw [hsv, ite_eq_left hk, hn1, abs_of_pos (hts0 k hk)]; exact hts1 k hk)
         (fun i hi => ?_) (not_lt.2 hk) (hxs k hk) rfl P.σmin_le_σ₀
         (by rw [hhv, hhv, Nat.sub_eq_zero_of_le (by omega), Nat.sub_eq_zero_of_le (by omega)])
         (hρ1 k hk)
       rw [hhv]
       dsimp only
       rw [Nat.sub_eq_zero_of_le (by omega), pow_zero, one_mul, hsv, ite_eq_left hk,
-        norm_smul_e₁, abs_of_pos (hts0 k hk)]
+        hn1, abs_of_pos (hts0 k hk)]
       exact (hh₀ i hi).trans (mul_le_mul_of_nonneg_left
         (pow_le_pow_left₀ hε.le (hts_ge' k hk) _) P.κs_pos.le)
     · have hk' : κ < k := not_le.1 hk
-      refine slit_acc_step hε hερ (hx1 k) hδk rfl (fun j => by rw [hddv, ite_eq_right hk])
+      refine slit_acc_step hE.2.1.le hε hερ (hx1 k) hδk rfl (fun j => by rw [hddv, ite_eq_right hk])
         (hdecZ k hk') hk' (by rw [hxgt k hk', hxgt (k + 1) (by omega)])
         (by rw [hδv, hδv, ite_eq_right (Nat.succ_ne_zero k), ite_eq_right (by omega)]) rfl
         fun i => ?_
@@ -3540,11 +3119,12 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise_constrained {p q : ℕ} (hq : 1 �
     constructor
     · rintro ⟨δ', hδ', ht'⟩
       by_contra hne
-      exact slit_not_approx hε hερ hρpow (by positivity) (hβpos k hk).le
-        (hβlt k (lt_of_le_of_ne hk hne)) (hx1 k) hq hdk δ' hδ' ht'
+      exact not_isEpsDeltaApprox_slitSet hE.1 hE.2.1 hE.2.2 hε hερ hρpow (by positivity)
+        (hβpos k hk).le (hβlt k (lt_of_le_of_ne hk hne)) (hx1 k) hq hdk hδ' ht'
     · rintro rfl
       exact ⟨fun _ => ε, fun _ _ => ⟨hε, hε1⟩,
-        slit_approx hε hε1 hερ (hβpos _ hk).le hβκ.le (hx1 _) hdk⟩
+        isEpsDeltaApprox_slitSet hE.1 hE.2.1.le hE.2.2 hε hε1 hερ (hβpos _ hk).le hβκ.le
+          (hx1 _) hdk⟩
   refine ⟨ρ, X, f, hερ, hρ2, hXeq, hXc, hfb, hf, xv, fun _ => P.σ₀, δv, δv, fun _ _ => ε, hv,
     Dv, ddv, fun _ => P.q, sv, fun k => κ < k, hrun, hDv, fun Lb hLb k _ _ => ⟨fun h => h.elim,
       fun _ j _ => ?_⟩, ⟨(htest κ le_rfl).2 rfl, fun i hi ht' => hi.ne ((htest i hi.le).1 ht')⟩,

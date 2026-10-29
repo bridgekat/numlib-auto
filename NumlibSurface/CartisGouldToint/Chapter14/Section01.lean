@@ -3,7 +3,7 @@ import Numlib.Analysis.Calculus.MultivariateTaylor.LinearComp
 import Numlib.Analysis.Calculus.MultivariateTaylor.VectorRemainder
 import Numlib.Optimization.ModelBased.HighOrder.ARqp
 import Numlib.Optimization.ModelBased.HighOrderStep
-import Numlib.Optimization.Complexity.SlowExampleARp
+import Numlib.Optimization.Complexity.SlowExample.ARp
 import Numlib.Optimization.Optimality.CurveConditions
 import NumlibSurface.CartisGouldToint.Chapter12.Section02
 import Numlib.Analysis.Calculus.AnchoredLipschitz

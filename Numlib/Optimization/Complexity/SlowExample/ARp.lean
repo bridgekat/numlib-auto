@@ -1,5 +1,5 @@
-import Numlib.Optimization.Complexity.SlowExample
-import Numlib.Optimization.Complexity.SlowExampleHighOrder
+import Numlib.Optimization.Complexity.SlowExample.Ridge
+import Numlib.Optimization.Complexity.SlowExample.HighOrder
 import Numlib.Optimization.ModelBased.ARpRun
 import Numlib.Optimization.Optimality.Unconstrained
 
@@ -17,22 +17,20 @@ gives ARp runs with `σ_k = σ₀`, exact model minimization and `ρ_k = 1`.
 
 ## Main definitions
 
-* `Optimization.IsSpikeJetOf p G q a α`: `G^{(q)}(a) = -α`, the other derivatives of orders
-  `1, …, p` vanish.
 * `Optimization.monomialMinimizer p q σ α`: the minimizer `t* = (α/λ)^{1/(p-q+1)}`,
   `λ = σ (q-1)!/p!`.
 
 ## Main statements
 
-* `Optimization.taylorPolynomial_ridge`, `Optimization.regularizedModel_ridge_spike`: the Taylor
-  polynomial of a ridge function and the model at a spike jet.
+* `Optimization.taylorPolynomial_ridge_spike`, `Optimization.regularizedModel_ridge_spike`: the
+  Taylor polynomial and the model of a ridge function at a spike jet.
+* `Optimization.taylorMeasure_eq_mul_pow_of_inner_pow`: the measure of a decrement
+  `a ⟪e, d⟫^q` along a unit vector.
 * `Optimization.iteratedDeriv_three_negMonomialRegModel_mem`,
   `Optimization.iteratedDeriv_two_negMonomialRegModel_mem`: the derivatives of the model at `t*`
   used by the third-order step condition (4.1.13) and the sets (4.1.14).
 * `Optimization.ridge_const_mul_slow_bounds`: scaled ridges of the slow interpolants satisfy the
   Lipschitz and lower bounds of the function classes, with constants independent of `ε`.
-* `Optimization.iteratedFDeriv_apply_const_eq_line`, `Optimization.taylorDecrement_eq_of_line`:
-  iterated derivatives and Taylor decrements along a line are those of the restriction.
 * `Optimization.taylorDecrement_regularizedModel_ridge_spike`: the model decrements at a spike
   jet along the ridge are those of the one-dimensional monomial model.
 * `Optimization.taylorDecrement_regularizedModel_ridge_linear_nonpos`: at a gradient spike the
@@ -47,11 +45,6 @@ open scoped Nat RealInnerProductSpace
 namespace Optimization
 
 /-! ### One-dimensional spike jets and the monomial model -/
-
-/-- One-dimensional jets with a single nonzero derivative of order in `[1, p]`: the `q`-th
-derivative is `-α`, the other derivatives of orders `1, …, p` vanish. -/
-def IsSpikeJetOf (p : ℕ) (G : ℝ → ℝ) (q : ℕ) (a α : ℝ) : Prop :=
-  iteratedDeriv q G a = -α ∧ ∀ j, 1 ≤ j → j ≤ p → j ≠ q → iteratedDeriv j G a = 0
 
 /-- The regularized monomial model is `C^p`. -/
 theorem contDiff_negMonomialRegModel (p q : ℕ) (σ α : ℝ) :
@@ -167,56 +160,15 @@ theorem iteratedDeriv_two_negMonomialRegModel_mem (hp : 3 ≤ p) (hσ : 0 < σ) 
 
 end Minimizer
 
-/-! ### Ridge functions -/
-
-/-! ### Restriction to a line -/
-
-section Line
-
-/-- **Iterated derivatives along a line**: for `F` of class `C^n` and `i ≤ n`, `∇^i F(s)[d]^i` is
-the `i`-th derivative of `τ ↦ F(s + τ d)` at `0`. -/
-theorem iteratedFDeriv_apply_const_eq_line {E : Type*} [NormedAddCommGroup E]
-    [NormedSpace ℝ E] {F : E → ℝ} {n : ℕ} (hF : ContDiff ℝ n F) {i : ℕ} (hi : i ≤ n) (s d : E) :
-    iteratedFDeriv ℝ i F s (fun _ => d) = iteratedDeriv i (fun τ : ℝ => F (s + τ • d)) 0 := by
-  have hcomp : (fun τ : ℝ => F (s + τ • d)) =
-      (fun v => F (s + v)) ∘ ContinuousLinearMap.toSpanSingleton ℝ d := by
-    funext τ; simp [ContinuousLinearMap.toSpanSingleton_apply]
-  have hg : ContDiff ℝ n (fun v => F (s + v)) := hF.comp (contDiff_const.add contDiff_id)
-  rw [hcomp, iteratedDeriv_eq_iteratedFDeriv,
-    (ContinuousLinearMap.toSpanSingleton ℝ d).iteratedFDeriv_comp_right hg 0
-      (by exact_mod_cast hi),
-    ContinuousMultilinearMap.compContinuousLinearMap_apply, iteratedFDeriv_comp_add_left]
-  simp [ContinuousLinearMap.toSpanSingleton_apply]
-
-/-- **Taylor decrements along a line**: if `F(s + τ d) = F₁(t + τ a)` for all `τ`, then the
-Taylor decrements of `F` at `s` along `d` are those of `F₁` at `t` along `a`. -/
-theorem taylorDecrement_eq_of_line {E : Type*} [NormedAddCommGroup E]
-    [NormedSpace ℝ E] {F : E → ℝ} {F₁ : ℝ → ℝ} {n : ℕ} (hF : ContDiff ℝ n F)
-    (hF₁ : ContDiff ℝ n F₁) {s d : E} {t a : ℝ} (hline : ∀ τ : ℝ, F (s + τ • d) = F₁ (t + τ * a))
-    {ℓ : ℕ} (hℓ : ℓ ≤ n) :
-    (ftaylorSeries ℝ F s).taylorDecrement ℓ d = (ftaylorSeries ℝ F₁ t).taylorDecrement ℓ a := by
-  rw [FormalMultilinearSeries.taylorDecrement_eq, FormalMultilinearSeries.taylorDecrement_eq]
-  congr 1
-  refine Finset.sum_congr rfl fun i hi => ?_
-  have hin : i ≤ n := (Finset.mem_Icc.1 hi).2.trans hℓ
-  change (i ! : ℝ)⁻¹ * iteratedFDeriv ℝ i F s (fun _ => d) =
-    (i ! : ℝ)⁻¹ * iteratedFDeriv ℝ i F₁ t (fun _ => a)
-  rw [iteratedFDeriv_apply_const_eq_line hF hin, iteratedFDeriv_apply_const_eq_line hF₁ hin]
-  congr 2
-  funext τ
-  rw [hline, smul_eq_mul]
-
-end Line
-
 section Ridge
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] {e : E}
 
 /-- **Bounds for scaled ridges of slow-example interpolants**: if `G` is `C^p` with
 `L`-Lipschitz `p`-th derivative and `|G^{(j)}| ≤ B` for `j ≤ p` (the output of the interpolation
-lemmas of `Optimization.SlowExampleHighOrder`), then for `λ ∈ (0, 1]` and `‖e‖ ≤ 1` the ridge
-`f = λ G(⟪e, ·⟫)` is `C^p`, bounded below by `-B`, and its derivatives of orders `0, …, p` are
-`max(1, L, B)`-Lipschitz. -/
+lemmas of `Numlib.Optimization.Complexity.SlowExample.HighOrder`), then for `λ ∈ (0, 1]` and
+`‖e‖ ≤ 1` the ridge `f = λ G(⟪e, ·⟫)` is `C^p`, bounded below by `-B`, and its derivatives of
+orders `0, …, p` are `max(1, L, B)`-Lipschitz. -/
 theorem ridge_const_mul_slow_bounds {G : ℝ → ℝ} {p : ℕ} (hG : ContDiff ℝ p G) {L B lam : ℝ}
     (hB : 0 ≤ B)
     (hGL : ∀ s t, |iteratedDeriv p G s - iteratedDeriv p G t| ≤ L * |s - t|)
@@ -251,15 +203,14 @@ theorem ridge_const_mul_slow_bounds {G : ℝ → ℝ} {p : ℕ} (hG : ContDiff �
   rw [ridge_apply]
   nlinarith [(abs_le.1 h0).1, (abs_le.1 h0).2]
 
-/-- The Taylor polynomial of a ridge function:
-`T_p(x, s) = ∑_{i ≤ p} G^{(i)}(⟪e, x⟫) ⟪e, s⟫^i / i!`. -/
-theorem taylorPolynomial_ridge {G : ℝ → ℝ} {p : ℕ} (hG : ContDiff ℝ p G) (e x s : E) :
-    taylorPolynomial (ridge G e) p x s =
-      ∑ i ∈ range (p + 1), (i.factorial : ℝ)⁻¹ * (iteratedDeriv i G ⟪e, x⟫ * ⟪e, s⟫ ^ i) := by
-  rw [taylorPolynomial_apply]
-  refine sum_congr rfl fun i hi => ?_
-  have hi' : i ≤ p := Nat.lt_succ_iff.1 (mem_range.1 hi)
-  rw [smul_eq_mul, iteratedFDeriv_ridge_apply_diag hG (by exact_mod_cast hi')]
+/-- The Taylor measure over the ball of radius `δ` of a decrement `d ↦ a ⟪e, d⟫^q` (`a ≥ 0`,
+`‖e‖ = 1`) is `a δ^q`. -/
+theorem taylorMeasure_eq_mul_pow_of_inner_pow {D : FormalMultilinearSeries ℝ E ℝ} {j q : ℕ}
+    {a δ : ℝ} (he : ‖e‖ = 1) (ha : 0 ≤ a) (hδ : 0 ≤ δ)
+    (hdec : ∀ d, D.taylorDecrement j d = a * ⟪e, d⟫ ^ q) :
+    taylorMeasure D j δ univ = a * δ ^ q := by
+  rw [taylorMeasure, show D.taylorDecrement j = fun d => a * ⟪e, d⟫ ^ q from funext hdec]
+  exact decrementMeasure_mul_inner_pow he ha hδ
 
 section Spike
 

@@ -357,28 +357,14 @@ section OneDim
 open Chapter02 (e₀ norm_e₀ inner_e₀_smul)
 
 /-- Every vector of `ℝ¹` is a multiple of `e₀`. -/
-theorem eq_inner_e₀_smul (s : EuclideanSpace ℝ (Fin 1)) : s = ⟪e₀, s⟫ • e₀ := by
-  ext i
-  fin_cases i
-  simp [EuclideanSpace.inner_single_left]
+theorem eq_inner_e₀_smul (s : EuclideanSpace ℝ (Fin 1)) : s = ⟪e₀, s⟫ • e₀ :=
+  EuclideanSpace.eq_inner_single_smul s
 
-theorem norm_eq_abs_inner_e₀ (s : EuclideanSpace ℝ (Fin 1)) : ‖s‖ = |⟪e₀, s⟫| := by
-  conv_lhs => rw [eq_inner_e₀_smul s]
-  rw [norm_smul, norm_e₀, mul_one, Real.norm_eq_abs]
+theorem norm_eq_abs_inner_e₀ (s : EuclideanSpace ℝ (Fin 1)) : ‖s‖ = |⟪e₀, s⟫| :=
+  EuclideanSpace.norm_eq_abs_inner_single s
 
-theorem inner_e₀_sq (s : EuclideanSpace ℝ (Fin 1)) : ⟪e₀, s⟫ ^ 2 = ‖s‖ ^ 2 := by
-  rw [norm_eq_abs_inner_e₀, sq_abs]
-
-/-- The Taylor polynomial of a ridge function along a unit-free direction `e`:
-`T_{p}(x, s) = ∑_{i ≤ p} G^{(i)}(⟪e, x⟫) ⟪e, s⟫^i / i!`. -/
-theorem taylorPolynomial_ridge {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
-    {G : ℝ → ℝ} {p : ℕ} (hG : ContDiff ℝ p G) (e x s : E) :
-    taylorPolynomial (ridge G e) p x s =
-      ∑ i ∈ range (p + 1), (i.factorial : ℝ)⁻¹ * (iteratedDeriv i G ⟪e, x⟫ * ⟪e, s⟫ ^ i) := by
-  rw [taylorPolynomial_apply]
-  refine sum_congr rfl fun i hi => ?_
-  have hi' : i ≤ p := Nat.lt_succ_iff.1 (mem_range.1 hi)
-  rw [smul_eq_mul, iteratedFDeriv_ridge_apply_diag hG (by exact_mod_cast hi')]
+theorem inner_e₀_sq (s : EuclideanSpace ℝ (Fin 1)) : ⟪e₀, s⟫ ^ 2 = ‖s‖ ^ 2 :=
+  EuclideanSpace.inner_single_sq s
 
 /-- The quadratic Taylor polynomial of a ridge function on `ℝ¹`:
 `T_{f,2}(x, s) = G(a) + G'(a) t + G''(a) t²/2` with `a = ⟪e₀, x⟫`, `t = ⟪e₀, s⟫`. -/
@@ -393,15 +379,8 @@ theorem taylorPolynomial_two_ridge {G : ℝ → ℝ} (hG : ContDiff ℝ 2 G)
 /-- The Hessian of a ridge function on `ℝ¹` acts as multiplication by `G''(⟪e₀, x⟫)`. -/
 theorem hessianOperator_ridge {G : ℝ → ℝ} (hG : ContDiff ℝ 2 G)
     (x u : EuclideanSpace ℝ (Fin 1)) :
-    hessianOperator (ridge G e₀) x u = iteratedDeriv 2 G ⟪e₀, x⟫ • u := by
-  refine ext_inner_left ℝ fun w => ?_
-  rw [inner_hessianOperator_apply (contDiff_ridge hG).contDiffAt, iteratedFDeriv_ridge_apply hG
-    (by norm_num), Fin.prod_univ_two, inner_smul_right]
-  simp only [Matrix.cons_val_zero, Matrix.cons_val_one]
-  conv_rhs => rw [eq_inner_e₀_smul w, eq_inner_e₀_smul u]
-  rw [inner_smul_left, inner_smul_right, real_inner_self_eq_norm_sq, norm_e₀]
-  simp only [conj_trivial]
-  ring
+    hessianOperator (ridge G e₀) x u = iteratedDeriv 2 G ⟪e₀, x⟫ • u :=
+  Optimization.hessianOperator_ridge_single hG x u
 
 /-- The least curvature of a ridge function on `ℝ¹` is `G''(⟪e₀, x⟫)`. -/
 theorem hessianMinEig_ridge {G : ℝ → ℝ} (hG : ContDiff ℝ 2 G) (x : EuclideanSpace ℝ (Fin 1)) :

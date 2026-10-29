@@ -3,7 +3,7 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 import Numlib.Analysis.SpecialFunctions.FlatFunctions
 import Numlib.Analysis.Calculus.Gradient
 import Numlib.Analysis.InnerProductSpace.NormPow
-import Numlib.Optimization.Complexity.SlowExampleHighOrder
+import Numlib.Optimization.Complexity.SlowExample.HighOrder
 import Numlib.Optimization.Optimality.CurveConditions
 import Numlib.Optimization.Optimality.HighOrder
 import Numlib.Optimization.Optimality.TaylorStability

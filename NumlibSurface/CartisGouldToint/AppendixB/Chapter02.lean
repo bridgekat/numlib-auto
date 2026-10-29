@@ -1,4 +1,4 @@
-import Numlib.Optimization.Complexity.ZigZagExample
+import Numlib.Optimization.Complexity.SlowExample.ZigZag
 import NumlibSurface.CartisGouldToint.Chapter02.Section02
 
 /-!
@@ -10,9 +10,9 @@ Chapter 2": the two-dimensional example on which steepest descent with exact lin
 needs `ε⁻²` iterations (proof of Theorem 2.2.5, `Chapter02.theorem_2_2_5`), Lemmas B.2.1–B.2.6.
 
 The construction is the backbone `Optimization.zigZagFunction ε k_ε`
-(`Optimization.Complexity.ZigZagExample`), `f_SDEX(x, y) = (f₁(x) + f₂(x, y))/√2`, with iterates
-`Optimization.zigZagIterate ε k_ε k`; throughout, `ε > 0` and `k_ε ε² = 1`, i.e. `ε⁻²` is an
-integer (`Optimization.ZigZag.IsAdmissible`).
+(`Numlib.Optimization.Complexity.SlowExample.ZigZag`), `f_SDEX(x, y) = (f₁(x) + f₂(x, y))/√2`,
+with iterates `Optimization.zigZagIterate ε k_ε k`; throughout, `ε > 0` and `k_ε ε² = 1`, i.e.
+`ε⁻²` is an integer (`Optimization.ZigZag.IsAdmissible`).
 
 ## Main results
 

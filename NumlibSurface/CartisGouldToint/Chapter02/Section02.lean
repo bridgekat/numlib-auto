@@ -1,6 +1,7 @@
 import Numlib.Optimization.Complexity.Basic
-import Numlib.Optimization.Complexity.SlowExample
-import Numlib.Optimization.Complexity.ZigZagExample
+import Numlib.Optimization.Complexity.SlowExample.Basic
+import Numlib.Optimization.Complexity.SlowExample.Ridge
+import Numlib.Optimization.Complexity.SlowExample.ZigZag
 import Numlib.Optimization.LineSearch.Backtracking
 import NumlibSurface.CartisGouldToint.Chapter02.Section01
 
@@ -295,6 +296,9 @@ theorem norm_e₀ : ‖e₀‖ = 1 := by simp [e₀]
 
 theorem inner_e₀_smul (c : ℝ) : ⟪e₀, c • e₀⟫ = c := by
   rw [inner_smul_right, real_inner_self_eq_norm_sq, norm_e₀]; ring
+
+theorem norm_smul_e₀ (c : ℝ) : ‖c • e₀‖ = |c| := by
+  rw [norm_smul, norm_e₀, mul_one, Real.norm_eq_abs]
 
 /-- A one-dimensional function `G` with `|G| ≤ B` and `L`-Lipschitz `C¹` derivative, lifted to
 `ℝ¹` along `e₀`, satisfies f.Bb with `f_low = -B` and f.gL with constant `max L 1`; its gradient

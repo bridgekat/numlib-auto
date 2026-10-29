@@ -1,3 +1,4 @@
+import Numlib.Analysis.SpecialFunctions.Pow.Real
 import Numlib.Optimization.ResidualPower
 import NumlibSurface.CartisGouldToint.Chapter01.Section01
 
@@ -370,15 +371,6 @@ private theorem div_mul_le_self {ω t : ℝ} (hω : 0 ≤ ω) (ht : 0 ≤ t) : �
   · rw [div_mul_cancel₀ _ ht.ne']
   · rw [← ht, mul_zero]; exact hω
 
-/-- `a^{n/m} ≤ t^n` from `a ≤ t^m` (for `a, t ≥ 0`, `m > 0`). -/
-private theorem rpow_div_le_pow_of_le_pow {a t : ℝ} {m n : ℕ} (ha : 0 ≤ a) (ht : 0 ≤ t)
-    (hm : 0 < m) (h : a ≤ t ^ m) : a ^ ((n : ℝ) / m) ≤ t ^ n := by
-  have hm' : (m : ℝ) ≠ 0 := by exact_mod_cast hm.ne'
-  calc a ^ ((n : ℝ) / m) ≤ (t ^ m) ^ ((n : ℝ) / m) := by gcongr
-    _ = t ^ n := by
-        rw [← Real.rpow_natCast t m, ← Real.rpow_mul ht, mul_div_cancel₀ _ hm',
-          Real.rpow_natCast]
-
 /-- The decreases of Lemma 4.1.4 for `f = Φ_ℓ`, multiplied by `ℓ`, in terms of the unscaled
 measures at `x_{k+1}` (and the step-length decrease (4.1.37) with (4.1.23)). -/
 private theorem decrease_unscaled {ℓ : ℝ} (hℓ : 0 < ℓ)
@@ -429,7 +421,7 @@ private theorem decrease_unscaled {ℓ : ℝ} (hℓ : 0 < ℓ)
   have hn : ((p : ℝ) + 1) = ((p + 1 : ℕ) : ℝ) := by push_cast; ring
   have hm : ((p : ℝ) - 1) = ((p - 1 : ℕ) : ℝ) := by
     rw [Nat.cast_sub (by omega)]; push_cast; ring
-  have hpow := rpow_div_le_pow_of_le_pow (n := p + 1) (by positivity) (norm_nonneg _)
+  have hpow := Real.rpow_div_le_pow_of_le_pow (n := p + 1) (by positivity) (norm_nonneg _)
     (by omega) hstep
   rw [← hn, ← hm, Real.mul_rpow hK2.le (abs_nonneg _)] at hpow
   have hc := coef_nonneg (P := P) (p := p)
@@ -1086,13 +1078,6 @@ private theorem div_mul_le_mul_div {e E K k M m : ℝ} (he : 0 ≤ e) (heE : e �
           (one_div_le_one_div_of_le hm hmM) (by positivity) (by have := he.trans heE; positivity)
     _ = k * E / m := by ring
 
-/-- `R^a R^b ≤ R^{a+b}` for `R ≥ 0`, `a > 0` (equality if `R > 0`). -/
-private theorem rpow_mul_rpow_le {R a b : ℝ} (hR : 0 ≤ R) (ha : 0 < a) :
-    R ^ a * R ^ b ≤ R ^ (a + b) := by
-  rcases hR.lt_or_eq with hR | hR
-  · rw [Real.rpow_add hR]
-  · rw [← hR, Real.zero_rpow ha.ne', zero_mul]; exact Real.rpow_nonneg le_rfl _
-
 /-- **Theorem 5.1.7** ([cartis2022evaluation]): suppose that `i ≥ 0` and the integer `ℓ > 1`
 satisfy (5.1.42) or (5.1.43) for `p`, that Φ_ℓ.DpL holds, `σ_min > 0` and `β ∈ (0, 1)`. Then for
 all `ε₀, ε₁, ε₂, ε₃ > 0`, every run of ARpLE (`q = 3`) terminates at some `k_ε` (the first index
@@ -1213,8 +1198,8 @@ theorem theorem_5_1_7 {ℓ i : ℕ} (hℓ : 1 < ℓ)
     have hRα : 0 ≤ R ^ α := Real.rpow_nonneg hR0 _
     rw [hM1, mul_max_of_nonneg _ _ hRα, mul_max_of_nonneg _ _ hRα, mul_max_of_nonneg _ _ hRα,
       mul_one, ← e1, ← e2, ← e3]
-    exact max_le_max (max_le_max le_rfl (rpow_mul_rpow_le hR0 hα))
-      (max_le_max (rpow_mul_rpow_le hR0 hα) (rpow_mul_rpow_le hR0 hα))
+    exact max_le_max (max_le_max le_rfl (Real.le_rpow_add hR0 _ _))
+      (max_le_max (Real.le_rpow_add hR0 _ _) (Real.le_rpow_add hR0 _ _))
   set Rmax := max (max (R ^ α) (R ^ (1 - ((ℓ : ℝ) - 1) / p)))
     (max (R ^ (1 - 2 * ((ℓ : ℝ) - 1) / ((p : ℝ) - 1)))
       (R ^ (1 - 3 * ((ℓ : ℝ) - 1) / ((p : ℝ) - 2)))) with hRmax

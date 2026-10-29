@@ -34,9 +34,9 @@ with orthonormal columns of (3.4.32) are represented by their ranges `V_k`, a su
 * `lemma_3_4_7` – `lemma_3_4_10`, `theorem_3_4_11`, `theorem_3_4_12` (iRN).
 * `tre_slow_example`, `irn_slow_example` — the TRε and iRN runs on the data (3.5.12) used in
   Corollary 3.5.5.
-* `card_successSet_le_two_mul_add_one` — the counting device of the corrected Theorems 3.4.6 and
-  3.4.12: if every successful iteration lacking the required decrease is followed by a
-  successful iteration with it, then `|𝒮_k| ≤ 2 |𝒢_k| + 1`.
+* `Optimization.card_successSet_le_two_mul_add_one` — the counting device of the corrected
+  Theorems 3.4.6 and 3.4.12: if every successful iteration lacking the required decrease is
+  followed by a successful iteration with it, then `|𝒮_k| ≤ 2 |𝒢_k| + 1`.
 
 ## Fixes with respect to the book
 
@@ -1708,57 +1708,35 @@ theorem tre_slow_data :
           deriv G (X k) + (iteratedDeriv 2 G (X k) + √ε) * t k = 0 ∧
           -(deriv G (X k) * t k + iteratedDeriv 2 G (X k) * t k ^ 2 / 2) ≤
             G (X k) - G (X (k + 1)) := by
-  obtain ⟨L, B, hL, hB, H⟩ := exists_slowSecondOrder_interpolant (a := 1 / 2) (b := 1)
+  obtain ⟨L, B, hL, hB, H⟩ := exists_slowSecondOrder_run_data (a := 1 / 2) (b := 1)
     (by norm_num) (by norm_num)
   refine ⟨-B, max B 1, max L 1, B, le_max_right _ _, le_max_right _ _, fun ε hε hε1 => ?_⟩
-  set K := ⌈ε ^ (-(3 / 2 : ℝ))⌉₊
-  obtain ⟨hKlt, hKge, hKle⟩ := ceil_rpow_facts hε hε1.le
   set r := √ε with hr
   have hr0 : 0 < r := Real.sqrt_pos.2 hε
   have hr2 : r ^ 2 = ε := Real.sq_sqrt hε.le
   have hhalf : ε ^ (1 / 2 : ℝ) = r := by rw [hr, Real.sqrt_eq_rpow]
   have h32 : ε ^ (3 / 2 : ℝ) = r ^ 3 := by
     rw [hr, Real.sqrt_eq_rpow, ← Real.rpow_natCast, ← Real.rpow_mul hε.le]; norm_num
-  set F : ℕ → ℝ := fun k => 1 - k * ε ^ (3 / 2 : ℝ) / 2
+  set F := secondOrderF ε
+  have hF : ∀ k < secondOrderK ε, 1 / 2 < F k ∧ F k ≤ 1 := fun k hk =>
+    ⟨secondOrderF_gt_half hε hk, secondOrderF_le_one hε k⟩
   set θ : ℕ → ℝ := fun k => 4 * F k ^ 2 / (4 * F k ^ 2 + 1)
-  set X : ℕ → ℝ := fun k => ∑ j ∈ range k, θ j * ε ^ (1 / 2 : ℝ) / (2 * F j)
-  have hF : ∀ k < K, 1 / 2 < F k ∧ F k ≤ 1 := fun k hk => by
-    have := hKlt k hk
-    have : 0 ≤ (k : ℝ) * ε ^ (3 / 2 : ℝ) := by positivity
-    simp only [F]; constructor <;> linarith
-  have hFK : 0 ≤ F K ∧ F K ≤ 1 / 2 := by simp only [F]; constructor <;> linarith
-  have hθ : ∀ k < K, θ k ∈ Icc (1 / 2 : ℝ) 1 := fun k hk => by
+  have hθ : ∀ k < secondOrderK ε, θ k ∈ Icc (1 / 2 : ℝ) 1 := fun k hk => by
     obtain ⟨h1, -⟩ := hF k hk
     have hd : 0 < 4 * F k ^ 2 + 1 := by positivity
     simp only [θ, Set.mem_Icc]
     constructor
     · rw [le_div_iff₀ hd]; nlinarith
     · rw [div_le_one hd]; linarith
-  have hX : ∀ k < K,
-      X (k + 1) = X k + θ k * ε ^ (1 / 2 : ℝ) / (2 * (1 - k * ε ^ (3 / 2 : ℝ) / 2)) :=
-    fun k _ => by simp [X, F, sum_range_succ]
-  obtain ⟨G, hG, hGL, hGB, hGk⟩ := H ε θ X hε hε1.le hθ hX
+  obtain ⟨G, hG, hGL, hGB, hGk⟩ := H ε θ hε hε1 hθ
   obtain ⟨hb, hgl, -, hhl, -⟩ := ridge_assumptions_two hG hGL hGB
+  set X := secondOrderX θ ε
   set t : ℕ → ℝ := fun k => θ k * r / (2 * F k)
-  have hval : ∀ k ≤ K, G (X k) = F k ∧ deriv G (X k) = -2 * ε * F k ∧
+  have hval : ∀ k ≤ secondOrderK ε, G (X k) = F k ∧ deriv G (X k) = -2 * ε * F k ∧
       iteratedDeriv 2 G (X k) = 4 * r * F k ^ 2 := fun k hk => by
-    obtain ⟨h1, h2, h3⟩ := hGk k hk
-    exact ⟨h1, h2, by rw [h3, hhalf]⟩
-  have htest : ∀ k ≤ K, (|deriv G (X k)| ≤ ε ↔ K ≤ k) := fun k hk => by
-    have hF0 : 0 ≤ F k := by
-      rcases lt_or_eq_of_le hk with h | rfl
-      · linarith [(hF k h).1]
-      · exact hFK.1
-    rw [(hval k hk).2.1, show -2 * ε * F k = -(2 * ε * F k) by ring, abs_neg,
-      abs_of_nonneg (by positivity)]
-    constructor
-    · intro h
-      by_contra hlt
-      nlinarith [(hF k (not_le.1 hlt)).1]
-    · intro h
-      rw [le_antisymm hk h]
-      nlinarith [hFK.2]
-  have hdata : ∀ k < K, X (k + 1) = X k + t k ∧ 0 < t k ∧ t k ≤ r / 2 ∧
+    obtain ⟨h1, h2, h3, -⟩ := hGk k hk
+    exact ⟨h1, h2, by rw [h3, secondOrderH, hhalf]⟩
+  have hdata : ∀ k < secondOrderK ε, X (k + 1) = X k + t k ∧ 0 < t k ∧ t k ≤ r / 2 ∧
       r ≤ iteratedDeriv 2 G (X k) ∧
       deriv G (X k) + (iteratedDeriv 2 G (X k) + r) * t k = 0 ∧
       -(deriv G (X k) * t k + iteratedDeriv 2 G (X k) * t k ^ 2 / 2) ≤
@@ -1773,7 +1751,7 @@ theorem tre_slow_data :
       have h2 : 0 < 2 * F k := by linarith [hFk.1]
       exact div_pos (mul_pos h1 hr0) h2
     have hd : 0 < 4 * F k ^ 2 + 1 := by positivity
-    refine ⟨by simp only [t]; rw [hX k hk, hhalf], htk, ?_, ?_, ?_, ?_⟩
+    refine ⟨by simp only [X, t]; rw [secondOrderX_succ, hhalf], htk, ?_, ?_, ?_, ?_⟩
     · have e : t k = r * (2 * F k / (4 * F k ^ 2 + 1)) := by
         simp only [t, θ]; field_simp; ring
       have h2 : 2 * F k / (4 * F k ^ 2 + 1) ≤ 1 / 2 := by
@@ -1794,12 +1772,11 @@ theorem tre_slow_data :
         simp only [t]
         field_simp
         ring
-      rw [hpred, hv1, hw1]
-      simp only [F]
-      rw [h32]
-      push_cast
+      rw [hpred, hv1, hw1, show F (k + 1) = F k - ε ^ (3 / 2 : ℝ) / 2 from secondOrderF_succ ε k,
+        h32]
       nlinarith [mul_nonneg (pow_pos hr0 3).le (sq_nonneg (1 - θ k))]
-  refine ⟨G, X, t, hG, hb, hgl, hhl, fun y => ?_, by simp [X], htest, hdata⟩
+  refine ⟨G, X, t, hG, hb, hgl, hhl, fun y => ?_, secondOrderX_zero _ _,
+    fun k hk => (hGk k hk).2.2.2, hdata⟩
   have := hGB 0 (by norm_num) ⟪e₀, y⟫
   rwa [iteratedDeriv_zero] at this
 
@@ -1976,48 +1953,6 @@ private theorem quad_root_facts {σ q : ℝ} (hq0 : 0 < q) (hqσ : q ≤ σ) :
   · rw [div_le_one (by linarith)]; linarith
   · rw [div_le_div_iff₀ (by linarith) (by linarith)]; nlinarith
 
-/-- The rescaled function `G(u) = c G₀(u/c)` (`0 < c ≤ 1`) of a `C²` function with `L`-Lipschitz
-second derivative and derivatives bounded by `B` is `C²` with `G^{(j)}(u) = c c^{-j} G₀^{(j)}(u/c)`,
-`L/c²`-Lipschitz second derivative and derivatives bounded by `B/c²`. -/
-private theorem rescale_facts {G₀ : ℝ → ℝ} {c L B : ℝ} (hc0 : 0 < c) (hc1 : c ≤ 1)
-    (hG₀ : ContDiff ℝ 2 G₀)
-    (hGL : ∀ s t, |iteratedDeriv 2 G₀ s - iteratedDeriv 2 G₀ t| ≤ L * |s - t|)
-    (hGB : ∀ j ≤ 2, ∀ t, |iteratedDeriv j G₀ t| ≤ B) :
-    ContDiff ℝ 2 (fun u => c * G₀ (c⁻¹ * u)) ∧
-      (∀ j ≤ 2, ∀ u, iteratedDeriv j (fun u => c * G₀ (c⁻¹ * u)) u =
-        c * c⁻¹ ^ j * iteratedDeriv j G₀ (c⁻¹ * u)) ∧
-      (∀ u v, |iteratedDeriv 2 (fun u => c * G₀ (c⁻¹ * u)) u -
-        iteratedDeriv 2 (fun u => c * G₀ (c⁻¹ * u)) v| ≤ L / c ^ 2 * |u - v|) ∧
-      ∀ j ≤ 2, ∀ u, |iteratedDeriv j (fun u => c * G₀ (c⁻¹ * u)) u| ≤ B / c ^ 2 := by
-  set G : ℝ → ℝ := fun u => c * G₀ (c⁻¹ * u)
-  have hG : ContDiff ℝ 2 G := contDiff_const.mul (hG₀.comp (contDiff_const.mul contDiff_id))
-  have hid : ∀ j ≤ 2, ∀ u, iteratedDeriv j G u = c * c⁻¹ ^ j * iteratedDeriv j G₀ (c⁻¹ * u) := by
-    intro j hj u
-    have h1 : iteratedDeriv j G u = c * iteratedDeriv j (fun v => G₀ (c⁻¹ * v)) u :=
-      iteratedDeriv_const_mul_field c _
-    rw [h1, iteratedDeriv_comp_const_mul (hG₀.of_le (by exact_mod_cast hj)) c⁻¹]
-    ring
-  have hc2 : c * c⁻¹ ^ 2 = c⁻¹ := by field_simp
-  have hc1' : c * c⁻¹ ^ 1 = 1 := by field_simp
-  refine ⟨hG, hid, fun u v => ?_, fun j hj u => ?_⟩
-  · rw [hid 2 le_rfl, hid 2 le_rfl, hc2, ← mul_sub, abs_mul, abs_of_pos (inv_pos.2 hc0)]
-    have := hGL (c⁻¹ * u) (c⁻¹ * v)
-    rw [← mul_sub, abs_mul, abs_of_pos (inv_pos.2 hc0)] at this
-    calc c⁻¹ * |iteratedDeriv 2 G₀ (c⁻¹ * u) - iteratedDeriv 2 G₀ (c⁻¹ * v)|
-        ≤ c⁻¹ * (L * (c⁻¹ * |u - v|)) := mul_le_mul_of_nonneg_left this (by positivity)
-      _ = L / c ^ 2 * |u - v| := by field_simp
-  · rw [hid j hj, abs_mul, abs_of_pos (by positivity)]
-    have hpow : c * c⁻¹ ^ j ≤ 1 / c ^ 2 := by
-      interval_cases j
-      · rw [pow_zero, mul_one, le_div_iff₀ (by positivity)]
-        nlinarith [pow_le_one₀ hc0.le hc1 (n := 3)]
-      · rw [hc1', le_div_iff₀ (by positivity), one_mul]; exact pow_le_one₀ hc0.le hc1
-      · rw [hc2, one_div, inv_le_inv₀ hc0 (by positivity)]; nlinarith
-    have hB0 : 0 ≤ B := (abs_nonneg _).trans (hGB 0 (by norm_num) 0)
-    calc c * c⁻¹ ^ j * |iteratedDeriv j G₀ (c⁻¹ * u)| ≤ 1 / c ^ 2 * B :=
-          mul_le_mul hpow (hGB j hj _) (abs_nonneg _) (by positivity)
-      _ = B / c ^ 2 := by ring
-
 /-- **The one-dimensional data of the iRN example** ([cartis2022evaluation], (3.5.12),
 rescaled). For all iRN constants there are `f_low`, `L₁ ≥ 1`, `L₂ ≥ 1` and `B` such that for every
 `ε ∈ (0, 1)` there are a `C²` function `G : ℝ → ℝ` (whose ridge on `ℝ¹` satisfies f.Bb, f.gL, f.HL
@@ -2045,30 +1980,24 @@ theorem irn_slow_data (P : IRNParams) :
   have hc1 : c ≤ 1 := irnScale_le_one P
   have hcη : 2 * P.η * c ^ 2 ≤ 1 := two_mul_η_mul_irnScale_sq_le P
   have hcinv : 1 ≤ c⁻¹ := one_le_inv₀ hc0 |>.2 hc1
-  obtain ⟨L, B, hL, hB, H⟩ := exists_slowSecondOrder_interpolant (a := 1 / (1 + σ)) (b := 1)
+  obtain ⟨L, B, hL, hB, H⟩ := exists_slowSecondOrder_run_data (a := 1 / (1 + σ)) (b := 1)
     (by positivity) (by rw [div_le_one (by linarith)]; linarith)
   refine ⟨-(B / c ^ 2), max (B / c ^ 2) 1, max (L / c ^ 2) 1, B / c ^ 2, le_max_right _ _,
     le_max_right _ _, fun ε hε hε1 => ?_⟩
-  set K := ⌈ε ^ (-(3 / 2 : ℝ))⌉₊
-  obtain ⟨hKlt, hKge, hKle⟩ := ceil_rpow_facts hε hε1.le
   set r := √ε with hr
   have hr0 : 0 < r := Real.sqrt_pos.2 hε
   have hr2 : r ^ 2 = ε := Real.sq_sqrt hε.le
   have hhalf : ε ^ (1 / 2 : ℝ) = r := by rw [hr, Real.sqrt_eq_rpow]
   have h32 : ε ^ (3 / 2 : ℝ) = r ^ 3 := by
     rw [hr, Real.sqrt_eq_rpow, ← Real.rpow_natCast, ← Real.rpow_mul hε.le]; norm_num
-  set F : ℕ → ℝ := fun k => 1 - k * ε ^ (3 / 2 : ℝ) / 2
+  set F := secondOrderF ε
+  have hF : ∀ k < secondOrderK ε, 1 / 2 < F k ∧ F k ≤ 1 := fun k hk =>
+    ⟨secondOrderF_gt_half hε hk, secondOrderF_le_one hε k⟩
   set q : ℕ → ℝ := fun k => σ * c ^ 2 / (8 * F k ^ 3)
   set θ : ℕ → ℝ := fun k => 2 / (1 + √(1 + 4 * q k))
-  set X₀ : ℕ → ℝ := fun k => ∑ j ∈ range k, θ j * ε ^ (1 / 2 : ℝ) / (2 * F j)
-  have hF : ∀ k < K, 1 / 2 < F k ∧ F k ≤ 1 := fun k hk => by
-    have := hKlt k hk
-    have : 0 ≤ (k : ℝ) * ε ^ (3 / 2 : ℝ) := by positivity
-    simp only [F]; constructor <;> linarith
-  have hFK : 0 ≤ F K ∧ F K ≤ 1 / 2 := by simp only [F]; constructor <;> linarith
   -- the step factors solve `θ + q θ² = 1` and lie in `[1/(1+σ), 1]`
-  have hθq : ∀ k < K, 0 < q k ∧ q k ≤ σ ∧ θ k + q k * θ k ^ 2 = 1 ∧ 0 < θ k ∧ θ k ≤ 1 ∧
-      1 / (1 + σ) ≤ θ k := fun k hk => by
+  have hθq : ∀ k < secondOrderK ε, 0 < q k ∧ q k ≤ σ ∧ θ k + q k * θ k ^ 2 = 1 ∧ 0 < θ k ∧
+      θ k ≤ 1 ∧ 1 / (1 + σ) ≤ θ k := fun k hk => by
     obtain ⟨h1, -⟩ := hF k hk
     have hF3 : 1 / 8 < F k ^ 3 := by
       have := pow_lt_pow_left₀ h1 (by norm_num) (by norm_num : (3 : ℕ) ≠ 0); norm_num at this
@@ -2079,49 +2008,33 @@ theorem irn_slow_data (P : IRNParams) :
       simp only [q]; rw [div_le_iff₀ (by positivity)]
       nlinarith [mul_le_mul_of_nonneg_left hc2 hσ.le]
     exact ⟨hq0, hqσ, quad_root_facts hq0 hqσ⟩
-  have hθ : ∀ k < K, θ k ∈ Icc (1 / (1 + σ)) 1 := fun k hk =>
+  have hθ : ∀ k < secondOrderK ε, θ k ∈ Icc (1 / (1 + σ)) 1 := fun k hk =>
     ⟨(hθq k hk).2.2.2.2.2, (hθq k hk).2.2.2.2.1⟩
-  have hX₀ : ∀ k < K,
-      X₀ (k + 1) = X₀ k + θ k * ε ^ (1 / 2 : ℝ) / (2 * (1 - k * ε ^ (3 / 2 : ℝ) / 2)) :=
-    fun k _ => by simp [X₀, F, sum_range_succ]
-  obtain ⟨G₀, hG₀, hGL, hGB, hGk⟩ := H ε θ X₀ hε hε1.le hθ hX₀
+  obtain ⟨G₀, hG₀, hGL, hGB, hGk⟩ := H ε θ hε hε1 hθ
   -- the rescaled function `G(u) = c G₀(u/c)`
   set G : ℝ → ℝ := fun u => c * G₀ (c⁻¹ * u)
-  obtain ⟨hG, hid, hGL', hGB'⟩ := rescale_facts hc0 hc1 hG₀ hGL hGB
+  obtain ⟨hG, hid, hGL', hGB'⟩ := contDiff_two_rescale_bounds hc0 hc1 hG₀ hGL hGB
   have hc2 : c * c⁻¹ ^ 2 = c⁻¹ := by field_simp
   have hc1' : c * c⁻¹ ^ 1 = 1 := by field_simp
   obtain ⟨hb, hgl, -, hhl, -⟩ := ridge_assumptions_two hG hGL' hGB'
+  set X₀ := secondOrderX θ ε
   set X : ℕ → ℝ := fun k => c * X₀ k
   set t : ℕ → ℝ := fun k => c * (θ k * r / (2 * F k))
   have hcX : ∀ k, c⁻¹ * X k = X₀ k := fun k => by simp only [X]; field_simp
-  have hval : ∀ k ≤ K, G (X k) = c * F k ∧ deriv G (X k) = -2 * ε * F k ∧
+  have hd : ∀ k, deriv G (X k) = deriv G₀ (X₀ k) := fun k => by
+    have := hid 1 (by norm_num) (X k)
+    rw [iteratedDeriv_one, iteratedDeriv_one, hc1', one_mul, hcX] at this
+    exact this
+  have hval : ∀ k ≤ secondOrderK ε, G (X k) = c * F k ∧ deriv G (X k) = -2 * ε * F k ∧
       iteratedDeriv 2 G (X k) = c⁻¹ * (4 * r * F k ^ 2) := fun k hk => by
-    obtain ⟨h1, h2, h3⟩ := hGk k hk
-    have hd : deriv G (X k) = deriv G₀ (X₀ k) := by
-      have := hid 1 (by norm_num) (X k)
-      rw [iteratedDeriv_one, iteratedDeriv_one, hc1', one_mul, hcX] at this
-      exact this
-    refine ⟨by simp only [G]; rw [hcX, h1], by rw [hd, h2], ?_⟩
-    rw [hid 2 le_rfl, hc2, hcX, h3, hhalf]
-  have htest : ∀ k ≤ K, (|deriv G (X k)| ≤ ε ↔ K ≤ k) := fun k hk => by
-    have hF0 : 0 ≤ F k := by
-      rcases lt_or_eq_of_le hk with h | rfl
-      · linarith [(hF k h).1]
-      · exact hFK.1
-    rw [(hval k hk).2.1, show -2 * ε * F k = -(2 * ε * F k) by ring, abs_neg,
-      abs_of_nonneg (by positivity)]
-    constructor
-    · intro h
-      by_contra hlt
-      nlinarith [(hF k (not_le.1 hlt)).1]
-    · intro h
-      rw [le_antisymm hk h]
-      nlinarith [hFK.2]
-  have hXs : ∀ k < K, X (k + 1) = X k + t k := fun k hk => by
-    simp only [X, t]; rw [hX₀ k hk, hhalf]; ring
-  have hpos : ∀ k < K, 0 < t k := fun k hk => by
+    obtain ⟨h1, h2, h3, -⟩ := hGk k hk
+    refine ⟨by simp only [G]; rw [hcX, h1], by rw [hd, h2]; rfl, ?_⟩
+    rw [hid 2 le_rfl, hc2, hcX, h3, secondOrderH, hhalf]
+  have hXs : ∀ k < secondOrderK ε, X (k + 1) = X k + t k := fun k hk => by
+    simp only [X, X₀, t]; rw [secondOrderX_succ, hhalf]; ring
+  have hpos : ∀ k < secondOrderK ε, 0 < t k := fun k hk => by
     have := (hF k hk).1; have := (hθq k hk).2.2.2.1; simp only [t]; positivity
-  have hstat : ∀ k < K,
+  have hstat : ∀ k < secondOrderK ε,
       deriv G (X k) + (iteratedDeriv 2 G (X k) + σ * t k) * t k = 0 := fun k hk => by
     have hFk := (hF k hk).1
     obtain ⟨-, -, hθe, -, -, -⟩ := hθq k hk
@@ -2131,7 +2044,7 @@ theorem irn_slow_data (P : IRNParams) :
     rw [hv2, hv3, ← hr2]
     simp only [t]
     linear_combination irn_alg hc0.ne' hF0 hq hθe
-  have hsmall : ∀ k < K, t k ≤ iteratedDeriv 2 G (X k) := fun k hk => by
+  have hsmall : ∀ k < secondOrderK ε, t k ≤ iteratedDeriv 2 G (X k) := fun k hk => by
     have hFk := hF k hk
     obtain ⟨-, -, -, hθ0, hθ1, -⟩ := hθq k hk
     rw [(hval k hk.le).2.2]
@@ -2148,17 +2061,16 @@ theorem irn_slow_data (P : IRNParams) :
           (div_nonneg (mul_nonneg hθ0.le hr0.le) (by linarith [hFk.1])) zero_le_one
       _ ≤ 1 * (4 * r * F k ^ 2) := by linarith
       _ ≤ c⁻¹ * (4 * r * F k ^ 2) := mul_le_mul_of_nonneg_right hcinv (by positivity)
-  have hratio : ∀ k < K, P.η * t k ^ 3 ≤ G (X k) - G (X (k + 1)) := fun k hk => by
+  have hratio : ∀ k < secondOrderK ε, P.η * t k ^ 3 ≤ G (X k) - G (X (k + 1)) := fun k hk => by
     have hFk := hF k hk
     obtain ⟨-, -, -, hθ0, hθ1, -⟩ := hθq k hk
-    rw [(hval k hk.le).1, (hval (k + 1) hk).1]
-    have hFs : F (k + 1) = F k - r ^ 3 / 2 := by
-      simp only [F]; push_cast; rw [h32]; ring
-    rw [hFs]
+    rw [(hval k hk.le).1, (hval (k + 1) hk).1,
+      show F (k + 1) = F k - ε ^ (3 / 2 : ℝ) / 2 from secondOrderF_succ ε k, h32]
     have := irn_ratio_alg hc0 hr0 hFk.1 hθ0 hθ1 hcη P.η_pos
     simp only [t]
     linarith
-  refine ⟨G, X, t, hG, hb, hgl, hhl, fun y => ?_, by simp [X, X₀], htest,
+  refine ⟨G, X, t, hG, hb, hgl, hhl, fun y => ?_, by simp [X, X₀],
+    fun k hk => by rw [hd]; exact (hGk k hk).2.2.2,
     fun k hk => ⟨hXs k hk, hpos k hk, hsmall k hk, hstat k hk, hratio k hk⟩⟩
   have := hGB' 0 (by norm_num) ⟪e₀, y⟫
   rwa [iteratedDeriv_zero] at this
@@ -2271,25 +2183,5 @@ theorem irn_slow_example (P : IRNParams) :
     (hdata k hk).2.2.1, (hdata k hk).2.2.2.1⟩, irn_ridge_run P hε hε1.le hG hX0 htest hdata⟩
 
 end Examples
-
-/-! ### Deprecated aliases (moved to the backbone) -/
-
-@[deprecated _root_.minCurvatureOn (since := "2026-10-26")]
-alias minCurvatureOn := _root_.minCurvatureOn
-
-@[deprecated _root_.minCurvatureOn_mul_norm_sq_le (since := "2026-10-26")]
-alias minCurvatureOn_mul_norm_sq_le := _root_.minCurvatureOn_mul_norm_sq_le
-
-@[deprecated _root_.le_minCurvatureOn (since := "2026-10-26")]
-alias le_minCurvatureOn := _root_.le_minCurvatureOn
-
-@[deprecated Optimization.card_successSet_le_two_mul_add_one (since := "2026-10-26")]
-alias card_successSet_le_two_mul_add_one := Optimization.card_successSet_le_two_mul_add_one
-
-@[deprecated _root_.le_of_le_quadratic (since := "2026-10-26")]
-alias le_of_le_quadratic := _root_.le_of_le_quadratic
-
-@[deprecated Optimization.ceil_rpow_facts (since := "2026-10-26")]
-alias ceil_rpow_facts := Optimization.ceil_rpow_facts
 
 end CartisGouldToint.Chapter03
