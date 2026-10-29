@@ -11,7 +11,19 @@ whose termination test and step conditions are expressed with Taylor-decrement m
   in generic form.
 * `HighOrder/ARqp`: ARqp (Algorithm 12.2.2) on top of the generic `IsARRun`, generic in the model
   data (`ARqpData`: exact, inexact, composite) and in a feasible set `X` (ARqp-SC, ARqpC(-SC)).
+* `HighOrder/Orders`: extrema of order-indexed constants over `[1, q]` (`finMax`, `finMin`,
+  `epsMin`, `ordMax`, `lipMax`).
+* `HighOrder/TRqComplexity`, `HighOrder/ARqpComplexity`: the evaluation-complexity analyses of
+  TRq and ARqp with exact derivatives (Lemmas 12.2.3–12.2.13, Theorems 12.2.5, 12.2.14 and the
+  TRq-SC/ARqp-SC rows of §14.2), stated once on a feasible set `X` under the anchored smoothness
+  assumption `LipschitzDerivsAnchored` (derivatives Lipschitz anchored at a set containing the
+  sublevel set of the starting point); the unconstrained global case is `X = C = A = univ`.
+* `HighOrder/ARqpDetailedStep`: termination of the detailed Step 2 (Algorithm 12.2.3) for the
+  regularized model and admissibility of its outputs.
+* `HighOrder/DynamicAccuracy/*`: the inexact-derivative methods with implicit and explicit
+  dynamic accuracy (TRqIDA, ARqpIDA, TRqEDA, ARqpEDA of Chapter 13), their runs on a feasible set,
+  analyses under the same anchored assumption (orders `0, …, p`), and the existence of runs.
 Model lemmas: `ModelBased/HighOrderModel` (data-general, error budgets), `ModelBased/HighOrderStep`
-(detailed Step 2, step-length algebra), `Composite/RegularizedModel` (composite models).
-Complexity theorems (Theorems 12.2.5, 12.2.14, 14.1.10) are assembled in the surface.
+(detailed Step 2, step-length algebra), `Composite/RegularizedModel` (composite models). The
+surface states the book's results as instances of these analyses.
 '''

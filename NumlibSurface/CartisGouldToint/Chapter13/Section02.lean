@@ -326,7 +326,8 @@ theorem norm_stencilTensor_sub_le {f : ℝⁿ → ℝ} {p o i : ℕ} {L h : ℝ}
           iteratedFDeriv ℝ i f x (fun t => EuclideanSpace.single (j t) 1)) • coordProd j‖ := by
         conv_lhs => rw [hA]
         rw [stencilTensor, ← sum_sub_distrib]
-        simp_rw [sub_smul]
+        exact congrArg norm (Finset.sum_congr rfl fun j _ =>
+          (sub_smul (stencilEntry f p o j x h) _ (coordProd j)).symm)
     _ ≤ ∑ j : Fin i → Fin n, stencilConst p o j * L * h ^ (p - i + 1) := by
         refine (norm_sum_le _ _).trans (sum_le_sum fun j _ => ?_)
         rw [norm_smul, Real.norm_eq_abs]
@@ -583,35 +584,35 @@ theorem theorem_13_2_1_ii (hf : AssumptionD0pL f P.p L) {flow : ℝ}
         C / epsMin P.q (fun j => ε j ^ arPi P.q P.p j) := by
   set κΔm := P.σmin / ((P.p + 1)! : ℝ) * arStepConst P.q P.p (1 - P.θ)
     (arConstA P L (ordMax P.p κg)) (arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
-      (arSigmaMax P (L P.p) (ordMax P.p κg)))
+      (arqpIDASigmaMax P (L P.p) (ordMax P.p κg)))
   set cT := 1 + |Real.log P.γ₁| / Real.log P.γ₂
   set A := (f x₀ - flow) / (P.η₁ * κΔm / 2)
-  set Cc := Real.log (arSigmaMax P (L P.p) (ordMax P.p κg) / P.σ₀) / Real.log P.γ₂ + 2 +
+  set Cc := Real.log (arqpIDASigmaMax P (L P.p) (ordMax P.p κg) / P.σ₀) / Real.log P.γ₂ + 2 +
     |Real.log P.γ₁| / Real.log P.γ₂
   set E := P.p * (P.q + 1) / |Real.log P.γh|
   set F := |Real.log (arKappaAcc P (arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
-    (arSigmaMax P (L P.p) (ordMax P.p κg))) (lipMax L P.p + ordMax P.p κg * P.κh)
-    (arSigmaMax P (L P.p) (ordMax P.p κg)) (ordMax P.p κg) / P.κh)| / |Real.log P.γh| + 3
+    (arqpIDASigmaMax P (L P.p) (ordMax P.p κg))) (lipMax L P.p + ordMax P.p κg * P.κh)
+    (arqpIDASigmaMax P (L P.p) (ordMax P.p κg)) (ordMax P.p κg) / P.κh)| / |Real.log P.γh| + 3
   refine ⟨(cT * A + |Cc|) + S.cost * (A + E + F),
     fun ε x σ δ δ₁ δs h D dd jk s acc hrun hrc _ => ?_⟩
   set m := epsMin P.q (fun j => ε j ^ arPi P.q P.p j)
-  have hm : 0 < m := Chapter13.epsMin_pos P.one_le_q fun j hj =>
+  have hm : 0 < m := Optimization.epsMin_pos P.one_le_q fun j hj =>
     Real.rpow_pos_of_pos (hrun.eps_mem j hj).1 _
   have hmε : m ≤ epsMin P.q ε := epsMin_rpow_arPi_le hrun.eps_mem
   have hε := hrun.epsMin_pos
   have hε1 := hrun.epsMin_le_one
   have hm1 : m ≤ 1 := hmε.trans hε1
   have hA := one_le_arConstA (hf.one_le le_rfl) hrun.kappaMax_nonneg (P := P) (L := L)
-  have hLb := hrun.one_le_Lbar hf.on_univ
+  have hLb := hrun.one_le_Lbar hf.normalized
   have hκpos : 0 < κΔm := by
     have hk0 : 0 < arKappaHat P.q (1 - P.θ) (arConstA P L (ordMax P.p κg))
         (arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
-          (arSigmaMax P (L P.p) (ordMax P.p κg))) :=
+          (arqpIDASigmaMax P (L P.p) (ordMax P.p κg))) :=
       lt_min (arKappaDelta1_pos (by linarith))
         (div_pos (sub_pos.2 P.θ_lt_one) (by positivity))
     have hC : 0 < arStepConst P.q P.p (1 - P.θ) (arConstA P L (ordMax P.p κg))
         (arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
-          (arSigmaMax P (L P.p) (ordMax P.p κg))) := by
+          (arqpIDASigmaMax P (L P.p) (ordMax P.p κg))) := by
       have := sub_pos.2 P.θ_lt_one
       unfold arStepConst arStepConstOf
       split_ifs <;> positivity

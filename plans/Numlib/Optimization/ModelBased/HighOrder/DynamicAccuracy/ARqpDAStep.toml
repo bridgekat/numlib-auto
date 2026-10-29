@@ -1,0 +1,61 @@
+namespace = "Optimization"
+
+[[node]]
+id = "ARqpIDAParams"
+source = "Cartis–Gould–Toint, Algorithm 13.1.2, Step 0, (13.1.51)"
+
+[[node]]
+id = "ARqpDAStep"
+source = "Cartis–Gould–Toint, Algorithm 13.1.2, (13.1.60)–(13.1.61), (13.1.69)–(13.1.70)"
+
+[[node]]
+id = "RadiiControl"
+source = "Cartis–Gould–Toint, Theorem 13.1.19, (13.1.69)–(13.1.70)"
+
+[[node]]
+id = "arqpDA_radius_ge"
+source = "Cartis–Gould–Toint, Lemma 13.1.12, (13.1.71)"
+
+[[node]]
+id = "arqp_pow_ge_of_radius_ineq"
+source = "Cartis–Gould–Toint, Lemma 13.1.17"
+
+[[node]]
+id = "arqp_pow_succ_ge"
+source = "Cartis–Gould–Toint, Lemma 13.1.18"
+
+[[node]]
+id = "RadiiControlOf"
+source = "Cartis–Gould–Toint, Theorem 13.1.19, (13.1.69)–(13.1.70); §14.2 (radius policy with simple constraints, (12.2.51))"
+
+[[node]]
+id = "RadiiControlOf.kappa_mul_le"
+source = "Cartis–Gould–Toint, proof of Lemma 13.1.12, (13.1.71)"
+
+[[node]]
+id = "arPiOf"
+source = "Cartis–Gould–Toint, Lemma 13.1.18, (13.1.82); Theorem 14.2.4"
+
+[[node]]
+id = "arStepConstOf"
+source = "Cartis–Gould–Toint, Lemma 13.1.18, (13.1.82)"
+
+[[node]]
+id = "ARqpDAStep.congr"
+source = "Cartis–Gould–Toint, Algorithm 13.1.2"
+
+[[node]]
+id = "RadiiControlOf.of_unit"
+source = "Cartis–Gould–Toint, Theorem 13.1.19, (13.1.69)–(13.1.70)"
+
+[[node]]
+id = "arqpDA_card_trial_le"
+source = "Cartis–Gould–Toint, Lemma 13.1.9"
+
+[[node]]
+id = "ARqpStep1.radius_bounds"
+source = "Cartis–Gould–Toint, Lemma 13.1.11"
+
+[[node]]
+id = "ARqpDAStep.taylorDecrement_ge"
+source = "Cartis–Gould–Toint, Lemma 13.1.13"

@@ -239,8 +239,8 @@ Constrained.targetMerit f c t x` (14.3.30); `ν = ½ ‖c‖²` and `Φ₂ = ½ 
   assumptions as the `_book` theorems of `Chapter14.Section03Anchored`), through the anchored radius
   bound and certificate (`algorithm_14_1_1.zero_radius_ge_anchored`,
   `algorithm_14_1_1.zero_exists_cert_anchored`) and the anchored Chapter 12 ARqp analysis
-  (`algorithm_14_1_1.zero_decrease_arqp_anchored`, `Chapter12.theorem_12_2_14_anchored`); the
-  global versions are again their instances. In the certified, strong-contract and unit-radius
+  (`algorithm_14_1_1.zero_decrease_arqp_anchored`, `Optimization.IsARqpRun.complexity`);
+the global versions are again their instances. In the certified, strong-contract and unit-radius
   variants under anchored bounds, `f` and `c` need only be `C^q` near the points of `X`, for the
   target-drop argument of the case-(b) iterations (`IsTPqpGCPhase2.target_drop_of_isKb_margin_on`
   and the `_on` versions of the Phase-2 counting lemmas, whose originals assume `C^q` on `ℝⁿ`).
@@ -3624,7 +3624,7 @@ theorem zero_arqpRatio_eq {i : ℕ} :
 /-- **Decrease of ARqp-SC with the exponents of its row of (14.2.12), anchored**: as
 `algorithm_14_1_1.zero_decrease_arqp`, under the anchored bounds of `F` on the sublevel set at
 `x₀` (an open convex `X₀ ⊇ X`; the book's f.D1pLaB.X), through
-`Chapter12.lemma_12_2_13_anchored`. -/
+`Optimization.IsARqpRun.decrease`. -/
 theorem algorithm_14_1_1.zero_decrease_arqp_anchored
     (hr : algorithm_14_1_1 F (zeroCon n) zeroOuter X p q P ε δ₀ x s σ δ δs d dm) {L : ℕ → ℝ}
     {X₀ : Set ℝⁿ} (hF : AnchoredCompositeBounds F (zeroCon n) X₀
@@ -3643,8 +3643,9 @@ theorem algorithm_14_1_1.zero_decrease_arqp_anchored
     fun h' => hk k le_rfl (Or.inl h')
   have hk' : ∀ i < k, ¬ arqpcStop F (zeroCon n) zeroOuter p q P ε x s σ δ d i :=
     fun i hi => hk i hi.le
-  refine (Chapter12.lemma_12_2_13_anchored hF.toTop hX
-    (fun y hy hFy => mem_compositeSublevel_zero hy hFy) hr.one_le_q hr.q_le_p hθς
+  refine (Optimization.IsARqpRun.decrease hF.toTop.toLipschitzDerivsAnchored
+    hF.toTop.one_le hX
+      (fun y hy hFy => mem_compositeSublevel_zero hy hFy) hr.one_le_q hr.q_le_p hθς
     (fun j hj => ⟨(hr.ε_mem j hj).1, (hr.ε_mem j hj).2⟩) hr.zero_algorithm_12_2_2_feasible
     (fun i hi => (zero_arqpcStop_iff).not.1 (hk i hi)) (zero_arqpRatio_eq ▸ hs)
     (by simpa only [algorithm_14_1_1.Stop₁, zero_arqpcData_eq] using h1) (u := u)
@@ -4339,21 +4340,22 @@ theorem unit_core_anchored {L : ℕ → ℝ} {S : Set ℝⁿ}
   have hδs : ∀ k, (∀ i ≤ k, ¬ Chapter12.arqpStop F P.toARqpParams p q ε x s σ δr d i) →
       ∀ j ∈ Finset.Icc 1 q, δs k j = 1 := fun k hk j hj =>
     hrad k (fun i hi => hk i hi.le) j hj ((Finset.mem_Icc.1 hj).2.trans hq2)
-  obtain ⟨kε, hhit, -, -, -, -⟩ := Chapter12.theorem_12_2_14_anchored (X := univ) (C := univ)
-    (fun y _ => hb y) hF.toTop (subset_univ _) (fun y _ hy => hS y (h0 ▸ hy)) hq hqp P.σmin_pos hθς
+  obtain ⟨kε, hhit, -, -, -, -⟩ := Optimization.IsARqpRun.complexity (X := univ)
+    (C := univ) (fun y _ => hb y) hF.toTop.toLipschitzDerivsAnchored hF.toTop.one_le
+    hF.toTop.jet (subset_univ _) (fun y _ hy => hS y (h0 ▸ hy)) hq hqp P.σmin_pos hθς
     hε' hδ₀ h (u := True)
     ⟨fun _ => ⟨fun _ _ => rfl, hδs⟩, fun h' => absurd trivial h'⟩
   have h1 : Optimization.arqpStop₁ P.toARqpParams q ε (Chapter12.arqpData F p x σ) δr d kε := by
     by_contra h1
     exact Chapter12.lemma_12_2_10_le_two (hF.contDiffAt_f (mem_univ _)) hqp hε' hδ₀ h hhit h1 hq2
-  have hone := Chapter12.arqp_delta_eq_one h (fun _ _ => rfl) hδs kε hhit.2
+  have hone := h.delta_eq_one (fun _ _ => rfl) hδs kε hhit.2
   have hcert := Optimization.MeasureTestPasses.isEpsDeltaApprox P.ς_pos (h.witness kε hhit.2) h1
   refine ⟨x, s, σ, δr, δs, d, dm, kε, h, hδs, hhit, h0, ?_, fun j hj => ?_⟩
   · intro i j hij hj
     induction j, hij using Nat.le_induction with
     | base => exact le_rfl
     | succ j hij ih =>
-      exact (Chapter12.arqp_objective_le h fun l hl => hhit.2 l (by omega)).trans (ih (by omega))
+      exact (h.objective_le fun l hl => hhit.2 l (by omega)).trans (ih (by omega))
   · have := hcert j hj
     rwa [hone j hj] at this
 
@@ -4431,7 +4433,7 @@ theorem le (h : IsARqpUnitOutputCost F p q P ε xS y δ' nF nD) : F y ≤ F xS :
     induction j with
     | zero => exact le_rfl
     | succ j ih =>
-      exact (Chapter12.arqp_objective_le hr fun l hl => hhit.2 l (by omega)).trans (ih (by omega))
+      exact (hr.objective_le fun l hl => hhit.2 l (by omega)).trans (ih (by omega))
   exact this kε le_rfl
 
 /-- The additive cost contract of an ARqp call on `ℝⁿ` with unit radii, under the anchored
@@ -4449,8 +4451,9 @@ theorem cost_le_add_anchored {L : ℕ → ℝ} {S : Set ℝⁿ}
   have hε' : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1 := fun j hj => hε j hj
   have hδ₀ : ∀ j ∈ Finset.Icc 1 q, (0 : ℝ) < (fun _ => (1 : ℝ)) j ∧ (fun _ => (1 : ℝ)) j ≤ 1 :=
     fun _ _ => ⟨one_pos, le_rfl⟩
-  obtain ⟨kε', hhit', -, -, hF', hD'⟩ := Chapter12.theorem_12_2_14_anchored (X := univ)
-    (C := univ) (fun y _ => hb y) hF.toTop (subset_univ _) (fun y _ hy => hS y (hx0 ▸ hy)) hq hqp
+  obtain ⟨kε', hhit', -, -, hF', hD'⟩ := Optimization.IsARqpRun.complexity (X := univ)
+    (C := univ) (fun y _ => hb y) hF.toTop.toLipschitzDerivsAnchored hF.toTop.one_le
+    hF.toTop.jet (subset_univ _) (fun y _ hy => hS y (hx0 ▸ hy)) hq hqp
     P.σmin_pos hθς hε' hδ₀ hr
     (u := True) ⟨fun _ => ⟨fun _ _ => rfl, hδs⟩, fun h' => absurd trivial h'⟩
   obtain rfl := hhit'.unique hhit
@@ -5594,7 +5597,7 @@ private theorem exists_phase2_call_unit {t : ℝ} {L : ℕ → ℝ}
   have hAμ : ∀ y ∈ (univ : Set ℝⁿ), Constrained.targetMerit f c t y ≤
       Constrained.targetMerit f c t (xr 0) → y ∈ muSublevel f c univ t := fun y _ hy =>
     hS y (by rwa [hx0] at hy)
-  have hone := Chapter12.arqp_delta_eq_one hr (fun _ _ => rfl) hδs
+  have hone := hr.delta_eq_one (fun _ _ => rfl) hδs
   have hex : ∃ i, i = kε ∨ Constrained.targetResidual f c t (xr i) < θ * ε 0 := ⟨kε, Or.inl rfl⟩
   set e := Nat.find hex with he
   have he_le : e ≤ kε := Nat.find_min' hex (Or.inl rfl)
@@ -5643,7 +5646,8 @@ private theorem exists_phase2_call_unit {t : ℝ} {L : ℕ → ℝ}
     exact hr.toIsARRun.eq_of_not_succ (fun j hj => hhit.2 j (by omega)) (not_le.1 hs)
   · -- Lemma 14.2.3
     have h3 := hr.toIsARRun.le_succ_count (k := e) (fun j hj => hhit.2 j (by omega))
-      (Chapter12.arqp_sigma_le_anchored hμ.toTop (subset_univ _) hAμ hr e
+      (Optimization.IsARqpRun.sigma_le_of_anchored hμ.toTop.toLipschitzDerivsAnchored
+        (subset_univ _) hAμ hr e
         (fun j hj => hhit.2 j (by omega))).2
     set S := (Finset.range e).filter (fun i => P.η₁ ≤
       Chapter12.arqpRho (Constrained.targetMerit f c t) p xr s σ i)
@@ -5663,7 +5667,8 @@ private theorem exists_phase2_call_unit {t : ℝ} {L : ℕ → ℝ}
     nlinarith
   · -- Lemma 12.2.13, unit radii
     have hik := hnext i hi hcont hge
-    have hdec := (Chapter12.lemma_12_2_13_anchored hμ.toTop (subset_univ _) hAμ hq hqp hθς
+    have hdec := (Optimization.IsARqpRun.decrease hμ.toTop.toLipschitzDerivsAnchored
+      hμ.toTop.one_le (subset_univ _) hAμ hq hqp hθς
       (fun j hj => hε' j hj) hr (k := i) (fun j hj => hhit.2 j (by omega)) hs
       (fun h' => hhit.2 (i + 1) hik (Or.inl h')) (u := True)
       ⟨fun _ => hone (i + 1) fun l hl => hhit.2 l (by omega), fun h' => absurd trivial h'⟩).2

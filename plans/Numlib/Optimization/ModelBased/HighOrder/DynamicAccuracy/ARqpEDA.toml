@@ -1,0 +1,53 @@
+namespace = "Optimization"
+
+[[node]]
+id = "edaStopAR"
+source = "Cartis–Gould–Toint, Algorithm 13.3.2, Step 1.5.1"
+
+[[node]]
+id = "IsARqpEDARun"
+source = "Cartis–Gould–Toint, Algorithm 13.3.2; ARqpEDA-SC (§14.2)"
+
+[[node]]
+id = "IsARqpEDARun.isEpsDeltaApprox_of_stop"
+source = "Cartis–Gould–Toint, Lemma 13.3.6 (i) (with a feasible set, §14.2)"
+
+[[node]]
+id = "IsARqpEDARun.objective_le"
+source = "Cartis–Gould–Toint, §14.2.1 (remark after (14.2.10)), (13.3.13), (13.3.18): the ARqpEDA-SC iterates lie in the sublevel set (14.2.8)"
+
+[[node]]
+id = "IsARqpEDARun.sigma_le"
+source = "Cartis–Gould–Toint, Lemma 13.3.5 under f.D0pLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "IsARqpEDARun.stop_of_pass"
+source = "Cartis–Gould–Toint, Lemma 13.3.6 (ii) under f.D0pLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "IsARqpEDARun.measure_ineq"
+source = "Cartis–Gould–Toint, Lemma 13.3.7 (proof) under f.D0pLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "IsARqpEDARun.step_bound"
+source = "Cartis–Gould–Toint, Lemma 13.3.7 (proof) under f.D0pLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "IsARqpEDARun.decrease_ge"
+source = "Cartis–Gould–Toint, Lemma 13.3.7 under f.D0pLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "IsARqpEDARun.card_acc_le"
+source = "Cartis–Gould–Toint, proof of Theorem 13.3.8 under f.D0pLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "IsARqpEDARun.complexity"
+source = "Cartis–Gould–Toint, proof of Theorem 13.3.8 under f.D0pLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "IsARqpEDARun.le_card_succ"
+source = "Cartis–Gould–Toint, Lemma 14.2.3 (ARqpEDA-SC row) under f.D0pL anchored on a set containing the sublevel set (14.2.8)"
+
+[[node]]
+id = "IsARqpEDARun.complexity_of_radiiControl"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (ARqpEDA-SC row) under f.D0pL anchored on a set containing the sublevel set (14.2.8)"

@@ -1657,7 +1657,7 @@ theorem IsARqpUnitCallOut.contract {S : Set ℝⁿ} {L : ℕ → ℝ}
   obtain ⟨⟨x, s, σ, δr, δs, d, dm, kε, hr, hδs, hhit, he, hxi, hsucc⟩, hδo⟩ := h
   have hAμ : ∀ y ∈ (univ : Set ℝⁿ), F y ≤ F (x 0) → y ∈ S := fun y _ hy =>
     hS y (by rwa [hxi 0 (Nat.zero_le _)])
-  have hone := Chapter12.arqp_delta_eq_one hr (fun _ _ => rfl) hδs
+  have hone := hr.delta_eq_one (fun _ _ => rfl) hδs
   have hnot : ∀ i < e, ¬ Chapter12.arqpStop F P.toARqpParams p q ε x s σ δr d i :=
     fun i hi => hhit.2 i (lt_of_lt_of_le hi he)
   refine ⟨fun i hi hs => ?_, ?_, fun hε i hi hs hcont => ?_⟩
@@ -1666,7 +1666,8 @@ theorem IsARqpUnitCallOut.contract {S : Set ℝⁿ} {L : ℕ → ℝ}
       (not_le.1 ((hsucc i hi).not.1 hs))
   · -- Lemma 14.2.3
     have h3 := hr.toIsARRun.le_succ_count (k := e) hnot
-      (Chapter12.arqp_sigma_le_anchored hF.toTop (subset_univ _) hAμ hr e hnot).2
+      (Optimization.IsARqpRun.sigma_le_of_anchored hF.toTop.toLipschitzDerivsAnchored
+        (subset_univ _) hAμ hr e hnot).2
     set ρ := fun i => P.η₁ ≤ Chapter12.arqpRho F p x s σ i
     have hS' : (Finset.range e).filter succ = (Finset.range e).filter ρ :=
       Finset.filter_congr fun i hi => hsucc i (Finset.mem_range.1 hi)
@@ -1688,7 +1689,8 @@ theorem IsARqpUnitCallOut.contract {S : Set ℝⁿ} {L : ℕ → ℝ}
         have happ := Optimization.MeasureTestPasses.isEpsDeltaApprox P.ς_pos (hr.witness e hnot) h1
         rw [hxi e le_rfl, hδo j hj, ← hone e hnot j hj]
         exact happ j hj
-    have hdec := (Chapter12.lemma_12_2_13_anchored hF.toTop (subset_univ _) hAμ hq hqp hθς hε hr
+    have hdec := (Optimization.IsARqpRun.decrease hF.toTop.toLipschitzDerivsAnchored
+      hF.toTop.one_le (subset_univ _) hAμ hq hqp hθς hε hr
       (k := i) (fun l hl => hnot l (by omega)) ((hsucc i hi).1 hs) h1 (u := True)
       ⟨fun _ => hone (i + 1) (fun l hl => hnot l (by omega)), fun h' => absurd trivial h'⟩).2
     obtain ⟨l, hl, hmin⟩ := Chapter12.exists_finMin_eq hq

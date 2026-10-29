@@ -1,0 +1,18 @@
+[[node]]
+id = "Optimization.one_le_lipMax"
+
+[[node]]
+id = "LipschitzDerivsAnchored.abs_sub_taylorDecrement_le_of_le"
+source = "Cartis–Gould–Toint, (A.19), (14.2.9)"
+
+[[node]]
+id = "LipschitzDerivsAnchored.norm_iteratedFDeriv_le_lipMax"
+source = "Cartis–Gould–Toint, (13.1.24)"
+
+[[node]]
+id = "LipschitzDerivsAnchored.norm_le_of_jetApprox"
+source = "Cartis–Gould–Toint, (13.1.24), (13.1.63)"
+
+[[node]]
+id = "Optimization.taylorDecrement_le_two_mul"
+source = "Cartis–Gould–Toint, (A.34)"

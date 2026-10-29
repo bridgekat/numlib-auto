@@ -1,0 +1,89 @@
+namespace = "Optimization"
+
+[[node]]
+id = "arqpData"
+source = "Cartis–Gould–Toint, (12.2.23)"
+
+[[node]]
+id = "arqpStop"
+source = "Cartis–Gould–Toint, Algorithm 12.2.2 (Steps 1–2)"
+
+[[node]]
+id = "arqpRho"
+source = "Cartis–Gould–Toint, (12.2.30)"
+
+[[node]]
+id = "arqpKappaDelta"
+source = "Cartis–Gould–Toint, (12.2.45), (12.2.51)"
+
+[[node]]
+id = "arqpTau"
+source = "Cartis–Gould–Toint, (12.2.58)"
+
+[[node]]
+id = "arqpKappaHat"
+source = "Cartis–Gould–Toint, Lemma 12.2.12 (corrected)"
+
+[[node]]
+id = "arqpPiOf"
+source = "Cartis–Gould–Toint, Lemma 12.2.13, Lemma 14.2.2"
+
+[[node]]
+id = "arqpKappaDmOf"
+source = "Cartis–Gould–Toint, Lemma 12.2.13"
+
+[[node]]
+id = "kappaSARqpOf"
+source = "Cartis–Gould–Toint, Theorem 12.2.14"
+
+[[node]]
+id = "kappaAARqpOf"
+source = "Cartis–Gould–Toint, Theorem 12.2.14"
+
+[[node]]
+id = "kappaCARqp"
+source = "Cartis–Gould–Toint, Theorem 12.2.14"
+
+[[node]]
+id = "IsARqpRun.mem_sublevel"
+source = "Cartis–Gould–Toint, the remark after (14.2.10)"
+
+[[node]]
+id = "IsARqpRun.sigma_le_of_anchored"
+source = "Cartis–Gould–Toint, Lemma 4.1.2 for ARqp, (12.2.2.2)"
+
+[[node]]
+id = "exists_isARqpRun_of_anchored"
+source = "Cartis–Gould–Toint, Lemmas 12.2.9–12.2.10, (12.2.50)"
+
+[[node]]
+id = "ARqpStep.exists_radius_ineq"
+source = "Cartis–Gould–Toint, Lemma 12.2.11"
+
+[[node]]
+id = "ARqpStep.exists_norm_pow_ge"
+source = "Cartis–Gould–Toint, Lemma 12.2.12"
+
+[[node]]
+id = "ARqpStep.taylorDecrement_ge"
+source = "Cartis–Gould–Toint, Lemma 12.2.13"
+
+[[node]]
+id = "IsARqpRun.decrease"
+source = "Cartis–Gould–Toint, Lemma 12.2.13, Lemma 14.2.2"
+
+[[node]]
+id = "IsARqpRun.delta_eq_one"
+source = "Cartis–Gould–Toint, Theorem 12.2.14 (1)"
+
+[[node]]
+id = "isEpsDeltaApprox_of_isMinOn_zero_of_jet"
+source = "Cartis–Gould–Toint, Lemma 12.2.10"
+
+[[node]]
+id = "IsARqpRun.exists_isFirstHit_of_anchored"
+source = "Cartis–Gould–Toint, proof of Theorem 12.2.14"
+
+[[node]]
+id = "IsARqpRun.complexity"
+source = "Cartis–Gould–Toint, Theorem 12.2.14, Theorem 14.2.4"

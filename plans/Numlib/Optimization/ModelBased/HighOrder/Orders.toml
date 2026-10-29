@@ -1,0 +1,25 @@
+namespace = "Optimization"
+
+[[node]]
+id = "finMax"
+source = "Cartis–Gould–Toint, (12.2.6), (12.2.14), (12.2.25)"
+
+[[node]]
+id = "finMin"
+source = "Cartis–Gould–Toint, (12.2.7)"
+
+[[node]]
+id = "one_le_finMax"
+source = "Cartis–Gould–Toint, (12.2.25)"
+
+[[node]]
+id = "epsMin"
+source = "Cartis–Gould–Toint, (13.1.6)"
+
+[[node]]
+id = "ordMax"
+source = "Cartis–Gould–Toint, (13.1.23), (13.1.51)"
+
+[[node]]
+id = "lipMax"
+source = "Cartis–Gould–Toint, (13.1.23)"

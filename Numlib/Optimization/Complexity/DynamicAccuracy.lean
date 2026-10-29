@@ -129,6 +129,30 @@ theorem card_accuracyImproving_le_of_pow {κacc ε : ℝ} {N : ℕ} (hγh : 0 < 
   have := div_le_div_of_nonneg_right habs hlog.le
   linarith
 
+/-- `card_accuracyImproving_le_of_pow` allowing `κ_h = 0`: if moreover
+`h_max(j) ≤ κ_h` for `j ≤ k`, then for `κ_h = 0` no iteration is accuracy-improving (the threshold
+`κ_acc ε^N` is positive), and the bound holds with `log(κ_acc/0) = 0`. -/
+theorem card_accuracyImproving_le_of_pow_of_nonneg
+    {κacc ε : ℝ} {N : ℕ} (hγh : 0 < γh) (hγh1 : γh < 1) (hκh : 0 ≤ κh) (hκacc : 0 < κacc)
+    (hε : 0 < ε) (hh0 : hmax 0 ≤ κh) {k : ℕ} (hle : ∀ j ≤ k, hmax j ≤ κh)
+    (hacc : ∀ j ≤ k, acc j → hmax (j + 1) = γh * hmax j)
+    (hnacc : ∀ j ≤ k, ¬ acc j → hmax (j + 1) = hmax j)
+    (hc : ∀ j ≤ k, acc j → κacc * ε ^ N < hmax j) :
+    ((successSet acc k).card : ℝ) ≤
+      (N * |Real.log ε| + |Real.log (κacc / κh)|) / |Real.log γh| + 1 := by
+  rcases hκh.lt_or_eq with hκh | hκh
+  · exact card_accuracyImproving_le_of_pow hγh hγh1 hκh hκacc hε hh0 hacc hnacc hc
+  · have h0 : successSet acc k = ∅ := by
+      ext j
+      simp only [mem_successSet, Finset.notMem_empty, iff_false, not_and]
+      intro hj ha
+      have := hc j hj ha
+      have := hle j hj
+      have : 0 < κacc * ε ^ N := by positivity
+      linarith
+    rw [h0, Finset.card_empty, Nat.cast_zero]
+    positivity
+
 end accuracy
 
 section skeleton

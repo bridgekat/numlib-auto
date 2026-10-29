@@ -15,14 +15,10 @@ complexity of TRq and ARqp. This module imports the section modules and adds not
 
 * §13.1, `Chapter13.Section01`: TRqIDA (Algorithm 13.1.1, `algorithm_13_1_1`), ARqpIDA
   (Algorithm 13.1.2, `algorithm_13_1_2`); assumptions f.D0qL, f.D0pL (`AssumptionD0qL`,
-  `AssumptionD0pL`); Lemmas 13.1.1–13.1.7, Theorem 13.1.8, Lemmas 13.1.9–13.1.18, Theorem
-  13.1.19 (`theorem_13_1_19_i`, `theorem_13_1_19_ii`); existence of runs
-  (`exists_algorithm_13_1_1`, `exists_algorithm_13_1_2`); the runs with a feasible set of §14.2
-  (`algorithm_13_1_1_feasible`, `algorithm_13_1_2_feasible`, f.D0qL on an open convex set
-  `AssumptionD0qLOn`) and the `_feasible` versions of the results; the `_anchored` versions under
-  f.D0qL anchored on a set containing the sublevel set `{y ∈ X | f(y) ≤ f(x₀)}`
-  (`AssumptionD0qLAnchored`, the form f.D0qLaB.X of §14.2), which contains the iterates
-  (`algorithm_13_1_1_feasible.f_le`, `algorithm_13_1_2_feasible.f_le`)
+  `AssumptionD0pL`) and f.D0qL on an open convex set (`AssumptionD0qLOn`, used by §14.2);
+  Lemmas 13.1.1–13.1.7, Theorem 13.1.8, Lemmas 13.1.9–13.1.18, Theorem 13.1.19
+  (`theorem_13_1_19_i`, `theorem_13_1_19_ii`); existence of runs (`exists_algorithm_13_1_1`,
+  `exists_algorithm_13_1_2`)
 * §13.2, `Chapter13.Section02`: finite derivative-approximation schemes from low-degree oracles
   (`FiniteDerivativeApproxScheme`, with the forward-difference gradient and Hessian
   `fdGradientScheme`, `fdHessianScheme`); the stencil formulas (13.2.1) for derivative tensors
@@ -32,11 +28,14 @@ complexity of TRq and ARqp. This module imports the section modules and adds not
   ARqpIDA)
 * §13.3, `Chapter13.Section03`: TRqEDA (Algorithm 13.3.1, `algorithm_13_3_1`), ARqpEDA
   (Algorithm 13.3.2, `algorithm_13_3_2`); Lemmas 13.3.1–13.3.3, Theorem 13.3.4, Lemmas
-  13.3.5–13.3.7, Theorem 13.3.8 (`theorem_13_3_8_i`, `theorem_13_3_8_ii`); existence of runs;
-  the runs with a feasible set (`algorithm_13_3_1_feasible`, `algorithm_13_3_2_feasible`) and the
-  `_feasible` versions of the results; the `_anchored` versions under `AssumptionD0qLAnchored`
-  (the iterates reached stay in the sublevel set also with inexact values,
-  `algorithm_13_3_1_feasible.f_le`, `algorithm_13_3_2_feasible.f_le`)
+  13.3.5–13.3.7, Theorem 13.3.8 (`theorem_13_3_8_i`, `theorem_13_3_8_ii`); existence of runs
+
+The analyses are those of the library (`Numlib.Optimization.ModelBased.HighOrder.DynamicAccuracy`):
+the runs `Optimization.IsTRqIDARun`, `Optimization.IsARqpIDARun`, `Optimization.IsTRqEDARun`,
+`Optimization.IsARqpEDARun` on a feasible set `X`, analysed under the anchored assumption
+`LipschitzDerivsAnchored f C A 0 p L` with an anchor set `A` containing the sublevel set
+`{y ∈ X | f(y) ≤ f(x₀)}` (which contains the iterates). The book's results are their instances
+with `X = C = A = univ`; the feasible-set rows of §14.2 are in `Chapter14.Section02`.
 
 Inexact derivatives at iteration `k` form a jet `D k : FormalMultilinearSeries ℝ ℝⁿ ℝ`, with
 decrements `(D k).taylorDecrement j` and measures `Optimization.taylorMeasure (D k) j δ univ`

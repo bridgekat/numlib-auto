@@ -1,0 +1,53 @@
+namespace = "Optimization"
+
+[[node]]
+id = "EDAStep3"
+source = "Cartis–Gould–Toint, Algorithms 13.3.1–13.3.2, Step 3"
+
+[[node]]
+id = "edaFunEvalCount"
+source = "Cartis–Gould–Toint, Theorems 13.3.4, 13.3.8"
+
+[[node]]
+id = "edaStopTR"
+source = "Cartis–Gould–Toint, Algorithm 13.3.1, Step 1.4.1"
+
+[[node]]
+id = "IsTRqEDARun"
+source = "Cartis–Gould–Toint, Algorithm 13.3.1; TRqEDA-SC (§14.2)"
+
+[[node]]
+id = "IsTRqEDARun.isEpsDeltaApprox_of_stop"
+source = "Cartis–Gould–Toint, Lemma 13.3.3 (i) (with a feasible set, §14.2)"
+
+[[node]]
+id = "IsTRqEDARun.objective_le"
+source = "Cartis–Gould–Toint, §14.2.1 (remark after (14.2.10)), (13.3.5), (13.3.9): the TRqEDA-SC iterates lie in the sublevel set (14.2.8)"
+
+[[node]]
+id = "IsTRqEDARun.ratio_ge"
+source = "Cartis–Gould–Toint, Lemma 13.3.1 under f.D0qLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "IsTRqEDARun.delta_ge"
+source = "Cartis–Gould–Toint, Lemma 13.3.3 (13.1.32 for TRqEDA) under f.D0qLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "IsTRqEDARun.decrease_ge"
+source = "Cartis–Gould–Toint, Lemma 13.3.2 under f.D0qLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "IsTRqEDARun.stop_of_pass"
+source = "Cartis–Gould–Toint, Lemma 13.3.3 (ii) under f.D0qLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "IsTRqEDARun.card_acc_le"
+source = "Cartis–Gould–Toint, proof of Theorem 13.3.4 under f.D0qLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "IsTRqEDARun.complexity"
+source = "Cartis–Gould–Toint, Theorem 13.3.4 under f.D0qLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "IsTRqEDARun.le_card_succ"
+source = "Cartis–Gould–Toint, Lemma 14.2.3 (TRqEDA-SC row) under f.D0qL anchored on a set containing the sublevel set (14.2.8)"

@@ -1,0 +1,9 @@
+namespace = "Optimization"
+
+[[node]]
+id = "exists_arqpDA_halving"
+source = "Cartis–Gould–Toint, Lemma 13.1.11"
+
+[[node]]
+id = "exists_arqpDA_steps"
+source = "Cartis–Gould–Toint, Lemmas 13.1.11–13.1.12 (existence), Algorithm 13.1.2"

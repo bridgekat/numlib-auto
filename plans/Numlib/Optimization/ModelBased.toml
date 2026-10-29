@@ -23,7 +23,8 @@ space and independent of the particular model:
   sequence), the parameter structures `ARParams` / `TRParams`, `σ_max = arSigmaMax`, and the
   run-level lemmas (σ/Δ bounds, decrease on success, Lemmas 2.3.1/2.4.1, complexity skeleton,
   existence).
-* `ARpRun` (ARp with a generic test; Ch 4, 5), `HighOrder/{MeasureTest,TRq,ARqp}` (Ch 12–14),
+* `ARpRun` (ARp with a generic test; Ch 4, 5), `HighOrder/*` (Ch 12–14: TRq, ARqp, their
+  complexity analyses on feasible sets under anchored smoothness, and the dynamic-accuracy methods),
   `HighOrderModel`, `HighOrderStep` (data-general high-order model lemmas), `PowRegularizedModel`
   (real-power regularization, ARp-H), `ConvexConstrained` (Ch 6), `InexactTaylor`, `InexactRatio`
   (Ch 13).

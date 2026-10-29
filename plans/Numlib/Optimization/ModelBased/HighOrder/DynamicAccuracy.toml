@@ -1,0 +1,20 @@
+desc = '''
+High-order methods with inexact derivatives (and, for explicit dynamic accuracy, inexact function
+values) whose accuracy the algorithm controls (Cartis–Gould–Toint Chapter 13, and the
+TRqIDA/TRqEDA/ARqpIDA/ARqpEDA rows of §14.2).
+
+* `DynamicAccuracy/Basic`: order-`0` consequences of `LipschitzDerivsAnchored` (Taylor's theorem,
+  derivative bounds at anchors, bounds on inexact jets) and small helpers.
+* `DynamicAccuracy/TRqIDA`: the TRqIDA step predicate (shared with TRqEDA), runs on a feasible set
+  `IsTRqIDARun`, their analysis (Lemmas 13.1.1–13.1.7, Theorem 13.1.8) and the existence of runs.
+* `DynamicAccuracy/ARqpDAStep`: the ARqpIDA step predicates (shared with ARqpEDA), the radii
+  control and the one-iteration lemmas (Lemmas 13.1.9–13.1.13), and step-length algebra.
+* `DynamicAccuracy/ARqpIDA`, `DynamicAccuracy/ARqpIDAExistence`: runs `IsARqpIDARun`, their
+  analysis (Lemmas 13.1.14–13.1.18, Theorem 13.1.19) and the existence of runs.
+* `DynamicAccuracy/TRqEDA`, `DynamicAccuracy/ARqpEDA`: the explicit-dynamic-accuracy runs with
+  inexact function values and their analyses (Lemmas 13.3.1–13.3.7, Theorems 13.3.4, 13.3.8).
+
+All analyses are stated on a feasible set `X ⊆ C` under `LipschitzDerivsAnchored f C A 0 p L`
+with normalized constants and an anchor set containing the sublevel set of the starting point; the
+unconstrained methods are the case `X = C = A = univ`.
+'''

@@ -1,0 +1,49 @@
+namespace = "Optimization"
+
+[[node]]
+id = "trqKappaDelta"
+source = "Cartis–Gould–Toint, (12.2.14)"
+
+[[node]]
+id = "kappaSTRq"
+source = "Cartis–Gould–Toint, Theorem 12.2.5"
+
+[[node]]
+id = "kappaATRq"
+source = "Cartis–Gould–Toint, Theorem 12.2.5"
+
+[[node]]
+id = "kappaBTRq"
+source = "Cartis–Gould–Toint, Theorem 12.2.5"
+
+[[node]]
+id = "kappaCTRq"
+source = "Cartis–Gould–Toint, Theorem 12.2.5"
+
+[[node]]
+id = "IsTRqRun.mem_of_feasible"
+source = "Cartis–Gould–Toint, §14.2 (TRq-SC)"
+
+[[node]]
+id = "IsTRqRun.mem_sublevel"
+source = "Cartis–Gould–Toint, the remark after (14.2.10)"
+
+[[node]]
+id = "IsTRqRun.abs_sub_le_of_lipschitzDerivsAnchored"
+source = "Cartis–Gould–Toint, (A.19), (14.2.9)"
+
+[[node]]
+id = "IsTRqRun.radius_ge_of_anchored"
+source = "Cartis–Gould–Toint, Lemma 12.2.3"
+
+[[node]]
+id = "IsTRqRun.taylorDecrement_ge_of_anchored"
+source = "Cartis–Gould–Toint, Lemma 12.2.4, Lemma 14.2.2"
+
+[[node]]
+id = "IsTRqRun.complexity"
+source = "Cartis–Gould–Toint, Theorem 12.2.5, Theorem 14.2.4"
+
+[[node]]
+id = "IsTRqRun.le_succ_count_of_anchored"
+source = "Cartis–Gould–Toint, Lemma 14.2.3"
