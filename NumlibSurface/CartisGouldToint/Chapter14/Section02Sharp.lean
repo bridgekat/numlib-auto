@@ -254,7 +254,8 @@ theorem theorem_14_2_4_sharp_arqp_otherwise {p q : ℕ} (hq : 1 ≤ q) (hqp : q 
     have := le_abs_self (d k j)
     simp only [mem_ofPred_eq]
     linarith
-  refine ⟨R, f, hb, hf, x, s, σ, d, IsARqpRun.of_univ hrun (fun _ _ _ => bddAbove_taylorDecrement _ _ _ _)
+  refine ⟨R, f, hb, hf, x, s, σ, d,
+    IsARqpRun.of_univ hrun (fun _ _ _ => bddAbove_taylorDecrement _ _ _ _)
     (fun _ _ _ => bddAbove_taylorDecrement _ _ _ _) hX,
     fun k _ _ _ _ => hκ k, hhit, ?_⟩
   simp only [funEvalCount, Nat.cast_add, Nat.cast_one]

@@ -1,0 +1,136 @@
+namespace = "Optimization"
+
+[[node]]
+id = "arqpcData_zero"
+
+[[node]]
+id = "arqpcStop_zero_iff"
+
+[[node]]
+id = "arqpRatio_zero"
+
+[[node]]
+id = "isARqpCDetailedStep_zero_iff"
+
+[[node]]
+id = "IsARqpCRun.of_isARqpRun_zero"
+
+[[node]]
+id = "IsARqpCRun.isARqpRun_zero"
+source = "Cartis–Gould–Toint, §14.2 (ARqp-SC as ARqpC-SC with c = 0)"
+
+[[node]]
+id = "IsARqpCRun.antitone_zero"
+
+[[node]]
+id = "IsARqpCRun.radii_zero"
+
+[[node]]
+id = "IsARqpCRun.decrease_zero"
+source = "Cartis–Gould–Toint, Lemma 14.2.2, ARqp-SC row"
+
+[[node]]
+id = "IsARqpCRun.radius_ge_zero"
+
+
+[[node]]
+id = "arqpCallKappaDecr"
+source = "Cartis–Gould–Toint, Lemma 14.2.2"
+
+[[node]]
+id = "arqpCallKappaUnc"
+source = "Cartis–Gould–Toint, Lemma 14.2.3"
+
+[[node]]
+id = "arqpCallKappaRad"
+
+[[node]]
+id = "IsARqpCRun.decrease_composite_zero"
+source = "Cartis–Gould–Toint, Lemma 14.2.2, ARqpC-SC row"
+
+[[node]]
+id = "arqpJetBound"
+
+[[node]]
+id = "IsARqpCRun.isEpsDeltaApprox_of_stop₂_zero"
+source = "Cartis–Gould–Toint, Lemma 12.2.10 (§14.2)"
+
+[[node]]
+id = "IsARqpCRun.exists_cert_zero"
+
+[[node]]
+id = "IsARqpOutput"
+source = "Cartis–Gould–Toint, Algorithm 14.3.1 (INNER = ARqp-SC)"
+
+[[node]]
+id = "IsARqpOutputCost"
+
+[[node]]
+id = "IsARqpOutputCost.cost_le"
+source = "Cartis–Gould–Toint, Theorem 14.2.4, ARqpC-SC row"
+
+[[node]]
+id = "IsARqpOutputCost.cost_le_arqp"
+source = "Cartis–Gould–Toint, Theorem 14.2.4, ARqp-SC row"
+
+[[node]]
+id = "exists_isARqpOutputCost"
+
+[[node]]
+id = "IsARqpCallOut"
+source = "Cartis–Gould–Toint, Algorithm 14.3.2, Step 1 (INNER = ARqp-SC)"
+
+[[node]]
+id = "IsARqpCallOut.antitone"
+
+[[node]]
+id = "IsARqpCallOut.contract"
+source = "Cartis–Gould–Toint, Lemmas 14.2.2–14.2.3"
+
+[[node]]
+id = "exists_isARqpCallOut_of_stop"
+
+[[node]]
+id = "exists_isARqpRun_unit"
+source = "Cartis–Gould–Toint, Lemmas 12.2.9–12.2.10 (unit radii, q ≤ 2)"
+
+[[node]]
+id = "IsARqpUnitOutputCost"
+
+[[node]]
+id = "exists_isARqpUnitOutputCost"
+
+[[node]]
+id = "IsARqpUnitOutputCost.le"
+
+[[node]]
+id = "IsARqpUnitOutputCost.cost_le"
+source = "Cartis–Gould–Toint, Theorem 12.2.14 (unit radii)"
+
+[[node]]
+id = "IsARqpUnitCall"
+
+[[node]]
+id = "IsARqpUnitCallOut"
+
+[[node]]
+id = "IsARqpUnitCallOut.contract"
+source = "Cartis–Gould–Toint, Lemmas 12.2.13 and 14.2.3 (unit radii)"
+
+[[node]]
+id = "exists_isARqpUnitCallOut_of_stop"
+
+[[node]]
+id = "IsARqpCallOut.eq_of_not_succ"
+
+[[node]]
+id = "IsARqpCallOut.le_count"
+
+[[node]]
+id = "IsARqpCallOut.decrease"
+
+[[node]]
+id = "IsARqpCallOut.decrease_arqp"
+
+[[node]]
+id = "IsARqpCallOut.radius_ge"

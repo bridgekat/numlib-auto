@@ -109,8 +109,8 @@ id = "theorem_14_2_4_arqpida_le_two"
 source = "Cartis–Gould–Toint, Theorem 14.2.4 (ARqpIDA-SC row, X = ℝⁿ, q ≤ 2, either radii mode)"
 
 [[node]]
-id = "AssumptionD1qLaBX.toAnchored"
-source = "Cartis–Gould–Toint, §14.2.1 (remark after (14.2.10)), f.D1qLaB.X gives the anchored Chapter 12 assumption"
+id = "AssumptionD1qLaBX.toLipschitzDerivsAnchored"
+source = "Cartis–Gould–Toint, §14.2.1 (remark after (14.2.10)), f.D1qLaB.X gives LipschitzDerivsAnchored"
 
 [[node]]
 id = "lemma_14_2_2_trq_anchored"

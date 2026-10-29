@@ -18,10 +18,11 @@ module imports the section modules and adds nothing of its own.
   w.Bb (`AssumptionCD1pL`, `AssumptionHLip`, `AssumptionHS0`, `AssumptionWBb`), ARqpC
   (Algorithms 14.1.1–14.1.2, `algorithm_14_1_1`, `algorithm_14_1_2`); Lemma 14.1.1, Example
   14.1.1, Lemmas 14.1.2–14.1.9, Theorem 14.1.10 (`theorem_14_1_10_i`, `theorem_14_1_10_ii`);
-  existence of runs (`exists_isARqpCRun`) and the radius policy (14.1.28) for every run
+  existence of runs (`exists_algorithm_14_1_1`) and the radius policy (14.1.28) for every run
   (`algorithm_14_1_1.radius_policy`); Corollary 14.1.11 (`corollary_14_1_11`, with the
-  admissibility of the slow steps for `|c|` that the book does not check). The algorithm and its
-  analysis are the backbone `Numlib.Optimization.ModelBased.HighOrder.ARqpC` and
+  admissibility of the slow steps for `|c|` that the book does not check). The algorithm (the run
+  predicate `Optimization.IsARqpCRun`) and its analysis are the backbone
+  `Numlib.Optimization.ModelBased.HighOrder.ARqpC` and
   `Numlib.Optimization.ModelBased.HighOrder.ARqpCComplexity` (normed spaces, anchored
   assumptions `LipschitzDerivsAnchored` on `f` and `c`), of which the book items are instances
 * §14.2, `Chapter14.Section02`: simple constraints; assumptions X.CNe, f.D1qLaB.X (and
@@ -63,12 +64,14 @@ module imports the section modules and adds nothing of its own.
 
 The composite Taylor model `T_{f,j}(x, s) + h(T_{c,j}(x, s))` and its measure `φ^δ_{w,j}` (14.1.6)
 are the backbone `Optimization.compositeTaylorDecrement` and
-`Optimization.compositeTaylorMeasure`; ARqpC is the backbone ARqp run `Optimization.IsARqpRun`
-with composite model data `Optimization.ARqpData.ofComposite`, carrying a closed feasible set
-`X` (`X = univ` is ARqpC, a general `X` is ARqpC-SC). The constrained measure (14.2.2) is
+`Optimization.compositeTaylorMeasure`; ARqpC is the backbone run `Optimization.IsARqpCRun`: the
+ARqp run `Optimization.IsARqpRun` with composite model data `Optimization.ARqpData.ofComposite`
+whose Step 2 is the detailed Step 2, carrying a closed feasible set `X` (`X = univ` is ARqpC, a
+general `X` is ARqpC-SC); with `c = 0`, `h = 0` it is ARqp-SC, the INNER solver of §14.3
+(`Numlib.Optimization.ModelBased.HighOrder.ARqpCCall`). The constrained measure (14.2.2) is
 `Optimization.taylorMeasure (ftaylorSeries ℝ f x) j δ {d | x + d ∈ X}`; "simple constraints" is
 an oracle-cost convention without a declaration of its own (the evaluation counts never charge
-the subproblems). In §14.3 the Lagrangian is `Constrained.lagrangianFn f c y`
+the subproblems). In §14.3 the Lagrangian is `Constrained.innerLagrangian f c y`
 (`ℒ = f - ⟨y, c⟩`), the Phase-2 residual and merit are `Constrained.targetResidual`,
 `Constrained.targetMerit`; Phase 1 of TPqp-GC is LENq-SC on `c`, and the INNER calls of both
 algorithms are described by cost and decrease contracts (`innerEvalBound`,

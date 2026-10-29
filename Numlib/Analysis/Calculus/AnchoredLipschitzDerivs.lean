@@ -77,6 +77,14 @@ theorem lipschitzOn (h : LipschitzDerivsAnchored f C C j₀ p L) {j : ℕ} (hj :
     IteratedFDerivLipschitzOn f j (L j) C :=
   iteratedFDerivLipschitzAnchored_self_iff.1 (h.lipschitzAnchored j hj)
 
+/-- The zero function has anchored Lipschitz derivatives of all orders, with constants `0`. -/
+theorem zero_fun (hC : IsOpen C) (hCc : Convex ℝ C) (hA : A ⊆ C) :
+    LipschitzDerivsAnchored (0 : E → F) C A j₀ p (fun _ => 0) :=
+  of_lipschitzOn hC hCc hA (fun _ _ => contDiffAt_const) fun j _ =>
+    iteratedFDerivLipschitzOn_iff.2 fun x _ y _ => by
+      have h0 : iteratedFDeriv ℝ j (0 : E → F) = 0 := iteratedFDeriv_fun_zero
+      simp [h0]
+
 /-- Shrinking the anchor set. -/
 theorem mono_left (h : LipschitzDerivsAnchored f C A j₀ p L) (hA : A' ⊆ A) :
     LipschitzDerivsAnchored f C A' j₀ p L :=

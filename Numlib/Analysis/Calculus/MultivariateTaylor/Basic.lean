@@ -543,6 +543,13 @@ theorem taylorPolynomial_apply (f : E → F) (p : ℕ) (x s : E) :
     taylorPolynomial f p x s =
       ∑ i ∈ range (p + 1), (i ! : ℝ)⁻¹ • iteratedFDeriv ℝ i f x (fun _ => s) := rfl
 
+/-- The Taylor polynomial of the zero function vanishes. -/
+@[simp]
+theorem taylorPolynomial_zero_fun (p : ℕ) (x s : E) :
+    taylorPolynomial (fun _ : E => (0 : F)) p x s = 0 := by
+  rw [taylorPolynomial_apply]
+  simp
+
 /-- At zero increment the Taylor polynomial is the value: `T_{f,p}(x, 0) = f(x)`. -/
 @[simp]
 theorem taylorPolynomial_zero_right (f : E → F) (p : ℕ) (x : E) :

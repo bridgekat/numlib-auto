@@ -137,6 +137,9 @@ end FinMinMax
 /-- `L_f = finMax 1 L p ≥ 1`. -/
 theorem one_le_finMax {L : ℕ → ℝ} {p : ℕ} : 1 ≤ finMax 1 L p := le_finMax_left
 
+theorem finMax_one_pos {L : ℕ → ℝ} {p : ℕ} : 0 < finMax 1 L p :=
+  one_pos.trans_le le_finMax_left
+
 section Orders
 
 variable {q : ℕ} {ε : ℕ → ℝ} {j : ℕ}

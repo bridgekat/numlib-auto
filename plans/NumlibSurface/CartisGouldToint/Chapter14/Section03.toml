@@ -93,14 +93,6 @@ id = "IsARqpSCOutputCost.cost_le"
 source = "Cartis–Gould–Toint, (14.3.20)–(14.3.21) for INNER = ARqp-SC, from Theorem 14.2.4 (ARqpC-SC row)"
 
 [[node]]
-id = "arqpSCKappaDecr"
-source = "Cartis–Gould–Toint, Lemma 14.2.2 (ARqpC-SC row), the constant η₁ κ_Δm"
-
-[[node]]
-id = "arqpSCKappaUnc"
-source = "Cartis–Gould–Toint, Lemma 14.2.3 (ARqpC-SC row), the constant κ_unc"
-
-[[node]]
 id = "arqpSCKappaF"
 source = "Cartis–Gould–Toint, (14.3.20) for INNER = ARqp-SC, the constant κ"
 
@@ -117,20 +109,12 @@ id = "theorem_14_3_4_add"
 source = "Cartis–Gould–Toint, Theorem 14.3.4 with the additive per-call constants of footnote 114"
 
 [[node]]
-id = "arqpSCKappaRad"
-source = "Cartis–Gould–Toint, (14.1.29) and Lemma 12.2.10, the radius constant of the INNER certificate of ARqp-SC"
-
-[[node]]
 id = "lemma_14_3_7_add"
 source = "Cartis–Gould–Toint, Lemma 14.3.7 with the additive per-call constants of footnote 114"
 
 [[node]]
 id = "innerEvalBound_one"
 source = "Cartis–Gould–Toint, (14.3.20)–(14.3.21) for q = 1"
-
-[[node]]
-id = "IsARqpSCOutputCost.one_le"
-source = "Cartis–Gould–Toint, §14.3.2.1: every INNER call evaluates the function and its derivatives at least once"
 
 [[node]]
 id = "exists_algorithm_14_3_1_cost_contract_counterexample"
@@ -144,29 +128,14 @@ source = "Cartis–Gould–Toint, proof of Lemma 14.3.8 (counterexample: its dec
 id = "IsARqpUnitOutputCost"
 source = "Cartis–Gould–Toint, §14.3.2.1 and Lemma 12.2.9: INNER = ARqp on ℝⁿ with unit radii (q ≤ 2)"
 
-[[node]]
-id = "IsARqpUnitOutputCost.le"
-source = "Cartis–Gould–Toint, Algorithm 12.2.2 (monotonicity)"
 
 [[node]]
 id = "IsARqpUnitCall"
 source = "Cartis–Gould–Toint, Algorithm 14.3.2, Step 1 with INNER = ARqp on ℝⁿ with unit radii"
 
 [[node]]
-id = "arqpUnitKappaUnc"
-source = "Cartis–Gould–Toint, Lemma 14.2.3 (κ_unc of ARqp)"
-
-[[node]]
 id = "IsInnerPhaseRunStrong"
 source = "Cartis–Gould–Toint, Lemmas 14.2.2–14.2.3 for INNER on μ(·, t_k), exemption keyed on INNER's own test"
-
-[[node]]
-id = "compositeSublevel_zero_subset"
-source = "Cartis–Gould–Toint, (14.2.8)"
-
-[[node]]
-id = "arqpSCKappaDecr_pos_of"
-source = "Cartis–Gould–Toint, (14.2.11)"
 
 [[node]]
 id = "exists_isARqpSCOutputCost_anchored"
@@ -175,10 +144,6 @@ source = "Cartis–Gould–Toint, (14.3.19), INNER = ARqp-SC under the anchored 
 [[node]]
 id = "IsARqpSCOutputCost.cost_le_anchored"
 source = "Cartis–Gould–Toint, (14.3.20)–(14.3.21) for ARqp-SC under the anchored assumptions"
-
-[[node]]
-id = "norm_le_of_phi2_le"
-source = "Cartis–Gould–Toint, (14.3.18)"
 
 [[node]]
 id = "lenq_core_anchored"
@@ -191,22 +156,6 @@ source = "Cartis–Gould–Toint, Algorithm 14.3.2 (Phase 1 under anchored bound
 [[node]]
 id = "phase1_cost_le_anchored"
 source = "Cartis–Gould–Toint, (14.3.20)–(14.3.21) for the Phase-1 calls under anchored bounds"
-
-[[node]]
-id = "mem_compositeSublevel_zero"
-source = "Cartis–Gould–Toint, (14.2.8) for INNER"
-
-[[node]]
-id = "algorithm_14_1_1.zero_decrease_arqp_anchored"
-source = "Cartis–Gould–Toint, Lemma 14.2.2 (ARqp-SC row) under the anchored assumptions"
-
-[[node]]
-id = "algorithm_14_1_1.zero_radius_ge_anchored"
-source = "Cartis–Gould–Toint, Lemma 14.1.3 for INNER under the anchored assumptions"
-
-[[node]]
-id = "algorithm_14_1_1.zero_exists_cert_anchored"
-source = "Cartis–Gould–Toint, (14.3.19) for INNER under the anchored assumptions"
 
 [[node]]
 id = "IsARqpSCOutputCost.cost_le_arqp_add_anchored"
@@ -265,22 +214,11 @@ source = "Cartis–Gould–Toint, assumption c.D1pLB.X (§14.3.2.2)"
 id = "AssumptionD1pLBX.norm_iteratedFDeriv_le_finMax"
 source = "Cartis–Gould–Toint, assumption f.D1pLB.X (§14.3.2.2), derivative bounds"
 
-[[node]]
-id = "finMax_one_pos"
-source = "Cartis–Gould–Toint, §14.3.2.2 (bound on the derivatives of f used in Theorem 14.3.9)"
 
-
-[[node]]
-id = "jetBound"
-source = "Cartis–Gould–Toint, Algorithm 14.1.1, Step 2 (radii returned at a Step-2 termination)"
 
 [[node]]
 id = "IsARqpSCCallOut"
 source = "Cartis–Gould–Toint, Algorithm 14.3.2, Step 1 (INNER = ARqp-SC on μ(·, t_k), (14.3.32))"
-
-[[node]]
-id = "IsARqpSCCallOut.contract"
-source = "Cartis–Gould–Toint, Lemmas 14.2.2–14.2.3 and the radius policy (14.1.28), ARqp-SC calls"
 
 [[node]]
 id = "IsARqpSCPhase2Calls"
@@ -334,9 +272,6 @@ source = "Cartis–Gould–Toint, Algorithm 14.3.2 with INNER = ARqp-SC (existen
 id = "IsARqpUnitCallOut"
 source = "Cartis–Gould–Toint, Algorithm 14.3.2, Step 1 with INNER = ARqp, unit radii (Lemma 12.2.9)"
 
-[[node]]
-id = "IsARqpUnitCallOut.contract"
-source = "Cartis–Gould–Toint, Lemmas 12.2.13 and 14.2.3 with unit radii"
 
 [[node]]
 id = "IsARqpUnitPhase2Calls"
@@ -381,10 +316,6 @@ source = "Cartis–Gould–Toint, Algorithm 14.3.2, Step 1 (existence of an ARqp
 [[node]]
 id = "exists_isTPqpGCARqpUnitRun"
 source = "Cartis–Gould–Toint, Algorithm 14.3.2 on ℝⁿ with INNER = ARqp with unit radii (existence)"
-
-[[node]]
-id = "IsARqpSCCallOut.antitone"
-source = "Cartis–Gould–Toint, Algorithm 14.1.1 with c = 0, h = 0 (the objective does not increase along a call)"
 
 [[node]]
 id = "theorem_14_3_9_arqp_counterexample"

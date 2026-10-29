@@ -49,7 +49,7 @@ id = "lemma_14_1_3"
 source = "Cartis–Gould–Toint, Lemma 14.1.3"
 
 [[node]]
-id = "exists_isARqpCRun"
+id = "exists_algorithm_14_1_1"
 source = "Cartis–Gould–Toint, Algorithm 14.1.1 (well-definedness, after Lemma 14.1.4)"
 
 [[node]]
@@ -121,7 +121,7 @@ id = "lemma_14_1_3_of_jet"
 source = "Cartis–Gould–Toint, Lemma 14.1.3"
 
 [[node]]
-id = "exists_isARqpCRun_of_hLip"
+id = "exists_algorithm_14_1_1_of_hLip"
 source = "Cartis–Gould–Toint, Algorithms 14.1.1–14.1.2"
 
 [[node]]

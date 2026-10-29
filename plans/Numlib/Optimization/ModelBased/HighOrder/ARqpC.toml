@@ -27,3 +27,30 @@ source = "Cartis–Gould–Toint, Algorithms 14.1.1–14.1.2 (well defined)"
 [[node]]
 id = "isARqpCDetailedStep_of_isMinOn"
 source = "Cartis–Gould–Toint, Corollary 14.1.11 (proof)"
+
+[[node]]
+id = "compositeHalvingSet"
+source = "Cartis–Gould–Toint, Algorithm 14.1.2, Step 2.4.3"
+
+[[node]]
+id = "IsARqpCRun"
+source = "Cartis–Gould–Toint, Algorithms 14.1.1–14.1.2"
+
+[[node]]
+id = "one_notMem_compositeHalvingSet"
+
+[[node]]
+id = "eq_one_of_notMem_compositeHalvingSet"
+
+[[node]]
+id = "arqpcStop_iff"
+
+[[node]]
+id = "IsARqpCRun.radius_eq_one"
+
+[[node]]
+id = "exists_isARqpCRun"
+source = "Cartis–Gould–Toint, Algorithms 14.1.1–14.1.2 (well defined)"
+
+[[node]]
+id = "exists_isARqpCRun_compositeHalvingSet"

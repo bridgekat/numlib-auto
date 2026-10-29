@@ -96,3 +96,11 @@ id = "arqpPiOf_one_le"
 
 [[node]]
 id = "four_thirds_le_arqpPiOf_one"
+
+[[node]]
+id = "IsARqpRun.arqpStop₁_of_isFirstHit_of_le_two"
+source = "Cartis–Gould–Toint, Lemma 12.2.10, first part"
+
+[[node]]
+id = "arqpKappaUns"
+source = "Cartis–Gould–Toint, Lemmas 2.4.1 and 14.2.3"
