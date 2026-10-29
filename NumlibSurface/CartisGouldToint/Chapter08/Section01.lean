@@ -77,6 +77,23 @@ theorem isRegularizationSolution_iff {σ r : ℝ} :
     IsRegularizationSolution g H M σ r s ↔ ∀ u, regModel g H M σ r s ≤ regModel g H M σ r u :=
   Iff.rfl
 
+theorem mNorm_def (M : Matrix (Fin n) (Fin n) ℝ) (v : EuclideanSpace ℝ (Fin n)) :
+    mNorm M v = √⟪v, toEuclideanLin M v⟫ := rfl
+
+theorem model_def (g : EuclideanSpace ℝ (Fin n)) (H : Matrix (Fin n) (Fin n) ℝ)
+    (s : EuclideanSpace ℝ (Fin n)) : model g H s = ⟪g, s⟫ + (1 / 2) * ⟪s, toEuclideanLin H s⟫ :=
+  rfl
+
+theorem regModel_def (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) (Fin n) ℝ) (σ r : ℝ)
+    (s : EuclideanSpace ℝ (Fin n)) :
+    regModel g H M σ r s = model g H s + (1 / r) * σ * mNorm M s ^ r :=
+  rfl
+
+/-- The scaled norm of `0` is `0`. -/
+@[simp]
+theorem mNorm_zero (M : Matrix (Fin n) (Fin n) ℝ) : mNorm M 0 = 0 := by
+  rw [mNorm_def, inner_zero_left, Real.sqrt_zero]
+
 /-- The scaled norm is nonnegative. -/
 theorem mNorm_nonneg (M : Matrix (Fin n) (Fin n) ℝ) (v : EuclideanSpace ℝ (Fin n)) :
     0 ≤ mNorm M v :=

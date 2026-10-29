@@ -185,13 +185,13 @@ def IsRegSubspaceSolution (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n)
 /-- The quadratic model at `S y` is the reduced model of `Sᵀ g`, `Sᵀ H S` at `y`. -/
 theorem model_toEuclideanLin (S : Matrix (Fin n) (Fin k) ℝ) (y : EuclideanSpace ℝ (Fin k)) :
     model g H (toEuclideanLin S y) = model (toEuclideanLin Sᵀ g) (Sᵀ * H * S) y := by
-  rw [model, model, toEuclideanLin_transpose_inner_left, toEuclideanLin_mul_apply,
+  rw [model_def, model_def, toEuclideanLin_transpose_inner_left, toEuclideanLin_mul_apply,
     toEuclideanLin_mul_apply, toEuclideanLin_transpose_inner_right]
 
 /-- The scaled norm of `S y` is the scaled norm of `y` for the reduced scaling `Sᵀ M S`. -/
 theorem mNorm_toEuclideanLin (S : Matrix (Fin n) (Fin k) ℝ) (y : EuclideanSpace ℝ (Fin k)) :
     mNorm M (toEuclideanLin S y) = mNorm (Sᵀ * M * S) y := by
-  rw [mNorm, mNorm, toEuclideanLin_mul_apply, toEuclideanLin_mul_apply,
+  rw [mNorm_def, mNorm_def, toEuclideanLin_mul_apply, toEuclideanLin_mul_apply,
     toEuclideanLin_transpose_inner_right]
 
 /-- The regularized model at `S y` is the reduced regularized model at `y`. -/
@@ -199,7 +199,7 @@ theorem regModel_toEuclideanLin (S : Matrix (Fin n) (Fin k) ℝ) (σ r : ℝ)
     (y : EuclideanSpace ℝ (Fin k)) :
     regModel g H M σ r (toEuclideanLin S y) =
       regModel (toEuclideanLin Sᵀ g) (Sᵀ * H * S) (Sᵀ * M * S) σ r y := by
-  rw [Chapter08.regModel, Chapter08.regModel, model_toEuclideanLin, mNorm_toEuclideanLin]
+  rw [Chapter08.regModel_def, Chapter08.regModel_def, model_toEuclideanLin, mNorm_toEuclideanLin]
 
 /-- **The reduced subproblems** (10.1.2) of [cartis2022evaluation]. If the columns of `S` span the
 subspace `𝒮` (`𝒮 = range S`), then `s = S s̄` solves the subspace subproblems (10.1.1) iff `s̄`
@@ -214,10 +214,10 @@ theorem subspaceSolution_iff_reduced (S : Matrix (Fin n) (Fin k) ℝ)
         (toEuclideanLin S sbar) ↔
       IsRegularizationSolution (toEuclideanLin Sᵀ g) (Sᵀ * H * S) (Sᵀ * M * S) σ r sbar := by
   refine ⟨fun Δ => ?_, fun σ r => ?_⟩
-  · simp only [IsTRSubspaceSolution, IsTrustRegionSolution, LinearMap.mem_range,
+  · simp only [IsTRSubspaceSolution, isTrustRegionSolution_iff, LinearMap.mem_range,
       exists_apply_eq_apply, true_and, forall_exists_index, forall_apply_eq_imp_iff,
       mNorm_toEuclideanLin, model_toEuclideanLin]
-  · simp only [IsRegSubspaceSolution, IsRegularizationSolution, LinearMap.mem_range,
+  · simp only [IsRegSubspaceSolution, isRegularizationSolution_iff, LinearMap.mem_range,
       exists_apply_eq_apply, true_and, forall_exists_index, forall_apply_eq_imp_iff,
       regModel_toEuclideanLin]
 
@@ -250,6 +250,12 @@ noncomputable def lanczosTridiag {M : Matrix (Fin n) (Fin n) ℝ} (hM : M.PosDef
     (H : Matrix (Fin n) (Fin n) ℝ) (g : EuclideanSpace ℝ (Fin n)) (k : ℕ) :
     Matrix (Fin k) (Fin k) ℝ :=
   Lanczos.tridiag (scaledOp H hM : ScaledSpace hM →ₗ[ℝ] ScaledSpace hM) (scaledGrad hM g) k
+
+theorem lanczosTridiag_def {M : Matrix (Fin n) (Fin n) ℝ} (hM : M.PosDef)
+    (H : Matrix (Fin n) (Fin n) ℝ) (g : EuclideanSpace ℝ (Fin n)) (k : ℕ) :
+    lanczosTridiag hM H g k =
+      Lanczos.tridiag (scaledOp H hM : ScaledSpace hM →ₗ[ℝ] ScaledSpace hM) (scaledGrad hM g) k :=
+  rfl
 
 /-- The **reduced gradient** `ḡₖ = Qₖᵀ g` of [cartis2022evaluation] (10.1.2); it is `γ₁ e₁`
 (`lanczosGrad_eq`). -/

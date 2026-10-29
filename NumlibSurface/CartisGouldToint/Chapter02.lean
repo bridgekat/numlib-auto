@@ -26,18 +26,23 @@ Appendix B's Lemmas B.2.1–B.2.6 (`AppendixB.Chapter02`).
 
 ## Deviations from the book
 
-* Theorem 2.2.2: the objective-evaluation bound (2.2.8) is false as printed — it vanishes for
-  `t_ini ≤ 2(1-α)/L` and omits the first trial point of every iteration. The corrected bound is
+Kinds (**false**, **gap**, **typo**, **reading**) as in the book index `CartisGouldToint`.
+
+* Theorem 2.2.2, (2.2.8): **false**, the bound vanishes for `t_ini ≤ 2(1-α)/L` and omits the
+  first trial point of every iteration; proved as
   `1 + (⌈log₂(L t_ini/(2(1-α)))⌉ + 1) κ (f(x₀) - f_low)/ε²` with
-  `κ = 1/(α min(t_ini, (1-α)/L))` (`kappaSDBA`), the book's `κ_SDBA` when `t_ini ≥ (1-α)/L`;
-  (2.2.7) likewise needs `min(t_ini, t_low/2)`.
-* Theorems 2.2.3, 2.2.5: `ε⁻²` is assumed to be an integer (as the proofs do); the hypothesis
-  `t_ini ≥ α` is not needed. The SDEX example realizes the global exact linesearch (2.2.26), which
-  the book's construction only does up to a first *local* minimizer (see `AppendixB.Chapter02`).
-* Theorem 2.3.8: with the printed `B_k = 2t⁻¹` the Cauchy condition (2.3.4) fails; the example uses
-  `B_k = t⁻¹ I`, `t = Δ₀/2`, and then `ρ_k = 2`.
-* Lemma 2.3.5's model decrease is `m_k(0) - m_k(s_k)`; the "reasonable values" after
-  Algorithm 2.4.1 contradict (2.4.2) and are not used.
+  `κ = 1/(α min(t_ini, (1-α)/L))` (`kappaSDBA`, the book's `κ_SDBA` when `t_ini ≥ (1-α)/L`)
+  (`theorem_2_2_2`).
+* (2.2.7): **false** when `t_ini < t_low/2`; proved with `min(t_ini, t_low/2)`
+  (`lemma_2_2_1_index`).
+* Theorems 2.2.3, 2.2.5: **reading**, `ε⁻²` is an integer (as the proofs assume); `t_ini ≥ α` is
+  dropped (`theorem_2_2_3`, `theorem_2_2_5`).
+* Theorem 2.2.5: **gap**, the book's corridor function gives a first *local* line minimizer; the
+  example realizes the global exact linesearch (2.2.26) (`AppendixB.lemma_B_2_6`).
+* Theorem 2.3.8: **false** example, with the printed `B_k = 2t⁻¹` the Cauchy condition (2.3.4)
+  fails; the example uses `B_k = t⁻¹ I`, `t = Δ₀/2`, with `ρ_k = 2` (`theorem_2_3_8`).
+* Lemma 2.3.5: **typo**, the model decrease is `m_k(0) - m_k(s_k)` (`lemma_2_3_5`).
+* "Reasonable values" after Algorithm 2.4.1: **typo**, they contradict (2.4.2) and are not used.
 
 ## Not formalized
 

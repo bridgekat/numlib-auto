@@ -76,6 +76,14 @@ structure AssumptionDpH (f : EuclideanSpace ℝ (Fin n) → ℝ) (p : ℕ) (H β
   /-- The Hölder condition (5.5.3). -/
   holder : IteratedFDerivHolderOn f p H β univ
 
+/-- f.DpH is the backbone predicate `IteratedFDerivHolderOn f p H β univ` for a `C^p` function,
+with the ranges of the constants. -/
+theorem assumptionDpH_iff {f : EuclideanSpace ℝ (Fin n) → ℝ} {p : ℕ} {H β : ℝ} :
+    AssumptionDpH f p H β ↔ ContDiff ℝ p f ∧ 0 ≤ H ∧ β ∈ Set.Icc 0 1 ∧ (p = 1 → 0 < β) ∧
+      IteratedFDerivHolderOn f p H β univ :=
+  ⟨fun h => ⟨h.contDiff, h.H_nonneg, ⟨h.β_nonneg, h.β_le_one⟩, h.β_pos_of_eq_one, h.holder⟩,
+    fun ⟨h1, h2, h3, h4, h5⟩ => ⟨h1, h2, h3.1, h3.2, h4, h5⟩⟩
+
 /-- The constants of Algorithm 5.5.1 ([cartis2022evaluation], Step 0) for the regularization
 power `r`: those of an AR method with `σ_min = 0`, the step accuracies `θ₁, θ₂ ∈ (0, 1]` and the
 step-length constants `α₁ ∈ (0, min(1, (r-1)!)/3]`, `α₂ ∈ (0, min(1, (r-2)!)/3]`. -/
@@ -384,7 +392,7 @@ theorem lemma_5_5_2 (hf : AssumptionDpH f p H β) (h : algorithm_5_5_1 f p P ε�
       rw [Nat.cast_sub hp2]; push_cast; ring
     rw [he] at hb
     have := hstep.2.2 hs
-    unfold Chapter01.hessianMinEig
+    simp only [Chapter01.hessianMinEig_def]
     linarith
 
 end Lemmas

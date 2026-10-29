@@ -45,8 +45,7 @@ telescoping the potential `‖r(x_k)‖^{1/2^i}`.
   hold for every run.
 * **Lemma 5.1.1** is proved for `ℓ > 2p` as stated (the backbone gives `ℓ ≥ 2p`).
 * **Lemma 5.1.5** needs `p ≠ 0` (the book writes `p ∈ ℕ`).
-* **Theorem 5.1.7.** The OCR exponents `2^4`, `2^s`, `2^*` are `2^i`, and the OCR `ε` in
-  `1 - (ε-1)/p` is `ℓ`; the multiplier in (5.1.44) is `κ^A` (printed `κ^C`); in (5.1.51) the three
+* **Theorem 5.1.7.** The multiplier in (5.1.44) is `κ^A` (printed `κ^C`); in (5.1.51) the three
   conditions are alternatives ("or", printed "and"), and the set `𝓜_{j+1}` there is that of
   (4.1.14) (printed "(4.1.9)"). The run may also stop by the strict-local-minimizer test
   (5.1.11), which is one of the termination branches of `ARpLEStop`. The theorem is proved in a
@@ -196,6 +195,13 @@ structure AssumptionPhiDpL (r : ℝⁿ → ℝᵐ) (ℓ : ℝ) (p : ℕ) (L : �
   nonneg : 0 ≤ L
   /-- `∇^p Φ_ℓ` is `L`-Lipschitz. -/
   lipschitz : IteratedFDerivLipschitzOn (Phi r ℓ) p L univ
+
+/-- Φ_ℓ.DpL is the backbone predicate `IteratedFDerivLipschitzOn` for `Φ_ℓ` on `ℝⁿ`, together with
+`Φ_ℓ ∈ C^p` and `L ≥ 0`. -/
+theorem assumptionPhiDpL_iff {r : ℝⁿ → ℝᵐ} {ℓ : ℝ} {p : ℕ} {L : ℝ} :
+    AssumptionPhiDpL r ℓ p L ↔
+      ContDiff ℝ p (Phi r ℓ) ∧ 0 ≤ L ∧ IteratedFDerivLipschitzOn (Phi r ℓ) p L univ :=
+  ⟨fun h => ⟨h.contDiff, h.nonneg, h.lipschitz⟩, fun ⟨h1, h2, h3⟩ => ⟨h1, h2, h3⟩⟩
 
 /-- The Step-1 termination test of ARpLE ([cartis2022evaluation], Algorithm 5.1.1, (5.1.9)–(5.1.14))
 at the point `x` with the direction set `M = 𝓜_k`, for the order `q ∈ {1, 2, 3}` (the book's

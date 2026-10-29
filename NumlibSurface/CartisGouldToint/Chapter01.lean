@@ -16,16 +16,18 @@ used by every later chapter.
 
 ## Deviations from the book
 
-* The converse of Theorem 1.1.2 is false as printed: the strict-curvature condition on the radial
-  directions `𝒞(x*)` does not make `x*` a local minimizer of `f` on a closed convex set
-  (`theorem_1_1_2_iv_counterexample`, on `C = {v ≥ u²}`). `theorem_1_1_2_iv` asks for the condition
-  on the tangent cone instead.
-* The sufficient conditions (1.1.15) and (1.1.18) quantify over `d ≠ 0` (with `d = 0` the strict
-  inequality is unsatisfiable).
-* "A constraint qualification" is taken to be LICQ (`licq`); the second-order necessary conditions
-  are proved for every multiplier satisfying the first-order conditions.
+Kinds (**false**, **gap**, **typo**, **reading**) as in the book index `CartisGouldToint`.
 
-See `Chapter01.Section01` for the remaining minor readings.
+* Theorem 1.1.2, converse: **false** with strict curvature on the radial directions `𝒞(x*)`
+  (`theorem_1_1_2_iv_counterexample`, on `C = {v ≥ u²}`); proved on the tangent cone
+  (`theorem_1_1_2_iv`).
+* (1.1.15), (1.1.18): **typo**, quantified over `d ≠ 0`, as `d = 0` makes the strict inequality
+  unsatisfiable (`theorem_1_1_3_iii`, `theorem_1_1_4_iii`).
+* "A constraint qualification": **reading**, LICQ (`licq`).
+* Theorem 1.1.1, third order: **reading**, the book's `∇²f(x*) d = 0` is written
+  `∀ w, ∇²f(x*)[d, w] = 0` (`theorem_1_1_1_iii`).
+* (1.1.14), (1.1.17): **reading**, proved for every multiplier satisfying the first-order
+  conditions (`theorem_1_1_3_ii`, `theorem_1_1_4_ii`).
 
 ## Not formalized
 

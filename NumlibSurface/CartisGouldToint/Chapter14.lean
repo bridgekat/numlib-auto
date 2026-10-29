@@ -77,52 +77,66 @@ Appendix B's Chapter 14 part contains only proofs, so there is no `AppendixB.Cha
 
 ## Deviations from the book
 
-* Lemma 14.1.1 needs only a local minimizer and differentiability at `x⋆`. c.D1pL is stated
-  componentwise as printed, so (14.1.2) carries a factor `√m` that the book drops.
-* Lemma 14.1.3: the radius lower bound `δ_{s,j} ≥ κ_δ(σ) ε_j` is also needed (and holds) for
-  `j = 1` when `h` or `X` is nonconvex; the book lists only `j ∈ [2 : q]`.
-* **Lemmas 14.1.7–14.1.9, Theorem 14.1.10**: Step 1 only certifies `φ_{w,j} > ς ε_j δ^j/j!` at a
-  non-terminal iterate, so the factor `(1 - θ)` must be `(ς - θ)`, with `θ < ς`. The
-  `‖s_k‖^{p+1}` term of (14.1.30) carries a factor `2`; the second case of (14.1.31) misses
-  `ε_j^{(j+1)/(p+1)}`; Lemma 14.1.9 reads `L_{f,p}`, `f` for `L_{w,p}`, `w` and holds at
-  successful iterations not followed by termination; `3j!` in the constants of Theorem 14.1.10
-  reads `3q!`. The radius policies the book assumes for Theorem 14.1.10 are proved for every
-  run; part 1 needs `δ_{0,1} = 1`.
-* Theorem 14.2.1: the Lipschitz condition is on the closed ball of radius `δ_j`, and the printed
-  `δ^j` of (14.2.6) is `δ_j^j`. (14.2.18)–(14.2.19) print `max ℓ(d)` for the minimum.
-* Theorem 14.2.4: the IDA/EDA regularization rows are stated by radii mode; on `ℝⁿ` with `q ≤ 2`
-  every ARqpIDA run attains the unit-radii bound in either mode (`theorem_14_2_4_arqpida_le_two`,
-  strengthening Theorem 13.1.19 (1)), so the mode-`False` bound is not sharp there for
-  `q = 2 < p`. The book's sharpness argument (reduction to `X = ℝⁿ`) does not reach the
-  "otherwise" entries with `q ≤ 2` (`q = 2`, `X ≠ ℝⁿ`).
-* **Theorem 14.3.1** is false as printed (arcs feasible only for `X`; `X = ℝ²`,
-  `c(x) = x₁² + x₂²`, `f(x) = -x₁`, `x⋆ = 0`); the arcs must stay in `X ∩ {c = 0}`. Example 14.3.1's
-  origin is a minimizer, with multiplier `y₀ = (-1, 0)`.
-* Theorem 14.3.2: the neighbourhood is the closed ball of radius `δ_j`; Theorem 14.3.3 needs a
-  ceiling.
-* **Theorem 14.3.4**, Lemma 14.3.7, Theorem 14.3.9: `∑_k max_j ≤ max_j ∑_k` is false; the bounds
-  hold with `∑_j` for `max_j`.
-* **(14.3.20)–(14.3.21)**: the multiplicative cost contract fails for INNER = ARqp-SC with
+Kinds (**false**, **gap**, **typo**, **reading**) as in the book index `CartisGouldToint`.
+
+* Lemma 14.1.1: **reading**, needs only a local minimizer and differentiability at `x⋆`
+  (`lemma_14_1_1`).
+* (14.1.2): **gap**, with c.D1pL componentwise as printed the bound carries a factor `√m` that the
+  book drops (`lemma_14_1_1`).
+* Lemma 14.1.3: **gap**, `δ_{s,j} ≥ κ_δ(σ) ε_j` is also needed (and holds) for `j = 1` when `h` or
+  `X` is nonconvex (`lemma_14_1_3`).
+* Lemmas 14.1.7–14.1.9, Theorem 14.1.10: **gap**, Step 1 only certifies `φ_{w,j} > ς ε_j δ^j/j!`,
+  so `(1 - θ)` must be `(ς - θ)` with `θ < ς`; the `‖s_k‖^{p+1}` term of (14.1.30) has a factor
+  `2`, the second case of (14.1.31) misses `ε_j^{(j+1)/(p+1)}`, Lemma 14.1.9 reads `L_{f,p}`, `f`
+  for `L_{w,p}`, `w` and holds at successful iterations not followed by termination, and `3j!`
+  reads `3q!`; the radius policies are proved for every run, part 1 needing `δ_{0,1} = 1`
+  (`lemma_14_1_7`, `theorem_14_1_10_i`, `theorem_14_1_10_ii`).
+* Theorem 14.2.1: **typo**, the Lipschitz condition is on the closed ball of radius `δ_j`, and
+  `δ^j` of (14.2.6) is `δ_j^j`; (14.2.18)–(14.2.19) print `max ℓ(d)` for the minimum
+  (`theorem_14_2_1`).
+* Theorem 14.2.4: **reading**, the IDA/EDA regularization rows are stated by radii mode; on `ℝⁿ`
+  with `q ≤ 2` every ARqpIDA run attains the unit-radii bound in either mode
+  (`theorem_14_2_4_arqpida_le_two`), so the other bound is not sharp there for `q = 2 < p`.
+* Theorem 14.2.4, sharpness: **gap**, the book's reduction to `X = ℝⁿ` does not reach the
+  "otherwise" entries with `q = 2`, `X ≠ ℝⁿ`; these are shown on closed nonconvex sets
+  (`theorem_14_2_4_sharp_arqp_otherwise`, `theorem_14_2_4_sharp_arqpida_otherwise_constrained`).
+* Theorem 14.3.1: **false** with arcs feasible only for `X` (`X = ℝ²`, `c(x) = x₁² + x₂²`,
+  `f(x) = -x₁`, `x⋆ = 0`); arcs in `X ∩ {c = 0}` (`theorem_14_3_1`). Example 14.3.1: **false**
+  saddle; the origin is a minimizer, with multiplier `y₀ = (-1, 0)` (`example_14_3_1`).
+* Theorem 14.3.2: **typo**, the neighbourhood is the closed ball of radius `δ_j`
+  (`theorem_14_3_2`); Theorem 14.3.3 needs a ceiling (`theorem_14_3_3`).
+* Theorem 14.3.4, Lemma 14.3.7, Theorem 14.3.9: **gap**, `∑_k max_j ≤ max_j ∑_k` is false; the
+  bounds hold with `∑_j` for `max_j` (`theorem_14_3_4`, `lemma_14_3_7`).
+* (14.3.20)–(14.3.21), the multiplicative cost contract: **false** for INNER = ARqp-SC with
   `q = 1`, `p ≥ 2`, and for any INNER spending at least one evaluation per call when every
   `π_j < 2` (`exists_algorithm_14_3_1_cost_contract_counterexample`); it holds for ARqp-SC with the
-  exponents `j + 1` and, with the ARqp-SC exponents, for `q ≥ 2`
-  (`IsARqpSCOutputCost.cost_le_arqp_anchored`); the additive form is used.
-* **Lemma 14.3.5**: (14.3.43) and (14.3.46) are false (`lemma_14_3_5_counterexample`) and are
-  corrected with terms `(‖∇f‖δ)²/(f(x_ε) - t_ε)`. Lemma 14.3.6: (14.3.63) bounds `∇^j μ`.
-* **Lemma 14.3.8**: the decreases used by its proof do not bound the bad outer iterations
+  ARqpC-SC exponents `j + 1` (`IsARqpSCOutputCost.cost_le_anchored`) and, for LENq-SC calls, with
+  the ARqp-SC exponents `j(p+1)/p` when `q ≥ 2` (`IsARqpSCOutputCost.cost_le_arqp_lenq`,
+  `IsARqpSCOutputCost.cost_le_arqp_anchored`); the additive form holds in all cases and is used
+  (`theorem_14_3_4_add`).
+* Lemma 14.3.5, (14.3.43) and (14.3.46): **false** (`lemma_14_3_5_counterexample`); corrected with
+  terms `(‖∇f‖δ)²/(f(x_ε) - t_ε)` (`lemma_14_3_5`). Lemma 14.3.6: **typo**, (14.3.63) bounds
+  `∇^j μ`.
+* Lemma 14.3.8: **gap**, its decreases do not bound the bad outer iterations
   (`lemma_14_3_8_proof_gap_counterexample`).
-* **Theorem 14.3.9** is proved for INNER satisfying Lemma 14.2.2 as stated (decrease unless
-  INNER's own test holds), with an extra term `O(ε₀^{-1} + max_j (ε₀ ε_j ρ_j^{j-1})^{-1})`
-  (`theorem_14_3_9`). As printed it fails for a nonspecific INNER under the per-call reading of
-  its hypotheses and is vacuous for `π₁ < 2` under the uniform reading
-  (`theorem_14_3_9_false`, `theorem_14_3_9_cost_hypothesis_unsatisfiable`). For runs of ARqp-SC
-  that re-initialise `μ` at Step 2.1 of Algorithm 14.1.2 the printed order fails for `q = 1`,
-  `p ≥ 4` and `q = 2`, `p ≥ 5` (`theorem_14_3_9_arqp_printed_false`); for runs of TRq-SC it fails
-  for every `q ≥ 2` (`theorem_14_3_9_trq_printed_false`), the proved order needs a factor
-  `1 + |log(ε₀ ε_min)|` for `q = 1` (`theorem_14_3_9_trq_log_necessary`), and the TRq-SC row of
-  (14.2.12) fails per iteration for `q = 2` (`lemma_14_2_2_trq_printed_false_uniform`).
-* Algorithm 14.3.2: the INNER calls of Phase 2 are described by their iterates; with INNER =
-  ARqp-SC the radii returned at a Step-2 termination certify (14.3.19), which the book's
+* Theorem 14.3.9, by INNER class:
+  * nonspecific INNER: **false** under the per-call reading of its INNER hypotheses
+    (`theorem_14_3_9_false`), vacuous for `π₁ < 2` under the uniform reading
+    (`theorem_14_3_9_cost_hypothesis_unsatisfiable`); **gap**, proved for INNER satisfying
+    Lemma 14.2.2 as stated (decrease unless INNER's own test holds) with an extra term
+    `O(ε₀^{-1} + max_j (ε₀ ε_j ρ_j^{j-1})^{-1})` (`theorem_14_3_9`);
+  * ARqp-SC: **false** in the printed order for `q = 1`, `p ≥ 4` and `q = 2`, `p ≥ 5` for runs that
+    re-initialise `μ` at Step 2.1 of Algorithm 14.1.2 (`theorem_14_3_9_arqp_printed_false`);
+    proved in the printed order for the exponents `j + 1` and, with `j(p+1)/p`, for `q = p`
+    (`theorem_14_3_9_arqpc`, `theorem_14_3_9_arqp`);
+  * TRq-SC: proved with the exponents `π_j = q + 1` and a factor `1 + |log(ε₀ ε_min)|` on the
+    function evaluations only (`theorem_14_3_9_trq`), which is needed for `q = 1`
+    (`theorem_14_3_9_trq_log_necessary`); the printed order is **false** for every `q ≥ 2` on fixed
+    problems, even with the logarithmic factor (`theorem_14_3_9_trq_printed_false`,
+    `theorem_14_3_9_trq_printed_false_phase2`); the TRq-SC row `j + 1` of (14.2.12) is **false**
+    per iteration for `q = 2` (`lemma_14_2_2_trq_printed_false_uniform`).
+* Algorithm 14.3.2: **reading**, the INNER calls of Phase 2 are described by their iterates; with
+  INNER = ARqp-SC the radii returned at a Step-2 termination certify (14.3.19), which the book's
   `δ_{s_k}` need not (`IsARqpSCCallOut`).
 
 ## Not formalized

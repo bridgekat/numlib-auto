@@ -18,9 +18,12 @@ adds nothing of its own.
 
 ## Deviations from the book
 
-* Theorem A.8.5 assumes `L ≥ 0` (on `ℝ⁰` it fails for `L < 0`); Theorem A.8.2 assumes `h ≠ 0`.
-* Theorem A.9.2: the index range of `s_k > 0` is `k < k_e`, the bound is for `x ∈ ℝ` (printed
-  `x ∈ ℝⁿ`), and `p > 0` is not needed.
+Kinds (**false**, **gap**, **typo**, **reading**) as in the book index `CartisGouldToint`.
+
+* Theorem A.8.5: **false** for `L < 0` on `ℝ⁰`; `L ≥ 0` is assumed (`theorem_A_8_5`). Theorem
+  A.8.2: **gap**, assumes `h ≠ 0` (`theorem_A_8_2`).
+* Theorem A.9.2: **typo**, the index range of `s_k > 0` is `k < k_e` and the bound is for `x ∈ ℝ`
+  (printed `x ∈ ℝⁿ`); `p > 0` is dropped (`theorem_A_9_2`).
 
 ## Not formalized
 

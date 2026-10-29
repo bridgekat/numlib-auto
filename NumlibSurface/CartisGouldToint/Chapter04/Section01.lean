@@ -204,7 +204,7 @@ theorem arpStopTest_none_right {ε₂ : Option ℝ} (hε₂ : ∀ e ∈ ε₂, 0
   · simp
   · have he := hε₂ e₂ rfl
     simp only [arpStopTest, Option.mem_def, Option.some.injEq, forall_eq', reduceCtorEq,
-      IsEmpty.forall_iff, implies_true, and_true, Chapter03.stopTest]
+      IsEmpty.forall_iff, implies_true, and_true, Chapter03.stopTest_def]
     constructor
     · rintro ⟨h1, h2 | h2⟩
       · exact ⟨h1, by linarith⟩
@@ -1268,7 +1268,7 @@ theorem theorem_4_1_6_ii (P : ARpParams) {p : ℕ} (hp : 2 ≤ p) :
       fun k hk => by
         rw [hsecond]
         dsimp only
-        rw [Chapter03.IsApproxSecondOrderMinimizer, norm_gradient_ridge_e₀
+        rw [Chapter03.isApproxSecondOrderMinimizer_def, norm_gradient_ridge_e₀
           (hG.of_le (by exact_mod_cast (by omega : 1 ≤ p))), hessianMinEig_ridge_e₀ (hG2 hG),
           (hd k hk).1, (hd k hk).2 2 (by norm_num) hp (by norm_num), abs_neg,
           abs_of_pos (Chapter03.ar2SlowAlpha_pos hε₁ hK hk),
@@ -1288,7 +1288,7 @@ theorem theorem_4_1_6_ii (P : ARpParams) {p : ℕ} (hp : 2 ≤ p) :
       fun k hk => by
         rw [hsecond]
         dsimp only
-        rw [Chapter03.IsApproxSecondOrderMinimizer, norm_gradient_ridge_e₀
+        rw [Chapter03.isApproxSecondOrderMinimizer_def, norm_gradient_ridge_e₀
           (hG.of_le (by exact_mod_cast (by omega : 1 ≤ p))), hessianMinEig_ridge_e₀ (hG2 hG),
           (hd k hk).1, (hd k hk).2 1 le_rfl (by omega) (by norm_num), abs_zero, neg_le_neg_iff,
           ← Chapter03.ar2SlowAlpha_le_iff he₂ hK hk]
@@ -1392,7 +1392,7 @@ theorem theorem_4_1_6_iii (P : ARpParams) {p : ℕ} (hp : 3 ≤ p)
       simp only [hxk]
       refine isFirstHit_of_forall_le_iff fun k hk => ?_
       have hα := Chapter03.ar2SlowAlpha_pos hε₁ hK hk
-      rw [IsApproxThirdOrderMinimizer, Chapter03.IsApproxSecondOrderMinimizer,
+      rw [IsApproxThirdOrderMinimizer, Chapter03.isApproxSecondOrderMinimizer_def,
         norm_gradient_ridge_e₀ (hG' hG).1, (hd k hk).1, abs_neg, abs_of_pos hα,
         hessianMinEig_ridge_e₀ (hG' hG).2, (hd k hk).2 2 (by norm_num) (by omega) (by norm_num),
         ← Chapter03.ar2SlowAlpha_le_iff hε₁ hK hk]
@@ -1438,7 +1438,7 @@ theorem theorem_4_1_6_iii (P : ARpParams) {p : ℕ} (hp : 3 ≤ p)
       simp only [hxk]
       refine isFirstHit_of_forall_le_iff fun k hk => ?_
       have hα := Chapter03.ar2SlowAlpha_pos he₂ hK hk
-      rw [IsApproxThirdOrderMinimizer, Chapter03.IsApproxSecondOrderMinimizer,
+      rw [IsApproxThirdOrderMinimizer, Chapter03.isApproxSecondOrderMinimizer_def,
         norm_gradient_ridge_e₀ (hG' hG).1, (hd k hk).2 1 le_rfl (by omega) (by norm_num),
         abs_zero, hessianMinEig_ridge_e₀ (hG' hG).2, (hd k hk).1, neg_le_neg_iff,
         ← Chapter03.ar2SlowAlpha_le_iff he₂ hK hk]
@@ -1527,7 +1527,7 @@ theorem theorem_4_1_6_iii (P : ARpParams) {p : ℕ} (hp : 3 ≤ p)
       have h3 : ∀ d : EuclideanSpace ℝ (Fin 1), ‖d‖ = 1 →
           |iteratedFDeriv ℝ 3 (ridge G e₀) (xr k • e₀) (fun _ => d)| = α k := fun d hd' => by
         rw [abs_iteratedFDeriv_ridge_e₀ hG hp _ hd', (hd k hk).1, abs_neg, abs_of_pos hαk]
-      rw [IsApproxThirdOrderMinimizer, Chapter03.IsApproxSecondOrderMinimizer,
+      rw [IsApproxThirdOrderMinimizer, Chapter03.isApproxSecondOrderMinimizer_def,
         norm_gradient_ridge_e₀ (hG' hG).1, (hd k hk).2 1 le_rfl (by omega) (by norm_num),
         abs_zero, hessianMinEig_ridge_e₀ (hG' hG).2,
         (hd k hk).2 2 (by norm_num) (by omega) (by norm_num),

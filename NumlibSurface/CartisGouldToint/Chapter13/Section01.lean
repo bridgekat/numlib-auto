@@ -819,8 +819,8 @@ theorem theorem_13_1_19_i (hf : AssumptionD0pL f P.p L) {flow : ℝ}
     h2.trans (le_of_eq (by rw [hdiv]))⟩
 
 /-- **Theorem 13.1.19 (2)** ([cartis2022evaluation], `q > 2`, corrected): as
-`theorem_13_1_19_i`, with the exponents `π_j = j(p+1)/p` ((13.1.86)–(13.1.87); the printed
-(13.1.86) is OCR-damaged and is restored from Lemma 13.1.18) and
+`theorem_13_1_19_i`, with the exponents `π_j = j(p+1)/p` ((13.1.86)–(13.1.87), the exponents of
+Lemma 13.1.18) and
 `κ_{Δm} = σ_min/(p+1)! ((1-θ) κ̂^{q-1}/(2 q! A))^{q(p+1)/p}`, `κ̂` as in Lemma 13.1.17 (the
 book's `κ^{s,2}` prints the exponent `(p+1)/(p-j+1)` and `κ_{δ,min}^{j-1}`). -/
 theorem theorem_13_1_19_ii (hf : AssumptionD0pL f P.p L) {flow : ℝ}

@@ -40,18 +40,19 @@ with orthonormal columns of (3.4.32) are represented by their ranges `V_k`, a su
 
 ## Fixes with respect to the book
 
-* Lemma 3.4.3 (OCR l. 3658–3664): the quadratic inequality is misprinted (`½L + θ₁‖s‖²`) and the
-  root is divided by `L_{f,2}` instead of `L_{f,2} + θ₁`; the stated bound (3.4.10) is proved
-  directly from `½(L_{f,2} + θ₁)‖s‖² + ε_*‖s‖ ≥ ‖∇f(x_{k+1})‖` (`le_of_le_quadratic`).
-* Lemma 3.4.4 (l. 3709–3721): the case labels (3.4.13)/(3.4.14) of the proof are swapped.
-* Theorem 3.4.6 (l. 3823): the claim "`x_{j+1}` is on the trust-region boundary" is wrong; the
-  boundary step is taken at the next successful iteration. The bounds hold with a factor `2` on
-  the leading terms (and `+2` instead of `+1` for the derivative evaluations).
-* Theorem 3.4.11 (App. B, l. 19055): multiplying the number of successful iterations by
-  the bound (3.4.42) does not count the successful iterations themselves nor the final block of
+* Lemma 3.4.3 (proof, before (3.4.12)): the quadratic inequality is misprinted
+  (`½L + θ₁‖s‖²`) and the root is divided by `L_{f,2}` instead of `L_{f,2} + θ₁`; the stated
+  bound (3.4.10) is proved directly from `½(L_{f,2} + θ₁)‖s‖² + ε_*‖s‖ ≥ ‖∇f(x_{k+1})‖`
+  (`le_of_le_quadratic`).
+* Lemma 3.4.4 (proof): the case labels (3.4.13)/(3.4.14) are swapped.
+* Theorem 3.4.6 (proof, before (3.4.26)): the claim "`x_{j+1}` is on the trust-region boundary"
+  is wrong; the boundary step is taken at the next successful iteration. The bounds hold with a
+  factor `2` on the leading terms (and `+2` instead of `+1` for the derivative evaluations).
+* Theorem 3.4.11 (proof in Appendix B): multiplying the number of successful iterations by the
+  bound (3.4.42) does not count the successful iterations themselves nor the final block of
   unsuccessful iterations; the corrected constants are `κ^A = κ^S (M + 1)`, `κ^B = M + 2`
   (`M` the bound (3.4.42); with `ε₂ = ∞` the final block is empty).
-* Theorem 3.4.12 (App. B, l. 19097): "`‖∇f(x_k)‖ ≤ ε₁` for all `k ≥ k₁`" is unjustified; the
+* Theorem 3.4.12 (proof in Appendix B): "`‖∇f(x_k)‖ ≤ ε₁` for all `k ≥ k₁`" is unjustified; the
   bounds hold with a factor `2` on the leading terms and `κ^D = 2M + 3` (the final block of
   unsuccessful iterations may have `M + 1` elements).
 * Lemma 3.4.7 uses (A.19) (`L/6 ‖s‖³`); the book's `½ L ‖s‖³` is weaker.
@@ -827,7 +828,7 @@ def irnTest (f : EuclideanSpace ℝ (Fin n) → ℝ) (ε₁ : ℝ) (ε₂ : Opti
 @[simp]
 theorem irnTest_top {f : EuclideanSpace ℝ (Fin n) → ℝ} {ε₁ : ℝ} {ε₂ : Option ℝ}
     {x : EuclideanSpace ℝ (Fin n)} : irnTest f ε₁ ε₂ x ⊤ ↔ stopTest f ε₁ ε₂ x := by
-  rw [irnTest, stopTest, minCurvatureOn_top]
+  rw [irnTest, stopTest_def, minCurvatureOn_top]
   rfl
 
 /-- Step 5 of Algorithm 3.4.2 (the update of `σᴸ, σᵁ`) for the ratio `ρ`, multiplier `λ` and step
@@ -1735,7 +1736,7 @@ theorem tre_slow_data :
   have hval : ∀ k ≤ secondOrderK ε, G (X k) = F k ∧ deriv G (X k) = -2 * ε * F k ∧
       iteratedDeriv 2 G (X k) = 4 * r * F k ^ 2 := fun k hk => by
     obtain ⟨h1, h2, h3, -⟩ := hGk k hk
-    exact ⟨h1, h2, by rw [h3, secondOrderH, hhalf]⟩
+    exact ⟨h1, h2, by rw [h3, secondOrderH_def, hhalf]⟩
   have hdata : ∀ k < secondOrderK ε, X (k + 1) = X k + t k ∧ 0 < t k ∧ t k ≤ r / 2 ∧
       r ≤ iteratedDeriv 2 G (X k) ∧
       deriv G (X k) + (iteratedDeriv 2 G (X k) + r) * t k = 0 ∧
@@ -1830,7 +1831,7 @@ theorem tre_ridge_run (P : TREpsParams) {ε : ℝ} (hε : 0 < ε) (hε1 : ε ≤
       positivity
   have hρ : ∀ k < K, 1 ≤ tr2Ratio f (x k) (s k) := fun k hk => by
     obtain ⟨-, htk, -, hHr, hst, hdec⟩ := hdata k hk
-    rw [tr2Ratio, Chapter02.tr1Ratio]
+    rw [tr2Ratio, Chapter02.tr1Ratio_def]
     have hpred : Chapter02.tr1Model f (x k) (hessianOperator f (x k)) 0 -
         Chapter02.tr1Model f (x k) (hessianOperator f (x k)) (s k) =
         -(deriv G (X k) * t k + iteratedDeriv 2 G (X k) * t k ^ 2 / 2) := by
@@ -2029,7 +2030,7 @@ theorem irn_slow_data (P : IRNParams) :
       iteratedDeriv 2 G (X k) = c⁻¹ * (4 * r * F k ^ 2) := fun k hk => by
     obtain ⟨h1, h2, h3, -⟩ := hGk k hk
     refine ⟨by simp only [G]; rw [hcX, h1], by rw [hd, h2]; rfl, ?_⟩
-    rw [hid 2 le_rfl, hc2, hcX, h3, secondOrderH, hhalf]
+    rw [hid 2 le_rfl, hc2, hcX, h3, secondOrderH_def, hhalf]
   have hXs : ∀ k < secondOrderK ε, X (k + 1) = X k + t k := fun k hk => by
     simp only [X, X₀, t]; rw [secondOrderX_succ, hhalf]; ring
   have hpos : ∀ k < secondOrderK ε, 0 < t k := fun k hk => by

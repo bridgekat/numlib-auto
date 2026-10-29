@@ -68,6 +68,8 @@ namespace Subproblem
 ([cartis2022evaluation] (10.2.9)). -/
 noncomputable def convFactor (κ : ℝ) : ℝ := (√κ - 1) / (√κ + 1)
 
+theorem convFactor_def (κ : ℝ) : convFactor κ = (√κ - 1) / (√κ + 1) := rfl
+
 /-- `q(κ) ≥ 0` for `κ ≥ 1`. -/
 theorem convFactor_nonneg {κ : ℝ} (hκ : 1 ≤ κ) : 0 ≤ convFactor κ := by
   have : 1 ≤ √κ := Real.one_le_sqrt.2 hκ

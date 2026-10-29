@@ -895,6 +895,11 @@ end GradSpike
 noncomputable def negMonomialRegModel (p q : ℕ) (σ a t : ℝ) : ℝ :=
   -a * t ^ q / q.factorial + σ * |t| ^ (p + 1) / (p + 1).factorial
 
+theorem negMonomialRegModel_def (p q : ℕ) (σ a t : ℝ) :
+    negMonomialRegModel p q σ a t =
+      -a * t ^ q / q.factorial + σ * |t| ^ (p + 1) / (p + 1).factorial :=
+  rfl
+
 /-- The polynomial that agrees with `negMonomialRegModel` for `t ≥ 0`. -/
 private noncomputable def negMonomialPoly (p q : ℕ) (σ a : ℝ) : ℝ[X] :=
   Polynomial.C (-a / q.factorial) * Polynomial.X ^ q +

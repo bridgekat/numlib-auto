@@ -329,6 +329,8 @@ theorem ridge_assumptions {G : ℝ → ℝ} {L B : ℝ} (hG : ContDiff ℝ 1 G)
 `ω_k = ε (k_ε - k)/k_ε`, `x_k = ∑_{j<k} θ (ε + ω_j)` and `f_k = 4θ - ∑_{j<k} θ (ε + ω_j)²`. -/
 noncomputable def slowOmega (ε : ℝ) (kε k : ℕ) : ℝ := ε * ((kε : ℝ) - k) / kε
 
+theorem slowOmega_def (ε : ℝ) (kε k : ℕ) : slowOmega ε kε k = ε * ((kε : ℝ) - k) / kε := rfl
+
 /-- The abscissae of the one-dimensional slow example with constant step factor `θ`. -/
 noncomputable def slowX (θ ε : ℝ) (kε k : ℕ) : ℝ := ∑ j ∈ range k, θ * (ε + slowOmega ε kε j)
 
@@ -527,8 +529,7 @@ theorem theorem_2_2_5 :
   obtain ⟨hC, hlow, hlip⟩ := H ε kε hadm
   set f := zigZagFunction ε kε
   set z : ℕ → EuclideanSpace ℝ (Fin 2) := zigZagIterate ε kε
-  have hz0 : z 0 = 0 := by
-    ext i; fin_cases i <;> simp [z, zigZagIterate, ZigZag.height]
+  have hz0 : z 0 = 0 := ZigZag.zigZagIterate_zero ε kε
   have hnorm : ∀ k ≤ kε, ‖gradient f (z k)‖ = ε + ZigZag.omega ε kε k :=
     fun k hk => (zigZag_gradient hadm hk).2.1
   have hhit : IsFirstHit (fun k => ‖gradient f (z k)‖ ≤ ε) kε := by

@@ -476,11 +476,11 @@ critical for the model at every order `j ∈ [1 : q]`: if `s ∈ T`, the model i
 `T` (so `m* = sInf (m '' T)` is finite), `m(s) < m(0)`, `‖s‖ < 1`, and every `dm j` is a
 `ς`-approximate optimality displacement of the model at `s` with radius `1` and decrease at most
 `ς θ ε_j/j!`, then `(s, 1)` is an output. The step is reached by initializing
-`μ = (m(0) - m(s))/(m(0) - m*) ∈ (0, 1]` at Step 2.1 ("Initialize `μ ∈ (0, 1]`", OCR l. 12588,
-15758; `μ` is chosen afresh at every Step 2 and is not a constant of the outer algorithm), then
+`μ = (m(0) - m(s))/(m(0) - m*) ∈ (0, 1]` at Step 2.1 ("Initialize `μ ∈ (0, 1]`" in both
+algorithms; `μ` is chosen afresh at every Step 2 and is not a constant of the outer algorithm), then
 Steps 2.2, 2.4.1–2.4.2 for `j = 1, …, q` and 2.5: every approximately critical point of the model
 with `m(s) < m(0)` is an output, however small its decrease relative to `m(0) - m*` (the book notes
-that global minimization is not required, OCR l. 12760). -/
+after the proof of Lemma 12.2.9 that global minimization is not required). -/
 theorem IsDetailedStepOutput.of_short_step {s : E} {dm : ℕ → E} (hq : 1 ≤ q) (hs : s ∈ T)
     (hbdd : BddBelow (m '' T)) (hlt : m s < m 0) (hs1 : ‖s‖ < 1)
     (hdm : ∀ j ∈ Icc 1 q, dm j ∈ closedBall 0 1 ∩ Sd s ∧

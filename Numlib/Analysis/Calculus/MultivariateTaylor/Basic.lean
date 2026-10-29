@@ -246,18 +246,22 @@ theorem taylorSum_succ (s : E) :
     D.taylorSum (p + 1) s = D.taylorSum p s + ((p + 1)! : ℝ)⁻¹ • D (p + 1) (fun _ => s) := by
   rw [taylorSum_def, sum_range_succ, ← taylorSum_def]
 
+/-- The Taylor sum is additive in the jet. -/
 @[simp]
 theorem taylorSum_add (s : E) : (D + D').taylorSum p s = D.taylorSum p s + D'.taylorSum p s := by
   simp [taylorSum_def, sum_add_distrib, smul_add]
 
+/-- The Taylor sum of a difference of jets. -/
 @[simp]
 theorem taylorSum_sub (s : E) : (D - D').taylorSum p s = D.taylorSum p s - D'.taylorSum p s := by
   simp [taylorSum_def, sum_sub_distrib, smul_sub]
 
+/-- The Taylor sum of the negated jet. -/
 @[simp]
 theorem taylorSum_neg (s : E) : (-D).taylorSum p s = -D.taylorSum p s := by
   simp [taylorSum_def, sum_neg_distrib, smul_neg]
 
+/-- The Taylor sum is homogeneous in the jet. -/
 @[simp]
 theorem taylorSum_smul (c : ℝ) (s : E) : (c • D).taylorSum p s = c • D.taylorSum p s := by
   simp [taylorSum_def, smul_sum, smul_comm c]
@@ -436,6 +440,10 @@ variable (D D' : FormalMultilinearSeries ℝ E ℝ) (p : ℕ)
 ([cartis2022evaluation], (12.1.11)), the "predicted decrease" of model-based methods. -/
 noncomputable def taylorDecrement (s : E) : ℝ :=
   D.taylorSum p 0 - D.taylorSum p s
+
+theorem taylorDecrement_def (s : E) :
+    D.taylorDecrement p s = D.taylorSum p 0 - D.taylorSum p s :=
+  rfl
 
 /-- `ΔT_p(s) = -∑_{i=1}^p (1/i!) D_i [s]^i`: the constant terms cancel. -/
 theorem taylorDecrement_eq (s : E) :

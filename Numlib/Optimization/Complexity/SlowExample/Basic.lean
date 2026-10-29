@@ -398,6 +398,10 @@ noncomputable def secondOrderG (ε : ℝ) (k : ℕ) : ℝ := -2 * ε * secondOrd
 /-- The second derivatives `H_k = 4 ε^{1/2} f_k²` of (3.5.12). -/
 noncomputable def secondOrderH (ε : ℝ) (k : ℕ) : ℝ := 4 * ε ^ (1 / 2 : ℝ) * secondOrderF ε k ^ 2
 
+theorem secondOrderH_def (ε : ℝ) (k : ℕ) :
+    secondOrderH ε k = 4 * ε ^ (1 / 2 : ℝ) * secondOrderF ε k ^ 2 :=
+  rfl
+
 section Data
 
 variable {ε : ℝ}

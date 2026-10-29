@@ -25,15 +25,19 @@ The proofs are in the backbone modules `Bracketing`, `InverseIteration`, `Stoppi
 
 ## Deviations from the book
 
-* Algorithm 9.1.1 computes the derivative vectors of (8.2.29) up to the sign `(-1)ᵏ` (harmless for
-  the values `π⁽ʲ⁾`); the Cholesky remark after it has a spurious factor `2`.
-* Algorithm 9.2.1: the printed contraction factor is not uniformly below `1`; finite termination
-  needs the initial lower bound strictly below `λ*`.
-* Theorem 9.3.1 omits the hypothesis `z₀ ∈ 𝒵₁`, which must be read in the `M`-inner product.
-* Theorem 9.3.2 is false with the Euclidean `λ_min` in (9.3.14c) when `M ≠ I`; it is stated with
-  the `M`-scaled norms and eigenvalue.
-* (9.3.6): the middle term is not a valid bound as printed; only the outer inequality used by
-  (9.3.7) is stated. (9.4.5) is an implication, not an equivalence.
+Kinds (**false**, **gap**, **typo**, **reading**) as in the book index `CartisGouldToint`.
+
+* Algorithm 9.1.1: **typo**, its vectors are those of (8.2.29) up to the sign `(-1)ᵏ`, harmless
+  for the values `π⁽ʲ⁾` (`algS_eq`, `algorithm_9_1_1`); the Cholesky remark after it has a
+  spurious factor `2` (`corollary_9_1_1`).
+* Algorithm 9.2.1: **gap**, the printed contraction factor is not uniformly below `1`, and finite
+  termination needs the initial lower bound strictly below `λ*` (`algorithm_9_2_1_terminates`).
+* Theorem 9.3.1: **gap**, omits the hypothesis `z₀ ∈ 𝒵₁`, read in the `M`-inner product
+  (`theorem_9_3_1`).
+* Theorem 9.3.2: **false** with the Euclidean `λ_min` in (9.3.14c) when `M ≠ I`; stated with the
+  `M`-scaled norms and eigenvalue (`theorem_9_3_2`).
+* (9.3.6): **false** middle term; only the outer inequality used by (9.3.7) is stated
+  (`exists_abs_sub_le_of_eigen`). (9.4.5): **false** as an equivalence; the implication holds.
 
 ## Not formalized
 

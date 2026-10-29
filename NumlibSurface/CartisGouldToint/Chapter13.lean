@@ -51,42 +51,40 @@ contains only proofs for this chapter, so there is no `AppendixB.Chapter13`.
 
 ## Deviations from the book
 
-* Algorithm 13.1.1, Step 0 prints the AR convention `0 < γ₁ < 1 < γ₂ < γ₃`; the trust-region
-  update needs `0 < γ₁ ≤ γ₂ < 1 ≤ γ₃` (`TRqIDAParams` extends `Optimization.TRParams`). Step 4's
-  shortcut back to Step 2 after an unsuccessful iteration is covered: every book run is a run of
-  the predicate, which performs Step 1 at every iteration.
-* Lemmas 13.1.1 and 13.1.9 need their radius (parameter) hypothesis at `Δ_{k+1}` (`σ_{k+1}`), not
-  at `Δ_k` (`σ_k`); the printed statements are false for `k = 0`.
-* Lemma 13.1.4 is proved for every lower bound of the trial measures, which contains both printed
-  cases; the constant `κ_Δ` of (13.1.31) is used only through its properties (`IsTRKappaDelta`).
-* **Evaluation counts.** The derivative-estimate bounds of Theorems 13.1.8, 13.1.19, 13.3.4 and
-  13.3.8 omit the initial estimate and the last accuracy-improving iteration: `κ^F + 2` (TR) and
-  `κ^F + 3` (AR, also counting the `+1` of `|𝒮_k| ≤ |𝒮_{k-1}| + 1`). In Theorem 13.1.19, `κ^C`
-  misses the factor `1 + |log γ₁|/log γ₂` on that `+1`. The garbled constants of Theorem 13.3.4
-  are replaced by the factor `2` of its proof (at most two value evaluations per trial
-  iteration); the OCR-damaged exponents of (13.1.86) are restored from Lemma 13.1.18.
-* Algorithm 13.1.2, Step 2 checks (13.1.46) only for `i ∈ [1, q]` and only for short steps; the
-  proofs of Lemmas 13.1.14 and 13.1.16 need `i ∈ [1, p]` and long steps too. `ARqpDAStep` checks
-  `i ∈ [1, p]`, and `σ_max` of Lemma 13.1.14 (and Lemma 13.3.5) uses `max(κ_s, κ_h)` for `κ_s`.
-* Lemma 13.1.17 (`q > 2`): `κ_{δ,min}^{j-1}` is replaced by `κ̂^{j-1}`,
-  `κ̂ = min(κ_{δ,min}, (1-θ)/(2 q! (L_{f,p} + σ_max + 3κ_{∇,max}κ_s)))`, which the book's
-  derivation needs; Lemma 13.1.18 and Theorem 13.1.19 use `κ̂`. Lemma 13.1.18 holds (and is used)
-  at successful iterations whose successor is not approximately optimal, not at every trial
-  iteration.
-* **Theorem 13.1.19**: the radius-one conclusion `φ^1_{f,j}(x_ε) ≤ ε_j/j!` is not what the proof
-  gives (the radii certified at the end of Step 1 may be smaller than one; the proof conflates
-  `δ^{(0)}_k` and `δ^{(1)}_k`). The first-hit index is that of approximate optimality for *some*
-  radii in `(0, 1]^q`; for `q ≤ 2` the radius-one conclusion follows
-  (`isEpsDeltaApprox_one_of_le_two`).
-* (13.2.2): `d = ∑_{i=0}^p C(n+i-1, i)` is the number of interpolation points, not `d + 1`
-  (`eq_13_2_2_card`).
-* Theorem 13.2.1, (13.2.5)–(13.2.7): `O(min_j ε_j^{-…})` must be `O(max_j ε_j^{-…})`.
-* **ARqpEDA (Lemma 13.3.7, Theorem 13.3.8)**: the book reuses Lemmas 13.1.16–13.1.17, whose
-  hypothesis "`x_{k+1}` is not approximately optimal" does not follow from non-termination of
-  ARqpEDA. The corrected argument uses the inexact Step-1 test at `x_{k+1}` and needs
-  `θ < ς/2`; `1 - θ` becomes `ς/2 - θ` and `3κ_{∇,max}κ_s` becomes `4κ_s` in the constants, and
-  the successful iterations followed by an accuracy-improving one (logarithmically many) are
-  added to the count. The orders in `ε` are unchanged.
+Kinds (**false**, **gap**, **typo**, **reading**) as in the book index `CartisGouldToint`.
+
+* Algorithm 13.1.1, Step 0: **typo**, the trust-region update needs `0 < γ₁ ≤ γ₂ < 1 ≤ γ₃`
+  (`TRqIDAParams`); Step 4's shortcut is covered, as the run predicate performs Step 1 at every
+  iteration (`algorithm_13_1_1`).
+* Lemmas 13.1.1, 13.1.9: **false** for `k = 0`; the radius (parameter) hypothesis is at `Δ_{k+1}`
+  (`σ_{k+1}`) (`lemma_13_1_1`, `lemma_13_1_9`).
+* Lemma 13.1.4: **reading**, proved for every lower bound of the trial measures (both printed
+  cases); `κ_Δ` of (13.1.31) enters only through its properties (`IsTRKappaDelta`)
+  (`lemma_13_1_4`).
+* Theorems 13.1.8, 13.1.19, 13.3.4, 13.3.8: **false** derivative-estimate counts, which omit the
+  initial estimate and the last accuracy-improving iteration: `κ^F + 2` (TR), `κ^F + 3` (AR);
+  in Theorem 13.1.19 `κ^C` misses the factor `1 + |log γ₁|/log γ₂` on that `+ 1`
+  (`theorem_13_1_8`, `theorem_13_1_19_ii`, `theorem_13_3_4`, `theorem_13_3_8_ii`).
+* Theorem 13.3.4: **typo**, garbled constants; the factor `2` of its proof (`theorem_13_3_4`).
+* Algorithm 13.1.2, Step 2: **gap**, it checks (13.1.46) only for `i ∈ [1, q]` and short steps;
+  Lemmas 13.1.14, 13.1.16 need `i ∈ [1, p]` and long steps (`ARqpDAStep`), and `σ_max` of
+  Lemmas 13.1.14, 13.3.5 uses `max(κ_s, κ_h)` (`lemma_13_1_14`, `lemma_13_3_5`).
+* Lemma 13.1.17 (`q > 2`): **gap**, `κ_{δ,min}^{j-1}` is replaced by `κ̂^{j-1}`,
+  `κ̂ = min(κ_{δ,min}, (1-θ)/(2 q! (L_{f,p} + σ_max + 3κ_{∇,max}κ_s)))`, also in Lemma 13.1.18 and
+  Theorem 13.1.19; Lemma 13.1.18 holds at successful iterations whose successor is not
+  approximately optimal (`lemma_13_1_17`, `lemma_13_1_18`).
+* Theorem 13.1.19: **gap**, the radius-one conclusion `φ^1_{f,j}(x_ε) ≤ ε_j/j!` is not what the
+  proof gives (it conflates `δ^{(0)}_k` and `δ^{(1)}_k`); stated for some radii in `(0, 1]^q`
+  (`theorem_13_1_19_i`), with radius one for `q ≤ 2` (`isEpsDeltaApprox_one_of_le_two`).
+* (13.2.2): **typo**, `d = ∑_{i=0}^p C(n+i-1, i)` interpolation points, not `d + 1`
+  (`eq_13_2_2_card`). Theorem 13.2.1, (13.2.5)–(13.2.7): **typo**, `O(min_j …)` is `O(max_j …)`
+  (`theorem_13_2_1_i`, `theorem_13_2_1_ii`).
+* Lemma 13.3.7, Theorem 13.3.8 (ARqpEDA): **gap**, the reused Lemmas 13.1.16–13.1.17 need
+  "`x_{k+1}` is not approximately optimal", which does not follow from non-termination; the
+  corrected argument uses the inexact Step-1 test at `x_{k+1}` and needs `θ < ς/2`, with
+  `ς/2 - θ` for `1 - θ` and `4κ_s` for `3κ_{∇,max}κ_s` in the constants, and counts the successful
+  iterations followed by an accuracy-improving one; the orders in `ε` are unchanged
+  (`lemma_13_3_7`, `theorem_13_3_8_i`, `theorem_13_3_8_ii`).
 
 ## Not formalized
 

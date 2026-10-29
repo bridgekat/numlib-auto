@@ -3,6 +3,7 @@ import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Mathlib.Analysis.SpecialFunctions.Sqrt
 import Numlib.Analysis.Calculus.MultivariateTaylor.Remainder
 import Numlib.Analysis.InnerProductSpace.HalfNormSqDeriv
+import Numlib.Optimization.Constrained
 import Numlib.Optimization.Optimality.ConstrainedMeasure
 
 /-!
@@ -41,9 +42,10 @@ norm is defined directly.
 
 ## Implementation notes
 
-The book's Lagrangian `ℒ(x, y) = f(x) - ⟨y, c(x)⟩` is written explicitly as
-`fun z => f z - ⟪y, c z⟫` (the multipliers of `Constrained.lagrangian` enter with the opposite
-sign).
+The book's Lagrangian `ℒ(x, y) = f(x) - ⟨y, c(x)⟩` is `Constrained.innerLagrangian f c y`, a
+reducible abbreviation of `fun z => f z - ⟪y, c z⟫`, which is the form the statements below are
+written in. Its multipliers enter with the sign opposite to that of `Constrained.lagrangian`
+(`Constrained.innerLagrangian_apply_eq_lagrangian`).
 
 The printed bounds (14.3.43) and (14.3.46) claim that the extra term in the second- and third-order
 relations is controlled by the first-order measure of the Lagrangian, via
@@ -196,11 +198,14 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddComm
   [InnerProductSpace ℝ F]
 
 omit [NormedSpace ℝ E] in
-/-- The Lagrangian `ℒ(·, y) = f - ⟪y, c⟫` of [cartis2022evaluation], (1.1.1), as a function of
-`x` for a fixed multiplier `y` (reducible, so that statements about `fun z => f z - ⟪y, c z⟫`
-apply). -/
+/-- Alias of `Constrained.innerLagrangian` (with the same reducible body). -/
 noncomputable abbrev lagrangianFn (f : E → ℝ) (c : E → F) (y : F) : E → ℝ :=
   fun z => f z - ⟪y, c z⟫
+
+omit [NormedAddCommGroup E] [NormedSpace ℝ E] in
+/-- `lagrangianFn` is `innerLagrangian`. -/
+theorem lagrangianFn_eq_innerLagrangian (f : E → ℝ) (c : E → F) (y : F) :
+    lagrangianFn f c y = innerLagrangian f c y := rfl
 
 /-- The multiplier estimate `y = -c(x)/(f(x) - t)` of [cartis2022evaluation], (7.2.22) and
 (14.3.53). It is meaningful only when `f(x) ≠ t`; for `f(x) = t` it takes the junk value `0`

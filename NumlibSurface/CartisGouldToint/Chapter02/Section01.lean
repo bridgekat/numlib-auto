@@ -121,4 +121,13 @@ theorem norm_iteratedFDeriv_two_le (h : AssumptionGL f L) (x : EuclideanSpace �
 
 end AssumptionGL
 
+/-- f.gL is `C¹` with an `L`-Lipschitz first derivative on `ℝⁿ` (the backbone predicate
+`IteratedFDerivLipschitzOn f 1 L univ`) and `L ≥ 1`. -/
+theorem assumptionGL_iff {f : EuclideanSpace ℝ (Fin n) → ℝ} {L : ℝ} :
+    AssumptionGL f L ↔ ContDiff ℝ 1 f ∧ 1 ≤ L ∧ IteratedFDerivLipschitzOn f 1 L univ := by
+  refine ⟨fun h => ⟨h.contDiff, h.one_le, h.iteratedFDerivLipschitzOn⟩, fun ⟨h1, h2, h3⟩ =>
+    ⟨h1, h2, fun x y => ?_⟩⟩
+  rw [← norm_fderiv_sub_fderiv, ← norm_iteratedFDeriv_one_sub]
+  exact iteratedFDerivLipschitzOn_iff.1 h3 x (mem_univ _) y (mem_univ _)
+
 end CartisGouldToint.Chapter02

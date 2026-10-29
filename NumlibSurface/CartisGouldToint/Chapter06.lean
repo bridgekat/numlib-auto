@@ -21,15 +21,21 @@ All measures are instances of the backbone `Optimization.formCriticality` over
 
 ## Deviations from the book
 
-* (6.1.5), (6.1.9) lack a minus sign; the claim that C.CNe ensures that (6.1.1) has a solution is
-  false (`not_assumptionCNe_imp_exists_minimizer`).
-* Step 2 of ARp-CC can be infeasible for `q ≥ 2`, even at a strict global minimizer
-  (`algorithm_6_2_1_not_exists_step`); Theorem 6.2.3 holds for every run, and runs exist for
-  `q = 1` and whenever Step 2 is feasible.
-* Lemma 6.2.1's (6.2.18)–(6.2.19) need `‖d‖ ≤ 1`; Lemma 6.2.2's constants have `(p+1)!` for `p!`.
-* Theorem 6.3.1: "for" is "or", `2^*` is `2^i`; the test (6.3.2) is written multiplicatively, and
-  the display before (6.3.3) mixes scaled and unscaled measures (`arpleCC_decrease` is the decrease
-  that holds).
+Kinds (**false**, **gap**, **typo**, **reading**) as in the book index `CartisGouldToint`.
+
+* (6.1.5), (6.1.9): **typo**, a minus sign is missing (`omega1`, `omega3`).
+* §6.1, "C.CNe ensures that (6.1.1) has a solution": **false**
+  (`not_assumptionCNe_imp_exists_minimizer`).
+* Algorithm 6.2.1, Step 2 for `q ≥ 2`: **false** that it is feasible, even at a strict global
+  minimizer (`algorithm_6_2_1_not_exists_step`); Theorem 6.2.3 holds for every run, and runs exist
+  for `q = 1` and whenever Step 2 is feasible (`theorem_6_2_3`).
+* Lemma 6.2.1, (6.2.18)–(6.2.19): **gap**, they need `‖d‖ ≤ 1` (`lemma_6_2_1_iii`,
+  `lemma_6_2_1_iv`). Lemma 6.2.2: **typo**, `(p+1)!` for `p!` (`lemma_6_2_2`).
+* Theorem 6.3.1: **typo**, "for" is "or"; the test (6.3.2) is written multiplicatively
+  (`theorem_6_3_1`). The display before (6.3.3): **typo**, it mixes scaled and unscaled measures
+  (`arpleCC_decrease` is the decrease that holds).
+* Order of the sought minimizer: **reading**, an explicit `q ∈ {1, 2, 3}` with `q ≤ p` in place
+  of infinite tolerances.
 
 ## Not formalized
 

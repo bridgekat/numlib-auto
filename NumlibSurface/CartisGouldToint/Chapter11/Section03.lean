@@ -91,7 +91,7 @@ theorem leastSquares_structure (J : Matrix (Fin m) (Fin n) ℝ) (r : EuclideanSp
   have hstep : ∀ {lam : ℝ} {s : EuclideanSpace ℝ (Fin n)}, (Jᵀ * J + lam • M).PosDef →
       toEuclideanLin (Jᵀ * J + lam • M) s = -g → s = stepOf g (Jᵀ * J) M lam := by
     intro lam s hP h
-    rw [stepOf, ← h, toEuclideanLin_nonsing_inv_mul_apply hP.isUnit]
+    rw [stepOf_def, ← h, toEuclideanLin_nonsing_inv_mul_apply hP.isUnit]
   have hl₁ : 0 ≤ leftmostPencil hH hM := by
     rcases isEmpty_or_nonempty (Fin n) with hn | hn
     · have : IsEmpty (Fin (Fintype.card (Fin n))) := by rw [Fintype.card_fin]; exact hn
@@ -99,7 +99,7 @@ theorem leastSquares_structure (J : Matrix (Fin m) (Fin n) ℝ) (r : EuclideanSp
     · rw [leftmostPencil_eq]
       have := ((posDef_add_smul_iff_scaled (hM := hM) hH 0).1).1 (by simpa using hJ)
       linarith
-  have hS : lambdaS hH hM = 0 := by rw [lambdaS]; exact max_eq_left (by linarith)
+  have hS : lambdaS hH hM = 0 := by rw [lambdaS_def]; exact max_eq_left (by linarith)
   -- the secular function is strictly decreasing on `(0, ∞)` when `g ≠ 0`
   have hA : g ≠ 0 → ∀ a b : ℝ, 0 < a → a < b →
       secularFn g (Jᵀ * J) M b < secularFn g (Jᵀ * J) M a := fun hg a b ha hab => by
@@ -107,10 +107,10 @@ theorem leastSquares_structure (J : Matrix (Fin m) (Fin n) ℝ) (r : EuclideanSp
     rw [hS] at hanti
     have := hanti (mem_Ioi.2 ha) (mem_Ioi.2 (ha.trans hab)) hab
     simpa only [Real.rpow_one] using this
-  refine ⟨fun s => ?_, hpsd, ⟨hl₁, by rw [lambdaS]; exact max_eq_left (by linarith)⟩,
+  refine ⟨fun s => ?_, hpsd, ⟨hl₁, by rw [lambdaS_def]; exact max_eq_left (by linarith)⟩,
     exists_transpose_mul_self_eq J r, fun {Δ lam s} hΔ hk => ?_,
     fun {σ p s} hσ hp hg hs => ?_⟩
-  · rw [model, ← real_inner_self_eq_norm_sq, inner_add_left, inner_add_right, inner_add_right,
+  · rw [model_def, ← real_inner_self_eq_norm_sq, inner_add_left, inner_add_right, inner_add_right,
       toEuclideanLin_mul_apply, toEuclideanLin_transpose_inner_left,
       toEuclideanLin_transpose_inner_right, real_inner_comm (toEuclideanLin J s) r]
     ring
@@ -123,7 +123,7 @@ theorem leastSquares_structure (J : Matrix (Fin m) (Fin n) ℝ) (r : EuclideanSp
       have hg : g ≠ 0 := by
         intro hg0
         have : secularFn g (Jᵀ * J) M lam = 0 := by
-          rw [secularFn, stepOf, hg0, neg_zero, map_zero, inner_zero_left]
+          rw [secularFn_def, stepOf_def, hg0, neg_zero, map_zero, inner_zero_left]
         nlinarith
       refine Or.inr ⟨h, hpd lam h, hstep (hpd lam h) hk.shifted, hsec, fun μ hμ hμr => ?_⟩
       rcases lt_trichotomy μ lam with h' | h' | h'

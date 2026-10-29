@@ -1,5 +1,5 @@
 import Mathlib.Analysis.Matrix.Order
-import Numlib.Analysis.Calculus.DerivativeTest
+import Numlib.Analysis.Calculus.DerivativeTest.Laplacian
 import Numlib.Analysis.PDE.Elliptic.Dirichlet
 
 /-!

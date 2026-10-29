@@ -100,6 +100,12 @@ noncomputable def tr1Ratio (f : EuclideanSpace ℝ (Fin n) → ℝ) (x : Euclide
     (s : EuclideanSpace ℝ (Fin n)) : ℝ :=
   reductionRatio f x s (tr1Model f x B 0 - tr1Model f x B s)
 
+theorem tr1Ratio_def (f : EuclideanSpace ℝ (Fin n) → ℝ) (x : EuclideanSpace ℝ (Fin n))
+    (B : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n))
+    (s : EuclideanSpace ℝ (Fin n)) :
+    tr1Ratio f x B s = reductionRatio f x s (tr1Model f x B 0 - tr1Model f x B s) :=
+  rfl
+
 /-- **Algorithm 2.3.1** (TR1) of [cartis2022evaluation], as a run predicate: iterates `x`, trial
 steps `s`, radii `Δ` and model Hessians `B` (self-adjoint). It is the generic trust-region run
 `Optimization.IsTRRun` with the termination test `‖∇f(x_k)‖ ≤ ε`, the Step-2 conditions
@@ -617,7 +623,7 @@ theorem theorem_2_3_8 (P : TR1Params) :
     simp only [x]
     rw [(hfk k hk).2, norm_smul, norm_e₀, mul_one, norm_neg, Real.norm_eq_abs, abs_of_nonneg]
     have : (k : ℝ) ≤ kε := by exact_mod_cast hk
-    have : 0 ≤ slowOmega ε kε k := by unfold slowOmega; positivity
+    have : 0 ≤ slowOmega ε kε k := by rw [slowOmega_def]; positivity
     linarith
   have hω : ∀ k ≤ kε, slowOmega ε kε k ≤ ε := fun k hk => by
     have hk' : (k : ℝ) ≤ kε := by exact_mod_cast hk
@@ -625,7 +631,7 @@ theorem theorem_2_3_8 (P : TR1Params) :
       rcases Nat.eq_zero_or_pos kε with h0 | h0
       · rw [h0] at hkε; norm_num at hkε
       · exact_mod_cast h0
-    unfold slowOmega
+    rw [slowOmega_def]
     rw [div_le_iff₀ hkε0]
     nlinarith
   have hstep : ∀ k < kε, x k + s k = x (k + 1) := fun k hk => by

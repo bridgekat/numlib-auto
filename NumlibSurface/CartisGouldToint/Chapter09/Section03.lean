@@ -214,7 +214,7 @@ theorem pencil_gershgorin_9_3_7 [NeZero n] (hH : H.IsHermitian) (hM : M.PosDef) 
     obtain ⟨u, hu, heig⟩ := exists_eigen_of_eigenvalues (hM := hM) hH i
     obtain ⟨k, hk⟩ := exists_abs_sub_le_of_eigen hu heig
     refine le_trans ?_ (le_ciSup (Set.finite_range _).bddAbove k)
-    rw [rightmostPencil_eq, rightmost, ← hi]
+    rw [rightmostPencil_eq, rightmost_def, ← hi]
     exact (mem_gershgorin_interval (offDiagSum_nonneg M k) (hdd k) hk).2
   · have hv := leftmost_mul_norm_sq_le (hH := hT) (toScaled hM (EuclideanSpace.single i 1))
     rw [norm_toScaled_sq, real_inner_comm, ← real_inner_comm (toScaled hM _),
@@ -316,7 +316,7 @@ theorem extremeEigenvalue_bounds_9_3_1 [NeZero n] (hH : H.IsHermitian) :
   refine ⟨neg_le_neg hmin, ?_, ?_, ?_, hmin⟩
   · rw [leftmostPencil_eq, ← hi]
     exact neg_le_of_abs_le (heig i)
-  · rw [leftmostPencil_eq, rightmostPencil_eq, ← hi, rightmost]
+  · rw [leftmostPencil_eq, rightmostPencil_eq, ← hi, rightmost_def]
     exact le_ciSup (Set.finite_range _).bddAbove i
   · rw [rightmostPencil_eq, ← hk]
     exact le_of_abs_le (heig k)
@@ -385,7 +385,7 @@ theorem algorithm_9_3_1.isInverseIterationRun (hH : H.IsHermitian) (hM : M.PosDe
     fun k => (h.count k).2, h.weight_mem, h.exponent_mem, fun k => ?_, fun k => ?_⟩
   · rcases isEmpty_or_nonempty (Fin n) with hn | hn
     · have := h.norm_zero
-      rw [Subsingleton.elim (z 0) 0, mNorm, inner_zero_left, Real.sqrt_zero] at this
+      rw [Subsingleton.elim (z 0) 0, mNorm_zero] at this
       exact absurd this zero_ne_one
     · have : NeZero n :=
         ⟨fun h0 => by subst h0; exact (not_isEmpty_of_nonempty (Fin 0)) inferInstance⟩
@@ -493,7 +493,7 @@ theorem stoppingRules_9_3_14_iff_scaled (hM : M.PosDef) {σ r θ₁ θ₂ : ℝ}
   rw [regStoppingRules_scaled_iff hr, ← mNorm_eq_norm_toScaled hM]
   have ha : regModel g H M σ r s = ⟪g, s⟫ + 1 / 2 * ⟪s, toEuclideanLin H s⟫ +
       σ / r * mNorm M s ^ r := by
-    simp only [Chapter08.regModel, Chapter08.model]; ring
+    simp only [Chapter08.regModel_def, Chapter08.model_def]; ring
   have hc : ∀ w, ⟪toEuclideanLin M w, w⟫ = ⟪w, toEuclideanLin M w⟫ := fun w => hMs w w
   simp only [hc, ← sq]
   rw [← ha]

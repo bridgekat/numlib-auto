@@ -18,6 +18,7 @@ import Numlib.Analysis.Calculus.ContDiffOnIcc
 import Numlib.Analysis.Calculus.CurvilinearLaplacian
 import Numlib.Analysis.Calculus.Deriv.Slope
 import Numlib.Analysis.Calculus.DerivativeTest
+import Numlib.Analysis.Calculus.DerivativeTest.Laplacian
 import Numlib.Analysis.Calculus.Gradient
 import Numlib.Analysis.Calculus.HermiteGenocchi
 import Numlib.Analysis.Calculus.HermiteInterpolation

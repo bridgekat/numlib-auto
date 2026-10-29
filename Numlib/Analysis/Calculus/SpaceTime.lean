@@ -5,7 +5,7 @@ Natural home: `Mathlib.Analysis.Calculus.FDeriv.Partial` (the partial operators 
 `Mathlib.Analysis.Calculus.Deriv.Comp` (a bounded linear map commutes with `d/dt`).
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
-import Numlib.Analysis.Calculus.DerivativeTest
+import Numlib.Analysis.Calculus.DerivativeTest.Laplacian
 import Numlib.Analysis.Calculus.IteratedFDeriv
 
 /-!

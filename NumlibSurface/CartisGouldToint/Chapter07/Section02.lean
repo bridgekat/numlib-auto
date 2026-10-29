@@ -629,7 +629,7 @@ theorem lemma_7_2_1_phase2 (h : IsTPpGCPhase2 f c C p P ε₀ ε₁ x₁ D)
       rw [iteratedFDeriv_one_apply, iteratedFDeriv_one_apply,
         Constrained.fderiv_targetMerit_of_eq (hf x hX) (hc x hX) heq.symm]
     have := hcrit
-    rw [targetCrit, Chapter06.omega1, hD, hr] at this
+    rw [targetCrit, Chapter06.omega1_def, hD, hr] at this
     exact this
   · -- `f(x_ε) > t_ε`
     refine Or.inr ⟨hlt, hX, Constrained.norm_le_targetResidual.trans hup, ?_⟩
@@ -637,8 +637,8 @@ theorem lemma_7_2_1_phase2 (h : IsTPpGCPhase2 f c C p P ε₀ ε₁ x₁ D)
     have heq := Constrained.formCriticality_targetMerit_eq_mul (hf x hX) (hc x hX) hlt
       (feasibleSteps C x)
     have hcr := hcrit
-    rw [targetCrit, Chapter06.omega1, heq] at hcr
-    rw [omegaL_def, Chapter06.omega1, ← Constrained.targetResidual_div_eq_sqrt hlt,
+    rw [targetCrit, Chapter06.omega1_def, heq] at hcr
+    rw [omegaL_def, Chapter06.omega1_def, ← Constrained.targetResidual_div_eq_sqrt hlt,
       mul_div_assoc', le_div_iff₀ hτ]
     simp only [lagrangianVec_def]
     linarith
@@ -784,7 +784,7 @@ theorem decrease_of_not_targetCrit (hC : Chapter06.AssumptionCNe C) (hp : 1 ≤ 
       ρ ^ 2 / 2 - ρ' ^ 2 / 2 := by
     rw [← Constrained.targetMerit_eq, ← Constrained.targetMerit_eq]
     refine le_trans ?_ hdec
-    rw [Chapter06.kappa1CC]
+    rw [Chapter06.kappa1CC_def]
     gcongr
     · exact mul_nonneg Constrained.targetResidual_nonneg he₁.le
     rw [mul_comm]
@@ -1023,7 +1023,7 @@ theorem omega1_targetMerit_le_add {x : ℝⁿ} (hx : x ∈ C) (hf : ContDiffAt �
     (iteratedFDeriv ℝ 1 (Constrained.targetMerit f c t') x)
     (iteratedFDeriv ℝ 1 (Constrained.targetMerit f c t) x) ⟨0, hT⟩)).2
   rw [hnorm] at h
-  rw [Chapter06.omega1, Chapter06.omega1]
+  rw [Chapter06.omega1_def, Chapter06.omega1_def]
   linarith
 
 /-- **Theorem 7.2.7** of [cartis2022evaluation], Phase 2, **without the bad-iteration
@@ -1176,7 +1176,7 @@ theorem exists_innerRun (hC : Chapter06.AssumptionCNe C) (hμ : AssumptionMu2DpL
       rw [← hrun.eq_add_of_succ hk' hs] at hdec
       have hω := hbig _ (fun h' => hk (k + 1) le_rfl (Or.inl h'))
       refine le_trans ?_ hdec
-      rw [Chapter06.kappa1CC]
+      rw [Chapter06.kappa1CC_def]
       gcongr
       exact hω.le)
   have he' : IsFirstHit (fun i => innerStop f c C P.θ ε₀ ε₁ τ (xs i)) e :=

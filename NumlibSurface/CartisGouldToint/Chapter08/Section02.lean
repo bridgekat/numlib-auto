@@ -69,11 +69,19 @@ noncomputable def stepOf (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) 
     (lam : ℝ) : EuclideanSpace ℝ (Fin n) :=
   toEuclideanLin (H + lam • M)⁻¹ (-g)
 
+theorem stepOf_def (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) (Fin n) ℝ) (lam : ℝ) :
+    stepOf g H M lam = toEuclideanLin (H + lam • M)⁻¹ (-g) :=
+  rfl
+
 /-- The **secular function** `π(λ) = ⟪s(λ), M s(λ)⟫ = ‖s(λ)‖_M²` of [cartis2022evaluation]
 (8.2.4). The transformed secular function `π(λ; β)` of (8.2.17) is `secularFn g H M λ ^ β`. -/
 noncomputable def secularFn (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) (Fin n) ℝ)
     (lam : ℝ) : ℝ :=
   ⟪stepOf g H M lam, toEuclideanLin M (stepOf g H M lam)⟫
+
+theorem secularFn_def (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) (Fin n) ℝ) (lam : ℝ) :
+    secularFn g H M lam = ⟪stepOf g H M lam, toEuclideanLin M (stepOf g H M lam)⟫ :=
+  rfl
 
 /-- The **leftmost eigenvalue** `λ₁` of the pencil `(H, M)` ([cartis2022evaluation] (8.2.5)):
 the least of `Matrix.pencilEigenvalues hH hM` (and `0` when `n = 0`). -/
@@ -85,6 +93,10 @@ noncomputable def leftmostPencil {H M : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsHe
 noncomputable def lambdaS {H M : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsHermitian)
     (hM : M.PosDef) : ℝ :=
   max 0 (-leftmostPencil hH hM)
+
+theorem lambdaS_def {H M : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsHermitian) (hM : M.PosDef) :
+    lambdaS hH hM = max 0 (-leftmostPencil hH hM) :=
+  rfl
 
 variable {g : EuclideanSpace ℝ (Fin n)} {H M : Matrix (Fin n) (Fin n) ℝ}
 
@@ -502,6 +514,16 @@ noncomputable def secularDerivVec (g : EuclideanSpace ℝ (Fin n))
   | 0 => stepOf g H M lam
   | k + 1 => toEuclideanLin (H + lam • M)⁻¹
       (-((k + 1 : ℝ) • toEuclideanLin M (secularDerivVec g H M lam k)))
+
+theorem secularDerivVec_zero (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) (Fin n) ℝ)
+    (lam : ℝ) : secularDerivVec g H M lam 0 = stepOf g H M lam :=
+  rfl
+
+theorem secularDerivVec_succ (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) (Fin n) ℝ)
+    (lam : ℝ) (k : ℕ) :
+    secularDerivVec g H M lam (k + 1) = toEuclideanLin (H + lam • M)⁻¹
+      (-((k + 1 : ℝ) • toEuclideanLin M (secularDerivVec g H M lam k))) :=
+  rfl
 
 /-- The coefficients `α₀ = 1`, `αₖ₊₁ = 2 (2k + 3)/(k + 1) αₖ` of [cartis2022evaluation]
 (8.2.30). -/

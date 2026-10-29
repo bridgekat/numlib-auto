@@ -152,7 +152,7 @@ theorem hessianMinEig_sub_le (hf : AssumptionHL f L) (x y : EuclideanSpace ℝ (
   have h2 := hf.lipschitz x y
   rw [norm_sub_rev x y] at h2
   have := (le_abs_self _).trans (h1.trans h2)
-  unfold Chapter01.hessianMinEig
+  simp only [Chapter01.hessianMinEig_def]
   linarith
 
 /-- **Lemma 5.4.1** of [cartis2022evaluation] (region of local strong convexity). Under f.HL, on
