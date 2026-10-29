@@ -3,6 +3,9 @@ id = "IsLocalMax.deriv_deriv_nonpos"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 26"
 
 [[node]]
+id = "IsLocalMin.deriv_deriv_nonneg"
+
+[[node]]
 id = "IsLocalMaxOn.nonpos_of_hasDerivWithinAt_Ici"
 
 [[node]]
@@ -13,7 +16,14 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark
 id = "ContDiffAt.deriv_deriv_comp_add_smul"
 
 [[node]]
-id = "IsLocalMax.laplacian_nonpos"
+id = "IsLocalMax.fderiv_fderiv_apply_self_nonpos"
 
 [[node]]
-id = "IsLocalMax.fderiv_fderiv_apply_self_nonpos"
+id = "IsLocalMin.fderiv_fderiv_apply_self_nonneg"
+
+[[node]]
+id = "IsLocalMin.iteratedFDeriv_two_apply_self_nonneg"
+source = "Cartis–Gould–Toint, Theorem 1.1.1 (second order)"
+
+[[node]]
+id = "IsLocalMax.iteratedFDeriv_two_apply_self_nonpos"

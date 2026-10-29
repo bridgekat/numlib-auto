@@ -69,7 +69,7 @@ theorem lambdaStar_bounds_9_4_1 (hH : H.IsHermitian) (hM : M.PosDef) {Δ : ℝ} 
   have hne : Nonempty (Fin n) := by
     by_contra h
     rw [not_nonempty_iff] at h
-    rw [Subsingleton.elim s 0, mNorm, inner_zero_left, Real.sqrt_zero] at hsΔ
+    rw [Subsingleton.elim s 0, mNorm_zero] at hsΔ
     exact hΔ.ne hsΔ
   have hl : -leftmost hT ≤ lamStar := (isPositive_add_smul_iff (hH := hT) lamStar).1 hμ.isPositive
   obtain ⟨h1, h2⟩ := norm_add_smul_apply_bounds (hH := hT) hl (toScaled hM s)
@@ -183,19 +183,19 @@ theorem trValue_of_posDef (hM : M.PosDef) (hpos : H.PosDef) {Δ : ℝ}
   have hH : H.IsHermitian := hpos.isHermitian
   have hT := isSymmetric_scaledOp (hM := hM) hH
   set s := -toEuclideanLin H⁻¹ g
-  have hstep : stepOf g H M 0 = s := by rw [stepOf, zero_smul, add_zero, map_neg]
+  have hstep : stepOf g H M 0 = s := by rw [stepOf_def, zero_smul, add_zero, map_neg]
   have hns : ‖toScaled hM s‖ ≤ Δ := by
     rw [← mNorm_eq_norm_toScaled hM]
     simpa [s, mNorm, inner_neg_left, inner_neg_right] using hs
   rcases isEmpty_or_nonempty (Fin n) with hn | hn
   · have hΔ : 0 ≤ Δ := (mNorm_nonneg _ _).trans hs
     have hsol : ∀ u, IsTrustRegionSolution g H M Δ u := fun u =>
-      ⟨by rw [Subsingleton.elim u 0, mNorm, inner_zero_left, Real.sqrt_zero]; exact hΔ,
+      ⟨by rw [Subsingleton.elim u 0, mNorm_zero]; exact hΔ,
         fun v _ => by rw [Subsingleton.elim u v]⟩
     refine ⟨hsol _, fun u _ => Subsingleton.elim _ _, ?_⟩
     obtain ⟨v, hv, hval⟩ := exists_trValue_eq (g := g) (H := H) hM hΔ
     rw [← hval, Subsingleton.elim v 0, Subsingleton.elim g 0]
-    simp [model]
+    simp [model_def]
   · have hc := (posDef_add_smul_iff_isSymmetricCoercive (hM := hM) 0).1 (by simpa using hpos)
     have hl : -leftmost hT < 0 := (isSymmetricCoercive_add_smul_iff (hH := hT) 0).1 hc
     have hsh := add_smul_stepOf (g := g) hH hM hl
@@ -227,8 +227,7 @@ theorem taylorMeasure_two_eq_neg_trValue {f : EuclideanSpace ℝ (Fin n) → ℝ
   ext y
   simp only [mem_image, mem_neg, mem_closedBall_zero_iff, mem_ofPred_eq, mNorm_one]
   refine exists_congr fun d => and_congr_right fun _ => ?_
-  rw [FormalMultilinearSeries.taylorDecrement, ← taylorPolynomial_eq_taylorSum,
-    taylorPolynomial_zero_right, hT]
+  rw [ftaylorSeries_taylorDecrement_eq, hT]
   constructor <;> intro h <;> linarith
 
 /-- **The tests (9.4.2) as (9.4.3)–(9.4.4)** ([cartis2022evaluation] §9.4.2): with
@@ -249,7 +248,7 @@ theorem taylorPolynomial_two_eq_model {f : EuclideanSpace ℝ (Fin n) → ℝ}
     {x : EuclideanSpace ℝ (Fin n)} (hf : ContDiffAt ℝ 2 f x) (s : EuclideanSpace ℝ (Fin n)) :
     taylorPolynomial f 2 x s =
       f x + model (gradient f x) (Optimization.hessianMatrix f x) s := by
-  rw [Optimization.taylorPolynomial_two_eq_quadModel hf, quadModel_def, model,
+  rw [Optimization.taylorPolynomial_two_eq_quadModel hf, quadModel_def, model_def,
     Optimization.toEuclideanLin_hessianMatrix hf]
   rfl
 

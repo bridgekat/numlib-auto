@@ -24,14 +24,16 @@ operator norm induced by `‖·‖_M`. Appendix B's Lemma B.10.1 is in `Appendix
 
 ## Deviations from the book
 
-* (10.1.7): the leading block of `Tₖ` is `T_{k-1}`, not `T_{k-1}⁻¹`; the Krylov subspaces nest as a
-  span of a union.
-* (B.10.4) identifies `‖M^{-1/2} H M^{-1/2}‖` with the Euclidean `‖M⁻¹H‖`; this holds for the
-  operator norm induced by `‖·‖_M`, which is the reading used (the Euclidean norm is only an upper
-  bound).
-* Corollaries 10.2.3 and 10.3.3: the printed iteration bounds are unsatisfiable when the logarithm
-  is negative and undefined for `κ* = 1`; they are read with `⌈·⌉₊`, with a separate `κ* = 1` case,
-  and need `g ≠ 0`.
+Kinds (**false**, **gap**, **typo**, **reading**) as in the book index `CartisGouldToint`.
+
+* (10.1.7): **typo**, the leading block of `Tₖ` is `T_{k-1}`, not `T_{k-1}⁻¹`, and the Krylov
+  subspaces nest as a span of a union (`algorithm_10_1_1_spec`).
+* (B.10.4): **reading**, `‖M^{-1/2} H M^{-1/2}‖` is the operator norm of `M⁻¹H` induced by `‖·‖_M`
+  (the Euclidean norm is only an upper bound) (`AppendixB.lemma_B_10_1`).
+* Corollaries 10.2.3, 10.3.3: **false** iteration bounds when the logarithm is negative, undefined
+  for `κ* = 1`; read with `⌈·⌉₊`, with a separate `κ* = 1` case and `g ≠ 0` (`corollary_10_2_3`,
+  `corollary_10_3_3`).
+* Lemma 10.2.1: **typo**, the problem is (8.1.3), not the model (8.1.4) (`lemma_10_2_1`).
 
 ## Not formalized
 

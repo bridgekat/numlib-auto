@@ -94,6 +94,11 @@ theorem not_assumptionCNe_imp_exists_minimizer :
 noncomputable def omega1 (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (x : ℝⁿ) : ℝ :=
   Optimization.formCriticality (iteratedFDeriv ℝ 1 f x) (Optimization.feasibleSteps C x)
 
+theorem omega1_def (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (x : ℝⁿ) :
+    omega1 f C x =
+      Optimization.formCriticality (iteratedFDeriv ℝ 1 f x) (Optimization.feasibleSteps C x) :=
+  rfl
+
 /-- The set of first-order `α`-restricted feasible steps (6.1.8) of [cartis2022evaluation],
 `𝒞¹(x, α) = {d ∈ 𝒞(x) | |⟨d, ∇¹f(x)⟩| ≤ τ₁ α}`. -/
 def restrictedSteps₁ (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (τ₁ α : ℝ) (x : ℝⁿ) : Set ℝⁿ :=

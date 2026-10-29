@@ -97,9 +97,10 @@ theorem algS_eq {H : Matrix (Fin n) (Fin n) ℝ} {lam : ℝ} {d : Fin n → ℝ}
     (hfac : H + lam • M = L * diagonal d * Lᵀ) (k : ℕ) :
     algS L (diagonal d) M g k = (-1 : ℝ) ^ k • secularDerivVec g H M lam k := by
   induction k with
-  | zero => rw [algS, secularDerivVec, stepOf, toEuclideanLin_inv_of_ldl hfac, pow_zero, one_smul]
+  | zero =>
+    rw [algS, secularDerivVec_zero, stepOf_def, toEuclideanLin_inv_of_ldl hfac, pow_zero, one_smul]
   | succ k ih =>
-    rw [algS, secularDerivVec, toEuclideanLin_inv_of_ldl hfac, ih]
+    rw [algS, secularDerivVec_succ, toEuclideanLin_inv_of_ldl hfac, ih]
     simp only [map_smul, map_neg]
     module
 
@@ -153,7 +154,7 @@ theorem corollary_9_1_1 {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsHermitian) (h
   · obtain ⟨k, rfl | rfl⟩ := Nat.even_or_odd' j
     · rcases k with _ | k
       · rw [algorithm_9_1_1_zero, iteratedDeriv_zero, hS, pow_zero, one_smul, secularDerivVec,
-          secularFn]
+          secularFn_def]
       · rw [show 2 * (k + 1) = 2 * k + 2 by ring]; exact heven k
     · exact hodd k
   · have h1 : diagonal (1 : Fin n → ℝ) = 1 := diagonal_one

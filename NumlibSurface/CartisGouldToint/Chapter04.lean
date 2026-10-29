@@ -21,25 +21,25 @@ Appendix B's Lemma B.4.1 is in `AppendixB.Chapter04`.
 
 ## Deviations from the book
 
-* ARp's third-order test (4.1.8)–(4.1.9) requires `𝓜_k ≠ ∅`; literally read, a run can get stuck.
-  The test is read vacuously ("for all `d ∈ 𝓜_k`"), which is what the proof of Theorem 4.1.5 uses.
-  Even so, with `ε₃ < ∞` an admissible step need not exist
-  (`not_exists_algorithm_4_1_1_third_order`): the third-order mode is not always well posed, and
-  Theorem 4.1.5 (iii) is a statement about runs.
-* Theorem 4.1.5 is split by order of criticality, each part with the constants of the active
-  orders only (`theorem_4_1_5_i` – `theorem_4_1_5_iii`).
-* Theorem 4.1.6 (proof deferred by the book to §12.2.2.4) is proved on the data of
-  Theorem 12.2.15; part (iii) assumes `σ₀ ≤ (p-2)! min(θ₂, θ₃)`, without which the slow example's
-  steps need not be admissible.
-* (4.2.6): the first term of `f^D` is `-Ψ(1) Φ([x]_1)`; with the printed `-Ψ([x]_1) Φ([x]_1)`
-  Lemma 4.2.5 (ii) fails at `x = 0`.
-* Theorem 4.2.6: the proof gives `#_ε ≥ k̄`, not `≥ 2k̄`, and the form with `c₀` needs `ε` small;
-  the upper and lower bounds have different dependence on `L`, so only the order in `ε` is tight
-  (`theorem_4_2_6_ii`).
-* Members of `𝓕(Δ, p)` are `C^∞` (the book's footnote), and zero-respecting methods are defined
-  through null directions of the derivative tensors.
-* The growth `L^D_p ≤ exp(5/2 p log p + c₁ p)` of Lemma 4.2.5 (iv) (`lemma_4_2_5_iv_growth`) is
-  proved with the explicit constant `c₁ = 20`, where the book only asserts an absolute `c₁`.
+Kinds (**false**, **gap**, **typo**, **reading**) as in the book index `CartisGouldToint`.
+
+* (4.1.8)–(4.1.9), `𝓜_k ≠ ∅`: **gap**, literally read a run can get stuck; read vacuously
+  ("for all `d ∈ 𝓜_k`"), as the proof of Theorem 4.1.5 uses (`algorithm_4_1_1`).
+* Algorithm 4.1.1 with `ε₃ < ∞`: **false** that an admissible step exists
+  (`not_exists_algorithm_4_1_1_third_order`); Theorem 4.1.5 (iii) is a statement about runs
+  (`theorem_4_1_5_iii`).
+* Theorem 4.1.5: **reading**, split by order of criticality with the constants of the active
+  orders (`theorem_4_1_5_i`, `theorem_4_1_5_ii`, `theorem_4_1_5_iii`).
+* Theorem 4.1.6 (iii): **gap**, the book defers the proof (to §12.2.2.4) and its sign of
+  `λ_min` is wrong; proved on the data of Theorem 12.2.15 assuming `σ₀ ≤ (p-2)! min(θ₂, θ₃)`
+  (`theorem_4_1_6_iii`).
+* (4.2.6): **typo** in the first term, `-Ψ(1) Φ([x]_1)`; with the printed one Lemma 4.2.5 (ii)
+  fails at `x = 0` (`lemma_4_2_5_ii`).
+* Theorem 4.2.6: **gap**, the proof gives `#_ε ≥ k̄`, not `≥ 2k̄`, and the form with `c₀` needs `ε`
+  small (`theorem_4_2_6_i`); only the order in `ε` is tight (`theorem_4_2_6_ii`).
+* Lemma 4.2.5 (iv): **reading**, the absolute constant is `c₁ = 20` (`lemma_4_2_5_iv_growth`).
+* `𝓕(Δ, p)`, zero-respecting methods: **reading**, members are `C^∞` (the book's footnote), and
+  zero respect is defined through null directions of the derivative tensors.
 
 ## Not formalized
 

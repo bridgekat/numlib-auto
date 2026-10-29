@@ -168,10 +168,6 @@ theorem lemma_B_2_1_bound {κf : ℝ} (hκ : 1 ≤ κf) :
 
 variable {ε : ℝ} {kε : ℕ}
 
-/-- The zig-zag iterates start at the origin. -/
-theorem zigZagIterate_zero (ε : ℝ) (kε : ℕ) : zigZagIterate ε kε 0 = 0 := by
-  ext i; fin_cases i <;> simp [zigZagIterate, ZigZag.height]
-
 /-- **Lemma B.2.2** of [cartis2022evaluation]. Let `ε > 0` with `k_ε = ε⁻²` an integer
 (`k_ε ε² = 1`, so `ε ≤ 1`). For `f = f_SDEX` (`Optimization.zigZagFunction ε k_ε`) the gradient at
 the iterates is `∇f(x_k, y_k) = -((ε + ω_k)/√2) (1, (-1)^k)`, so `‖∇f(x_k, y_k)‖ = ε + ω_k`, for
@@ -198,7 +194,7 @@ theorem lemma_B_2_2 (hε : 0 < ε) (hkε : (kε : ℝ) * ε ^ 2 = 1) :
   have heq : ∀ k ≤ kε, ∀ j ≤ k, z j = zigZagIterate ε kε j := by
     intro k
     induction k with
-    | zero => exact fun _ j hj => by rw [Nat.le_zero.1 hj, hz0, zigZagIterate_zero]
+    | zero => exact fun _ j hj => by rw [Nat.le_zero.1 hj, hz0, ZigZag.zigZagIterate_zero]
     | succ k ih =>
       intro hk j hj
       have hx := ih (Nat.le_of_succ_le hk)

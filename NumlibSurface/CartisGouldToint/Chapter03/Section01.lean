@@ -444,7 +444,7 @@ theorem hessianMinEig_pos {ε : ℝ} (hε : 0 < ε) (hε1 : ε < 1) {k : ℕ} (h
     0 < Chapter01.hessianMinEig f (iter ε k) := by
   have hfk := fval_pos hε hε1 hk
   refine lt_of_lt_of_le (by positivity : 0 < ε ^ 2 * fval ε k ^ 2) ?_
-  rw [Chapter01.hessianMinEig, h2]
+  rw [Chapter01.hessianMinEig_def, h2]
   exact le_minCurvature_iff.2 fun d => le_hess_apply hε hε1 d
 
 /-- A function with the jets `(g_k, H_k)` at `x_k` has the Newton steps `s_k` there. -/

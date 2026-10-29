@@ -1265,6 +1265,10 @@ theorem neg_five_le_f₁ (h : IsAdmissible ε K) (x : ℝ) : -5 ≤ f₁ ε K x 
 @[simp] theorem zigZagIterate_apply_one (ε : ℝ) (K k : ℕ) :
     zigZagIterate ε K k 1 = height ε K k := by simp [zigZagIterate]
 
+/-- The zig-zag iterates start at the origin. -/
+@[simp] theorem zigZagIterate_zero (ε : ℝ) (K : ℕ) : zigZagIterate ε K 0 = 0 := by
+  ext i; fin_cases i <;> simp [zigZagIterate, height]
+
 theorem abs_height_sub_mid_node_le (h : IsAdmissible ε K) {k : ℕ} (hk : k ≤ K) :
     |height ε K k - mid ε K (node (stepLen ε K) k)| ≤ 1 := by
   rw [height_sub_mid_node h hk, abs_neg, abs_div, abs_mul, abs_pow, abs_neg, abs_one, one_pow,

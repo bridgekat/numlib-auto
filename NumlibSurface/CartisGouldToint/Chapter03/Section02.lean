@@ -98,6 +98,12 @@ def IsApproxSecondOrderMinimizer (f : EuclideanSpace ℝ (Fin n) → ℝ)
     (x : EuclideanSpace ℝ (Fin n)) (ε₁ ε₂ : ℝ) : Prop :=
   ‖gradient f x‖ ≤ ε₁ ∧ -ε₂ ≤ Chapter01.hessianMinEig f x
 
+theorem isApproxSecondOrderMinimizer_def {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {x : EuclideanSpace ℝ (Fin n)} {ε₁ ε₂ : ℝ} :
+    IsApproxSecondOrderMinimizer f x ε₁ ε₂ ↔
+      ‖gradient f x‖ ≤ ε₁ ∧ -ε₂ ≤ Chapter01.hessianMinEig f x :=
+  Iff.rfl
+
 /-- (3.2.6) is the backbone's `Optimization.IsApproxSecondOrder`. -/
 theorem isApproxSecondOrderMinimizer_iff {f : EuclideanSpace ℝ (Fin n) → ℝ}
     {x : EuclideanSpace ℝ (Fin n)} {ε₁ ε₂ : ℝ} :
@@ -114,6 +120,10 @@ def stopTest (f : EuclideanSpace ℝ (Fin n) → ℝ) (ε₁ : ℝ) (ε₂ : Opt
 section stopTest
 
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {x : EuclideanSpace ℝ (Fin n)} {ε₁ : ℝ}
+
+theorem stopTest_def {ε₂ : Option ℝ} :
+    stopTest f ε₁ ε₂ x ↔ ‖gradient f x‖ ≤ ε₁ ∧ ∀ e ∈ ε₂, -e ≤ Chapter01.hessianMinEig f x :=
+  Iff.rfl
 
 @[simp]
 theorem stopTest_none : stopTest f ε₁ none x ↔ ‖gradient f x‖ ≤ ε₁ := by
@@ -196,7 +206,7 @@ noncomputable def tr2Ratio (f : EuclideanSpace ℝ (Fin n) → ℝ) (x s : Eucli
 
 theorem tr2Ratio_eq (f : EuclideanSpace ℝ (Fin n) → ℝ) (x s : EuclideanSpace ℝ (Fin n)) :
     tr2Ratio f x s = reductionRatio f x s (-quadModel (gradient f x) (hessianOperator f x) s) := by
-  rw [tr2Ratio, Chapter02.tr1Ratio, Chapter02.tr1Model_zero_sub]
+  rw [tr2Ratio, Chapter02.tr1Ratio_def, Chapter02.tr1Model_zero_sub]
 
 /-- **Algorithm 3.2.1** (TR2) of [cartis2022evaluation], as a run predicate on iterates `x`, steps
 `s` and radii `Δ` (constants `P` as in (3.2.8)): `ε₁ > 0`, `ε₂ > 0` if finite, and the generic
@@ -573,7 +583,7 @@ theorem theorem_3_2_2 :
       field_simp
       ring
     rw [hss] at hd
-    rw [tr2Ratio, Chapter02.tr1Ratio, ← tr2Model, ← tr2Model,
+    rw [tr2Ratio, Chapter02.tr1Ratio_def, ← tr2Model, ← tr2Model,
       tr2Model_eq_taylorPolynomial (hC2 _), tr2Model_eq_taylorPolynomial (hC2 _),
       taylorPolynomial_zero_right, reductionRatio_def, ← iter_succ, (hjet k hk.le).1,
       (hjet (k + 1) hk).1]
@@ -764,8 +774,9 @@ noncomputable def kappaTTR2 (P : Chapter02.TR1Params) (κH L₂ : ℝ) : ℝ :=
   (1 / 2 * P.η₁ * min (1 / (1 + κH)) (kappaDeltaTR2 P κH L₂ ^ 2))⁻¹
 
 /-- The constant `κ^F_TR2 = |log(κ_Δ/Δ₀)|/|log γ₂| + 1` of Theorem 3.2.6 (**corrected**: the
-book (OCR l. 2902) prints `min(γ₁(1 - η₂)/(Δ₀ max(4κ_H, L_{f,2}/3)), Δ₀)/|log γ₂| + 1`, without
-the `|log ·|`; with it inserted, the book's constant is an upper bound, `kappaFTR2_le_book`). -/
+proof of Theorem 3.2.6 prints `min(γ₁(1 - η₂)/(Δ₀ max(4κ_H, L_{f,2}/3)), Δ₀)/|log γ₂| + 1`,
+without the `|log ·|`; with it inserted, the book's constant is an upper bound,
+`kappaFTR2_le_book`). -/
 noncomputable def kappaFTR2 (P : Chapter02.TR1Params) (κH L₂ : ℝ) : ℝ :=
   |Real.log (kappaDeltaTR2 P κH L₂ / P.Δ₀)| / |Real.log P.γ₂| + 1
 

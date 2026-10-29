@@ -30,17 +30,21 @@ The appendices to Chapters 9, 13 and 14 contain no separately numbered lemmas.
 
 ## Deviations from the book
 
-* **Lemma B.4.1 (B.4.3) is false for `β ∈ (0, 1)`** (`lemma_B_4_1_iii_false`: `n = 2`, `p = 1`,
-  `β = ½`, `s = e₁`): the printed value is only the radial value and a lower bound
-  (`lemma_B_4_1_iii_radial`), and the norm is `O(‖s‖^{β-1})` (`lemma_B_4_1_iii_bound`). For `β = 1`,
-  the only case the book uses, (B.4.3) holds (`lemma_B_4_1_iii`).
-* Lemma B.8.1 needs `θ'(λ*) ≠ 0` (otherwise Newton's method is only linearly convergent), and in
-  the concave case the starting condition is `θ(λ₀) < 0` (printed `> 0`).
-* Lemma B.2.1's bound needs `|f₀|, |g₀|, |H₀| ≤ κ_f`. Lemma B.2.6: the book's corridor function only
-  gives a first *local* line minimizer; the backbone's capped square makes it global, so the exact
-  linesearch is realized.
-* Lemma B.5.1 lists `ι₁` for `ι₃`; Lemma B.7.1 also covers the boundary cases `ω = 0`, `ω = ε` its
-  use in Lemma 7.2.3 needs; Lemma B.12.1 needs no symmetry of `H`, `T`.
+Kinds (**false**, **gap**, **typo**, **reading**) as in the book index `CartisGouldToint`.
+
+* Lemma B.4.1, (B.4.3): **false** for `β ∈ (0, 1)` (`lemma_B_4_1_iii_false`: `n = 2`, `p = 1`,
+  `β = ½`, `s = e₁`); the printed value is the radial value and a lower bound
+  (`lemma_B_4_1_iii_radial`), the norm is `O(‖s‖^{β-1})` (`lemma_B_4_1_iii_bound`), and for
+  `β = 1`, the case the book uses, (B.4.3) holds (`lemma_B_4_1_iii`).
+* Lemma B.8.1: **gap**, needs `θ'(λ*) ≠ 0` (otherwise Newton's method is only linearly convergent)
+  (`lemma_B_8_1`); in the concave case the starting condition is `θ(λ₀) < 0` (**typo**, printed
+  `> 0`) (`lemma_B_8_1_concave`).
+* Lemma B.2.1: **gap**, the bound needs `|f₀|, |g₀|, |H₀| ≤ κ_f` (`lemma_B_2_1_bound`). Lemma B.2.6:
+  **gap**, the book's corridor function gives a first *local* line minimizer; the backbone's capped
+  square makes it global (`lemma_B_2_6`).
+* Lemma B.5.1: **typo**, `ι₁` for `ι₃` (`lemma_B_5_1`). Lemma B.7.1: **reading**, also covers the
+  boundary cases `ω = 0`, `ω = ε` used by Lemma 7.2.3 (`lemma_B_7_1`). Lemma B.12.1: **reading**,
+  no symmetry of `H`, `T` is needed (`lemma_B_12_1`).
 
 ## Not formalized
 

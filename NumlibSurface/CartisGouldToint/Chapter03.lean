@@ -28,25 +28,33 @@ belong to the results above.
 
 ## Deviations from the book
 
-* Theorem 3.2.6: the printed constant `κ^F_TR2` lacks a `|log ·|`; the proof's constant is
-  `kappaFTR2`, bounded by the repaired book constant (`kappaFTR2_le_book`).
-* Theorem 3.2.2 (and the Newton example of Theorem 3.1.1): with the data (3.1.4) the claim
-  `‖∇f(x_k)‖ > ε₁` can fail at `k = k_ε`; the example prescribes `∇f(x_{k_ε}) = 0`, so that the run
-  terminates exactly at `k_ε = ⌈ε₁⁻²⌉`.
-* (3.3.30): the additive `+ 1` is false; the bound holds with `+ 2`.
-* Theorems 3.4.6 and 3.4.12: the counting arguments are wrong (a successful iteration without the
-  required decrease is only followed by one with it); the bounds hold with a factor `2` on the
-  leading terms (`Optimization.card_successSet_le_two_mul_add_one`). Theorems 3.4.11–3.4.12 get
-  corrected constants `κ^A = κ^S (M + 1)`, `κ^B = M + 2`, `κ^D = 2M + 3`.
-* Lemma 3.4.3 (misprinted quadratic and root), Lemma 3.4.4 (swapped case labels), Lemma 3.5.1
-  (self-referential constant, read `κ_λ = 2√(κ̄_λ(1 + κ_rg))`) and the sign of (3.5.17) are
-  repaired.
-* Theorems 3.3.6, 3.3.10 (proofs deferred by the book to §12.2.2.4) are proved here from the
-  one-dimensional data of Theorem 12.2.15.
-* Corollary 3.5.5: the AR2 example is that of Theorem 3.3.6; for iRN the ratio (3.4.35) is not
-  scale invariant and the data (3.5.12) must be rescaled to `c G(x/c)`, `c = min(1, (2η)^{-1/2})`.
-* Several hypotheses the proofs do not use are dropped (in Lemmas 3.5.1–3.5.3, Theorem 3.2.6's
-  `ε₁ ≤ 1`); each section module lists them.
+Kinds (**false**, **gap**, **typo**, **reading**) as in the book index `CartisGouldToint`.
+
+* Theorem 3.2.2 (and the Newton example of Theorem 3.1.1): **false** claim `‖∇f(x_k)‖ > ε₁` at
+  `k = k_ε` for the data (3.1.4); the example prescribes `∇f(x_{k_ε}) = 0` and terminates exactly
+  at `k_ε = ⌈ε₁⁻²⌉` (`theorem_3_2_2`, `theorem_3_1_1`).
+* Theorem 3.2.6: **typo**, `κ^F_TR2` lacks a `|log ·|`; the proof's constant `kappaFTR2` is
+  bounded by the repaired book constant (`kappaFTR2_le_book`); `ε₁ ≤ 1` is dropped
+  (`theorem_3_2_6`).
+* (3.2.25): **typo**, `x_k = k ε` (`theorem_3_2_7`).
+* (3.3.30): **false** with `+ 1`; proved with `+ 2` (`theorem_3_3_9`).
+* Theorems 3.3.6, 3.3.10: **reading**, proved here from the data of Theorem 12.2.15 (the book
+  defers them to §12.2.2.4) (`theorem_3_3_6`, `theorem_3_3_10`).
+* Lemma 3.4.3: **typo**, misprinted quadratic and root; (3.4.10) proved directly (`lemma_3_4_3`).
+* Lemma 3.4.4: **typo**, the case labels (3.4.13)/(3.4.14) are swapped (`lemma_3_4_4`).
+* Theorems 3.4.6, 3.4.12: **gap**, a successful iteration without the required decrease is only
+  followed by one with it; proved with a factor `2` on the leading terms
+  (`Optimization.card_successSet_le_two_mul_add_one`, `theorem_3_4_6`, `theorem_3_4_12`).
+* Theorems 3.4.11, 3.4.12: **gap**, the count misses the successful iterations and the final
+  unsuccessful block; corrected constants `κ^A = κ^S (M + 1)`, `κ^B = M + 2`, `κ^D = 2M + 3`
+  (`kappaAIRN`, `kappaBIRN`, `kappaDIRN`, `theorem_3_4_11`).
+* Lemma 3.5.1: **typo**, the self-referential constant is `κ_λ = 2√(κ̄_λ(1 + κ_rg))`
+  (`lemma_3_5_1`). (3.5.17): **typo**, sign of `s_k` (`theorem_3_5_4`).
+* Corollary 3.5.5: **gap**, the AR2 example is that of Theorem 3.3.6, and for iRN the ratio
+  (3.4.35) is not scale invariant: the data (3.5.12) are rescaled to `c G(x/c)`,
+  `c = min(1, (2η)^{-1/2})` (`irn_slow_example`, `corollary_3_5_5_iii`).
+* Lemmas 3.5.1–3.5.3: **reading**, unused hypotheses dropped (`lemma_3_5_1`, `lemma_3_5_2`,
+  `lemma_3_5_3`).
 
 ## Not formalized
 

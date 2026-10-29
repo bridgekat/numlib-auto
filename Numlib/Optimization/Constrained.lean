@@ -16,8 +16,8 @@ import Numlib.Analysis.Convex.Extremum.Program
 /-!
 # Constrained optimization: Lagrange multipliers, Karush–Kuhn–Tucker, penalty methods
 
-Constrained minimization on a real normed space ([quarteroni2000numerical] §7.3; Nocedal–Wright,
-*Numerical Optimization*, Ch. 12; Bertsekas, *Constrained Optimization and Lagrange Multiplier
+Constrained minimization on a real normed space ([quarteroni2000numerical] §7.3;
+[nocedal2006numerical] Ch. 12; Bertsekas, *Constrained Optimization and Lagrange Multiplier
 Methods*, Ch. 1, 2, 4): equality constraints `h i x = 0` indexed by a `Fintype ι`, inequality
 constraints `g j x ≤ 0` indexed by a `Fintype κ`. Derivatives are data, `f' : E → E →L[ℝ] ℝ` and
 `h' : ι → E → E →L[ℝ] ℝ`, as in `Numlib/Analysis/Convex/Gateaux`.
@@ -28,6 +28,9 @@ constraints `g j x ≤ 0` indexed by a `Fintype κ`. Derivatives are data, `f' :
 * `Constrained.IsRegularPoint h h' x`: a feasible point whose constraint gradients are linearly
   independent ([quarteroni2000numerical] Definition 7.2);
 * `Constrained.lagrangian f h x l = f x + ∑ i, l i * h i x`;
+* `Constrained.innerLagrangian f c y = f - ⟪y, c⟫`: the Lagrangian of constraints with values in an
+  inner product space, with the opposite sign convention for the multipliers
+  (`Constrained.innerLagrangian_apply_eq_lagrangian`);
 * `Constrained.activeSet g x`, `Constrained.IsRegularPointIneq h h' g g' x`: the active
   inequality constraints and regularity in their presence, the linear independence constraint
   qualification (LICQ; [quarteroni2000numerical] Definition 7.3);
@@ -122,6 +125,9 @@ Lagrangian `ConvexAnalysis.lagrangian` of the program with perturbed constraints
 arbitrary perturbation bifunction. -/
 def lagrangian (f : E → ℝ) (h : ι → E → ℝ) (x : E) (l : ι → ℝ) : ℝ := f x + ∑ i, l i * h i x
 
+theorem lagrangian_apply (f : E → ℝ) (h : ι → E → ℝ) (x : E) (l : ι → ℝ) :
+    lagrangian f h x l = f x + ∑ i, l i * h i x := rfl
+
 /-- On the feasible set the Lagrangian is the objective. -/
 theorem lagrangian_eq_of_mem {f : E → ℝ} {h : ι → E → ℝ} {x : E} (hx : x ∈ feasibleEq h)
     (l : ι → ℝ) : lagrangian f h x l = f x := by
@@ -149,6 +155,41 @@ theorem coe_lagrangian_eq (f : E → ℝ) (h : ι → E → ℝ) (x : E) (l : ι
   · rw [ite_eq_left rfl, hval]
 
 end Defs
+
+/-! ### The Lagrangian with inner-product pairing -/
+
+section InnerLagrangian
+
+variable {E F ι : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
+
+/-- The Lagrangian `ℒ(·, y) = f - ⟪y, c⟫` of the equality constraints `c x = 0` with values in a
+real inner product space `F`, as a function of `x` for a fixed multiplier `y ∈ F`
+([cartis2022evaluation] (1.1.1); [nocedal2006numerical] (12.33)). The prefix "inner" refers to the
+pairing `⟪y, c x⟫` through the inner product of `F` (as opposed to the indexed sum of
+`Constrained.lagrangian`), not to the INNER solvers of the two-phase methods.
+
+**Sign convention.** The multipliers enter with a *minus* sign, whereas `Constrained.lagrangian`
+(`f + ∑ λᵢ hᵢ`, an indexed family of real constraints) and `Constrained.augmented`
+(`f + ⟪λ, h⟫ + ½ α ‖h‖²`) use a plus sign; the two agree under `y ↦ -y`
+(`innerLagrangian_apply_eq_lagrangian`, `innerLagrangian_apply_eq_augmented`).
+
+It is reducible, so that statements about `fun z => f z - ⟪y, c z⟫` apply to it. -/
+noncomputable abbrev innerLagrangian (f : E → ℝ) (c : E → F) (y : F) : E → ℝ :=
+  fun z => f z - inner ℝ y (c z)
+
+theorem innerLagrangian_apply (f : E → ℝ) (c : E → F) (y : F) (x : E) :
+    innerLagrangian f c y x = f x - inner ℝ y (c x) := rfl
+
+/-- **The two sign conventions for the Lagrangian.** For constraints with values in
+`EuclideanSpace ℝ ι`, the Lagrangian `f - ⟪y, c⟫` is `Constrained.lagrangian` of the coordinate
+constraints `cᵢ` with the multipliers `λ = -y`. -/
+theorem innerLagrangian_apply_eq_lagrangian [Fintype ι] (f : E → ℝ)
+    (c : E → EuclideanSpace ℝ ι) (y : EuclideanSpace ℝ ι) (x : E) :
+    innerLagrangian f c y x = lagrangian f (fun i z => c z i) x (fun i => -y i) := by
+  simp [innerLagrangian, lagrangian, PiLp.inner_apply, sub_eq_add_neg, Finset.sum_neg_distrib,
+    mul_comm]
+
+end InnerLagrangian
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {ι κ : Type*} [Fintype ι] [Fintype κ]
 
@@ -208,8 +249,8 @@ theorem existsUnique_multipliers_of_isLocalMinOn [CompleteSpace E] {f : E → �
 /-! ### The second-order sufficient condition -/
 
 /-- [quarteroni2000numerical] Property 7.11, second part (the second-order sufficient condition;
-Nocedal–Wright Theorem 12.6): let `x` satisfy the equality constraints, let `f` and the `h_i` be
-differentiable near `x` with the derivative of the Lagrangian `y ↦ f' y + ∑ λ_i h_i' y`
+[nocedal2006numerical] Theorem 12.6): let `x` satisfy the equality constraints, let `f` and the
+`h_i` be differentiable near `x` with the derivative of the Lagrangian `y ↦ f' y + ∑ λ_i h_i' y`
 differentiable at `x`, with derivative `H` (the Hessian of the Lagrangian at `(x, λ)`); if the
 Lagrangian is stationary at `x` and `H` is positive definite on the tangent space of the
 constraints, `0 < H z z` for `z ≠ 0` with `h_i' x z = 0`, then `x` is a strict local minimizer of
@@ -317,6 +358,13 @@ def IsRegularPointIneq (h : ι → E → ℝ) (h' : ι → E → E →L[ℝ] ℝ
     (g' : κ → E → E →L[ℝ] ℝ) (x : E) : Prop :=
   (∀ i, h i x = 0) ∧ (∀ j, g j x ≤ 0) ∧
     LinearIndependent ℝ (Sum.elim (fun i => h' i x) fun j : activeSet g x => g' j x)
+
+omit [Fintype ι] [Fintype κ] in
+theorem isRegularPointIneq_iff {h : ι → E → ℝ} {h' : ι → E → E →L[ℝ] ℝ} {g : κ → E → ℝ}
+    {g' : κ → E → E →L[ℝ] ℝ} {x : E} :
+    IsRegularPointIneq h h' g g' x ↔ (∀ i, h i x = 0) ∧ (∀ j, g j x ≤ 0) ∧
+      LinearIndependent ℝ (Sum.elim (fun i => h' i x) fun j : activeSet g x => g' j x) :=
+  Iff.rfl
 
 omit [Fintype ι] [Fintype κ] in
 /-- A regular point of the mixed constraints is feasible. -/
@@ -512,10 +560,10 @@ theorem exists_hasDerivAt_of_hasStrictFDerivAt_of_range_eq_top [CompleteSpace E]
   exact ⟨γ, h0, hd, hc⟩
 
 omit [Fintype ι] [Fintype κ] in
-/-- **Feasible arcs under LICQ** (Nocedal–Wright Lemma 12.2). In finite dimension, let `x` be a
-regular point of the mixed constraints, with all constraints strictly differentiable at `x`, and
-let `d` satisfy `h_i' x d = 0` for all `i` and `g_j' x d ≤ 0` for the active `j`. Then there is an
-arc `γ` with `γ(0) = x`, `γ'(0) = d`, which is `Cⁿ` at `0` whenever all constraints are `Cⁿ` at
+/-- **Feasible arcs under LICQ** ([nocedal2006numerical] Lemma 12.2). In finite dimension, let `x`
+be a regular point of the mixed constraints, with all constraints strictly differentiable at `x`,
+and let `d` satisfy `h_i' x d = 0` for all `i` and `g_j' x d ≤ 0` for the active `j`. Then there is
+an arc `γ` with `γ(0) = x`, `γ'(0) = d`, which is `Cⁿ` at `0` whenever all constraints are `Cⁿ` at
 `x`, and which for all small `t > 0` is feasible and satisfies `g_j(γ(t)) = t g_j' x d` for every
 active `j` (so the active constraints with `g_j' x d = 0` stay active). The curve of
 `exists_contDiffAt_of_hasStrictFDerivAt_of_range_eq_top` for the equality and active constraints
@@ -581,10 +629,10 @@ theorem exists_contDiff_feasible_arc [FiniteDimensional ℝ E] [Finite ι] [Fini
 
 omit [Fintype ι] [Fintype κ] in
 /-- Under LICQ the linearized cone is contained in the positive tangent cone of the feasible set
-(Nocedal–Wright Lemma 12.2): if `x` is a regular point of the mixed constraints, the `h_i` and
-`g_j` are strictly differentiable at `x`, and `z` satisfies `h_i' x z = 0` for all `i` and
-`g_j' x z ≤ 0` for the active `j`, then `z ∈ posTangentConeAt (feasible h g) x`: it is the
-velocity of the feasible arc of `exists_contDiff_feasible_arc`. -/
+([nocedal2006numerical] Lemma 12.2): if `x` is a regular point of the mixed constraints, the `h_i`
+and `g_j` are strictly differentiable at `x`, and `z` satisfies `h_i' x z = 0` for all `i` and
+`g_j' x z ≤ 0` for the active `j`, then `z ∈ posTangentConeAt (feasible h g) x`: it is the velocity
+of the feasible arc of `exists_contDiff_feasible_arc`. -/
 theorem mem_posTangentConeAt_of_isRegularPointIneq [FiniteDimensional ℝ E] [Finite ι] [Finite κ]
     {h : ι → E → ℝ}
     {h' : ι → E → E →L[ℝ] ℝ} {g : κ → E → ℝ} {g' : κ → E → E →L[ℝ] ℝ} {x : E}
@@ -616,7 +664,7 @@ theorem sum_extend_activeSet_smul {V : Type*} [AddCommMonoid V] [Module ℝ V] {
   exact Finset.sum_congr rfl fun j _ => by rw [Subtype.val_injective.extend_apply]
 
 /-- [quarteroni2000numerical] Property 7.12, the Karush–Kuhn–Tucker necessary conditions under
-the linear independence constraint qualification (Nocedal–Wright Theorem 12.1): in finite
+the linear independence constraint qualification ([nocedal2006numerical] Theorem 12.1): in finite
 dimension, if `x` is a regular local minimizer of `f` on the mixed constraints, `f` differentiable
 at `x`, the `h_i` and `g_j` strictly differentiable at `x` (as every `C¹` function is,
 `ContDiffAt.hasStrictFDerivAt`), then there are multipliers `(λ, μ)` making `x` a
@@ -834,6 +882,13 @@ omit [NormedAddCommGroup E] [NormedSpace ℝ E] in
 @[simp] theorem augmented_zero (f : E → ℝ) (h : E → F) (α : ℝ) :
     augmented f h α 0 = penalized f h α := by
   funext x; simp [augmented, penalized]
+
+omit [NormedAddCommGroup E] [NormedSpace ℝ E] [Fintype ι] [Fintype κ] in
+/-- The Lagrangian `f - ⟪y, c⟫` is the augmented Lagrangian with `α = 0` and the multiplier
+`λ = -y`. -/
+theorem innerLagrangian_apply_eq_augmented (f : E → ℝ) (c : E → F) (y : F) (x : E) :
+    innerLagrangian f c y x = augmented f c 0 (-y) x := by
+  simp [innerLagrangian, augmented, inner_neg_left, sub_eq_add_neg]
 
 omit [NormedSpace ℝ E] [InnerProductSpace ℝ F] [Fintype ι] [Fintype κ] in
 /-- The common core of the convergence theorems for the penalty method and the method of

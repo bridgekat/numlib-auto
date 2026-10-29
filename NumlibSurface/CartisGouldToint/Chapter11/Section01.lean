@@ -93,21 +93,21 @@ theorem transform_of_congruence (hW : IsUnit W) (hH : H = W * D * Wᵀ) (hM : M 
       (∀ σ r s, IsRegularizationSolution g H M σ r s ↔
         IsRegularizationSolution gD D 1 σ r (toEuclideanLin Wᵀ s)) := by
   have hmodel : ∀ s, model g H s = model gD D (toEuclideanLin Wᵀ s) := fun s => by
-    rw [model, model, hH, toEuclideanLin_mul_apply, toEuclideanLin_mul_apply,
+    rw [model_def, model_def, hH, toEuclideanLin_mul_apply, toEuclideanLin_mul_apply,
       toEuclideanLin_transpose_inner_left, toEuclideanLin_transpose_inner_right, hg]
   have hnorm : ∀ s, mNorm M s = ‖toEuclideanLin Wᵀ s‖ := fun s => by
-    rw [mNorm, hM, toEuclideanLin_mul_apply, ← toEuclideanLin_transpose_inner_left,
+    rw [mNorm_def, hM, toEuclideanLin_mul_apply, ← toEuclideanLin_transpose_inner_left,
       real_inner_self_eq_norm_sq, Real.sqrt_sq (norm_nonneg _)]
   have hsurj : Function.Surjective (toEuclideanLin Wᵀ) := fun y =>
     ⟨toEuclideanLin Wᵀ⁻¹ y, toEuclideanLin_mul_nonsing_inv_apply ((isUnit_transpose W).2 hW) y⟩
   refine ⟨hmodel, hnorm, fun Δ s => ?_, fun σ r s => ?_⟩
-  · simp only [IsTrustRegionSolution, hnorm, hmodel, mNorm_one]
+  · simp only [isTrustRegionSolution_iff, hnorm, hmodel, mNorm_one]
     refine and_congr_right fun _ => ⟨fun h u hu => ?_, fun h u hu => h _ hu⟩
     obtain ⟨v, rfl⟩ := hsurj u
     exact h v hu
   · have hreg : ∀ s, regModel g H M σ r s = regModel gD D 1 σ r (toEuclideanLin Wᵀ s) :=
-      fun s => by rw [Chapter08.regModel, Chapter08.regModel, hmodel, hnorm, mNorm_one]
-    simp only [IsRegularizationSolution, hreg]
+      fun s => by rw [Chapter08.regModel_def, Chapter08.regModel_def, hmodel, hnorm, mNorm_one]
+    simp only [isRegularizationSolution_iff, hreg]
     refine ⟨fun h u => ?_, fun h u => h _⟩
     obtain ⟨v, rfl⟩ := hsurj u
     exact h v

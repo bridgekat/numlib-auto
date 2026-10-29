@@ -66,7 +66,7 @@ theorem isTrustRegionMultiplier_krylov_of_kkt (hH : H.IsHermitian) (hM : M.PosDe
         WithLp.ofLp sbar = -(Pi.single 0 ‖scaledGrad hM g‖ : Fin (m + 1) → ℝ) := by
     have := congrArg WithLp.ofLp h.shifted
     rw [lanczosGrad_eq hM hk1, mNorm_inv_eq_norm_scaledGrad hM] at this
-    rw [← lanczosTridiag]
+    rw [← lanczosTridiag_def]
     simpa [toEuclideanLin_apply, Matrix.add_mulVec, Matrix.smul_mulVec] using this
   obtain ⟨hrel, -, hquad, -⟩ := krylov_lanczos_coordinates hT hb hm (WithLp.ofLp sbar)
     (WithLp.ofLp sbar) lam
@@ -82,7 +82,7 @@ theorem isTrustRegionMultiplier_krylov_of_kkt (hH : H.IsHermitian) (hM : M.PosDe
     intro v
     rw [real_inner_comm, inner_compressionL_add_smul_apply]
     have hv := eq_sum_inner_vec (H := scaledOp H hM) v.2
-    rw [hv, (krylov_lanczos_coordinates hT hb hm _ _ lam).2.2.1, ← lanczosTridiag]
+    rw [hv, (krylov_lanczos_coordinates hT hb hm _ _ lam).2.2.1, ← lanczosTridiag_def]
     simpa using h.posSemidef.dotProduct_mulVec_nonneg _
   · have hc := h.complementarity
     rw [← mul_mNorm_sub_eq_zero_iff 1 hΔ, mNorm_one] at hc
@@ -236,7 +236,7 @@ theorem corollary_10_3_3 (hH : H.IsHermitian) (hM : M.PosDef) (hg : g ≠ 0) {Δ
   obtain ⟨h1, h2⟩ := exists_le_min_of_geometric hG hP' hPG
   refine ⟨fun hκ => ?_, fun hκ => h2 (by rw [hκ, convFactor_one])⟩
   have := h1 (convFactor_pos hκ) (convFactor_lt_one κs)
-  rwa [convFactor, one_div_div] at this
+  rwa [convFactor_def, one_div_div] at this
 
 /-- The quadratic `γ s + ½ ρ s²` with a multiplier: if `λ ≥ 0`, `γ + (ρ + λ) s = 0`,
 `ρ + λ > 0` and `λ (|s| - Δ) = 0`, then `s` (with `|s| ≤ Δ`) is the unique global minimizer over

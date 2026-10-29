@@ -288,7 +288,7 @@ theorem taylorDecrement_jetSeries_jetOracle (f : EuclideanSpace ℝ (Fin n) → 
     (x s : EuclideanSpace ℝ (Fin n)) :
     (jetSeries (jetOracle f p x)).taylorDecrement p s =
       (ftaylorSeries ℝ f x).taylorDecrement p s := by
-  simp only [FormalMultilinearSeries.taylorDecrement, taylorSum_jetSeries_jetOracle]
+  simp only [FormalMultilinearSeries.taylorDecrement_def, taylorSum_jetSeries_jetOracle]
 
 /-- The first-order termination test (4.1.5) on a jet: `‖J₁‖ ≤ ε`. -/
 def jetTest (ε : ℝ) (J : Jet (EuclideanSpace ℝ (Fin n)) p) : Prop :=

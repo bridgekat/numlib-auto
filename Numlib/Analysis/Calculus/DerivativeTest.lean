@@ -2,36 +2,37 @@
 Upstreaming candidate: general material with no numerical-analysis-specific content, written
 to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.Analysis.Calculus.DerivativeTest`, beside the sufficient second-derivative
-test `isLocalMin_of_deriv_deriv_pos`; the Laplacian form beside
-`Mathlib.Analysis.InnerProductSpace.Laplacian`.
+test `isLocalMin_of_deriv_deriv_pos`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Mathlib.Analysis.Calculus.ContDiff.Deriv
+import Mathlib.Analysis.Calculus.ContDiff.Operations
 import Mathlib.Analysis.Calculus.DerivativeTest
-import Mathlib.Analysis.InnerProductSpace.Laplacian
 
 /-!
-# The necessary second-derivative test at a maximum
+# The necessary second-derivative test
 
 Mathlib's `isLocalMin_of_deriv_deriv_pos` is the *sufficient* second-derivative test: a critical
 point with positive second derivative is a local minimum. This file has the *necessary* test, in
-the two forms the classical maximum principles of Brezis, *Functional Analysis, Sobolev Spaces
+the forms the classical maximum principles of Brezis, *Functional Analysis, Sobolev Spaces
 and Partial Differential Equations* (Remarks 26–27 of chapter 8 and Theorem 10.6) use:
 
-* `IsLocalMax.deriv_deriv_nonpos`: at an interior local maximum of a function continuous there,
-  `f'' ≤ 0` — with Mathlib's junk-value convention for `deriv`, so no differentiability is
-  assumed; the continuity cannot be dropped (`f x = x²/2` for `x ≠ 0`, `f 0 = 1`, has a local
-  maximum at `0` with `deriv f = id` and `deriv (deriv f) 0 = 1`);
+* `IsLocalMax.deriv_deriv_nonpos` (and `IsLocalMin.deriv_deriv_nonneg`): at an interior local
+  maximum of a function continuous there, `f'' ≤ 0` — with Mathlib's junk-value convention for
+  `deriv`, so no differentiability is assumed; the continuity cannot be dropped (`f x = x²/2` for
+  `x ≠ 0`, `f 0 = 1`, has a local maximum at `0` with `deriv f = id` and `deriv (deriv f) 0 = 1`);
 * `IsLocalMaxOn.deriv_deriv_nonpos_of_deriv_eq_zero`: the one-sided form at an endpoint, for a
   function that is `C²` on `[x₀, x₀ + δ)`, has vanishing one-sided derivative at `x₀` and a local
   maximum there among the points to the right — `u'' (x₀⁺) ≤ 0`. Its engine is
   `IsLocalMaxOn.nonpos_of_hasDerivWithinAt_Ici`, stated with explicit derivative data.
-* `IsLocalMax.laplacian_nonpos`: the several-variable form, at a local maximum of a `C²`
-  function on a finite-dimensional real inner product space, `Δ f x₀ ≤ 0` — the test
-  `IsLocalMax.deriv_deriv_nonpos` applied along each direction of an orthonormal basis, through
-  `ContDiffAt.deriv_deriv_comp_add_smul`, which identifies the second derivative of the line
-  restriction `s ↦ f (x₀ + s • v)` at `0` with `iteratedFDeriv ℝ 2 f x₀ ![v, v]`. It is the
-  pointwise input of the parabolic maximum principle (`Numlib.Analysis.PDE.Heat.Classical`).
+* `IsLocalMax.fderiv_fderiv_apply_self_nonpos`, `IsLocalMin.fderiv_fderiv_apply_self_nonneg`:
+  the several-variable form on a real normed space, the Hessian of a `C²` function is negative
+  (positive) semidefinite at a local maximum (minimum) — the one-variable test applied to the line
+  restriction `s ↦ f (x₀ + s • v)`, whose second derivative at `0` is
+  `iteratedFDeriv ℝ 2 f x₀ ![v, v]` (`ContDiffAt.deriv_deriv_comp_add_smul`).
+
+The Laplacian form `IsLocalMax.laplacian_nonpos` is in
+`Numlib.Analysis.Calculus.DerivativeTest.Laplacian`.
 
 ## References
 
@@ -61,6 +62,16 @@ theorem IsLocalMax.deriv_deriv_nonpos {f : ℝ → ℝ} {x₀ : ℝ} (hf : IsLoc
   have : deriv (deriv f) x₀ = 0 := by
     rw [Filter.EventuallyEq.deriv_eq (hderiv : deriv f =ᶠ[𝓝 x₀] fun _ ↦ 0), deriv_const]
   exact absurd this hpos.ne'
+
+/-- **The second-derivative test at an interior minimum**: if `f : ℝ → ℝ` has a local minimum at
+`x₀` and is continuous there, then `0 ≤ deriv (deriv f) x₀` (`IsLocalMax.deriv_deriv_nonpos`
+applied to `-f`). -/
+theorem IsLocalMin.deriv_deriv_nonneg {f : ℝ → ℝ} {x₀ : ℝ} (hf : IsLocalMin f x₀)
+    (hc : ContinuousAt f x₀) : 0 ≤ deriv (deriv f) x₀ := by
+  have h := hf.neg.deriv_deriv_nonpos hc.neg
+  have hd : deriv (fun x => -f x) = fun x => -deriv f x := funext fun x => deriv.fun_neg
+  rw [hd, deriv.fun_neg] at h
+  linarith
 
 /-- **The one-sided second-derivative test at an endpoint, with explicit derivative data**: if
 `u` has a local maximum at `x₀` among the points of `[x₀, ∞)`, has the one-sided derivative `u' y`
@@ -144,13 +155,11 @@ theorem IsLocalMaxOn.deriv_deriv_nonpos_of_deriv_eq_zero {u : ℝ → ℝ} {x₀
   exact hmax.nonpos_of_hasDerivWithinAt_Ici
     (eventually_of_mem (hSmem x₀ hx₀S) hu1) hc h0
 
-/-! ### The second derivative along a line, and the Laplacian at a maximum -/
+/-! ### The second derivative along a line, and the Hessian at an extremum -/
 
-section Laplacian
+section Hessian
 
-open InnerProductSpace Laplacian
-
-variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
 /-- **The second derivative of a line restriction**: for `f` of class `C²` at `x₀`, the second
 derivative at `s = 0` of `s ↦ f (x₀ + s • v)` is `D²f (x₀) [v, v]`. The first derivative of the
@@ -201,15 +210,28 @@ theorem IsLocalMax.fderiv_fderiv_apply_self_nonpos {f : E → ℝ} {x₀ : E} (h
       hline.continuousAt
   · exact hf.continuousAt.comp_of_eq hline.continuousAt h0
 
-/-- **The Laplacian is nonpositive at a local maximum** of a `C²` function on a
-finite-dimensional real inner product space: by `laplacian_eq_iteratedFDeriv_orthonormalBasis`,
-`Δ f x₀ = ∑ᵢ D²f (x₀) [bᵢ, bᵢ]`, and each term is nonpositive
-(`IsLocalMax.fderiv_fderiv_apply_self_nonpos`). -/
-theorem IsLocalMax.laplacian_nonpos [FiniteDimensional ℝ E] {f : E → ℝ} {x₀ : E}
-    (hmax : IsLocalMax f x₀) (hf : ContDiffAt ℝ 2 f x₀) : Δ f x₀ ≤ 0 := by
-  rw [laplacian_eq_iteratedFDeriv_orthonormalBasis f (stdOrthonormalBasis ℝ E)]
-  refine Finset.sum_nonpos fun i _ => ?_
-  simpa only [iteratedFDeriv_two_apply, Matrix.cons_val_zero, Matrix.cons_val_one] using
-    hmax.fderiv_fderiv_apply_self_nonpos hf ((stdOrthonormalBasis ℝ E) i)
+/-- **The Hessian of a `C²` function is nonnegative at a local minimum**: `D²f(x₀)[v, v] ≥ 0` for
+every `v`, read as `fderiv (fderiv f) x₀ v v` (`IsLocalMax.fderiv_fderiv_apply_self_nonpos`
+applied to `-f`). -/
+theorem IsLocalMin.fderiv_fderiv_apply_self_nonneg {f : E → ℝ} {x₀ : E} (hmin : IsLocalMin f x₀)
+    (hf : ContDiffAt ℝ 2 f x₀) (v : E) : 0 ≤ fderiv ℝ (fderiv ℝ f) x₀ v v := by
+  have h := hmin.neg.fderiv_fderiv_apply_self_nonpos hf.neg v
+  have hd : fderiv ℝ (fun x => -f x) = fun x => -fderiv ℝ f x := funext fun x => fderiv_fun_neg
+  rw [hd, fderiv_fun_neg] at h
+  simpa using h
 
-end Laplacian
+/-- The Hessian test at a local minimum in the `iteratedFDeriv` form:
+`0 ≤ ∇²f(x₀)[v, v] = iteratedFDeriv ℝ 2 f x₀ ![v, v]`. -/
+theorem IsLocalMin.iteratedFDeriv_two_apply_self_nonneg {f : E → ℝ} {x₀ : E}
+    (hmin : IsLocalMin f x₀) (hf : ContDiffAt ℝ 2 f x₀) (v : E) :
+    0 ≤ iteratedFDeriv ℝ 2 f x₀ (fun _ => v) := by
+  simpa [iteratedFDeriv_two_apply] using hmin.fderiv_fderiv_apply_self_nonneg hf v
+
+/-- The Hessian test at a local maximum in the `iteratedFDeriv` form:
+`iteratedFDeriv ℝ 2 f x₀ ![v, v] = ∇²f(x₀)[v, v] ≤ 0`. -/
+theorem IsLocalMax.iteratedFDeriv_two_apply_self_nonpos {f : E → ℝ} {x₀ : E}
+    (hmax : IsLocalMax f x₀) (hf : ContDiffAt ℝ 2 f x₀) (v : E) :
+    iteratedFDeriv ℝ 2 f x₀ (fun _ => v) ≤ 0 := by
+  simpa [iteratedFDeriv_two_apply] using hmax.fderiv_fderiv_apply_self_nonpos hf v
+
+end Hessian

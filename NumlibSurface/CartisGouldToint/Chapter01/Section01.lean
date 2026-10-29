@@ -115,7 +115,7 @@ theorem lagrangian_apply : lagrangian f c x y = f x - ∑ i, y i * c i x := rfl
 /-- The book's Lagrangian is `Constrained.lagrangian` (`f + ∑ λᵢ hᵢ`) with `λ = -y`. -/
 theorem lagrangian_eq_constrained_lagrangian :
     lagrangian f c x y = Constrained.lagrangian f c x (-y) := by
-  simp [lagrangian, Constrained.lagrangian, Finset.sum_neg_distrib, sub_eq_add_neg]
+  simp [lagrangian, Constrained.lagrangian_apply, Finset.sum_neg_distrib, sub_eq_add_neg]
 
 /-- The book's Lagrangian is the Lagrangian `Constrained.kktLagrangian` of the problem with the
 inequality constraints `-cᵢ ≤ 0` and multipliers `y`, without equality constraints. -/
@@ -248,7 +248,7 @@ theorem licq_iff_isRegularPointIneq (hx : ∀ i, 0 ≤ c i x) :
   have e : licq c x ↔ LinearIndependent ℝ (fun j : activeSet c x => -fderiv ℝ (c j) x) := by
     rw [licq, linearIndependent_gradient_iff]
     exact (linearIndependent_neg_iff (v := fun j : activeSet c x => fderiv ℝ (c j) x)).symm
-  rw [e, Constrained.IsRegularPointIneq, hsum, linearIndependent_equiv]
+  rw [e, Constrained.isRegularPointIneq_iff, hsum, linearIndependent_equiv]
   simp [hx]
 
 end Sets
@@ -269,7 +269,7 @@ of `f ∈ C²`, `∇²f(x*)` is positive semidefinite, `⟨d, ∇²f(x*) d⟩ �
 (equivalently `λ_min[∇²f(x*)] ≥ 0`, `hessianMinEig_nonneg_iff`). -/
 theorem theorem_1_1_1_ii (hf : ContDiff ℝ 2 f) (hmin : IsLocalMin f x)
     (d : EuclideanSpace ℝ (Fin n)) : 0 ≤ iteratedFDeriv ℝ 2 f x (fun _ => d) :=
-  Optimization.IsLocalMin.iteratedFDeriv_two_nonneg hmin hf.contDiffAt d
+  hmin.iteratedFDeriv_two_apply_self_nonneg hf.contDiffAt d
 
 /-- **Theorem 1.1.1, third-order condition** ([cartis2022evaluation]): at a local minimizer `x*`
 of `f ∈ C³`, `∇³f(x*)[d]³ = 0` for every `d` with `∇²f(x*) d = 0`, i.e. `∇²f(x*)[d, w] = 0` for
@@ -302,6 +302,8 @@ the symmetric Hessian matrix (`hessianMinEig_eq_iInf_eigenvalues`). -/
 noncomputable def hessianMinEig (f : EuclideanSpace ℝ (Fin n) → ℝ)
     (x : EuclideanSpace ℝ (Fin n)) : ℝ :=
   minCurvature (iteratedFDeriv ℝ 2 f x)
+
+theorem hessianMinEig_def : hessianMinEig f x = minCurvature (iteratedFDeriv ℝ 2 f x) := rfl
 
 /-- `λ_min[∇²f(x)] ≥ 0` iff `∇²f(x)` is positive semidefinite. -/
 theorem hessianMinEig_nonneg_iff :

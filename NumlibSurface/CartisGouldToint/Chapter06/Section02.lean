@@ -99,6 +99,13 @@ structure AssumptionDpLC (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (p : ℕ) (L : �
   /-- `∇^p f` is `L`-Lipschitz on `𝒞`. -/
   lipschitz : IteratedFDerivLipschitzOn f p L C
 
+/-- f.DpL.C is the backbone predicate `IteratedFDerivLipschitzOn f p L C` for a function `C^p` on
+an open neighbourhood of `𝒞`, with `L ≥ 0`. -/
+theorem assumptionDpLC_iff {f : ℝⁿ → ℝ} {C : Set ℝⁿ} {p : ℕ} {L : ℝ} :
+    AssumptionDpLC f C p L ↔ 0 ≤ L ∧ (∃ D, IsOpen D ∧ C ⊆ D ∧ ContDiffOn ℝ p f D) ∧
+      IteratedFDerivLipschitzOn f p L C :=
+  ⟨fun h => ⟨h.nonneg, h.contDiffOn, h.lipschitz⟩, fun ⟨h1, h2, h3⟩ => ⟨h1, h2, h3⟩⟩
+
 /-- Under f.DpL.C, `f` is `C^p` at every point of `𝒞`. -/
 theorem AssumptionDpLC.contDiffAt {f : ℝⁿ → ℝ} {C : Set ℝⁿ} {p : ℕ} {L : ℝ}
     (h : AssumptionDpLC f C p L) : ∀ y ∈ C, ContDiffAt ℝ p f y := by
@@ -934,6 +941,11 @@ Lemma 6.2.4 of [cartis2022evaluation]. -/
 noncomputable def kappa1CC (P : ARpCCParams) (L : ℝ) (p : ℕ) : ℝ :=
   P.η₁ * P.σmin / ((p + 1)! : ℝ) *
     ((p ! : ℝ) / (L + P.sigmaMax L + P.θ₁ * p !)) ^ (((p : ℝ) + 1) / p)
+
+theorem kappa1CC_def (P : ARpCCParams) (L : ℝ) (p : ℕ) :
+    kappa1CC P L p = P.η₁ * P.σmin / ((p + 1)! : ℝ) *
+      ((p ! : ℝ) / (L + P.sigmaMax L + P.θ₁ * p !)) ^ (((p : ℝ) + 1) / p) :=
+  rfl
 
 /-- The constant `κ^S_ARp1CC = (p+1)!/(η₁ σ_min) ((L + σ_max + θ₁ p!)/p!)^{(p+1)/p}` of
 Theorem 6.2.5 of [cartis2022evaluation] (`= 1/κ₁`). -/

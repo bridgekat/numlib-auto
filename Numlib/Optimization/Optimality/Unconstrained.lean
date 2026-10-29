@@ -1,3 +1,4 @@
+import Numlib.Analysis.Calculus.DerivativeTest
 import Numlib.Analysis.Calculus.MultivariateTaylor.Peano
 import Numlib.Analysis.InnerProductSpace.MinCurvature
 import Mathlib.Analysis.Calculus.LocalExtr.Basic
@@ -23,9 +24,11 @@ Theorem 1.1.1.
   `Optimization.IsLocalMinOn.iteratedDeriv_nonneg_of_ray` is its one-dimensional form, and
   `Optimization.IsLocalMin.iteratedFDeriv_apply_eq_zero_of_odd` the two-sided form (an odd first
   non-vanishing derivative vanishes);
-* `Optimization.IsLocalMin.iteratedFDeriv_two_nonneg`,
+* `Optimization.IsLocalMin.minCurvature_iteratedFDeriv_two_nonneg`,
   `Optimization.IsLocalMin.iteratedFDeriv_three_eq_zero`: the second- and third-order necessary
-  conditions of Theorem 1.1.1 (the first-order one is Mathlib's `IsLocalMin.fderiv_eq_zero`);
+  conditions of Theorem 1.1.1 (the first-order one is Mathlib's `IsLocalMin.fderiv_eq_zero`; the
+  second-order one in the form `∇²f(x)[d]² ≥ 0` is the Hessian test
+  `IsLocalMin.iteratedFDeriv_two_apply_self_nonneg` of `Numlib.Analysis.Calculus.DerivativeTest`);
 * `Optimization.isStrictLocalMin_of_fderiv_eq_zero_of_posDef`: the second-order sufficient
   condition of Theorem 1.1.1.
 
@@ -208,21 +211,13 @@ theorem IsLocalMin.iteratedFDeriv_apply_eq_zero_of_odd {f : E → ℝ} {x d : E}
 
 /-! ### Theorem 1.1.1: necessary conditions -/
 
-/-- **Second-order necessary condition** ([cartis2022evaluation], Theorem 1.1.1): at a local
-minimizer `x` of a function `C²` at `x`, `∇²f(x)[d]² ≥ 0` for every `d`. -/
-theorem IsLocalMin.iteratedFDeriv_two_nonneg {f : E → ℝ} {x : E} (hmin : IsLocalMin f x)
-    (hf : ContDiffAt ℝ 2 f x) (d : E) : 0 ≤ iteratedFDeriv ℝ 2 f x (fun _ => d) := by
-  refine iteratedFDeriv_apply_nonneg_of_ray two_ne_zero hf
-    (IsLocalMin.eventually_le_add_smul hmin d) ?_
-  intro i hi hi2
-  obtain rfl : i = 1 := by omega
-  rw [iteratedFDeriv_one_apply, hmin.fderiv_eq_zero, zero_apply]
-
-/-- The second-order necessary condition as `λ_min[∇²f(x)] ≥ 0` ((1.1.5)). -/
+/-- **Second-order necessary condition** ([cartis2022evaluation], Theorem 1.1.1, (1.1.5)) as
+`λ_min[∇²f(x)] ≥ 0`: the Hessian test `_root_.IsLocalMin.iteratedFDeriv_two_apply_self_nonneg`
+(`∇²f(x)[d]² ≥ 0` for every `d`) of `Numlib.Analysis.Calculus.DerivativeTest`. -/
 theorem IsLocalMin.minCurvature_iteratedFDeriv_two_nonneg {f : E → ℝ} {x : E}
     (hmin : IsLocalMin f x) (hf : ContDiffAt ℝ 2 f x) :
     0 ≤ minCurvature (iteratedFDeriv ℝ 2 f x) :=
-  minCurvature_nonneg_iff.2 (IsLocalMin.iteratedFDeriv_two_nonneg hmin hf)
+  minCurvature_nonneg_iff.2 (_root_.IsLocalMin.iteratedFDeriv_two_apply_self_nonneg hmin hf)
 
 /-- **Third-order necessary condition** ([cartis2022evaluation], Theorem 1.1.1): at a local
 minimizer `x` of a function `C³` at `x`, `∇³f(x)[d]³ = 0` for every `d` with `∇²f(x)[d]² = 0`.

@@ -75,8 +75,7 @@ theorem ar1Model_apply :
 /-- The first-order Taylor decrease: `T_{f,1}(x, 0) - T_{f,1}(x, s) = -⟪∇f(x), s⟫`. -/
 theorem taylorDecrement_one :
     (ftaylorSeries ℝ f x).taylorDecrement 1 s = -⟪gradient f x, s⟫ := by
-  rw [FormalMultilinearSeries.taylorDecrement, ← taylorPolynomial_eq_taylorSum,
-    taylorPolynomial_one_eq_inner, taylorPolynomial_one_eq_inner, inner_zero_right]
+  rw [ftaylorSeries_taylorDecrement_eq, taylorPolynomial_one_eq_inner]
   ring
 
 /-- Completing the square: `m(s) = f(x) - ‖∇f(x)‖²/(2σ) + ½ σ ‖s + σ⁻¹ ∇f(x)‖²`. -/
@@ -393,7 +392,7 @@ theorem theorem_2_4_5 (P : ARParams) :
     simp only [x]
     rw [(hfk k hk).2, norm_smul, norm_e₀, mul_one, norm_neg, Real.norm_eq_abs, abs_of_nonneg]
     have : (k : ℝ) ≤ kε := by exact_mod_cast hk
-    have : 0 ≤ slowOmega ε kε k := by unfold slowOmega; positivity
+    have : 0 ≤ slowOmega ε kε k := by rw [slowOmega_def]; positivity
     linarith
   have hstep : ∀ k < kε, x k + s k = x (k + 1) := fun k hk => by
     simp only [x, s]

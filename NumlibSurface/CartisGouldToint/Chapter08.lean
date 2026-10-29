@@ -24,18 +24,23 @@ operator backbone `Numlib.Optimization.Subproblem`. Appendix B's Lemmas B.8.1–
 
 ## Deviations from the book
 
-* Lemma 8.2.1: `π(λₛ) > τ(λₛ)` is read as a right limit (`λₛ` may be a pole), and `τ` is assumed
-  right-continuous at `λₛ`.
-* Lemma 8.2.3 and Theorem 8.2.5: the strict inequalities need `g ≠ 0` and fail for `β = -1/2`
-  exactly when `g = M v` for a generalized eigenvector `v` (`π(λ; -1/2)` is then affine); Theorem
-  8.2.5 also needs `δ ≠ 0`, Corollary 8.2.4 needs `g ≠ 0`.
-* §8.3: the set-builder descriptions of `𝓝`, `𝓛`, `𝓖` disagree with the interval forms when
-  `λ₁ > 0`; the interval forms, which partition `ℝ`, are used. The transformed target is
-  `(λ/σ)^{2β/(r-2)}`, and Algorithm 8.3.1 must exclude `β = 0`.
-* Corollaries 8.3.1–8.3.2: when `λ₁` is multiple, a single eigenvector does not parametrize all
-  minimizers (any generalized eigenvector `v` for `λ₁` is allowed); the minimum-norm solution is
-  taken in the `M`-norm; in Corollary 8.3.2 the boundary form fails for interior solutions with
-  `λ* = 0`.
-* Corollary 8.2.4: the starting values "`π(λₛ; β)`" are read as the right limits of `π(λ; β)` at
-  `λₛ`, possibly `+∞` (`corollary_8_2_4_tendsto_lambdaS`).
+Kinds (**false**, **gap**, **typo**, **reading**) as in the book index `CartisGouldToint`.
+
+* Lemma 8.2.1: **reading**, `π(λₛ) > τ(λₛ)` is a right limit (`λₛ` may be a pole), and `τ` is
+  right-continuous at `λₛ` (`lemma_8_2_1`).
+* Lemma 8.2.3, Theorem 8.2.5: **false** strict inequalities for `g = 0`, and for `β = -1/2` when
+  `g = M v` for a generalized eigenvector `v` (`π(λ; -1/2)` is then affine); proved with these
+  cases excluded, and `δ ≠ 0` in Theorem 8.2.5 (`lemma_8_2_3_strict`, `theorem_8_2_5_strict`).
+* Corollary 8.2.4: **gap**, needs `g ≠ 0`; the starting values "`π(λₛ; β)`" are right limits,
+  possibly `+∞` (`corollary_8_2_4`, `corollary_8_2_4_tendsto_lambdaS`).
+* §8.3, `𝓝`, `𝓛`, `𝓖`: **false** set-builder descriptions when `λ₁ > 0`; the interval forms, which
+  partition `ℝ`, are used (`setL_tr_union_setG_tr`).
+* §8.3: **typo**, the transformed target is `(λ/σ)^{2β/(r-2)}`; Algorithm 8.3.1 must exclude
+  `β = 0` (`algorithm_8_3_1`).
+* Corollaries 8.3.1–8.3.2: **gap**, when `λ₁` is multiple one eigenvector does not parametrize all
+  minimizers (any generalized eigenvector for `λ₁` is allowed), and the minimum-norm solution is
+  in the `M`-norm (`corollary_8_3_1`, `corollary_8_3_2`).
+* Corollary 8.3.2, boundary form: **false** for interior solutions with `λ* = 0`; stated for
+  `λ* > 0` (`corollary_8_3_2`).
+* Theorem 8.2.2: **reading**, holds for every `k`, not only `k > 0` (`theorem_8_2_2`).
 -/

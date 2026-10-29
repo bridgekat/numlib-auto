@@ -127,3 +127,13 @@ source = "Cartis–Gould–Toint, Theorems 1.1.3–1.1.4 (constraint qualificati
 
 [[node]]
 id = "exists_contDiffAt_of_hasStrictFDerivAt_of_range_eq_top"
+
+[[node]]
+id = "innerLagrangian"
+source = "Cartis–Gould–Toint, (1.1.1)"
+
+[[node]]
+id = "innerLagrangian_apply_eq_lagrangian"
+
+[[node]]
+id = "innerLagrangian_apply_eq_augmented"

@@ -1,4 +1,4 @@
-import Numlib.Analysis.Calculus.DerivativeTest
+import Numlib.Analysis.Calculus.DerivativeTest.Laplacian
 import Numlib.Variational.EllipticInterval.BoundaryConditions
 
 /-!

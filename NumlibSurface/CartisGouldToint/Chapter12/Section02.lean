@@ -178,6 +178,15 @@ theorem toLipschitzDerivsAnchored (h : AssumptionD1pL f p L) (A : Set E) :
     LipschitzDerivsAnchored f univ A 1 p L :=
   .of_contDiff h.contDiff h.lipschitz A
 
+/-- f.D1pL at the top order `p` only, the form of the hypotheses of the ARqp analysis. -/
+theorem toLipschitzDerivsAnchored_top (h : AssumptionD1pL f p L) (hp : 1 ≤ p) (A : Set E) :
+    LipschitzDerivsAnchored f univ A p p L :=
+  (h.toLipschitzDerivsAnchored A).mono hp le_rfl
+
+/-- The top-order constant is at least `1`. -/
+theorem one_le_top (h : AssumptionD1pL f p L) (hp : 1 ≤ p) : 1 ≤ L p :=
+  h.one_le p (Finset.mem_Icc.2 ⟨hp, le_rfl⟩)
+
 end AssumptionD1pL
 
 /-- f.D1pL is the backbone assumption `LipschitzDerivsAnchored` on `C = A = univ` with constants
@@ -944,7 +953,7 @@ theorem example_12_2_2 :
       rw [example1222Model_taylorDecrement] at this
       linarith
   · rcases lt_or_ge δ 0 with hneg | hδ0
-    · rw [phiMeasure, taylorMeasure_eq_sSup, closedBall_eq_empty.2 hneg, empty_inter,
+    · rw [phiMeasure_def, taylorMeasure_eq_sSup, closedBall_eq_empty.2 hneg, empty_inter,
         image_empty, Real.sSup_empty]
     refine le_antisymm (decrementMeasure_le ⟨0, mem_closedBall_self hδ0, mem_univ _⟩
       fun d hd => ?_) (phiMeasure_nonneg _ _ hδ0 _)
@@ -1126,12 +1135,12 @@ theorem lemma_12_2_11 (hf : AssumptionD1pL f p L) (hq : 1 ≤ q) (hqp : q ≤ p)
       (L p + arSigmaMax P.toARParams (L p)) *
         ∑ ℓ ∈ Finset.Icc 1 j, δ (k + 1) j ^ ℓ / ℓ ! * ‖s k‖ ^ (p - ℓ + 1) := by
   have hp : 1 ≤ p := hq.trans hqp
-  have hT := hf.on_univ.anchoredTop (subset_univ univ) hp
-  have hσ := IsARqpRun.sigma_le_of_anchored hT.toLipschitzDerivsAnchored subset_rfl
+  have hT := hf.toLipschitzDerivsAnchored_top hp univ
+  have hσ := IsARqpRun.sigma_le_of_anchored hT subset_rfl
     (fun _ hy _ => hy) h k fun i hi => hk i hi.le
   have hstep := h.step (fun i hi => hk i hi.le) fun h1 => hk k le_rfl (Or.inl h1)
   rw [(h.succ_eq hk hs).2]
-  exact ARqpStep.exists_radius_ineq hT.toLipschitzDerivsAnchored hT.one_le
+  exact ARqpStep.exists_radius_ineq hT (hf.one_le_top hp)
     subset_rfl hq hqp (mem_univ _)
     (P.σmin_nonneg.trans hσ.1) hσ.2 hstep hshort
     (h.next_witness hk hs) (h.next_not_measureTestPasses hk hs hk1)
@@ -1152,13 +1161,13 @@ theorem arqp_step_core (hf : AssumptionD1pL f p L) (hq : 1 ≤ q) (hqp : q ≤ p
       (q ≤ 2 → arqpTau P L p j * ε j / 2 ≤ ‖s k‖ ^ (p - j + 1)) ∧
       (2 < q → arqpTau P L p j / 2 * arqpKappaHat P L p q ^ (j - 1) * ε j ^ j ≤ ‖s k‖ ^ p) := by
   have hp : 1 ≤ p := hq.trans hqp
-  have hT := hf.on_univ.anchoredTop (subset_univ univ) hp
-  have hσ := IsARqpRun.sigma_le_of_anchored hT.toLipschitzDerivsAnchored subset_rfl
+  have hT := hf.toLipschitzDerivsAnchored_top hp univ
+  have hσ := IsARqpRun.sigma_le_of_anchored hT subset_rfl
     (fun _ hy _ => hy) h k fun i hi => hk i hi.le
   have hstep := h.step (fun i hi => hk i hi.le) fun h1 => hk k le_rfl (Or.inl h1)
   rw [(h.succ_eq hk hs).2] at hrad
-  obtain ⟨j, hj, h1, h2⟩ := ARqpStep.exists_norm_pow_ge hT.toLipschitzDerivsAnchored
-    hT.one_le subset_rfl hq
+  obtain ⟨j, hj, h1, h2⟩ := ARqpStep.exists_norm_pow_ge hT
+    (hf.one_le_top hp) subset_rfl hq
     hqp hθς hε (mem_univ _)
     (P.σmin_nonneg.trans hσ.1) hσ.2 hstep (h.model_lt hk)
     (h.next_witness hk hs) (h.next_not_measureTestPasses hk hs hk1) (u := q ≤ 2)
@@ -1267,8 +1276,8 @@ theorem lemma_12_2_13 (hf : AssumptionD1pL f p L) (hq : 1 ≤ q) (hqp : q ≤ p)
         (ftaylorSeries ℝ f (x k)).taylorDecrement p (s k) ∧
       P.η₁ * (arqpKappaDm P L p q * finMin 1 (fun j => ε j ^ arqpPi p q j) q) ≤
         f (x k) - f (x (k + 1)) :=
-  have hT := hf.on_univ.anchoredTop (subset_univ univ) (hq.trans hqp)
-  IsARqpRun.decrease hT.toLipschitzDerivsAnchored hT.one_le subset_rfl
+  have hT := hf.toLipschitzDerivsAnchored_top (hq.trans hqp) univ
+  IsARqpRun.decrease hT (hf.one_le_top (hq.trans hqp)) subset_rfl
     (fun _ hy _ => hy) hq hqp hθς hε h hk hs
     hk1 (u := q ≤ 2)
     ⟨hrad.1, fun h' => hrad.2 (not_le.1 h')⟩
@@ -1402,9 +1411,9 @@ theorem theorem_12_2_14_i (hb : Chapter02.AssumptionBb f flow) (hf : AssumptionD
       (derivEvalCount (fun k => P.η₁ ≤ arqpRho f p x s σ k) kε : ℝ) ≤
         kappaSARqp P L p q * (f (x 0) - flow) / finMin 1 (fun j => ε j ^ arqpPi p q j) q + 2 := by
   have hone := h.delta_eq_one hδ₀ hδs
-  have hT := hf.on_univ.anchoredTop (subset_univ univ) (hq.trans hqp)
+  have hT := hf.toLipschitzDerivsAnchored_top (hq.trans hqp) univ
   obtain ⟨kε, hk, hF, hD⟩ := IsARqpRun.exists_isFirstHit_of_anchored
-    (fun y _ => hb y) hT.toLipschitzDerivsAnchored hT.one_le
+    (fun y _ => hb y) hT (hf.one_le_top (hq.trans hqp))
     subset_rfl (fun _ hy _ => hy) hq hqp hσmin hθς hε h (u := q ≤ 2)
     fun k hk _ => ⟨fun _ => hone (k + 1) fun i hi => hk i hi.le,
       fun h' => absurd h' (by omega)⟩
@@ -1447,9 +1456,9 @@ theorem theorem_12_2_14_ii (hb : Chapter02.AssumptionBb f flow) (hf : Assumption
   have hq1 : 1 ≤ q := by omega
   have hp : 1 ≤ p := hq1.trans hqp
   have hL1 : 1 ≤ finMax 1 L p := one_le_finMax
-  have hT := hf.on_univ.anchoredTop (subset_univ univ) hp
+  have hT := hf.toLipschitzDerivsAnchored_top hp univ
   obtain ⟨kε, hk, hF, hD⟩ := IsARqpRun.exists_isFirstHit_of_anchored
-    (fun y _ => hb y) hT.toLipschitzDerivsAnchored hT.one_le
+    (fun y _ => hb y) hT (hf.one_le_top hp)
     subset_rfl (fun _ hy _ => hy) hq1 hqp hσmin hθς hε h (u := q ≤ 2) fun k hk hs => by
     refine ⟨fun h' => absurd h' (by omega), fun _ => ?_⟩
     by_cases hlong : 1 ≤ ‖s k‖
@@ -1457,7 +1466,7 @@ theorem theorem_12_2_14_ii (hb : Chapter02.AssumptionBb f flow) (hf : Assumption
     refine Or.inr fun j hj => ?_
     have hk' : ∀ i ≤ k, ¬ arqpStop f P p q ε x s σ δ d i := fun i hi => hk i (by omega)
     rw [(h.succ_eq hk' hs).2]
-    have hσ := IsARqpRun.sigma_le_of_anchored hT.toLipschitzDerivsAnchored subset_rfl
+    have hσ := IsARqpRun.sigma_le_of_anchored hT subset_rfl
       (fun _ hy _ => hy) h k fun i hi => hk' i hi.le
     have hσ0 : 0 ≤ σ k := P.σmin_nonneg.trans hσ.1
     refine le_trans ?_ (hrad k hk' (not_le.1 hlong) j hj)
@@ -1610,7 +1619,7 @@ theorem theorem_12_2_15 {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p) :
   have hmodel : ∀ k ≤ kε, regularizedModel (ftaylorSeries ℝ G (x k)) p σ₀ =
       fun t => G (x k) + negMonomialRegModel p q ((p ! : ℝ) / (q - 1)!) (a k) t := fun k hk =>
     funext fun t => by
-      rw [regularizedModel_real_spike hqm (hspike k hk), hGq k hk, negMonomialRegModel, hP]
+      rw [regularizedModel_real_spike hqm (hspike k hk), hGq k hk, negMonomialRegModel_def, hP]
       ring
   have hminim : ∀ k ≤ kε,
       IsMinOn (regularizedModel (ftaylorSeries ℝ G (x k)) p σ₀) univ (st k) ∧
@@ -1627,7 +1636,7 @@ theorem theorem_12_2_15 {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p) :
       simp only
       rw [hval]
       have h0 : negMonomialRegModel p q ((p ! : ℝ) / (q - 1)!) (a k) 0 = 0 := by
-        simp [negMonomialRegModel, hq0]
+        simp [negMonomialRegModel_def, hq0]
       rw [h0]
       have : 0 < (((p - q + 1 : ℕ) : ℝ) / ((p + 1) * q !)) * a k ^ ((p + 1 : ℝ) /
           ((p - q + 1 : ℕ) : ℝ)) := by positivity
@@ -1731,11 +1740,11 @@ theorem theorem_12_2_15 {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p) :
     · rw [hρk] at h; linarith
   · exact absurd (hρ k (hbefore k hk) ▸ hη1) hρ'
   · rcases (Finset.mem_Icc.1 hj).2.lt_or_eq with hjq | rfl
-    · rw [phiMeasure, hφ_lt kε le_rfl j hj hjq]
+    · rw [phiMeasure_def, hφ_lt kε le_rfl j hj hjq]
       have : (0 : ℝ) < j ! := by positivity
       positivity
-    · rw [phiMeasure, hφ_q kε le_rfl, ha_eq]
-  · rw [phiMeasure, hφ_q k hk.le]
+    · rw [phiMeasure_def, hφ_q kε le_rfl, ha_eq]
+  · rw [phiMeasure_def, hφ_q k hk.le]
     exact div_lt_div_of_pos_right (ha_gt k hk) hqf
 
 /-- **Corollary 12.2.16** of [cartis2022evaluation] (slow convergence of ARqp for `q ∈ {1, 2}`).
@@ -1799,7 +1808,7 @@ theorem theorem_12_2_15_counterexample {ε θ ς : ℝ} (hε : 0 < ε) (hε1 : �
       fun t => G y + negMonomialRegModel 3 3 ((3 ! : ℝ) / (3 - 1)!) a t := by
     rw [hmodel]
     funext t
-    simp only [hg, negMonomialRegModel, (by decide : Even 4).pow_abs]
+    simp only [hg, negMonomialRegModel_def, (by decide : Even 4).pow_abs]
     norm_num [Nat.factorial]
     ring
   -- the decrement along `-1`
@@ -1819,7 +1828,7 @@ theorem theorem_12_2_15_counterexample {ε θ ς : ℝ} (hε : 0 < ε) (hε1 : �
     ring
   have hφ : θ * ε / 3 ! <
       phiMeasure (regularizedModel (ftaylorSeries ℝ G y) 3 ((3 ! : ℝ) / 2 !)) 3 1 a := by
-    rw [phiMeasure, hmodel, taylorMeasure_real_const_add]
+    rw [phiMeasure_def, hmodel, taylorMeasure_real_const_add]
     refine lt_of_lt_of_le ?_ (taylorDecrement_le_taylorMeasure _ 3 (S := univ) (d := -1)
       (δ := 1) ⟨by simp, mem_univ _⟩)
     rw [hdec, ha]

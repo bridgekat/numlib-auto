@@ -88,14 +88,17 @@ model within distance `δ`. -/
 noncomputable abbrev phiMeasure (f : E → ℝ) (j : ℕ) (δ : ℝ) (x : E) : ℝ :=
   Optimization.taylorMeasure (ftaylorSeries ℝ f x) j δ univ
 
+theorem phiMeasure_def (f : E → ℝ) (j : ℕ) (δ : ℝ) (x : E) :
+    phiMeasure f j δ x = Optimization.taylorMeasure (ftaylorSeries ℝ f x) j δ univ :=
+  rfl
+
 /-- (12.1.10): `φ^δ_{f,j}(x) = sup_{‖d‖ ≤ δ} (f(x) - T_{f,j}(x, d))`. -/
 theorem phiMeasure_eq_sSup (f : E → ℝ) (j : ℕ) (δ : ℝ) (x : E) :
     phiMeasure f j δ x = sSup ((fun d => f x - taylorPolynomial f j x d) '' closedBall 0 δ) := by
   rw [phiMeasure, Optimization.taylorMeasure_eq_sSup, inter_univ]
   congr 1
   refine image_congr fun d _ => ?_
-  rw [FormalMultilinearSeries.taylorDecrement, ← taylorPolynomial_eq_taylorSum,
-    taylorPolynomial_zero_right]
+  rw [ftaylorSeries_taylorDecrement_eq]
 
 /-- The measure is nonnegative for `δ ≥ 0`. -/
 theorem phiMeasure_nonneg (f : E → ℝ) (j : ℕ) {δ : ℝ} (hδ : 0 ≤ δ) (x : E) :
@@ -107,8 +110,7 @@ theorem sub_taylorPolynomial_le_phiMeasure (f : E → ℝ) (j : ℕ) {δ : ℝ} 
     (hd : ‖d‖ ≤ δ) : f x - taylorPolynomial f j x d ≤ phiMeasure f j δ x := by
   have := Optimization.taylorDecrement_le_taylorMeasure (ftaylorSeries ℝ f x) j (S := univ)
     (d := d) (δ := δ) ⟨mem_closedBall_zero_iff.2 hd, mem_univ d⟩
-  rwa [FormalMultilinearSeries.taylorDecrement, ← taylorPolynomial_eq_taylorSum,
-    taylorPolynomial_zero_right] at this
+  rwa [ftaylorSeries_taylorDecrement_eq] at this
 
 end Measure
 
@@ -265,9 +267,9 @@ theorem lewis_eq (x : EuclideanSpace ℝ (Fin 2)) :
   unfold lewis
   split_ifs with h
   · have hpos : 0 < x 0 ^ 2 := by positivity
-    simp [oscFlat, expNegInvGlue, not_le.2 hpos, one_div, neg_div]
+    simp [oscFlat_def, expNegInvGlue, not_le.2 hpos, one_div, neg_div]
   · push Not at h
-    simp [oscFlat, h, sq]
+    simp [oscFlat_def, h, sq]
 
 /-- **Example 12.1.1, variant (12.1.3)** ([cartis2022evaluation], due to A. Lewis). For
 `f = lewis`: `f` is `C^∞`, the origin is not a local minimizer of `f`, and yet there is no
@@ -279,7 +281,7 @@ theorem example_12_1_1_variant :
         ∀ α ∈ Ioc (0 : ℝ) 1, lewis (γ α) < lewis 0 := by
   have hh : ContDiff ℝ ∞ (oscFlat 1 0) := contDiff_oscFlat 1 0 (n := ⊤)
   have hfun : lewis = fun x => x 1 * (x 1 - oscFlat 1 0 (x 0)) := funext lewis_eq
-  have hl0 : lewis 0 = 0 := by simp [lewis_eq, oscFlat]
+  have hl0 : lewis 0 = 0 := by simp [lewis_eq, oscFlat_def]
   refine ⟨?_, ?_, ?_⟩
   · rw [hfun]
     exact (contDiff_coord 1).mul ((contDiff_coord 1).sub (hh.comp (contDiff_coord 0)))
@@ -290,7 +292,7 @@ theorem example_12_1_1_variant :
       refine tendsto_inv_atTop_zero.comp (tendsto_atTop_add_const_left _ _ ?_)
       exact tendsto_natCast_atTop_atTop.atTop_mul_const (by positivity)
     have hval : ∀ k, oscFlat 1 0 (t k) = expNegInvGlue (t k ^ 2) := fun k => by
-      simp [oscFlat, t, Real.sin_add_nat_mul_two_pi]
+      simp [oscFlat_def, t, Real.sin_add_nat_mul_two_pi]
     refine Optimization.not_isLocalMin_of_curve (l := atTop)
       (γ := fun k => !₂[t k, oscFlat 1 0 (t k) / 2]) ?_ (Eventually.of_forall fun k => ?_)
     · have hc : Continuous fun s : ℝ =>
@@ -301,7 +303,7 @@ theorem example_12_1_1_variant :
           · exact continuous_id
           · exact (hh.continuous).div_const 2)
       have h0 : (!₂[(0 : ℝ), oscFlat 1 0 0 / 2] : EuclideanSpace ℝ (Fin 2)) = 0 := by
-        ext i; fin_cases i <;> simp [oscFlat]
+        ext i; fin_cases i <;> simp [oscFlat_def]
       have := (hc.tendsto 0).comp htlim
       simp only [h0] at this
       exact this
@@ -318,7 +320,7 @@ theorem example_12_1_1_variant :
     have hsin : ∀ α ∈ Ioc (0 : ℝ) 1, Real.sin (u α)⁻¹ ≠ 0 := fun α hα hs => by
       have := hneg α hα
       rw [lewis_eq, hl0] at this
-      simp only [oscFlat, hs, u, Polynomial.eval_one, Polynomial.eval_zero, mul_zero, zero_mul,
+      simp only [oscFlat_def, hs, u, Polynomial.eval_one, Polynomial.eval_zero, mul_zero, zero_mul,
         add_zero, sub_zero] at this
       nlinarith [sq_nonneg (γ α 1)]
     have hu1 : u 1 ≠ 0 := fun h => hsin 1 ⟨one_pos, le_rfl⟩ (by rw [h]; simp)
@@ -680,7 +682,7 @@ theorem example1213_radial {p : ℕ} (hp : 1 ≤ p) {β σ : ℝ} (hβ : 0 < β)
     have hr' : 0 ≤ r := hr
     have := hmin (mem_univ r)
     have ht : 0 ≤ (β * p ! / σ) ^ (1 / (p : ℝ)) := by positivity
-    simp only [Set.mem_ofPred_eq, Optimization.negMonomialRegModel, pow_one, Nat.factorial_one,
+    simp only [Set.mem_ofPred_eq, Optimization.negMonomialRegModel_def, pow_one, Nat.factorial_one,
       Nat.cast_one, div_one, abs_of_nonneg hr', abs_of_nonneg ht] at this
     exact this
 
@@ -744,8 +746,7 @@ theorem example1213_taylorDecrement {p : ℕ} (hp : 2 ≤ p) {β σ : ℝ} (hβ 
       show (1 ≤ p + 1) = True from eq_true (by omega), ite_true]
     ring
   have hT := Optimization.taylorPolynomial_eq_of_poly hm hray (p := 3) (by omega)
-  rw [FormalMultilinearSeries.taylorDecrement, ← taylorPolynomial_eq_taylorSum,
-    taylorPolynomial_zero_right, hT, show Finset.Icc 1 3 = {1, 2, 3} by decide]
+  rw [ftaylorSeries_taylorDecrement_eq, hT, show Finset.Icc 1 3 = {1, 2, 3} by decide]
   have hc1 : c 1 = 0 := by simp [c, ← hK]
   have hc2 : c 2 = σ * ts ^ (p + 1) / (2 ! * (p + 1 - 2)!) := by
     simp only [c, K, show ((2 : ℕ) = 1) = False from eq_false (by norm_num), ite_false, sub_zero]
@@ -1015,8 +1016,7 @@ theorem example_12_1_3 {p : ℕ} (hp : 1 ≤ p) {β σ : ℝ} (hβ : 0 < β) (h�
       have hle := sub_taylorPolynomial_le_phiMeasure m 3 (ts • e) (d := (-1 : ℝ) • ts • e)
         (δ := 1) (by rw [norm_smul, hnorm, hts1]; simp)
       have hΔ := example1213_taylorDecrement (by omega : 2 ≤ k + 2) hβ hσ he (-1)
-      rw [FormalMultilinearSeries.taylorDecrement, ← taylorPolynomial_eq_taylorSum,
-        taylorPolynomial_zero_right] at hΔ
+      rw [ftaylorSeries_taylorDecrement_eq] at hΔ
       refine le_trans (le_of_eq ?_) (hΔ ▸ hle)
       rw [← hts, hts1, show k + 2 + 1 - 2 = k + 1 by omega, show k + 2 + 1 - 3 = k by omega,
         show k + 2 - 1 = k + 1 by omega, Nat.factorial_succ k]

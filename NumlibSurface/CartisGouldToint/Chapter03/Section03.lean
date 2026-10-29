@@ -106,15 +106,13 @@ theorem norm_fderiv_ar2Model (hf : ContDiffAt ℝ 2 f x) (σ : ℝ) (s : Euclide
 theorem taylorDecrement_two_eq (hf : ContDiffAt ℝ 2 f x) (s : EuclideanSpace ℝ (Fin n)) :
     (ftaylorSeries ℝ f x).taylorDecrement 2 s =
       -⟪gradient f x, s⟫ - 1 / 2 * ⟪s, hessianOperator f x s⟫ := by
-  rw [FormalMultilinearSeries.taylorDecrement, ← taylorPolynomial_eq_taylorSum,
-    taylorPolynomial_zero_right, taylorPolynomial_two_eq_quadModel hf, quadModel_def]
+  rw [ftaylorSeries_taylorDecrement_eq, taylorPolynomial_two_eq_quadModel hf, quadModel_def]
   ring
 
 /-- `f(x) - (T_p(x, 0) - T_p(x, s)) = T_p(x, s)`. -/
 theorem sub_taylorDecrement_eq (p : ℕ) (s : EuclideanSpace ℝ (Fin n)) :
     f x - (ftaylorSeries ℝ f x).taylorDecrement p s = taylorPolynomial f p x s := by
-  simp only [FormalMultilinearSeries.taylorDecrement, ← taylorPolynomial_eq_taylorSum,
-    taylorPolynomial_zero_right]
+  simp only [ftaylorSeries_taylorDecrement_eq]
   ring
 
 /-- The Rayleigh-quotient bound `λ_min[∇²f(x)] ‖s‖² ≤ ⟨s, ∇²f(x) s⟩`. -/
@@ -558,7 +556,7 @@ theorem lemma_3_3_8 (hf : AssumptionHL f L₂) (h : algorithm_3_3_1 f P ε₁ ε
     le_rfl hf.iteratedFDerivLipschitzOn (mem_univ (x k)) (mem_univ (x k + s k)) hσ.le
   have hC : 0 < L₂ + P.θ₂ + sigmaMaxAR2 P L₂ := by
     have := hf.pos; have := P.θ₂_pos; have := arSigmaMax_pos P.ar L₂; linarith
-  rw [Chapter01.hessianMinEig,
+  rw [Chapter01.hessianMinEig_def,
     h.run.eq_add_of_succ (IsARRun.forall_le_not_stop_iff.2 hk) hs] at hneg ⊢
   rw [abs_of_neg hneg, div_le_iff₀ hC]
   norm_num [Nat.factorial] at hb
@@ -715,7 +713,7 @@ theorem ar2Model_ridge_spike (hG : ContDiff ℝ 2 G) (hq : 1 ≤ q) (hq2 : q ≤
     (hd : IsSpikeJetOf 2 G q ⟪e₀, x⟫ α) (σ : ℝ) (s : EuclideanSpace ℝ (Fin 1)) :
     ar2Model (ridge G e₀) x σ s = G ⟪e₀, x⟫ + negMonomialRegModel 2 q σ α ⟪e₀, s⟫ := by
   rw [ar2Model_apply, taylorPolynomial_ridge_spike hG hq hq2 hd, norm_eq_abs_inner_e₀,
-    negMonomialRegModel]
+    negMonomialRegModel_def]
   norm_num [Nat.factorial]
   ring
 
@@ -769,7 +767,7 @@ theorem exists_ar2_ridge_run (P : AR2Params) {ε₁ : ℝ} (hε₁ : 0 < ε₁) 
   have hdec : ∀ k < K, ar2Model f (x k) P.σ₀ (s k) < ar2Model f (x k) P.σ₀ 0 := fun k hk => by
     obtain ⟨-, hv, -⟩ := isMinOn_neg_monomial_add_regularization (p := 2) hq hq2 hσ₀ (hα k hk)
     rw [ar2Model_ridge_spike hG hq hq2 (hdx k hk), ar2Model_ridge_spike hG hq hq2 (hdx k hk),
-      ht k hk, hv, inner_zero_right, negMonomialRegModel, zero_pow (by omega), abs_zero,
+      ht k hk, hv, inner_zero_right, negMonomialRegModel_def, zero_pow (by omega), abs_zero,
       zero_pow (by norm_num)]
     have h1 : (0 : ℝ) < ((2 - q + 1 : ℕ) : ℝ) / ((2 + 1) * q.factorial) := by positivity
     have h2 : 0 < (α k / (P.σ₀ * (q - 1).factorial / (2 : ℕ).factorial)) ^
@@ -937,7 +935,7 @@ theorem theorem_3_3_10 (P : AR2Params) :
     set K := ar2SlowK 1 ε₁
     have htest : ∀ k ≤ K, (stopTest (ridge G e₀) ε₁ (some ε₂) (xr k • e₀) ↔ K ≤ k) :=
       fun k hk => by
-        rw [stopTest_some, IsApproxSecondOrderMinimizer, hessianMinEig_ridge hG, inner_e₀_smul,
+        rw [stopTest_some, isApproxSecondOrderMinimizer_def, hessianMinEig_ridge hG, inner_e₀_smul,
           ((hd k hk).2 2 (by norm_num) le_rfl (by norm_num)),
           gradient_ridge (hG.differentiable (by norm_num)), inner_e₀_smul, ← iteratedDeriv_one,
           (hd k hk).1, norm_smul, norm_e₀, mul_one, norm_neg,
@@ -958,7 +956,7 @@ theorem theorem_3_3_10 (P : AR2Params) :
       fun k hk => by
         have hg1 := (hd k hk).2 1 le_rfl (by norm_num) (by norm_num)
         rw [iteratedDeriv_one] at hg1
-        rw [stopTest_some, IsApproxSecondOrderMinimizer, hessianMinEig_ridge hG, inner_e₀_smul,
+        rw [stopTest_some, isApproxSecondOrderMinimizer_def, hessianMinEig_ridge hG, inner_e₀_smul,
           (hd k hk).1, gradient_ridge (hG.differentiable (by norm_num)), inner_e₀_smul, hg1,
           zero_smul, norm_zero, neg_le_neg_iff, ← ar2SlowAlpha_le_iff hε₂ hK hk]
         exact ⟨fun h => h.2, fun h => ⟨hε₁.le, h⟩⟩

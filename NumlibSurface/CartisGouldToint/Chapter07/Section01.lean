@@ -71,16 +71,20 @@ variable {f : ℝⁿ → ℝ} {c : ℝⁿ → ℝᵐ} {C S : Set ℝⁿ} {x : �
 
 theorem lagrangianVec_def : lagrangianVec f c x y = f x - ⟪y, c x⟫ := rfl
 
+/-- The book's Lagrangian is the backbone `Constrained.innerLagrangian`. -/
+theorem lagrangianVec_eq_innerLagrangian :
+    lagrangianVec f c x y = Constrained.innerLagrangian f c y x := rfl
+
 /-- The Lagrangian is the augmented Lagrangian `f + ⟪λ, c⟫ + ½ α ‖c‖²` with `α = 0`, `λ = -y`. -/
 theorem lagrangianVec_eq_augmented :
-    lagrangianVec f c x y = Constrained.augmented f c 0 (-y) x := by
-  simp [lagrangianVec, Constrained.augmented, inner_neg_left, sub_eq_add_neg]
+    lagrangianVec f c x y = Constrained.augmented f c 0 (-y) x :=
+  Constrained.innerLagrangian_apply_eq_augmented f c y x
 
 /-- The Lagrangian written componentwise: `ℒ(x, y) = f(x) - ∑ᵢ yᵢ cᵢ(x)`
 (`Chapter01.lagrangian`). -/
 theorem lagrangianVec_eq_lagrangian :
     lagrangianVec f c x y = Chapter01.lagrangian f (fun i z => c z i) x (fun i => y i) := by
-  simp [lagrangianVec, Chapter01.lagrangian, PiLp.inner_apply, mul_comm]
+  simp [lagrangianVec, Chapter01.lagrangian_apply, PiLp.inner_apply, mul_comm]
 
 /-- The feasible set `ℱ(𝒮, c) = {x ∈ 𝒮 | c(x) = 0}` of [cartis2022evaluation], §7.1. -/
 def feasibleSet (S : Set ℝⁿ) (c : ℝⁿ → ℝᵐ) : Set ℝⁿ := {x ∈ S | c x = 0}

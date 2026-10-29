@@ -28,8 +28,9 @@ is carried (`∂ₜ u - ν Δ u ≤ 0`), the book's case being `ν = 1`, because
 
 * `Heat.mem_parabolicBoundary_of_isMaxOn_of_lt`: a *strict* subsolution (`∂ₜ v - ν Δ v < 0`)
   attains its maximum over `closure Ω ×ˢ Icc 0 T'` only on the parabolic boundary — at an interior
-  maximum `Δ v ≤ 0` (`IsLocalMax.laplacian_nonpos` of `Numlib.Analysis.Calculus.DerivativeTest`)
-  and, `t` ranging over `[0, T']`, the one-sided time derivative is `≥ 0`.
+  maximum `Δ v ≤ 0` (`IsLocalMax.laplacian_nonpos` of
+  `Numlib.Analysis.Calculus.DerivativeTest.Laplacian`) and, `t` ranging over `[0, T']`, the
+  one-sided time derivative is `≥ 0`.
 * `Heat.IsClassicalSubsolution.le_of_le_on_parabolicBoundary` and
   `Heat.IsClassicalSubsolution.exists_isMaxOn_parabolicBoundary`: **Theorem 10.6**, as a bound
   (`u ≤ M` on the parabolic boundary gives `u ≤ M` on the closed cylinder) and as the existence of

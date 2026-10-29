@@ -71,6 +71,11 @@ theorem expNegInvGlue_le_self {s : ℝ} (hs : 0 ≤ s) : expNegInvGlue s ≤ s :
 noncomputable def oscFlat (P Q : Polynomial ℝ) (t : ℝ) : ℝ :=
   (P.eval t⁻¹ * Real.sin t⁻¹ + Q.eval t⁻¹ * Real.cos t⁻¹) * expNegInvGlue (t ^ 2)
 
+theorem oscFlat_def (P Q : Polynomial ℝ) (t : ℝ) :
+    oscFlat P Q t =
+      (P.eval t⁻¹ * Real.sin t⁻¹ + Q.eval t⁻¹ * Real.cos t⁻¹) * expNegInvGlue (t ^ 2) :=
+  rfl
+
 /-- The polynomial multiplying `sin(1/t)` in the derivative of `oscFlat P Q`. -/
 noncomputable def oscFlatDerivP (P Q : Polynomial ℝ) : Polynomial ℝ :=
   -(Polynomial.X ^ 2 * Polynomial.derivative P) + Polynomial.X ^ 2 * Q + 2 * Polynomial.X ^ 3 * P

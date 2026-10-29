@@ -539,7 +539,7 @@ theorem theorem_3_5_4 {κrg κrs κlam : ℝ} (hrg0 : 0 ≤ κrg) (hrg1 : κrg <
         real_inner_self_eq_norm_sq, Chapter02.norm_e₀] at heq
       -- the curvature and the gradient norm at `x_k`
       have hmin : Chapter01.hessianMinEig f p = secondOrderH ε k := by
-        rw [Chapter01.hessianMinEig, minCurvature_iteratedFDeriv_ridge_of_forall hG2
+        rw [Chapter01.hessianMinEig_def, minCurvature_iteratedFDeriv_ridge_of_forall hG2
           Chapter02.norm_e₀ (fun d => ?_), hinner, hf2k]
         conv_rhs => rw [eq_inner_e₀_smul d]
         rw [norm_smul, Chapter02.norm_e₀, mul_one, Real.norm_eq_abs, sq_abs]

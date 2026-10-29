@@ -16,12 +16,17 @@ modules and adds nothing of its own.
 
 ## Deviations from the book
 
-* (11.1.6) regularizes `‖sᴰ‖` (printed `‖s‖`); the cases of (11.1.7) need `≥`, `≤`.
-* §11.1.3, regularization: the secular equation has right-hand side `(λ/σ)^{2/(r-2)}` (printed
-  `(λ²/σ²)^{2/(r-2)}`), the hard case occurs iff `½‖gᴰ‖ ≤ σ^{-1/(r-2)}` (printed `≥`), and then
-  `∑ αᵢ² = σ^{-2/(r-2)} - ¼‖gᴰ‖²` (printed as a product).
-* (11.2.3) and (11.2.5) are printed inverted: `λ ≈ ‖g‖_{M⁻¹}/Δ` and `σ ≈ ‖g‖_{M⁻¹}/Δ^{r-1}`, as the
-  derivation, Table 11.2.1 and the rule (11.2.6) confirm.
+Kinds (**false**, **gap**, **typo**, **reading**) as in the book index `CartisGouldToint`.
+
+* (11.1.6): **typo**, it regularizes `‖sᴰ‖` (printed `‖s‖`) (`idealScaling_transform`); (11.1.7):
+  **typo**, the cases need `≥`, `≤` (`modifiedAbs`).
+* §11.1.3, regularization: **typo**, the secular equation has right-hand side `(λ/σ)^{2/(r-2)}`
+  (printed `(λ²/σ²)^{2/(r-2)}`), the hard case occurs iff `½‖gᴰ‖ ≤ σ^{-1/(r-2)}` (printed `≥`), and
+  then `∑ αᵢ² = σ^{-2/(r-2)} - ¼‖gᴰ‖²` (printed as a product) (`diagonal_regularization_solution`,
+  `diagonal_regularization_hardCase`).
+* (11.2.3), (11.2.5): **typo**, printed inverted: `λ ≈ ‖g‖_{M⁻¹}/Δ` and `σ ≈ ‖g‖_{M⁻¹}/Δ^{r-1}`, as
+  the derivation, Table 11.2.1 and the rule (11.2.6) confirm (`trMultiplier_asymptotics`,
+  `regMultiplier_asymptotics`).
 
 ## Not formalized
 

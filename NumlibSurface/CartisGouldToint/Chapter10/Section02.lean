@@ -552,6 +552,6 @@ theorem corollary_10_2_3 (hH : H.IsHermitian) (hM : M.PosDef) (hg : g ≠ 0) {σ
   obtain ⟨h1, h2⟩ := exists_le_min_of_geometric hG hP' hPG
   refine ⟨fun hκ => ?_, fun hκ => h2 (by rw [hκ, convFactor_one])⟩
   have := h1 (convFactor_pos hκ) (convFactor_lt_one κs)
-  rwa [convFactor, one_div_div] at this
+  rwa [convFactor_def, one_div_div] at this
 
 end CartisGouldToint.Chapter10

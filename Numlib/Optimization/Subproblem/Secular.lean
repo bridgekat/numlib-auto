@@ -97,6 +97,8 @@ noncomputable def shiftThreshold : ℝ := max 0 (-leftmost hH)
 zero space. -/
 noncomputable def rightmost : ℝ := ⨆ i, hH.eigenvalues rfl i
 
+theorem rightmost_def : rightmost hH = ⨆ i, hH.eigenvalues rfl i := rfl
+
 variable {hH}
 
 theorem eigenvalues_le_rightmost (i : Fin (Module.finrank ℝ E)) :

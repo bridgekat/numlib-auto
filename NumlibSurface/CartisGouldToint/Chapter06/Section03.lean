@@ -34,9 +34,9 @@ the first-order convexly constrained method ARp1-CC (Algorithm 6.2.2, the backbo
 * The display before (6.3.3) multiplies the unscaled measure `ω_{Φ_ℓ,𝒞,1}(x_{k+1})^{(p+1)/p}` by
   `‖r(x_{k+1})‖^{(ℓ-1)(p+1)/p}`, mixing the scaled and unscaled forms of (5.1.15); the decrease
   that holds (and is used) is `κ₁ ℓ ω_{Φ_ℓ,𝒞,1}(x_{k+1})^{(p+1)/p}` (`arpleCC_decrease`).
-* Theorem 6.3.1 reads "(5.1.38) for (5.1.39)" (meant: "or"); the exponents printed `2^*` are
-  `2^i`. Only `ι₁(p, ℓ, i) ≥ 0` is used, so the theorem is stated under that hypothesis (implied by
-  (5.1.38) or (5.1.39), `Chapter05.lemma_5_1_6`); the book's `ε₀, ε₁ ≤ 1` is not needed.
+* Theorem 6.3.1 reads "(5.1.38) for (5.1.39)" (meant: "or"). Only `ι₁(p, ℓ, i) ≥ 0` is used, so
+  the theorem is stated under that hypothesis (implied by (5.1.38) or (5.1.39),
+  `Chapter05.lemma_5_1_6`); the book's `ε₀, ε₁ ≤ 1` is not needed.
 -/
 
 open Set Optimization
@@ -200,7 +200,7 @@ theorem arpleCC_decrease (hC : AssumptionCNe C) (hΦ : AssumptionPhiDpLC r ℓ C
     have h1 : ‖r (x k)‖ ^ ℓ / ℓ - ‖r (x (k + 1))‖ ^ ℓ / ℓ =
         (‖r (x k)‖ ^ ℓ - ‖r (x (k + 1))‖ ^ ℓ) / ℓ := by ring
     rw [h1, le_div_iff₀ hℓpos] at hdec
-    rw [kappa1CC, omega1]
+    rw [kappa1CC_def, omega1_def]
     linarith
   refine ⟨hA, fun hnot i hι β hβ0 hβ1 hε₀ hε₁ => ?_⟩
   simp only [stopLE, not_or, not_le] at hnot
