@@ -150,15 +150,6 @@ theorem IsFirstOrderCCStep.measure_le_mul_pow (h : IsFirstOrderCCStep f C p θ x
   rw [this]
   linarith
 
-/-- `a^{n/m} ≤ t^n` from `a ≤ t^m` (for `a, t ≥ 0`, `m > 0`). -/
-private theorem rpow_div_le_pow_of_le_pow' {a t : ℝ} {m n : ℕ} (ha : 0 ≤ a) (ht : 0 ≤ t)
-    (hm : 0 < m) (h : a ≤ t ^ m) : a ^ ((n : ℝ) / m) ≤ t ^ n := by
-  have hm' : (m : ℝ) ≠ 0 := by exact_mod_cast hm.ne'
-  calc a ^ ((n : ℝ) / m) ≤ (t ^ m) ^ ((n : ℝ) / m) := by gcongr
-    _ = t ^ n := by
-        rw [← Real.rpow_natCast t m, ← Real.rpow_mul ht, mul_div_cancel₀ _ hm',
-          Real.rpow_natCast]
-
 /-- **Lemma 6.2.4** ([cartis2022evaluation]; with `C = univ` the first part of Lemma 4.1.4,
 (4.1.31)): on a successful ARp1-CC iteration (`η₁ ≤ ρ`, `η₁ > 0`) with
 `0 ≤ σ_min ≤ σ ≤ σ_max`, `p ≥ 1`, `θ ≥ 0`,
@@ -205,7 +196,7 @@ theorem IsFirstOrderCCStep.sub_ge (h : IsFirstOrderCCStep f C p θ x σ s) (hC :
     · rw [← hK, div_zero, zero_mul]; positivity
   have hn : ((p : ℝ) + 1) = ((p + 1 : ℕ) : ℝ) := by push_cast; ring
   rw [hn, mul_assoc, ← Real.mul_rpow (by positivity) hω]
-  exact (mul_le_mul_of_nonneg_left (rpow_div_le_pow_of_le_pow' (by positivity) (norm_nonneg _)
+  exact (mul_le_mul_of_nonneg_left (Real.rpow_div_le_pow_of_le_pow (by positivity) (norm_nonneg _)
     (by omega) hstep) hc).trans h37
 
 end Step

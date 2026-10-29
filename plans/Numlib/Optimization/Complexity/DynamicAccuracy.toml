@@ -11,3 +11,7 @@ source = "Cartis–Gould–Toint, (13.1.44)"
 [[node]]
 id = "exists_firstHit_le_of_dynamicAccuracy"
 source = "Cartis–Gould–Toint, proofs of Theorems 13.1.8, 13.1.19, 13.3.4, 13.3.8"
+
+[[node]]
+id = "card_accuracyImproving_le_of_pow_of_nonneg"
+source = "Cartis–Gould–Toint, Chapter 13"

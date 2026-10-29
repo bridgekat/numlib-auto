@@ -525,20 +525,9 @@ omit h in
 /-- In a run without post-step test, an iterate different from the starting point was reached by
 a successful iteration: the last successful iteration `i < N` has `x_{i+1} = x_N`. -/
 theorem exists_last_succ (h : IsARRun P stop₁ step (fun _ => False) ρ x s σ) :
-    ∀ N, (∀ j < N, ¬ stop₁ j) → x N ≠ x 0 → ∃ i < N, P.η₁ ≤ ρ i ∧ x (i + 1) = x N := by
-  intro N
-  induction N with
-  | zero => exact fun _ h0 => absurd rfl h0
-  | succ N ih =>
-    intro hN hne
-    have hle : ∀ j ≤ N, ¬ IsARRun.Stop stop₁ (fun _ => False) j :=
-      forall_le_not_stop_iff.2 fun j hj => hN j (Nat.lt_succ_of_le hj)
-    by_cases hs : P.η₁ ≤ ρ N
-    · exact ⟨N, N.lt_succ_self, hs, rfl⟩
-    · have heq := h.eq_of_not_succ hle (not_le.1 hs)
-      obtain ⟨i, hi, hsi, hxi⟩ := ih (fun j hj => hN j (hj.trans N.lt_succ_self))
-        (heq ▸ hne)
-      exact ⟨i, hi.trans N.lt_succ_self, hsi, hxi.trans heq.symm⟩
+    ∀ N, (∀ j < N, ¬ stop₁ j) → x N ≠ x 0 → ∃ i < N, P.η₁ ≤ ρ i ∧ x (i + 1) = x N :=
+  fun N hN => Optimization.exists_last_succ (succ := fun i => P.η₁ ≤ ρ i) N fun _ hi hs =>
+    h.eq_of_not_succ (forall_le_not_stop_iff.2 fun j hj => hN j (hj.trans_lt hi)) (not_le.1 hs)
 
 end General
 

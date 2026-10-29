@@ -69,16 +69,8 @@ id = "lemma_12_2_10"
 source = "Cartis–Gould–Toint, Lemma 12.2.10"
 
 [[node]]
-id = "arqpKappaDelta"
-source = "Cartis–Gould–Toint, Lemma 12.2.9, (12.2.51)"
-
-[[node]]
 id = "lemma_12_2_11"
 source = "Cartis–Gould–Toint, Lemma 12.2.11"
-
-[[node]]
-id = "arqpKappaHat"
-source = "Cartis–Gould–Toint, Lemma 12.2.12 (corrected constant)"
 
 [[node]]
 id = "lemma_12_2_12"
@@ -117,32 +109,12 @@ id = "theorem_12_2_17"
 source = "Cartis–Gould–Toint, Theorem 12.2.17"
 
 [[node]]
-id = "finMax"
-source = "Cartis–Gould–Toint, (12.2.6), (12.2.14), (12.2.25)"
-
-[[node]]
-id = "finMin"
-source = "Cartis–Gould–Toint, (12.2.7)"
-
-[[node]]
 id = "algorithm_12_2_1_exists"
 source = "Cartis–Gould–Toint, Algorithm 12.2.1"
 
 [[node]]
-id = "trqKappaDelta"
-source = "Cartis–Gould–Toint, (12.2.14)"
-
-[[node]]
 id = "algorithm_12_2_2_exists"
 source = "Cartis–Gould–Toint, Lemmas 12.2.9, 12.2.10"
-
-[[node]]
-id = "algorithm_12_2_3_arqpStep"
-source = "Cartis–Gould–Toint, Algorithm 12.2.3, (12.2.27)–(12.2.29)"
-
-[[node]]
-id = "arqpTau"
-source = "Cartis–Gould–Toint, Lemma 12.2.12"
 
 [[node]]
 id = "arqpPi"
@@ -155,14 +127,6 @@ source = "Cartis–Gould–Toint, Lemma 12.2.13"
 [[node]]
 id = "kappaSARqp"
 source = "Cartis–Gould–Toint, Theorem 12.2.14"
-
-[[node]]
-id = "arqp_radius_local"
-source = "Cartis–Gould–Toint, Lemma 12.2.11"
-
-[[node]]
-id = "arqp_decrease_local"
-source = "Cartis–Gould–Toint, Lemma 12.2.13"
 
 [[node]]
 id = "isEpsDeltaApproxMinimizer_of_isMinOn_zero"
@@ -181,84 +145,20 @@ id = "assumptionD1pL_real"
 source = "Cartis–Gould–Toint, proofs of Theorems 12.2.6, 12.2.15, 12.2.17"
 
 [[node]]
-id = "detailedStep_terminates"
-source = "Cartis–Gould–Toint, Lemma 12.2.9 (proof), Algorithm 12.2.3"
-
-[[node]]
-id = "detailedStep_radius_ge"
-source = "Cartis–Gould–Toint, Lemma 12.2.9 (proof), Algorithm 12.2.3"
-
-[[node]]
 id = "AssumptionD1pLOn"
 source = "Cartis–Gould–Toint, f.D1pL with a feasible set (§14.2)"
-
-[[node]]
-id = "one_le_finMax"
-source = "Cartis–Gould–Toint, (12.2.25)"
 
 [[node]]
 id = "algorithm_12_2_1_feasible"
 source = "Cartis–Gould–Toint, Algorithm 12.2.1; TRq-SC (§14.2)"
 
 [[node]]
-id = "lemma_12_2_4_feasible"
-source = "Cartis–Gould–Toint, Lemma 12.2.4; Lemma 14.2.2"
-
-[[node]]
-id = "theorem_12_2_5_feasible"
-source = "Cartis–Gould–Toint, Theorem 12.2.5; Theorem 14.2.4 (TRq-SC)"
-
-[[node]]
 id = "algorithm_12_2_2_feasible"
 source = "Cartis–Gould–Toint, Algorithm 12.2.2; ARqp-SC (§14.2)"
 
 [[node]]
-id = "lemma_12_2_13_feasible"
-source = "Cartis–Gould–Toint, Lemma 12.2.13; Lemma 14.2.2"
-
-[[node]]
-id = "isEpsDeltaApprox_of_isMinOn_zero"
-source = "Cartis–Gould–Toint, Lemma 12.2.10"
-
-[[node]]
-id = "theorem_12_2_14_feasible"
-source = "Cartis–Gould–Toint, Theorem 12.2.14; Theorem 14.2.4 (ARqp-SC)"
-
-[[node]]
 id = "algorithm_12_2_2_exists_of_D1pL"
 source = "Cartis–Gould–Toint, Lemmas 12.2.9, 12.2.10, (12.2.50)"
-
-[[node]]
-id = "detailedStep_exists_trans"
-source = "Cartis–Gould–Toint, Algorithm 12.2.3"
-
-[[node]]
-id = "arqp_detailedHalvingBound"
-source = "Cartis–Gould–Toint, Lemma 12.2.9 (proof)"
-
-[[node]]
-id = "arqp_detailedRestartGap"
-source = "Cartis–Gould–Toint, Lemma 12.2.9 (proof)"
-
-[[node]]
-id = "lemma_12_2_3_feasible"
-source = "Cartis–Gould–Toint, Lemma 12.2.3; Lemma 14.2.3 (TRq-SC)"
-
-[[node]]
-id = "arqpPiOf"
-source = "Cartis–Gould–Toint, Lemma 12.2.13 and Table (14.2.12): the exponents π_j per radii mode"
-
-[[node]]
-id = "arqpKappaDmOf"
-source = "Cartis–Gould–Toint, Lemma 12.2.13: the constant κ_{Δm} per radii mode"
-
-[[node]]
-id = "kappaSARqpOf"
-source = "Cartis–Gould–Toint, Theorem 12.2.14: the constant κ^s per radii mode"
-
-[[node]]
-id = "kappaAARqpOf"
-source = "Cartis–Gould–Toint, Theorem 12.2.14: the constant κ^a per radii mode"
 
 [[node]]
 id = "AssumptionD1pLAnchored"
@@ -269,49 +169,5 @@ id = "AssumptionD1pLAnchoredTop"
 source = "Cartis–Gould–Toint, §14.2.1 (remark after (14.2.10)), the part of f.D1pLaB.X used by ARqp"
 
 [[node]]
-id = "trq_mem_sublevel"
-source = "Cartis–Gould–Toint, §14.2.1 (remark after (14.2.10)), TRq iterates in the sublevel set"
-
-[[node]]
-id = "trq_fidelity_anchored"
-source = "Cartis–Gould–Toint, §14.2.1 (remark after (14.2.10)), (A.19) anchored at the TRq iterates"
-
-[[node]]
-id = "lemma_12_2_3_anchored"
-source = "Cartis–Gould–Toint, Lemma 12.2.3 under f.D1qLaB.X"
-
-[[node]]
-id = "lemma_12_2_4_anchored"
-source = "Cartis–Gould–Toint, Lemma 12.2.4 under f.D1qLaB.X"
-
-[[node]]
-id = "theorem_12_2_5_anchored"
-source = "Cartis–Gould–Toint, Theorem 12.2.5 under f.D1qLaB.X"
-
-[[node]]
-id = "arqp_mem_sublevel"
-source = "Cartis–Gould–Toint, §14.2.1 (remark after (14.2.10)), ARqp iterates in the sublevel set"
-
-[[node]]
-id = "arqp_sigma_le_anchored"
-source = "Cartis–Gould–Toint, Lemma 4.1.2 for ARqp under f.D1pLaB.X"
-
-[[node]]
-id = "lemma_12_2_13_anchored"
-source = "Cartis–Gould–Toint, Lemma 12.2.13 under f.D1pLaB.X"
-
-[[node]]
-id = "theorem_12_2_14_anchored"
-source = "Cartis–Gould–Toint, Theorem 12.2.14 under f.D1pLaB.X"
-
-[[node]]
-id = "isEpsDeltaApprox_of_isMinOn_zero_of_jet"
-source = "Cartis–Gould–Toint, Lemma 12.2.10 (jet at the iterate)"
-
-[[node]]
 id = "lemma_12_2_10_le_two"
 source = "Cartis–Gould–Toint, Lemma 12.2.10 (no Step-2 termination for q ≤ 2)"
-
-[[node]]
-id = "algorithm_12_2_2_exists_anchored"
-source = "Cartis–Gould–Toint, Lemmas 12.2.9–12.2.10 under f.D1pLaB.X"

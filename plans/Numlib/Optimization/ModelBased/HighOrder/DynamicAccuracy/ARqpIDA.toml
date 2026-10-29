@@ -1,0 +1,73 @@
+namespace = "Optimization"
+
+[[node]]
+id = "isEpsDeltaApprox_one_of_le_two"
+source = "Cartis–Gould–Toint, Chapter 13"
+
+[[node]]
+id = "IsARqpIDARun"
+source = "Cartis–Gould–Toint, Algorithm 13.1.2; ARqpIDA-SC (§14.2)"
+
+[[node]]
+id = "arqpIDATest"
+source = "Cartis–Gould–Toint, (14.2.2), approximate optimality for ARqpIDA-SC"
+
+[[node]]
+id = "IsARqpIDARun.measure_ineq_unit"
+source = "Cartis–Gould–Toint, Lemma 13.1.16, (13.1.79) with unit radii; §14.2 (Theorem 14.2.4, q ≤ 2)"
+
+[[node]]
+id = "IsARqpIDARun.step_bound_unit"
+source = "Cartis–Gould–Toint, Lemma 13.1.17 (q ≤ 2) with unit radii"
+
+[[node]]
+id = "IsARqpIDARun.decrease_ge_unit"
+source = "Cartis–Gould–Toint, Lemma 13.1.18 (q ≤ 2) with unit radii"
+
+[[node]]
+id = "IsARqpIDARun.objective_le"
+source = "Cartis–Gould–Toint, §14.2.1 (remark after (14.2.10)): the ARqpIDA-SC iterates lie in the sublevel set (14.2.8)"
+
+[[node]]
+id = "IsARqpIDARun.not_acc_of_le"
+source = "Cartis–Gould–Toint, Lemma 13.1.12 under f.D0pLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "IsARqpIDARun.sigma_le"
+source = "Cartis–Gould–Toint, Lemma 13.1.14 under f.D0pLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "IsARqpIDARun.arqpIDATest_of_pass"
+source = "Cartis–Gould–Toint, Lemma 13.1.15 under f.D0pLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "IsARqpIDARun.measure_ineq"
+source = "Cartis–Gould–Toint, Lemma 13.1.16 under f.D0pLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "IsARqpIDARun.step_bound"
+source = "Cartis–Gould–Toint, proof of Lemma 13.1.17 under f.D0pLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "IsARqpIDARun.norm_step_ge"
+source = "Cartis–Gould–Toint, Lemma 13.1.17 under f.D0pLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "IsARqpIDARun.decrease_ge"
+source = "Cartis–Gould–Toint, Lemma 13.1.18 under f.D0pLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "IsARqpIDARun.card_acc_le"
+source = "Cartis–Gould–Toint, proof of Theorem 13.1.19 under f.D0pLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "IsARqpIDARun.complexity"
+source = "Cartis–Gould–Toint, proof of Theorem 13.1.19 under f.D0pLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "IsARqpIDARun.le_card_succ"
+source = "Cartis–Gould–Toint, Lemma 14.2.3 (ARqpIDA-SC row) under f.D0pL anchored on a set containing the sublevel set (14.2.8)"
+
+[[node]]
+id = "IsARqpIDARun.complexity_of_radiiControl"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (ARqpIDA-SC row) under f.D0pL anchored on a set containing the sublevel set (14.2.8)"

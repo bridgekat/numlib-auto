@@ -121,10 +121,6 @@ id = "lemma_14_2_3_trq_anchored"
 source = "Cartis–Gould–Toint, Lemma 14.2.3 (TRq-SC row) under f.D1qLaB.X"
 
 [[node]]
-id = "lemma_14_2_3_trq_of_anchored"
-source = "Cartis–Gould–Toint, Lemma 14.2.3 (TRq-SC row), anchored form"
-
-[[node]]
 id = "theorem_14_2_4_trq_anchored"
 source = "Cartis–Gould–Toint, Theorem 14.2.4 (TRq-SC row) under f.D1qLaB.X"
 
@@ -141,100 +137,52 @@ id = "theorem_14_2_4_arqp_anchored"
 source = "Cartis–Gould–Toint, Theorem 14.2.4 (ARqp-SC row) under f.D1pLaB.X"
 
 [[node]]
-id = "AssumptionD0qLaBX.toD0Anchored"
+id = "AssumptionD0qLaBX.lipschitzDerivsAnchored"
 source = "Cartis–Gould–Toint, §14.2.1 (remark after (14.2.10)), f.D0qLaB.X gives the anchored Chapter 13 assumption"
-
-[[node]]
-id = "lemma_14_2_2_trqida_of_anchored"
-source = "Cartis–Gould–Toint, Lemma 14.2.2 (TRqIDA-SC row) under f.D0qL anchored on a set containing the sublevel set (14.2.8)"
 
 [[node]]
 id = "lemma_14_2_2_trqida_anchored"
 source = "Cartis–Gould–Toint, Lemma 14.2.2 (TRqIDA-SC row) under f.D0qLaB.X"
 
 [[node]]
-id = "lemma_14_2_3_trqida_of_anchored"
-source = "Cartis–Gould–Toint, Lemma 14.2.3 (TRqIDA-SC row) under f.D0qL anchored on a set containing the sublevel set (14.2.8)"
-
-[[node]]
 id = "lemma_14_2_3_trqida_anchored"
 source = "Cartis–Gould–Toint, Lemma 14.2.3 (TRqIDA-SC row) under f.D0qLaB.X"
-
-[[node]]
-id = "theorem_14_2_4_trqida_of_anchored"
-source = "Cartis–Gould–Toint, Theorem 14.2.4 (TRqIDA-SC row) under f.D0qL anchored on a set containing the sublevel set (14.2.8)"
 
 [[node]]
 id = "theorem_14_2_4_trqida_anchored"
 source = "Cartis–Gould–Toint, Theorem 14.2.4 (TRqIDA-SC row) under f.D0qLaB.X"
 
 [[node]]
-id = "lemma_14_2_2_trqeda_of_anchored"
-source = "Cartis–Gould–Toint, Lemma 14.2.2 (TRqEDA-SC row) under f.D0qL anchored on a set containing the sublevel set (14.2.8)"
-
-[[node]]
 id = "lemma_14_2_2_trqeda_anchored"
 source = "Cartis–Gould–Toint, Lemma 14.2.2 (TRqEDA-SC row) under f.D0qLaB.X"
-
-[[node]]
-id = "lemma_14_2_3_trqeda_of_anchored"
-source = "Cartis–Gould–Toint, Lemma 14.2.3 (TRqEDA-SC row) under f.D0qL anchored on a set containing the sublevel set (14.2.8)"
 
 [[node]]
 id = "lemma_14_2_3_trqeda_anchored"
 source = "Cartis–Gould–Toint, Lemma 14.2.3 (TRqEDA-SC row) under f.D0qLaB.X"
 
 [[node]]
-id = "theorem_14_2_4_trqeda_of_anchored"
-source = "Cartis–Gould–Toint, Theorem 14.2.4 (TRqEDA-SC row) under f.D0qL anchored on a set containing the sublevel set (14.2.8)"
-
-[[node]]
 id = "theorem_14_2_4_trqeda_anchored"
 source = "Cartis–Gould–Toint, Theorem 14.2.4 (TRqEDA-SC row) under f.D0qLaB.X"
-
-[[node]]
-id = "lemma_14_2_2_arqpida_of_anchored"
-source = "Cartis–Gould–Toint, Lemma 14.2.2 (ARqpIDA-SC row) under f.D0pL anchored on a set containing the sublevel set (14.2.8)"
 
 [[node]]
 id = "lemma_14_2_2_arqpida_anchored"
 source = "Cartis–Gould–Toint, Lemma 14.2.2 (ARqpIDA-SC row) under f.D0pLaB.X"
 
 [[node]]
-id = "lemma_14_2_3_arqpida_of_anchored"
-source = "Cartis–Gould–Toint, Lemma 14.2.3 (ARqpIDA-SC row) under f.D0pL anchored on a set containing the sublevel set (14.2.8)"
-
-[[node]]
 id = "lemma_14_2_3_arqpida_anchored"
 source = "Cartis–Gould–Toint, Lemma 14.2.3 (ARqpIDA-SC row) under f.D0pLaB.X"
-
-[[node]]
-id = "theorem_14_2_4_arqpida_of_anchored"
-source = "Cartis–Gould–Toint, Theorem 14.2.4 (ARqpIDA-SC row) under f.D0pL anchored on a set containing the sublevel set (14.2.8)"
 
 [[node]]
 id = "theorem_14_2_4_arqpida_anchored"
 source = "Cartis–Gould–Toint, Theorem 14.2.4 (ARqpIDA-SC row) under f.D0pLaB.X"
 
 [[node]]
-id = "lemma_14_2_2_arqpeda_of_anchored"
-source = "Cartis–Gould–Toint, Lemma 14.2.2 (ARqpEDA-SC row) under f.D0pL anchored on a set containing the sublevel set (14.2.8)"
-
-[[node]]
 id = "lemma_14_2_2_arqpeda_anchored"
 source = "Cartis–Gould–Toint, Lemma 14.2.2 (ARqpEDA-SC row) under f.D0pLaB.X"
 
 [[node]]
-id = "lemma_14_2_3_arqpeda_of_anchored"
-source = "Cartis–Gould–Toint, Lemma 14.2.3 (ARqpEDA-SC row) under f.D0pL anchored on a set containing the sublevel set (14.2.8)"
-
-[[node]]
 id = "lemma_14_2_3_arqpeda_anchored"
 source = "Cartis–Gould–Toint, Lemma 14.2.3 (ARqpEDA-SC row) under f.D0pLaB.X"
-
-[[node]]
-id = "theorem_14_2_4_arqpeda_of_anchored"
-source = "Cartis–Gould–Toint, Theorem 14.2.4 (ARqpEDA-SC row) under f.D0pL anchored on a set containing the sublevel set (14.2.8)"
 
 [[node]]
 id = "theorem_14_2_4_arqpeda_anchored"

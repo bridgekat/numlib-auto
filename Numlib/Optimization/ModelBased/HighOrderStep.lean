@@ -939,11 +939,12 @@ theorem rpow_one_div_le_of_le_pow {x t : ℝ} {n : ℕ} (hn : n ≠ 0) (hx : 0 �
         Real.rpow_le_rpow hx h (by positivity)
     _ = t := by rw [one_div, Real.pow_rpow_inv_natCast ht hn]
 
-/-- `(t^n)^{m/n} = t^m` for `t ≥ 0`, `n ≠ 0`. -/
-theorem pow_rpow_div_natCast {t : ℝ} (ht : 0 ≤ t) {n : ℕ} (hn : n ≠ 0) (m : ℕ) :
-    (t ^ n) ^ ((m : ℝ) / (n : ℝ)) = t ^ m := by
-  rw [← Real.rpow_natCast t n, ← Real.rpow_mul ht, mul_div_cancel₀ _ (by positivity),
-    Real.rpow_natCast]
+/-- `(t^m)^{r/m} = t^r` for `t ≥ 0`, `m ≠ 0`. -/
+theorem pow_rpow_div {t : ℝ} {m : ℕ} (hm : m ≠ 0) (ht : 0 ≤ t) (r : ℝ) :
+    (t ^ m) ^ (r / (m : ℝ)) = t ^ r := by
+  rw [← Real.rpow_natCast, ← Real.rpow_mul ht]
+  congr 1
+  field_simp
 
 /-- **Step-length bound for ARqpC** ([cartis2022evaluation], Lemma 14.1.8, corrected). Let
 `j ≤ p`, `A > 0`, `0 ≤ B ≤ A`, `0 < a ≤ j! A`, `ε ∈ (0, 1]`, `t > 0`, `δ > 0`, and suppose the

@@ -1,3 +1,4 @@
+import Numlib.Analysis.SpecialFunctions.Pow.Real
 import Numlib.Optimization.ModelBased.ARRun
 
 /-!
@@ -339,22 +340,13 @@ theorem step_lower_bounds (h : IsARpRun f p P q test x s σ) (hf : ContDiff ℝ 
       (h.abs_third_le hf hL (hq.trans hqp) hq hk hd)
   · exact h.abs_second_le hf hL (hq.trans hqp) hk hd
 
-/-- `a^{n/m} ≤ t^n` from `a ≤ t^m` (for `a, t ≥ 0`, `m > 0`). -/
-private theorem rpow_div_le_pow_of_le_pow {a t : ℝ} {m n : ℕ} (ha : 0 ≤ a) (ht : 0 ≤ t) (hm : 0 < m)
-    (h : a ≤ t ^ m) : a ^ ((n : ℝ) / m) ≤ t ^ n := by
-  have hm' : (m : ℝ) ≠ 0 := by exact_mod_cast hm.ne'
-  calc a ^ ((n : ℝ) / m) ≤ (t ^ m) ^ ((n : ℝ) / m) := by gcongr
-    _ = t ^ n := by
-        rw [← Real.rpow_natCast t m, ← Real.rpow_mul ht, mul_div_cancel₀ _ hm',
-          Real.rpow_natCast]
-
 /-- From a step bound `a v ≤ ‖s‖^m` and a decrease `≥ c ‖s‖^{p+1}` (`c ≥ 0`), the decrease is at
 least `c a^{(p+1)/m} v^{(p+1)/m}`. -/
 private theorem decrease_ge_of_step_bound {a v t c D : ℝ} {m n : ℕ} (ha : 0 ≤ a) (hv : 0 ≤ v)
     (ht : 0 ≤ t) (hm : 0 < m) (hc : 0 ≤ c) (hstep : a * v ≤ t ^ m) (hD : c * t ^ n ≤ D) :
     c * a ^ ((n : ℝ) / m) * v ^ ((n : ℝ) / m) ≤ D := by
   rw [mul_assoc, ← Real.mul_rpow ha hv]
-  exact (mul_le_mul_of_nonneg_left (rpow_div_le_pow_of_le_pow (mul_nonneg ha hv) ht hm hstep)
+  exact (mul_le_mul_of_nonneg_left (Real.rpow_div_le_pow_of_le_pow (mul_nonneg ha hv) ht hm hstep)
     hc).trans hD
 
 /-- **Lemma 4.1.4** ([cartis2022evaluation]) on a successful iteration `k` before termination

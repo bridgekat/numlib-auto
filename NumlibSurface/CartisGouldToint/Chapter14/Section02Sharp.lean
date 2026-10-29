@@ -71,7 +71,7 @@ the "otherwise" entry for `q = 2` needs `X ≠ ℝⁿ`.
   - **Lower-bound mode of ARqpIDA** (`q = p ≥ 3`, `σ₀ = p`, initial radii `ε`). The Step-2 radii
     are `ε/p`.
   - **Lower-bound mode of ARqpIDA with a feasible set** (`1 ≤ q ≤ p`, `σ₀ = (3/(p+2))^p`, all
-    radii `ε`). The criterion `Chapter13.arTest_feasible` asks for approximate optimality for
+    radii `ε`). The criterion `Optimization.arqpIDATest` asks for approximate optimality for
     *some* radii, and on the line alone the gradient spikes `β_k ≈ ε^q/q!` meet it at radius `1`.
     A second coordinate with `∂f/∂(v 1) = -1` and the half-plane `{ρ ≤ v 1}` make every radius
     `δ ≥ ρ` fail, while radii `δ < ρ` (including the algorithm's radii `ε`) only see the line;
@@ -81,7 +81,7 @@ the "otherwise" entry for `q = 2` needs `X ≠ ℝⁿ`.
     accuracy-improving iterations there.
   - **Termination and continuation.** ARqpEDA is run on `f/2` so that it terminates at `k_ε`.
     ARqpIDA is continued after `k_ε` by ARqpIDA iterations from the state at `k_ε`
-    (`Chapter13.exists_algorithm_13_1_2_exact`, `Chapter13.exists_arqpDA_steps`).
+    (`Chapter13.exists_algorithm_13_1_2_exact`, `Optimization.exists_arqpDA_steps`).
   - **Accuracies.** The initial accuracies are assumed to pass (13.1.46) along the steps and, for
     ARqpEDA, (13.3.17) at termination.
 
@@ -429,7 +429,7 @@ private theorem slow_trqDAStep (hε : 0 < ε) (hϑ : P.ϑ = ε) (hΔmax : ε ≤
   refine ⟨fun j hj => ?_, fun hp => absurd hfail (hp _ hqm), fun _ => ?_, fun _ => ?_,
     fun _ => hΔ1 ▸ hΔmax, fun _ => hh1, fun _ hr => absurd hr (by rw [hρ]; exact not_lt.2 hη),
     fun ha => absurd ha hacc, fun ha => absurd ha hacc, fun ha => absurd ha hacc⟩
-  · rw [hrad, setOf_add_mem_univ]; exact (hdd j hj).1
+  · rw [hrad, Set.setOf_add_mem_univ]; exact (hdd j hj).1
   · refine ⟨by rw [hjk]; exact hqm, by rw [hjk]; exact hfail,
       fun j hj hlt => hnot j hj (by rw [hjk] at hlt; exact hlt.ne), mem_univ _,
       by rw [hs, hΔ, norm_smul_e₀, abs_of_pos hε], ?_, iff_of_false hacc ?_⟩
@@ -510,10 +510,10 @@ theorem theorem_14_2_4_sharp_trqida {q : ℕ} (hq : 1 ≤ q) :
           (D : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin 1)) ℝ)
           (dd : ℕ → ℕ → EuclideanSpace ℝ (Fin 1)) (jk : ℕ → ℕ)
           (s : ℕ → EuclideanSpace ℝ (Fin 1)) (acc : ℕ → Prop),
-          algorithm_13_1_1_feasible f univ (fun _ => 0) P (fun j => j ! * ε) 0 x Δ h D dd jk s
+          IsTRqIDARun f univ (fun _ => 0) P (fun j => j ! * ε) 0 x Δ h D dd jk s
             acc ∧
           (∀ k, D k = ftaylorSeries ℝ f (x k)) ∧
-          IsFirstHit (trTest_feasible f univ P (fun j => j ! * ε) x Δ) ⌈(ε ^ (q + 1))⁻¹⌉₊ ∧
+          IsFirstHit (trqIDATest f univ P (fun j => j ! * ε) x Δ) ⌈(ε ^ (q + 1))⁻¹⌉₊ ∧
           (ε ^ (q + 1))⁻¹ + 1 ≤ (derivEvalCount (fun i => ¬ acc i) ⌈(ε ^ (q + 1))⁻¹⌉₊ : ℝ) ∧
           (ε ^ (q + 1))⁻¹ + 1 ≤ (derivEvalCount
             (fun i => acc i ∨ (¬ acc i ∧ P.η₁ ≤ trqRatio f D x s jk i))
@@ -612,17 +612,17 @@ theorem theorem_14_2_4_sharp_trqida {q : ℕ} (hq : 1 ≤ q) :
       · rw [haccv, ite_eq_right hk]
       · rw [trqRatio_eq, trqRatio_eq, hDv, hD', hX, ite_eq_right hk, hsv, ite_eq_right hk,
           hjkv, ite_eq_right hk]
-  have hrun : algorithm_13_1_1_feasible f univ (fun _ => 0) P (fun j => j ! * ε) 0 X Δv hv Dv
+  have hrun : IsTRqIDARun f univ (fun _ => 0) P (fun j => j ! * ε) 0 X Δv hv Dv
       ddv jkv sv accv :=
     ⟨hεv, hϑε, fun _ _ => le_rfl, by rw [hXle 0 (Nat.zero_le _)]; simp [hxp], mem_univ _,
       by rw [hΔle 0 (Nat.zero_le _), hΔ₀], hhle 0 (Nat.zero_le _),
       fun k => by rw [hDv]; exact (jetApprox_self _ _).mono_err fun i _ => by simp, hstep⟩
   have hnacc : ∀ i < κ, ¬ accv i := fun i hi => by rw [haccv, ite_eq_left hi]; exact not_false
   have hqm : P.q ∈ Finset.Icc 1 P.q := Finset.mem_Icc.2 ⟨P.one_le_q, le_rfl⟩
-  have htest : ∀ k ≤ κ, (trTest_feasible f univ P (fun j => j ! * ε) X Δv k ↔ k = κ) := by
+  have htest : ∀ k ≤ κ, (trqIDATest f univ P (fun j => j ! * ε) X Δv k ↔ k = κ) := by
     intro k hk
     have hrad : trRadius P Δv k = ε := by simp only [trRadius, hΔle k hk, hϑ, min_self]
-    rw [trTest_feasible, hrad, setOf_add_mem_univ, isEpsDeltaApprox_iff, ← hDv k]
+    rw [trqIDATest, hrad, Set.setOf_add_mem_univ, isEpsDeltaApprox_iff, ← hDv k]
     constructor
     · intro ht
       by_contra hne
@@ -673,7 +673,7 @@ theorem theorem_14_2_4_sharp_trqeda {q : ℕ} (hq : 1 ≤ q) :
           (dd : ℕ → ℕ → EuclideanSpace ℝ (Fin 1)) (jk : ℕ → ℕ)
           (s : ℕ → EuclideanSpace ℝ (Fin 1)) (acc : ℕ → Prop) (fx fxs h₀ : ℕ → ℝ)
           (R : ℕ → Prop),
-          algorithm_13_3_1_feasible f univ P (fun j => j ! * ε) 0 x Δ h D dd jk s acc fx fxs h₀
+          IsTRqEDARun f univ P (fun j => j ! * ε) 0 x Δ h D dd jk s acc fx fxs h₀
             R ∧
           (∀ k, D k = ftaylorSeries ℝ f (x k) ∧ fx k = f (x k) ∧ fxs k = f (x k + s k)) ∧
           IsFirstHit (edaStopTR P (fun j => j ! * ε) D Δ h dd) ⌈(ε ^ (q + 1))⁻¹⌉₊ ∧
@@ -752,14 +752,14 @@ theorem theorem_14_2_4_sharp_trqeda {q : ℕ} (hq : 1 ≤ q) :
       (fun _ => P.h₀) ddp j) → k < κ := fun k hk => by
     by_contra hge
     exact hk κ (not_lt.1 hge) ((hstop κ le_rfl).2 rfl)
-  have hrun : algorithm_13_3_1_feasible f univ P (fun j => j ! * ε) 0 xp (fun _ => ε)
+  have hrun : IsTRqEDARun f univ P (fun j => j ! * ε) 0 xp (fun _ => ε)
       (fun _ => P.h₀) Dv ddp jkv sv (fun _ => False) fx fxs
       (fun k => P.κs * (Dv k).taylorDecrement (jkv k) (sv k)) (fun _ => True) := by
     refine ⟨hκs, hεv, hεmin.trans hϑ.symm |>.le, by simp [hxp], mem_univ _, hΔ₀.symm, rfl,
       fun k _ => ?_, fun k _ j hj => ?_, fun k hk => ?_⟩
     · rw [hDv]
       exact (jetApprox_self _ _).mono_err fun i hi => (P.h₀_pos i hi).le
-    · rw [trRadius, hϑ, min_self, setOf_add_mem_univ]
+    · rw [trRadius, hϑ, min_self, Set.setOf_add_mem_univ]
       exact (hddX k j hj).1
     · have hkκ := hreach k hk
       have hpos : 0 < P.κs * (Dv k).taylorDecrement (jkv k) (sv k) := by
@@ -954,7 +954,7 @@ private theorem slow_arqpDAStep (hq2 : P.q ≤ 2) (hε : 0 < ε) (ha : ε / 2 < 
     · exact ⟨0, by norm_num⟩
   · -- the Step-1 displacements
     have hj' := (Finset.mem_Icc.1 hj).2
-    rw [hδ₁, hdd, setOf_add_mem_univ]
+    rw [hδ₁, hdd, Set.setOf_add_mem_univ]
     dsimp only
     by_cases hjq : j = P.q
     · subst hjq
@@ -991,7 +991,7 @@ private theorem slow_arqpDAStep (hq2 : P.q ≤ 2) (hε : 0 < ε) (ha : ε / 2 < 
       have hφ := taylorMeasure_eq_zero_of_isLocalMin
         ((contDiff_regularizedModel (D := D k) (p := P.p) (σ := σ k)).contDiffAt.of_le
           (by exact_mod_cast hℓp)) (hmin.isLocalMin Filter.univ_mem) hℓ2 zero_le_one
-      rw [hδs ℓ hℓ, setOf_add_mem_univ]
+      rw [hδs ℓ hℓ, Set.setOf_add_mem_univ]
       refine ⟨⟨zero_lt_one, le_rfl⟩, 0, ⟨⟨mem_closedBall_self zero_le_one, mem_univ _⟩, ?_⟩, ?_⟩
       · change P.ς * taylorMeasure _ ℓ 1 univ ≤ _
         rw [hφ, mul_zero, FormalMultilinearSeries.taylorDecrement_zero_right]
@@ -1259,7 +1259,7 @@ private theorem exists_slowARqp_run {p q : ℕ} (hq : 1 ≤ q) (hq2 : q ≤ 2) (
   · refine ⟨fun j _ => by rw [hδ₁κ]; exact one_pos, fun j hj => by rw [hδ₁κ, hδ₀ j hj],
       fun j hj hlt => by rw [hδ₁κ, hδ₀ j hj] at hlt; exact absurd hlt (lt_irrefl _),
       fun j hj => ⟨0, by rw [hδ₁κ, hδ₀ j hj]; norm_num⟩, fun j hj => ?_⟩
-    rw [hδ₁κ, hddκ, setOf_add_mem_univ]
+    rw [hδ₁κ, hddκ, Set.setOf_add_mem_univ]
     dsimp only
     split_ifs with hjq
     · subst hjq; exact (hw κ).1
@@ -1331,7 +1331,7 @@ private theorem slowTop_arqpDAStep {r' : ℝ} (hε : 0 < ε) (ha : ε / 2 < a) (
     fun ha' => absurd ha' hacc, fun ha' => absurd ha' hacc, fun ha' => absurd ha' hacc⟩
   · -- the Step-1 displacements
     have hj' := (Finset.mem_Icc.1 hj).2
-    rw [hδ₁, hδ j hj, hdd, setOf_add_mem_univ]
+    rw [hδ₁, hδ j hj, hdd, Set.setOf_add_mem_univ]
     dsimp only
     by_cases hjq : j = P.q
     · subst hjq
@@ -1365,7 +1365,7 @@ private theorem slowTop_arqpDAStep {r' : ℝ} (hε : 0 < ε) (ha : ε / 2 < a) (
     · have hℓ' : ∀ d ∈ closedBall (0 : EuclideanSpace ℝ (Fin 1)) r' ∩ univ,
           (ftaylorSeries ℝ (regularizedModel (D k) P.p (σ k)) (s k)).taylorDecrement ℓ d ≤ 0 :=
         fun d hd => hmodel ℓ hℓ d (mem_closedBall_zero_iff.1 hd.1)
-      rw [hδs ℓ hℓ, setOf_add_mem_univ]
+      rw [hδs ℓ hℓ, Set.setOf_add_mem_univ]
       refine ⟨⟨hr', hr'1⟩, 0, ⟨⟨mem_closedBall_self hr'.le, mem_univ _⟩, ?_⟩, ?_⟩
       · rw [FormalMultilinearSeries.taylorDecrement_zero_right]
         exact mul_nonpos_of_nonneg_of_nonpos hς.le
@@ -1388,9 +1388,9 @@ the order `ε^{-(p+1)/(p-q+1)}` of the unit-radii mode is attained with the (sim
 constants with orders `p, q`, `σ₀ = p!/(q-1)!`, unit initial radii and initial accuracies
 `0 < h_{0,i} ≤ κ_s (ε/2)^{p-i+1}` (so that (13.1.46) passes along the steps), there is `f` with
 f.bB and f.D0pL (all `L_{f,j} = L`) and an ARqpIDA-SC run with exact derivatives from `x₀ = 0`
-satisfying the radii control in both modes (`Chapter13.RadiiControlOf u` for every `u` and every
+satisfying the radii control in both modes (`Optimization.RadiiControlOf u` for every `u` and every
 `L̄ ≥ 1`: unit radii after every short trial step), whose first iterate that is
-`(ε, δ)`-approximately optimal for some radii `δ ∈ (0, 1]^q` (`Chapter13.arTest_feasible`) is
+`(ε, δ)`-approximately optimal for some radii `δ ∈ (0, 1]^q` (`Optimization.arqpIDATest`) is
 `x_{k_ε}`, `k_ε = ⌈ε^{-(p+1)/(p-q+1)}⌉`, after `k_ε + 1 ≥ ε^{-(p+1)/(p-q+1)} + 1` function and
 derivative evaluations. The run follows the slow example of Theorem 12.2.15 (spike jets
 `f^{(q)}(x_k) = -(ε + ω_k)`, steps the global model minimizers, `σ_k = σ₀`, `ρ_k = 1`, no
@@ -1407,11 +1407,11 @@ theorem theorem_14_2_4_sharp_arqpida {p q : ℕ} (hq : 1 ≤ q) (hq2 : q ≤ 2) 
           (h : ℕ → ℕ → ℝ) (D : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin 1)) ℝ)
           (dd : ℕ → ℕ → EuclideanSpace ℝ (Fin 1)) (jk : ℕ → ℕ)
           (s : ℕ → EuclideanSpace ℝ (Fin 1)) (acc : ℕ → Prop),
-          algorithm_13_1_2_feasible f univ (fun _ => 0) P (fun _ => ε) 0 x σ δ δ₁ δs h D dd jk s
+          IsARqpIDARun f univ (fun _ => 0) P (fun _ => ε) 0 x σ δ δ₁ δs h D dd jk s
             acc ∧
           (∀ k, D k = ftaylorSeries ℝ f (x k)) ∧
           (∀ (u : Prop) (Lb : ℝ), 1 ≤ Lb → ∀ k, RadiiControlOf u P (fun _ => ε) Lb σ δs s acc k) ∧
-          IsFirstHit (arTest_feasible f univ P (fun _ => ε) x)
+          IsFirstHit (arqpIDATest f univ P (fun _ => ε) x)
             ⌈ε ^ (-((p + 1 : ℝ) / ((p - q + 1 : ℕ) : ℝ)))⌉₊ ∧
           ε ^ (-((p + 1 : ℝ) / ((p - q + 1 : ℕ) : ℝ))) + 1 ≤ (derivEvalCount (fun i => ¬ acc i)
             ⌈ε ^ (-((p + 1 : ℝ) / ((p - q + 1 : ℕ) : ℝ)))⌉₊ : ℝ) ∧
@@ -1525,16 +1525,16 @@ theorem theorem_14_2_4_sharp_arqpida {p q : ℕ} (hq : 1 ≤ q) (hq2 : q ≤ 2) 
       · rw [hsv, ite_eq_right hk]
       · rw [haccv, ite_eq_right hk]
       · rw [arqpIDARatio, arqpIDARatio, hDv, hD', hXv, ite_eq_right hk, hsv, ite_eq_right hk]
-  have hrun' : algorithm_13_1_2_feasible f univ (fun _ => 0) P (fun _ => ε) 0 Xv σv δv δ₁v δsv
+  have hrun' : IsARqpIDARun f univ (fun _ => 0) P (fun _ => ε) 0 Xv σv δv δ₁v δsv
       hv Dv ddv jkv sv accv :=
     ⟨hεv, hεδ, fun _ _ => le_rfl, by rw [hXle 0 (Nat.zero_le _), hX0], mem_univ _,
       hσle 0 (Nat.zero_le _), hδle 0 (Nat.zero_le _), hhle 0 (Nat.zero_le _),
       fun k => by rw [hDv]; exact (jetApprox_self _ _).mono_err fun i _ => by simp, hstep⟩
   have hqm : P.q ∈ Finset.Icc 1 P.q := Finset.mem_Icc.2 ⟨P.one_le_q, le_rfl⟩
   have hqf : (0 : ℝ) < P.q ! := by positivity
-  have htest : ∀ k ≤ κ, (arTest_feasible f univ P (fun _ => ε) Xv k ↔ k = κ) := by
+  have htest : ∀ k ≤ κ, (arqpIDATest f univ P (fun _ => ε) Xv k ↔ k = κ) := by
     intro k hk
-    rw [arTest_feasible, setOf_add_mem_univ, hXle k hk]
+    rw [arqpIDATest, Set.setOf_add_mem_univ, hXle k hk]
     constructor
     · rintro ⟨δ', hδ', ht⟩
       by_contra hne
@@ -1576,7 +1576,7 @@ constants with orders `p, q`, `σ₀ = p!/(q-1)!`, unit initial radii, (13.3.13)
 (`h_{0,i} ≤ κ_s (ε/2)^{p-i+1}`) and the termination test (13.3.17) at unit radii
 (`∑_{i=1}^j h_{0,i}/i! ≤ ½ ς ε/j!`), there is `f` with f.bB and f.D0pL (all `L_{f,j} = L`) and
 an ARqpEDA-SC run with exact derivatives and function values from `x₀ = 0` satisfying the radii
-control in both modes (`Chapter13.RadiiControlOf u` for every `u` and every `L̄ ≥ 1`), which
+control in both modes (`Optimization.RadiiControlOf u` for every `u` and every `L̄ ≥ 1`), which
 first terminates at `k_ε = ⌈ε^{-(p+1)/(p-q+1)}⌉`, after `2 k_ε ≥ 2 ε^{-(p+1)/(p-q+1)}` function
 evaluations (each value recomputed) and `k_ε + 1 ≥ ε^{-(p+1)/(p-q+1)} + 1` derivative
 evaluations. The run is the slow example of Theorem 12.2.15 with `f` halved (spike jets
@@ -1597,7 +1597,7 @@ theorem theorem_14_2_4_sharp_arqpeda {p q : ℕ} (hq : 1 ≤ q) (hq2 : q ≤ 2) 
           (dd : ℕ → ℕ → EuclideanSpace ℝ (Fin 1)) (jk : ℕ → ℕ)
           (s : ℕ → EuclideanSpace ℝ (Fin 1)) (acc : ℕ → Prop) (fx fxs h₀ : ℕ → ℝ)
           (R : ℕ → Prop),
-          algorithm_13_3_2_feasible f univ P (fun _ => ε) 0 x σ δ δ₁ δs h D dd jk s acc fx fxs
+          IsARqpEDARun f univ P (fun _ => ε) 0 x σ δ δ₁ δs h D dd jk s acc fx fxs
             h₀ R ∧
           (∀ k, D k = ftaylorSeries ℝ f (x k) ∧ fx k = f (x k) ∧ fxs k = f (x k + s k)) ∧
           (∀ (u : Prop) (Lb : ℝ), 1 ≤ Lb → ∀ k, RadiiControlOf u P (fun _ => ε) Lb σ δs s acc k) ∧
@@ -1652,7 +1652,7 @@ theorem theorem_14_2_4_sharp_arqpeda {p q : ℕ} (hq : 1 ≤ q) (hq2 : q ≤ 2) 
       exact hk κ (not_le.1 hge) ((hstop κ le_rfl).2 rfl)
   have hstep := hrun (fun _ => P.h₀) (fun _ => False) ρ (fun _ _ => rfl) hh₀
     (fun _ _ => not_false) hρ1
-  have hrun' : algorithm_13_3_2_feasible f univ P (fun _ => ε) 0 X (fun _ => P.σ₀)
+  have hrun' : IsARqpEDARun f univ P (fun _ => ε) 0 X (fun _ => P.σ₀)
       (fun _ => P.δ₀) δ₁ (fun _ => P.δ₀) (fun _ => P.h₀) D dd (fun _ => P.q) s (fun _ => False)
       fx fxs
       (fun k => P.κs * (D k).taylorDecrement P.p (s k)) (fun _ => True) := by
@@ -1819,7 +1819,7 @@ private theorem slowGrad_arqpDAStep (hε : 0 < ε) (hε2 : ε ≤ 1 / 2)
     fun hp => absurd (hp _ hqm) hfail, fun _ => ?_, fun _ => ?_, fun _ => ?_, fun _ => hh1,
     fun _ hr' => absurd hr' (by rw [hρ]; exact not_lt.2 hη), fun ha' => absurd ha' hacc,
     fun ha' => absurd ha' hacc, fun ha' => absurd ha' hacc, fun ha' => absurd ha' hacc⟩
-  · rw [hδ₁, hδ j hj, setOf_add_mem_univ]; exact (hdd j hj).1
+  · rw [hδ₁, hδ j hj, Set.setOf_add_mem_univ]; exact (hdd j hj).1
   · -- Step 2
     refine ⟨by rw [hjk]; exact hqm, by rw [hjk]; exact hfail,
       fun j hj hlt => hpass_lt j hj (by rw [hjk] at hlt; exact hlt),
@@ -1858,7 +1858,7 @@ private theorem slowGrad_arqpDAStep (hε : 0 < ε) (hε2 : ε ≤ 1 / 2)
     · have hℓ' : ∀ d ∈ closedBall (0 : EuclideanSpace ℝ (Fin 1)) ε ∩ univ,
           (ftaylorSeries ℝ (regularizedModel (D k) P.p (σ k)) (s k)).taylorDecrement ℓ d ≤ 0 :=
         fun d hd => hmodel ℓ hℓ d (mem_closedBall_zero_iff.1 hd.1)
-      rw [hδs ℓ hℓ, setOf_add_mem_univ]
+      rw [hδs ℓ hℓ, Set.setOf_add_mem_univ]
       refine ⟨⟨hε, by linarith⟩, 0, ⟨⟨mem_closedBall_self hε.le, mem_univ _⟩, ?_⟩, ?_⟩
       · rw [FormalMultilinearSeries.taylorDecrement_zero_right]
         exact mul_nonpos_of_nonneg_of_nonpos hς.le
@@ -1883,7 +1883,7 @@ radii `δ₀ = ε`, (13.3.13) `κ_s ≤ min(η₁, 1 - η₂)/4`, initial accura
 the steps (`h_{0,i} ≤ κ_s ε^{p-i+1}`) and the termination test (13.3.17) at radius `ε`
 (`∑_{i=1}^j h_{0,i} ε^i/i! ≤ ½ ς ε ε^j/j!`), there is `f` with f.bB and f.D0pL (all
 `L_{f,j} = L`) and an ARqpEDA-SC run with exact derivatives and function values from `x₀ = 0`
-satisfying the radii control in the lower-bound mode (`Chapter13.RadiiControlOf False` for every
+satisfying the radii control in the lower-bound mode (`Optimization.RadiiControlOf False` for every
 `L̄ ≥ 1`; all radii are `ε`), which first terminates at `k_ε = ⌈ε^{-q(p+1)/p}⌉`, after
 `2 k_ε ≥ 2 ε^{-q(p+1)/p}` function evaluations (each value recomputed) and
 `k_ε + 1 ≥ ε^{-q(p+1)/p} + 1` derivative evaluations. The run is the slow example of
@@ -1906,7 +1906,7 @@ theorem theorem_14_2_4_sharp_arqpeda_otherwise {p q : ℕ} (hq : 1 ≤ q) (hqp :
           (dd : ℕ → ℕ → EuclideanSpace ℝ (Fin 1)) (jk : ℕ → ℕ)
           (s : ℕ → EuclideanSpace ℝ (Fin 1)) (acc : ℕ → Prop) (fx fxs h₀ : ℕ → ℝ)
           (R : ℕ → Prop),
-          algorithm_13_3_2_feasible f univ P (fun _ => ε) 0 x σ δ δ₁ δs h D dd jk s acc fx fxs
+          IsARqpEDARun f univ P (fun _ => ε) 0 x σ δ δ₁ δs h D dd jk s acc fx fxs
             h₀ R ∧
           (∀ k, D k = ftaylorSeries ℝ f (x k) ∧ fx k = f (x k) ∧ fxs k = f (x k + s k)) ∧
           (∀ Lb : ℝ, 1 ≤ Lb → ∀ k, RadiiControlOf False P (fun _ => ε) Lb σ δs s acc k) ∧
@@ -2148,7 +2148,7 @@ theorem theorem_14_2_4_sharp_arqpeda_otherwise {p q : ℕ} (hq : 1 ≤ q) (hqp :
         exact (hh₀ i hi).trans (mul_le_mul_of_nonneg_left
           (pow_le_pow_left₀ hε.le (hεt k hk.le) _) P.κs_pos.le))
       not_false (hXs k) rfl P.σmin_le_σ₀ rfl (hρ1 k hk)
-  have hrun : algorithm_13_3_2_feasible f univ P (fun _ => ε) 0 X (fun _ => P.σ₀)
+  have hrun : IsARqpEDARun f univ P (fun _ => ε) 0 X (fun _ => P.σ₀)
       (fun _ => P.δ₀) (fun _ => P.δ₀) (fun _ => P.δ₀) (fun _ => P.h₀) D w (fun _ => P.q) s
       (fun _ => False) fx fxs (fun k => P.κs * (D k).taylorDecrement P.p (s k))
       (fun _ => True) := by
@@ -2158,7 +2158,7 @@ theorem theorem_14_2_4_sharp_arqpeda_otherwise {p q : ℕ} (hq : 1 ≤ q) (hqp :
     · have hkκ := hreach k hk
       exact ⟨fun j hj => by simp only [hδ₀ j hj]; exact hε, fun _ _ => le_rfl,
         fun _ _ hlt => absurd hlt (lt_irrefl _), fun _ _ => ⟨0, by norm_num⟩,
-        fun j hj => by simp only [hδ₀ j hj, setOf_add_mem_univ]; exact (hw k j).1⟩
+        fun j hj => by simp only [hδ₀ j hj, Set.setOf_add_mem_univ]; exact (hw k j).1⟩
     · have hkκ : k < κ := by
         rcases (hreach k fun j hj => hk j hj.le).lt_or_eq with hlt | rfl
         · exact hlt
@@ -2175,7 +2175,7 @@ theorem theorem_14_2_4_sharp_arqpeda_otherwise {p q : ℕ} (hq : 1 ≤ q) (hqp :
   · have hM : 1 ≤ max Lb P.σ₀ := hLb.trans (le_max_left _ _)
     change P.ς * P.θ * ε / (24 * max Lb P.σ₀) ≤ P.δ₀ j
     rw [hδ₀ j hj, div_le_iff₀ (by positivity)]
-    have h0 : P.ς * P.θ ≤ 1 := mul_le_one_of_le_one P.ς_le_one P.θ_pos.le P.θ_lt_one.le
+    have h0 : P.ς * P.θ ≤ 1 := (mul_le_of_le_one_left P.θ_pos.le P.ς_le_one).trans P.θ_lt_one.le
     have h1 : P.ς * P.θ * ε ≤ ε := mul_le_of_le_one_left hε.le h0
     have h2 : ε ≤ ε * (24 * max Lb P.σ₀) := le_mul_of_one_le_right hε.le
       (hM.trans (le_mul_of_one_le_left (zero_le_one.trans hM) (by norm_num)))
@@ -2194,15 +2194,15 @@ are `f_low`, `L ≥ 1` and `ε₀ > 0` such that, for every `ε ∈ (0, ε₀]` 
 ARqpIDA constants with `q = p`, weight `σ₀ = p`, initial radii `δ₀ = ε` and initial accuracies
 `0 < h_{0,i} ≤ κ_s ε^{p-i+1}`, there is `f` with f.bB and f.D0pL (all `L_{f,j} = L`) and an
 ARqpIDA-SC run with exact derivatives from `x₀ = 0` satisfying the radii control in the lower-bound
-mode (`Chapter13.RadiiControlOf False`), whose first iterate that is `(ε, δ)`-approximately
-optimal for some radii `δ ∈ (0, 1]^q` (`Chapter13.arTest_feasible`) is `x_{k_ε}`,
+mode (`Optimization.RadiiControlOf False`), whose first iterate that is `(ε, δ)`-approximately
+optimal for some radii `δ ∈ (0, 1]^q` (`Optimization.arqpIDATest`) is `x_{k_ε}`,
 `k_ε = ⌈ε^{-(p+1)}⌉`, after `k_ε + 1 ≥ ε^{-(p+1)} + 1` function and derivative evaluations. The
 run follows the slow example of Theorem 12.2.15 with `q = p` (pure `p`-th order spikes
 `f^{(p)}(x_k) = -(ε + ω_k)`, which fail the criterion at every radius; steps the global model
 minimizers `t*_k = ε + ω_k`, `σ_k = σ₀`, `ρ_k = 1`) with Step-2 radii `δ_{s_k} = ε/p`, at which the
 model measures at its minimizer vanish (`Optimization.taylorMeasure_topMonomialRegModel_eq_zero`),
 and continues after `k_ε` as any ARqpIDA iteration from the state at `k_ε`
-(`Chapter13.exists_arqpDA_steps`). -/
+(`Optimization.exists_arqpDA_steps`). -/
 theorem theorem_14_2_4_sharp_arqpida_otherwise {p : ℕ} (hp : 3 ≤ p) :
     ∃ flow L ε₀ : ℝ, 1 ≤ L ∧ 0 < ε₀ ∧ ∀ ε : ℝ, 0 < ε → ε ≤ ε₀ → ∀ P : ARqpIDAParams,
       P.p = p → P.q = p → P.σ₀ = p → (∀ j ∈ Finset.Icc 1 p, P.δ₀ j = ε) →
@@ -2212,12 +2212,12 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise {p : ℕ} (hp : 3 ≤ p) :
           (h : ℕ → ℕ → ℝ) (D : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin 1)) ℝ)
           (dd : ℕ → ℕ → EuclideanSpace ℝ (Fin 1)) (jk : ℕ → ℕ)
           (s : ℕ → EuclideanSpace ℝ (Fin 1)) (acc : ℕ → Prop),
-          algorithm_13_1_2_feasible f univ (fun _ => 0) P (fun _ => ε) 0 x σ δ δ₁ δs h D dd jk s
+          IsARqpIDARun f univ (fun _ => 0) P (fun _ => ε) 0 x σ δ δ₁ δs h D dd jk s
             acc ∧
           (∀ k, D k = ftaylorSeries ℝ f (x k)) ∧
           (∀ k, RadiiControlOf False P (fun _ => ε)
             (lipMax (fun _ => L) P.p + ordMax P.p (fun _ => 0) * P.κh) σ δs s acc k) ∧
-          IsFirstHit (arTest_feasible f univ P (fun _ => ε) x) ⌈(ε ^ (p + 1))⁻¹⌉₊ ∧
+          IsFirstHit (arqpIDATest f univ P (fun _ => ε) x) ⌈(ε ^ (p + 1))⁻¹⌉₊ ∧
           (ε ^ (p + 1))⁻¹ + 1 ≤ (derivEvalCount (fun i => ¬ acc i) ⌈(ε ^ (p + 1))⁻¹⌉₊ : ℝ) ∧
           (ε ^ (p + 1))⁻¹ + 1 ≤ (derivEvalCount
             (fun i => acc i ∨ (¬ acc i ∧ P.η₁ ≤ arqpIDARatio f P D x s i))
@@ -2357,7 +2357,8 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise {p : ℕ} (hp : 3 ≤ p) :
   have hεpε : ε / P.p ≤ ε := div_le_self hε.le (by linarith)
   obtain ⟨x', σ', δ', δ₁', δs', h', dd', jk', s', acc', hx'0, hσ'0, hδ'0, hh'0, -, hr, hrc'⟩ :=
     exists_arqpDA_steps (P := P) (ε := fun _ => ε)
-      (fun y _ => ftaylorSeries ℝ f y) (κg := fun _ => 0) (L := fun _ => L) hf hεv
+      (fun y _ => ftaylorSeries ℝ f y) (κg := fun _ => 0) (L := fun _ => L)
+      hf.lipschitzDerivsAnchored hf.normalized hεv
       (fun _ _ => le_rfl) (X κ) P.σmin_le_σ₀ (δ' := fun _ => ε / P.p)
       (fun _ _ => ⟨hεp, hεp1⟩) (fun i hi => ⟨(hh₀ i hi).1, P.h₀_le i hi⟩)
       fun _ _ _ => (jetApprox_self _ _).mono_err fun i _ => by simp
@@ -2483,7 +2484,7 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise {p : ℕ} (hp : 3 ≤ p) :
       · rw [hsv, ite_eq_right hk]
       · rw [haccv, ite_eq_right hk]
       · rw [arqpIDARatio, arqpIDARatio, hDv, hXv, ite_eq_right hk, hsv, ite_eq_right hk]
-  have hrun' : algorithm_13_1_2_feasible f univ (fun _ => 0) P (fun _ => ε) 0 Xv σv δv δ₁v δsv
+  have hrun' : IsARqpIDARun f univ (fun _ => 0) P (fun _ => ε) 0 Xv σv δv δ₁v δsv
       hv Dv ddv jkv sv accv :=
     ⟨hεv, fun j hj => by rw [← hPq] at hδ₀; rw [hδ₀ j hj], fun _ _ => le_rfl,
       by rw [hXle 0 (Nat.zero_le _)]; simp [hX, hxr], mem_univ _,
@@ -2492,9 +2493,9 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise {p : ℕ} (hp : 3 ≤ p) :
       fun k => by rw [hDv]; exact (jetApprox_self _ _).mono_err fun i _ => by simp, hstep⟩
   have hqm : P.q ∈ Finset.Icc 1 P.q := Finset.mem_Icc.2 ⟨P.one_le_q, le_rfl⟩
   have hqf : (0 : ℝ) < P.q ! := by positivity
-  have htest : ∀ k ≤ κ, (arTest_feasible f univ P (fun _ => ε) Xv k ↔ k = κ) := by
+  have htest : ∀ k ≤ κ, (arqpIDATest f univ P (fun _ => ε) Xv k ↔ k = κ) := by
     intro k hk
-    rw [arTest_feasible, setOf_add_mem_univ, hXle k hk]
+    rw [arqpIDATest, Set.setOf_add_mem_univ, hXle k hk]
     constructor
     · rintro ⟨δ', hδ', ht'⟩
       by_contra hne
@@ -2522,7 +2523,7 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise {p : ℕ} (hp : 3 ≤ p) :
         le_max_right _ _
       have hM0 : (0 : ℝ) < max (lipMax (fun _ => L) P.p + ordMax P.p (fun _ => 0) * P.κh) P.p :=
         hpR.trans_le hM
-      have h0 : P.ς * P.θ ≤ 1 := mul_le_one_of_le_one P.ς_le_one P.θ_pos.le P.θ_lt_one.le
+      have h0 : P.ς * P.θ ≤ 1 := (mul_le_of_le_one_left P.θ_pos.le P.ς_le_one).trans P.θ_lt_one.le
       rw [div_le_div_iff₀ (by positivity) hpR]
       have h1 : P.ς * P.θ * ε ≤ ε := mul_le_of_le_one_left hε.le h0
       have h3 : (P.p : ℝ) ≤ 24 * max (lipMax (fun _ => L) P.p +
@@ -2548,7 +2549,7 @@ end ARqpDASharp
 The order `ε^{-q(p+1)/p}` of the lower-bound mode of the ARqpIDA-SC row is attained for every
 `1 ≤ q ≤ p` with the closed feasible set `X = {v 1 = 0} ∪ {ρ ≤ v 1}` of `ℝ²` (a line and a parallel
 half-plane at distance `ρ ∈ (ε, 2ε]`), by the slow example of Theorem 12.2.17 on the line. The
-half-plane makes the criterion `Chapter13.arTest_feasible` ("approximately optimal for some radii
+half-plane makes the criterion `Optimization.arqpIDATest` ("approximately optimal for some radii
 in `(0, 1]^q`") fail at the large radii, which the line alone cannot do. The measures and the
 criterion on this set are those of the backbone slit construction
 (`Optimization.slitSet`, `Optimization.not_isEpsDeltaApprox_slitSet`), with the profiles
@@ -2780,9 +2781,9 @@ accuracies `h_{0,i} ≤ κ_s ε^{p-i+1}`, there are `ρ ∈ (ε, 2ε]`, the feas
 `X = {v | v 1 = 0} ∪ {v | ρ ≤ v 1}` (`v 1` is the second coordinate; a line and a parallel
 half-plane at distance `ρ`), `f` with
 f.bB and f.D0pL (all `L_{f,j} = L`) and an ARqpIDA-SC run on `X` with exact derivatives from
-`x₀ = 0` satisfying the radii control in the lower-bound mode (`Chapter13.RadiiControlOf False`
+`x₀ = 0` satisfying the radii control in the lower-bound mode (`Optimization.RadiiControlOf False`
 for every `L̄ ≥ 1`; all radii are `ε`), whose first iterate that is `(ε, δ)`-approximately optimal
-on `X` for some radii `δ ∈ (0, 1]^q` (`Chapter13.arTest_feasible`) is `x_{k_ε}`,
+on `X` for some radii `δ ∈ (0, 1]^q` (`Optimization.arqpIDATest`) is `x_{k_ε}`,
 `k_ε = ⌈ε^{-q(p+1)/p}⌉`, after `k_ε + 1 ≥ ε^{-q(p+1)/p} + 1` function and derivative evaluations.
 
 The run follows the slow example of Theorem 12.2.17 (`r = p`) on the line `v 1 = 0`:
@@ -2812,11 +2813,11 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise_constrained {p q : ℕ} (hq : 1 �
           (h : ℕ → ℕ → ℝ) (D : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin 2)) ℝ)
           (dd : ℕ → ℕ → EuclideanSpace ℝ (Fin 2)) (jk : ℕ → ℕ)
           (s : ℕ → EuclideanSpace ℝ (Fin 2)) (acc : ℕ → Prop),
-          algorithm_13_1_2_feasible f X (fun _ => 0) P (fun _ => ε) 0 x σ δ δ₁ δs h D dd jk s
+          IsARqpIDARun f X (fun _ => 0) P (fun _ => ε) 0 x σ δ δ₁ δs h D dd jk s
             acc ∧
           (∀ k, D k = ftaylorSeries ℝ f (x k)) ∧
           (∀ Lb : ℝ, 1 ≤ Lb → ∀ k, RadiiControlOf False P (fun _ => ε) Lb σ δs s acc k) ∧
-          IsFirstHit (arTest_feasible f X P (fun _ => ε) x)
+          IsFirstHit (arqpIDATest f X P (fun _ => ε) x)
             ⌈ε ^ (-((q : ℝ) * (p + 1) / p))⌉₊ ∧
           ε ^ (-((q : ℝ) * (p + 1) / p)) + 1 ≤
             (derivEvalCount (fun i => ¬ acc i) ⌈ε ^ (-((q : ℝ) * (p + 1) / p))⌉₊ : ℝ) ∧
@@ -3103,7 +3104,7 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise_constrained {p q : ℕ} (hq : 1 �
         fun i => ?_
       rw [hhv, hhv, show k + 1 - (κ + 1) = k - (κ + 1) + 1 by omega, pow_succ]
       ring
-  have hrun : algorithm_13_1_2_feasible f X (fun _ => 0) P (fun _ => ε) 0 xv (fun _ => P.σ₀) δv
+  have hrun : IsARqpIDARun f X (fun _ => 0) P (fun _ => ε) 0 xv (fun _ => P.σ₀) δv
       δv (fun _ _ => ε) hv Dv ddv (fun _ => P.q) sv (fun k => κ < k) :=
     ⟨fun _ _ => ⟨hε, hε1⟩, fun j hj => by rw [hδ₀ j hj], fun _ _ => le_rfl,
       by rw [hxle 0 (Nat.zero_le _)]; simp [hξ], Or.inl (inner_zero_right _), rfl,
@@ -3111,7 +3112,7 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise_constrained {p q : ℕ} (hq : 1 �
       fun k => by rw [hDv]; exact (jetApprox_self _ _).mono_err fun i _ => by simp, hstep⟩
   -- the criterion
   have hqm : P.q ∈ Finset.Icc 1 P.q := Finset.mem_Icc.2 ⟨P.one_le_q, le_rfl⟩
-  have htest : ∀ k ≤ κ, (arTest_feasible f X P (fun _ => ε) xv k ↔ k = κ) := by
+  have htest : ∀ k ≤ κ, (arqpIDATest f X P (fun _ => ε) xv k ↔ k = κ) := by
     intro k hk
     have hdk : ∀ j ∈ Finset.Icc 1 P.q, ∀ d,
         (ftaylorSeries ℝ f (xv k)).taylorDecrement j d = β k * ⟪e₁, d⟫ + ⟪e₂, d⟫ :=
@@ -3130,7 +3131,7 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise_constrained {p q : ℕ} (hq : 1 �
       fun _ j _ => ?_⟩, ⟨(htest κ le_rfl).2 rfl, fun i hi ht' => hi.ne ((htest i hi.le).1 ht')⟩,
     ?_, ?_⟩
   · have hM : 1 ≤ max Lb P.σ₀ := hLb.trans (le_max_left _ _)
-    have h0 : P.ς * P.θ ≤ 1 := mul_le_one_of_le_one P.ς_le_one P.θ_pos.le P.θ_lt_one.le
+    have h0 : P.ς * P.θ ≤ 1 := (mul_le_of_le_one_left P.θ_pos.le P.ς_le_one).trans P.θ_lt_one.le
     rw [div_le_iff₀ (by positivity)]
     have h1 : P.ς * P.θ * ε ≤ ε := mul_le_of_le_one_left hε.le h0
     exact h1.trans (le_mul_of_one_le_right hε.le (by linarith only [hM]))

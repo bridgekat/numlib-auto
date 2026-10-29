@@ -1,0 +1,77 @@
+namespace = "Optimization"
+
+[[node]]
+id = "TRqIDAParams"
+source = "Cartis–Gould–Toint, Algorithm 13.1.1, Step 0"
+
+[[node]]
+id = "TRqDAStep"
+source = "Cartis–Gould–Toint, Algorithm 13.1.1, (13.1.19)–(13.1.21)"
+
+[[node]]
+id = "trqDA_delta_ge"
+source = "Cartis–Gould–Toint, Lemma 13.1.4"
+
+[[node]]
+id = "exists_trqDA_run"
+source = "Cartis–Gould–Toint, Algorithm 13.1.1"
+
+[[node]]
+id = "IsTRqIDARun"
+source = "Cartis–Gould–Toint, Algorithm 13.1.1; TRqIDA-SC (§14.2)"
+
+[[node]]
+id = "trqIDATest"
+source = "Cartis–Gould–Toint, (14.2.2), approximate optimality for TRqIDA-SC"
+
+[[node]]
+id = "TRqDAStep.congr"
+source = "Cartis–Gould–Toint, Algorithm 13.1.1"
+
+[[node]]
+id = "TRqDAStep.taylorDecrement_pos"
+source = "Cartis–Gould–Toint, Lemma 13.1.2 ((13.1.27): positive predicted decrease)"
+
+[[node]]
+id = "IsTRqIDARun.objective_le"
+source = "Cartis–Gould–Toint, §14.2.1 (remark after (14.2.10)): the TRqIDA-SC iterates lie in the sublevel set (14.2.8)"
+
+[[node]]
+id = "IsTRqIDARun.ratio_ge"
+source = "Cartis–Gould–Toint, Lemma 13.1.3 under f.D0qLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "IsTRqIDARun.delta_ge"
+source = "Cartis–Gould–Toint, Lemma 13.1.4 under f.D0qLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "IsTRqIDARun.decrease_ge"
+source = "Cartis–Gould–Toint, Lemma 13.1.5 under f.D0qLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "IsTRqIDARun.not_acc_of_le"
+source = "Cartis–Gould–Toint, Lemma 13.1.6 under f.D0qLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "IsTRqIDARun.trqIDATest_of_pass"
+source = "Cartis–Gould–Toint, Lemma 13.1.7 under f.D0qLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "IsTRqIDARun.card_acc_le"
+source = "Cartis–Gould–Toint, proof of Theorem 13.1.8 under f.D0qLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "IsTRqIDARun.complexity"
+source = "Cartis–Gould–Toint, Theorem 13.1.8 under f.D0qLaB.X (§14.2, remark after (14.2.10))"
+
+[[node]]
+id = "IsTRqIDARun.le_card_succ"
+source = "Cartis–Gould–Toint, Lemma 14.2.3 (TRqIDA-SC row) under f.D0qL anchored on a set containing the sublevel set (14.2.8)"
+
+[[node]]
+id = "trqDA_card_trial_le"
+source = "Cartis–Gould–Toint, Lemma 13.1.1"
+
+[[node]]
+id = "TRqDAStep.trqGap_ge"
+source = "Cartis–Gould–Toint, Lemma 13.1.2"

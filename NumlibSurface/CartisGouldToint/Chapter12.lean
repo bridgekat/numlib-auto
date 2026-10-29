@@ -22,9 +22,12 @@ its own.
 
 TRq and ARqp are the backbone run predicates `Optimization.IsTRqRun`, `Optimization.IsARqpRun`
 with exact data `ftaylorSeries ℝ f (x k)`; tolerances and radii are vectors `ε δ : ℕ → ℝ` indexed
-by the order. `Chapter12.Section02` also states the feasible-set versions used by Chapter 14
-(`algorithm_12_2_1_feasible`, `algorithm_12_2_2_feasible`). Appendix B's Lemma B.12.1 is in
-`AppendixB.Chapter12`.
+by the order. The complexity analyses are the library's
+(`Numlib.Optimization.ModelBased.HighOrder.TRqComplexity`, `…ARqpComplexity`, `…ARqpDetailedStep`),
+stated on a feasible set under anchored Lipschitz derivatives (`LipschitzDerivsAnchored`); the
+book's theorems are their unconstrained instances. `Chapter12.Section02` also defines the
+feasible-set runs used by Chapter 14 (`algorithm_12_2_1_feasible`, `algorithm_12_2_2_feasible`).
+Appendix B's Lemma B.12.1 is in `AppendixB.Chapter12`.
 
 ## Deviations from the book
 

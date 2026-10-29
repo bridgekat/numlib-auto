@@ -9,16 +9,8 @@ id = "AssumptionD0pL"
 source = "Cartis–Gould–Toint, Assumption f.D0pL"
 
 [[node]]
-id = "TRqIDAParams"
-source = "Cartis–Gould–Toint, Algorithm 13.1.1, Step 0"
-
-[[node]]
 id = "phiHat"
 source = "Cartis–Gould–Toint, (13.1.25)"
-
-[[node]]
-id = "TRqDAStep"
-source = "Cartis–Gould–Toint, Algorithm 13.1.1, (13.1.19)–(13.1.21)"
 
 [[node]]
 id = "algorithm_13_1_1"
@@ -55,14 +47,6 @@ source = "Cartis–Gould–Toint, Lemma 13.1.7"
 [[node]]
 id = "theorem_13_1_8"
 source = "Cartis–Gould–Toint, Theorem 13.1.8"
-
-[[node]]
-id = "ARqpIDAParams"
-source = "Cartis–Gould–Toint, Algorithm 13.1.2, Step 0, (13.1.51)"
-
-[[node]]
-id = "ARqpDAStep"
-source = "Cartis–Gould–Toint, Algorithm 13.1.2, (13.1.60)–(13.1.61), (13.1.69)–(13.1.70)"
 
 [[node]]
 id = "algorithm_13_1_2"
@@ -117,10 +101,6 @@ id = "theorem_13_1_19_ii"
 source = "Cartis–Gould–Toint, Theorem 13.1.19 (2)"
 
 [[node]]
-id = "RadiiControl"
-source = "Cartis–Gould–Toint, Theorem 13.1.19, (13.1.69)–(13.1.70)"
-
-[[node]]
 id = "trTest"
 source = "Cartis–Gould–Toint, Theorem 13.1.8"
 
@@ -129,32 +109,8 @@ id = "arTest"
 source = "Cartis–Gould–Toint, Theorem 13.1.19"
 
 [[node]]
-id = "trq_delta_ge"
-source = "Cartis–Gould–Toint, Lemma 13.1.4"
-
-[[node]]
-id = "exists_halving"
-source = "Cartis–Gould–Toint, Lemma 13.1.11"
-
-[[node]]
-id = "arqp_radius_ge"
-source = "Cartis–Gould–Toint, Lemma 13.1.12, (13.1.71)"
-
-[[node]]
-id = "arqp_pow_ge_of_radius_ineq"
-source = "Cartis–Gould–Toint, Lemma 13.1.17"
-
-[[node]]
-id = "arqp_pow_succ_ge"
-source = "Cartis–Gould–Toint, Lemma 13.1.18"
-
-[[node]]
 id = "arqpIDA_complexity"
 source = "Cartis–Gould–Toint, Theorem 13.1.19"
-
-[[node]]
-id = "exists_trqDA_run"
-source = "Cartis–Gould–Toint, Algorithm 13.1.1"
 
 [[node]]
 id = "exists_algorithm_13_1_1"
@@ -173,225 +129,9 @@ id = "exists_algorithm_13_1_2_exact"
 source = "Cartis–Gould–Toint, Chapter 13"
 
 [[node]]
-id = "isEpsDeltaApprox_one_of_le_two"
-source = "Cartis–Gould–Toint, Chapter 13"
-
-[[node]]
-id = "card_accuracyImproving_le_of_pow_of_nonneg"
-source = "Cartis–Gould–Toint, Chapter 13"
-
-[[node]]
 id = "AssumptionD0qLOn"
 source = "Cartis–Gould–Toint, Assumption f.D0qL on a set containing X (§14.2, f.D0qLaB.X)"
 
 [[node]]
 id = "AssumptionD0pLOn"
 source = "Cartis–Gould–Toint, Assumption f.D0pL on a set containing X (§14.2, f.D0pLaB.X)"
-
-[[node]]
-id = "algorithm_13_1_1_feasible"
-source = "Cartis–Gould–Toint, Algorithm 13.1.1; TRqIDA-SC (§14.2)"
-
-[[node]]
-id = "trTest_feasible"
-source = "Cartis–Gould–Toint, (14.2.2), approximate optimality for TRqIDA-SC"
-
-[[node]]
-id = "lemma_13_1_3_feasible"
-source = "Cartis–Gould–Toint, Lemma 13.1.3 (with a feasible set, §14.2)"
-
-[[node]]
-id = "lemma_13_1_4_feasible"
-source = "Cartis–Gould–Toint, Lemma 13.1.4 (with a feasible set, §14.2)"
-
-[[node]]
-id = "lemma_13_1_5_feasible"
-source = "Cartis–Gould–Toint, Lemma 13.1.5; Lemma 14.2.2 (TRqIDA-SC)"
-
-[[node]]
-id = "lemma_13_1_6_feasible"
-source = "Cartis–Gould–Toint, Lemma 13.1.6 (with a feasible set, §14.2)"
-
-[[node]]
-id = "lemma_13_1_7_feasible"
-source = "Cartis–Gould–Toint, Lemma 13.1.7 (with a feasible set, §14.2)"
-
-[[node]]
-id = "trqIDA_card_acc_le_feasible"
-source = "Cartis–Gould–Toint, proof of Theorem 13.1.8 (accuracy-improving iterations); Lemma 14.2.3"
-
-[[node]]
-id = "theorem_13_1_8_feasible"
-source = "Cartis–Gould–Toint, Theorem 13.1.8; Theorem 14.2.4 (TRqIDA-SC)"
-
-[[node]]
-id = "algorithm_13_1_2_feasible"
-source = "Cartis–Gould–Toint, Algorithm 13.1.2; ARqpIDA-SC (§14.2)"
-
-[[node]]
-id = "arTest_feasible"
-source = "Cartis–Gould–Toint, (14.2.2), approximate optimality for ARqpIDA-SC"
-
-[[node]]
-id = "lemma_13_1_12_feasible"
-source = "Cartis–Gould–Toint, Lemma 13.1.12 (with a feasible set, §14.2)"
-
-[[node]]
-id = "lemma_13_1_14_feasible"
-source = "Cartis–Gould–Toint, Lemma 13.1.14 (with a feasible set, §14.2)"
-
-[[node]]
-id = "lemma_13_1_15_feasible"
-source = "Cartis–Gould–Toint, Lemma 13.1.15 (with a feasible set, §14.2)"
-
-[[node]]
-id = "lemma_13_1_16_feasible"
-source = "Cartis–Gould–Toint, Lemma 13.1.16 (with a feasible set, §14.2)"
-
-[[node]]
-id = "lemma_13_1_17_feasible"
-source = "Cartis–Gould–Toint, Lemma 13.1.17 (with a feasible set, §14.2)"
-
-[[node]]
-id = "lemma_13_1_18_feasible"
-source = "Cartis–Gould–Toint, Lemma 13.1.18; Lemma 14.2.2 (ARqpIDA-SC)"
-
-[[node]]
-id = "arqpIDA_card_acc_le_feasible"
-source = "Cartis–Gould–Toint, proof of Theorem 13.1.19 (accuracy-improving iterations); Lemma 14.2.3"
-
-[[node]]
-id = "arqpIDA_complexity_feasible"
-source = "Cartis–Gould–Toint, proof of Theorem 13.1.19; Theorem 14.2.4 (ARqpIDA-SC)"
-
-[[node]]
-id = "RadiiControlOf"
-source = "Cartis–Gould–Toint, Theorem 13.1.19, (13.1.69)–(13.1.70); §14.2 (radius policy with simple constraints, (12.2.51))"
-
-[[node]]
-id = "RadiiControlOf.kappa_mul_le"
-source = "Cartis–Gould–Toint, proof of Lemma 13.1.12, (13.1.71)"
-
-[[node]]
-id = "arPiOf"
-source = "Cartis–Gould–Toint, Lemma 13.1.18, (13.1.82); Theorem 14.2.4"
-
-[[node]]
-id = "arStepConstOf"
-source = "Cartis–Gould–Toint, Lemma 13.1.18, (13.1.82)"
-
-[[node]]
-id = "TRqDAStep.congr"
-source = "Cartis–Gould–Toint, Algorithm 13.1.1"
-
-[[node]]
-id = "ARqpDAStep.congr"
-source = "Cartis–Gould–Toint, Algorithm 13.1.2"
-
-[[node]]
-id = "RadiiControlOf.of_unit"
-source = "Cartis–Gould–Toint, Theorem 13.1.19, (13.1.69)–(13.1.70)"
-
-[[node]]
-id = "lemma_13_1_16_unit"
-source = "Cartis–Gould–Toint, Lemma 13.1.16, (13.1.79) with unit radii; §14.2 (Theorem 14.2.4, q ≤ 2)"
-
-[[node]]
-id = "arqpIDA_step_bound_unit"
-source = "Cartis–Gould–Toint, Lemma 13.1.17 (q ≤ 2) with unit radii"
-
-[[node]]
-id = "lemma_13_1_18_unit"
-source = "Cartis–Gould–Toint, Lemma 13.1.18 (q ≤ 2) with unit radii"
-
-[[node]]
-id = "exists_arqpDA_steps"
-source = "Cartis–Gould–Toint, Lemmas 13.1.11–13.1.12 (existence), Algorithm 13.1.2"
-
-[[node]]
-id = "AssumptionD0qLAnchored"
-source = "Cartis–Gould–Toint, Assumption f.D0qLaB.X ((14.2.9) with j ∈ [0:q], §14.2.1) on an open convex set, anchored on a set"
-
-[[node]]
-id = "AssumptionD0pLAnchored"
-source = "Cartis–Gould–Toint, Assumption f.D0pLaB.X (§14.2.1) on an open convex set, anchored on a set"
-
-[[node]]
-id = "AssumptionD0qLOn.anchored"
-source = "Cartis–Gould–Toint, §14.2.1 (remark after (14.2.10)): Lipschitz on X₀ implies anchored Lipschitz"
-
-[[node]]
-id = "TRqDAStep.taylorDecrement_pos"
-source = "Cartis–Gould–Toint, Lemma 13.1.2 ((13.1.27): positive predicted decrease)"
-
-[[node]]
-id = "algorithm_13_1_1_feasible.f_le"
-source = "Cartis–Gould–Toint, §14.2.1 (remark after (14.2.10)): the TRqIDA-SC iterates lie in the sublevel set (14.2.8)"
-
-[[node]]
-id = "algorithm_13_1_2_feasible.f_le"
-source = "Cartis–Gould–Toint, §14.2.1 (remark after (14.2.10)): the ARqpIDA-SC iterates lie in the sublevel set (14.2.8)"
-
-[[node]]
-id = "lemma_13_1_3_anchored"
-source = "Cartis–Gould–Toint, Lemma 13.1.3 under f.D0qLaB.X (§14.2, remark after (14.2.10))"
-
-[[node]]
-id = "lemma_13_1_4_anchored"
-source = "Cartis–Gould–Toint, Lemma 13.1.4 under f.D0qLaB.X (§14.2, remark after (14.2.10))"
-
-[[node]]
-id = "lemma_13_1_5_anchored"
-source = "Cartis–Gould–Toint, Lemma 13.1.5 under f.D0qLaB.X (§14.2, remark after (14.2.10))"
-
-[[node]]
-id = "lemma_13_1_6_anchored"
-source = "Cartis–Gould–Toint, Lemma 13.1.6 under f.D0qLaB.X (§14.2, remark after (14.2.10))"
-
-[[node]]
-id = "lemma_13_1_7_anchored"
-source = "Cartis–Gould–Toint, Lemma 13.1.7 under f.D0qLaB.X (§14.2, remark after (14.2.10))"
-
-[[node]]
-id = "trqIDA_card_acc_le_anchored"
-source = "Cartis–Gould–Toint, proof of Theorem 13.1.8 under f.D0qLaB.X (§14.2, remark after (14.2.10))"
-
-[[node]]
-id = "theorem_13_1_8_anchored"
-source = "Cartis–Gould–Toint, Theorem 13.1.8 under f.D0qLaB.X (§14.2, remark after (14.2.10))"
-
-[[node]]
-id = "lemma_13_1_12_anchored"
-source = "Cartis–Gould–Toint, Lemma 13.1.12 under f.D0pLaB.X (§14.2, remark after (14.2.10))"
-
-[[node]]
-id = "lemma_13_1_14_anchored"
-source = "Cartis–Gould–Toint, Lemma 13.1.14 under f.D0pLaB.X (§14.2, remark after (14.2.10))"
-
-[[node]]
-id = "lemma_13_1_15_anchored"
-source = "Cartis–Gould–Toint, Lemma 13.1.15 under f.D0pLaB.X (§14.2, remark after (14.2.10))"
-
-[[node]]
-id = "lemma_13_1_16_anchored"
-source = "Cartis–Gould–Toint, Lemma 13.1.16 under f.D0pLaB.X (§14.2, remark after (14.2.10))"
-
-[[node]]
-id = "arqpIDA_step_bound_anchored"
-source = "Cartis–Gould–Toint, proof of Lemma 13.1.17 under f.D0pLaB.X (§14.2, remark after (14.2.10))"
-
-[[node]]
-id = "lemma_13_1_17_anchored"
-source = "Cartis–Gould–Toint, Lemma 13.1.17 under f.D0pLaB.X (§14.2, remark after (14.2.10))"
-
-[[node]]
-id = "lemma_13_1_18_anchored"
-source = "Cartis–Gould–Toint, Lemma 13.1.18 under f.D0pLaB.X (§14.2, remark after (14.2.10))"
-
-[[node]]
-id = "arqpIDA_card_acc_le_anchored"
-source = "Cartis–Gould–Toint, proof of Theorem 13.1.19 under f.D0pLaB.X (§14.2, remark after (14.2.10))"
-
-[[node]]
-id = "arqpIDA_complexity_anchored"
-source = "Cartis–Gould–Toint, proof of Theorem 13.1.19 under f.D0pLaB.X (§14.2, remark after (14.2.10))"

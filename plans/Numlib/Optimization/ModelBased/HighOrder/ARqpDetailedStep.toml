@@ -1,0 +1,33 @@
+namespace = "Optimization"
+
+[[node]]
+id = "ARqpDetailedTrans"
+source = "Cartis–Gould–Toint, Algorithm 12.2.3"
+
+[[node]]
+id = "arqpRadiusLB"
+source = "Cartis–Gould–Toint, (12.2.45)"
+
+[[node]]
+id = "detailedHalvingBound_regularizedModel"
+source = "Cartis–Gould–Toint, proof of Lemma 12.2.9"
+
+[[node]]
+id = "detailedRestartGap_regularizedModel"
+source = "Cartis–Gould–Toint, proof of Lemma 12.2.9"
+
+[[node]]
+id = "arqpDetailedStep_radius_ge"
+source = "Cartis–Gould–Toint, (12.2.45)"
+
+[[node]]
+id = "arqpDetailedStep_terminates"
+source = "Cartis–Gould–Toint, Lemma 12.2.9"
+
+[[node]]
+id = "arqpDetailedStep_exists_trans"
+source = "Cartis–Gould–Toint, Algorithm 12.2.3"
+
+[[node]]
+id = "IsDetailedStepOutput.exists_arqpStep"
+source = "Cartis–Gould–Toint, (12.2.27)–(12.2.29)"

@@ -38,7 +38,7 @@ parameters are fixed (`trqSlowParams`: `Δ₀ = Δ_max = 1`, `η = (1/4, 3/4)`, 
   (`A ≤ ε_1/2`) and the second-order test fails as long as `A > ε_2 y/8`, i.e. while
   `v_1 < 2^{12M}`; every step is successful and decreases `ν` by about `A y`, as little as
   `≈ ε_2 ε_1²`; there are `2^{22M} - 2^{18M} - 2^{10M}` of them;
-* any TRq-SC run continues; it terminates (`Chapter12.theorem_12_2_5_anchored`).
+* any TRq-SC run continues; it terminates (`Optimization.IsTRqRun.complexity`).
 
 In the Phase-1 version this is the only INNER call of LENq-SC, and Phase 1 exits with `‖c‖ ≥ 1`
 (`trqSlow_exists_tpqp_run`). In the Phase-2 version `‖c₂(x₀)‖ = 1/2 = θ ε₀` (`θ = β = 1/2`), Phase 1
@@ -1394,7 +1394,7 @@ theorem trq_run_congr {F G : E → ℝ} {X : Set E} {P : Optimization.TRqParams}
         (Chapter12.trqStop G P q ε ϑ x Δ d k ↔ Chapter12.trqStop F P q ε ϑ x Δ d k)) ∧
       (∀ k, (∀ i ≤ k, ¬ Chapter12.trqStop F P q ε ϑ x Δ d i) →
         Chapter12.trqRho G x s jk k = Chapter12.trqRho F x s jk k) := by
-  have hmem := Chapter12.trq_mem h hx0
+  have hmem := Optimization.IsTRqRun.mem_of_feasible h hx0
   have hiff : ∀ k, (∀ i < k, ¬ Chapter12.trqStop F P q ε ϑ x Δ d i) →
       (Chapter12.trqStop G P q ε ϑ x Δ d k ↔ Chapter12.trqStop F P q ε ϑ x Δ d k) :=
     fun k hk => by
@@ -1505,8 +1505,9 @@ theorem trqSlow_exists_tpqp_run {q : ℕ} (hq : 2 ≤ q) {M : ℕ} (hM : 1 ≤ M
       z ∈ nuSublevel trqSlowC trqSlowX x₀ := fun z hz hzx => by
     rw [hx0] at hzx
     exact ⟨hz, norm_le_of_phi2_le hzx⟩
-  obtain ⟨kε, hhit, hmem, hrad, hcert, -, -⟩ := Chapter12.theorem_12_2_5_anchored (flow := 0)
-    (fun z _ => by rw [phi2_apply]; positivity) (hν x₀).1 trqSlowX_subset hA hx0X hε'I hϑ' le_rfl
+  obtain ⟨kε, hhit, hmem, hrad, hcert, -, -⟩ := Optimization.IsTRqRun.complexity
+    (flow := 0) (fun z _ => by rw [phi2_apply]; positivity) (hν x₀).1.toLipschitzDerivsAnchored
+    trqSlowX_subset hA hx0X hε'I hϑ' le_rfl
     hrun
   have hkT : T ≤ kε := by
     by_contra h
@@ -1738,8 +1739,9 @@ theorem trqSlow_exists_tpqp_run_phase2 {q : ℕ} (hq : 2 ≤ q) {M : ℕ} (hM : 
       z ∈ nuSublevel trqSlowC trqSlowX x₀ := fun z hz hzx => by
     rw [hx0] at hzx
     exact ⟨hz, norm_le_of_phi2_le hzx⟩
-  obtain ⟨kε, hhit, hmem, hrad, hcert, -, -⟩ := Chapter12.theorem_12_2_5_anchored (flow := 0)
-    (fun z _ => by rw [phi2_apply]; positivity) (hν x₀).1 trqSlowX_subset hA hx0X hε'I hϑ' le_rfl
+  obtain ⟨kε, hhit, hmem, hrad, hcert, -, -⟩ := Optimization.IsTRqRun.complexity
+    (flow := 0) (fun z _ => by rw [phi2_apply]; positivity) (hν x₀).1.toLipschitzDerivsAnchored
+    trqSlowX_subset hA hx0X hε'I hϑ' le_rfl
     hrunF
   have hkT : T ≤ kε := by
     by_contra h

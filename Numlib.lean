@@ -10,6 +10,7 @@ import Numlib.Algebra.Polynomial.Taylor
 import Numlib.Analysis.Asymptotics.Pow
 import Numlib.Analysis.Calculus.AddTorsor.AffineMap
 import Numlib.Analysis.Calculus.AnchoredLipschitz
+import Numlib.Analysis.Calculus.AnchoredLipschitzDerivs
 import Numlib.Analysis.Calculus.ContDiffConstOffCompact
 import Numlib.Analysis.Calculus.ContDiffMapIcc
 import Numlib.Analysis.Calculus.ContDiffOnClosure
@@ -449,6 +450,7 @@ import Numlib.Data.Fin.Tuple.Sort
 import Numlib.Data.Finset.Card
 import Numlib.Data.List.Fold
 import Numlib.Data.Matrix.Mul
+import Numlib.Data.Set.Basic
 import Numlib.Data.Subtype
 import Numlib.Direct.ConditionEstimation
 import Numlib.Direct.CyclicReduction
@@ -705,8 +707,19 @@ import Numlib.Optimization.ModelBased.ARRun
 import Numlib.Optimization.ModelBased.ARpRun
 import Numlib.Optimization.ModelBased.ConvexConstrained
 import Numlib.Optimization.ModelBased.HighOrder.ARqp
+import Numlib.Optimization.ModelBased.HighOrder.ARqpComplexity
+import Numlib.Optimization.ModelBased.HighOrder.ARqpDetailedStep
+import Numlib.Optimization.ModelBased.HighOrder.DynamicAccuracy.ARqpDAStep
+import Numlib.Optimization.ModelBased.HighOrder.DynamicAccuracy.ARqpEDA
+import Numlib.Optimization.ModelBased.HighOrder.DynamicAccuracy.ARqpIDA
+import Numlib.Optimization.ModelBased.HighOrder.DynamicAccuracy.ARqpIDAExistence
+import Numlib.Optimization.ModelBased.HighOrder.DynamicAccuracy.Basic
+import Numlib.Optimization.ModelBased.HighOrder.DynamicAccuracy.TRqEDA
+import Numlib.Optimization.ModelBased.HighOrder.DynamicAccuracy.TRqIDA
 import Numlib.Optimization.ModelBased.HighOrder.MeasureTest
+import Numlib.Optimization.ModelBased.HighOrder.Orders
 import Numlib.Optimization.ModelBased.HighOrder.TRq
+import Numlib.Optimization.ModelBased.HighOrder.TRqComplexity
 import Numlib.Optimization.ModelBased.HighOrderModel
 import Numlib.Optimization.ModelBased.HighOrderStep
 import Numlib.Optimization.ModelBased.InexactRatio

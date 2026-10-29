@@ -251,8 +251,10 @@ theorem complexity_arqpSufficientDecrease {n : ℕ} {f : EuclideanSpace ℝ (Fin
             (hε j hj).1.le
         have hU : {e : EuclideanSpace ℝ (Fin n) | x k + s k + e ∈ (univ : Set _)} = univ := by
           ext; simp
-        have := arqp_decrease_local hf.on_univ (subset_univ _) hq hqp hθς hε (mem_univ _) hσ.1
-          hσ.2 hst hlt (by rw [hU]; exact hw) hfail (u := q ≤ 2)
+        have hTop := hf.on_univ.anchoredTop (subset_univ univ) hp
+        have := ARqpStep.taylorDecrement_ge hTop.toLipschitzDerivsAnchored hTop.one_le
+          subset_rfl hq hqp hθς hε (mem_univ _) hσ.1 hσ.2 hst hlt (by rw [hU]; exact hw)
+          hfail (u := q ≤ 2)
           ⟨hrad'.1, fun h' => hrad'.2 (not_le.1 h')⟩
         calc κ' * X ≤ arqpKappaDm P L p q * finMin 1 (fun j => ε j ^ arqpPi p q j) q :=
               mul_le_mul (min_le_left _ _) hXm hX0.le hκDm.le

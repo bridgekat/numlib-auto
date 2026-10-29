@@ -1,0 +1,20 @@
+[[node]]
+id = "LipschitzDerivsAnchored"
+source = "Cartis–Gould–Toint, Assumptions f.D1pL, f.D0pL (§§12.2, 13.1), f.D1qLaB.X (14.2.9)"
+
+[[node]]
+id = "LipschitzDerivsAnchored.of_lipschitzOn"
+
+[[node]]
+id = "LipschitzDerivsAnchored.of_contDiff"
+
+[[node]]
+id = "lipschitzDerivsAnchored_self_iff"
+
+[[node]]
+id = "LipschitzDerivsAnchored.norm_iteratedFDeriv_le"
+source = "Cartis–Gould–Toint, Theorem A.8.5"
+
+[[node]]
+id = "LipschitzDerivsAnchored.abs_sub_taylorDecrement_le"
+source = "Cartis–Gould–Toint, (A.19), (14.2.9)"

@@ -287,7 +287,7 @@ steps, `x_{k,i} + d ∈ X`) on `F` with threshold `ϑ`, whose first termination 
 least `e` (the call may be cut before INNER terminates, by any test of (14.3.32)); the successful
 iterations are those of the run, and the returned radii are the optimality radii
 `δ_e = min(Δ_e, ϑ)` of the run at the last iterate (at a termination, the radii certifying
-(14.3.19), `Chapter12.theorem_12_2_5_anchored`). -/
+(14.3.19), `Optimization.IsTRqRun.complexity`). -/
 def IsTRqSCCallOut (F : ℝⁿ → ℝ) (X : Set ℝⁿ) (q : ℕ) (P : Optimization.TRqParams) (ϑ : ℝ)
     (ε : ℕ → ℝ) (xi : ℕ → ℝⁿ) (e : ℕ) (succ : ℕ → Prop) (δo : ℕ → ℝ) : Prop :=
   ∃ (x s : ℕ → ℝⁿ) (Δ : ℕ → ℝ) (jk : ℕ → ℕ) (d : ℕ → ℕ → ℝⁿ) (kε : ℕ),
@@ -319,7 +319,8 @@ theorem trq_radius_ge {X₀ S : Set ℝⁿ} {L : ℕ → ℝ} {M : ℝ} {x s : �
           mul_le_mul (min_le_right _ _) hεm1 hεm0.le P.Δ₀_pos.le
       _ = P.Δ₀ := mul_one _
   · have hk : ∀ i ≤ k, ¬ Chapter12.trqStop F P q ε ϑ x Δ d i := fun i hi => hnot i (by omega)
-    obtain ⟨⟨hκ0, -⟩, -, hΔ⟩ := Chapter12.lemma_12_2_3_anchored hr hF hXX₀ hA hx0 hϑ0 hϑ1
+    obtain ⟨⟨hκ0, -⟩, -, hΔ⟩ := Optimization.IsTRqRun.radius_ge_of_anchored hr
+      hF.toLipschitzDerivsAnchored hXX₀ hA hx0 hϑ0 hϑ1
       (fun j hj => (hε j hj).1.le) hk
     have hgap : P.ς * Chapter12.finMin 1 ε q ≤
         Optimization.prefixMin (Chapter12.trqGapSeq F ϑ x Δ jk d) k :=
@@ -389,9 +390,12 @@ theorem IsTRqSCCallOut.contract {X₀ S : Set ℝⁿ} {L : ℕ → ℝ} {M : ℝ
     linarith
   · -- Lemma 12.2.4 with `κ_Δ ≥ κ_Δ(M)`
     have hk : ∀ l ≤ i, ¬ Chapter12.trqStop F P q ε ϑ x Δ d l := fun l hl => hnot l (by omega)
-    have hdec := (Chapter12.lemma_12_2_4_anchored hr hF hXX₀ hA hx0' hε hϑ hϑ1 hk).2
+    have hdec :=
+      (Optimization.IsTRqRun.taylorDecrement_ge_of_anchored hr hF.toLipschitzDerivsAnchored hXX₀ hA
+        hx0' hε hϑ hϑ1 hk).2
       ((hsucc i hi).1 hs)
-    obtain ⟨⟨hκ0, -⟩, -⟩ := Chapter12.lemma_12_2_3_anchored hr hF hXX₀ hA hx0' hϑ0 hϑ1
+    obtain ⟨⟨hκ0, -⟩, -⟩ := Optimization.IsTRqRun.radius_ge_of_anchored hr
+      hF.toLipschitzDerivsAnchored hXX₀ hA hx0' hϑ0 hϑ1
       (fun j hj => (hε j hj).1.le) (k := 0) (fun l hl => hnot l (by omega))
     have hκ := trqKappaDelta_ge hκ0 (hM _ (hA _ hx0' le_rfl)) hϑ0.le
     rw [hxi i hi.le, hxi (i + 1) hi]
@@ -597,8 +601,8 @@ variable {F : ℝⁿ → ℝ} {X : Set ℝⁿ} {q : ℕ} {P : Optimization.TRqPa
 uses `nF` evaluations of `F` and `nD` evaluations of its derivatives: a TRq-SC run
 (`Chapter12.algorithm_12_2_1_feasible`) from `x^S` terminating first at `k_ε` with `x_{k_ε} = y`,
 the returned radii `δ_j = min(Δ_{k_ε}, ϑ)` (which certify (14.3.19) at `y`,
-`Chapter12.theorem_12_2_5_anchored`), `nF = k_ε + 1` (`Optimization.funEvalCount`) and `nD` the
-number of successful iterations plus one (`Optimization.derivEvalCount`). -/
+`Optimization.IsTRqRun.complexity`), `nF = k_ε + 1` (`Optimization.funEvalCount`) and
+`nD` the number of successful iterations plus one (`Optimization.derivEvalCount`). -/
 def IsTRqSCOutputCost (F : ℝⁿ → ℝ) (X : Set ℝⁿ) (q : ℕ) (P : Optimization.TRqParams) (ϑ : ℝ)
     (ε : ℕ → ℝ) (xS y : ℝⁿ) (δ : ℕ → ℝ) (nF nD : ℕ) : Prop :=
   ∃ (x s : ℕ → ℝⁿ) (Δ : ℕ → ℝ) (jk : ℕ → ℕ) (d : ℕ → ℕ → ℝⁿ) (kε : ℕ),
@@ -637,7 +641,8 @@ theorem IsTRqSCOutputCost.cost_le {X₀ S : Set ℝⁿ} {L : ℕ → ℝ} {M : �
   obtain ⟨x, s, Δ, jk, d, kε, hr, hhit, hx0, -, -, hnF, hnD⟩ := h
   subst hx0 hnF hnD
   obtain ⟨kε', hhit', -, -, -, hF', hD'⟩ :=
-    Chapter12.theorem_12_2_5_anchored (flow := 0) hb hF hXX₀ hS hxS hε hϑ hϑ1 hr
+    Optimization.IsTRqRun.complexity
+      (flow := 0) hb hF.toLipschitzDerivsAnchored hXX₀ hS hxS hε hϑ hϑ1 hr
   rw [hhit'.unique hhit, sub_zero] at hF' hD'
   have hεm0 : 0 < Chapter12.finMin 1 ε q :=
     Chapter12.finMin_pos one_pos fun j hj => (hε j hj).1
@@ -663,7 +668,8 @@ theorem IsTRqSCOutputCost.cost_le {X₀ S : Set ℝⁿ} {L : ℕ → ℝ} {M : �
     rw [e1, e2]
     exact ⟨by linarith, by linarith⟩
   · -- `κ_Δ ≥ κ_Δ(M)` at `x₀`
-    obtain ⟨⟨hκ0, hκ1⟩, -⟩ := Chapter12.lemma_12_2_3_anchored hr hF hXX₀ hS hxS hϑ0 hϑ1
+    obtain ⟨⟨hκ0, hκ1⟩, -⟩ := Optimization.IsTRqRun.radius_ge_of_anchored hr
+      hF.toLipschitzDerivsAnchored hXX₀ hS hxS hϑ0 hϑ1
       (fun j hj => (hε j hj).1.le) (k := 0) (fun i hi => hhit.2 i (by omega))
     have hκ := trqKappaDelta_ge hκ0 (hM _ (hS _ hxS le_rfl)) hϑ0.le
     have hκ' := trqSCKappaDelta_pos (P := P) (L := L) (q := q) hϑ0 hM0
@@ -1243,9 +1249,9 @@ variable {f : ℝⁿ → ℝ} {c : ℝⁿ → ℝᵐ} {θ β : ℝ}
 open Classical in
 /-- **One INNER call of Phase 2 by TRq-SC exists** from every `(x, t)` with `x ∈ X` and
 `θε₀ ≤ ‖r(x, t)‖ ≤ ε₀`: TRq-SC on `μ(·, t)` with threshold `ϑ` and tolerances `β ‖r(x, t)‖ ε`
-(which terminates, `Chapter12.theorem_12_2_5_anchored`), stopped at its termination or as soon as
-`‖r(·, t)‖ < θε₀`, returning the radii `min(Δ_e, ϑ)`; its output satisfies (14.3.32) (the first
-or the third test). -/
+(which terminates, `Optimization.IsTRqRun.complexity`), stopped at its termination or as
+soon as `‖r(·, t)‖ < θε₀`, returning the radii `min(Δ_e, ϑ)`; its output satisfies (14.3.32) (the
+first or the third test). -/
 theorem exists_trqCallData {t : ℝ} {L : ℕ → ℝ} {X₀ : Set ℝⁿ}
     (hμ : Chapter12.AssumptionD1pLAnchored (Constrained.targetMerit f c t) X₀
       (muSublevel f c X t) q L) (hXX₀ : X ⊆ X₀) (P : Optimization.TRqParams) (hq : 1 ≤ q)
@@ -1289,8 +1295,9 @@ theorem exists_trqCallData {t : ℝ} {L : ℕ → ℝ} {X₀ : Set ℝⁿ}
     (fun j => β * ρ * ε j) hϑ0.le hx
   have hA : ∀ y ∈ X, F y ≤ F (xr 0) → y ∈ muSublevel f c X t := by rw [hx0]; exact hS
   have hxr0 : xr 0 ∈ X := hx0 ▸ hx
-  obtain ⟨kε, hhit, -, -, hcertε, -, -⟩ := Chapter12.theorem_12_2_5_anchored (flow := 0)
-    (fun y _ => by rw [hFdef]; exact Constrained.targetMerit_nonneg) hμ hXX₀ hA hxr0 hε' hϑ'
+  obtain ⟨kε, hhit, -, -, hcertε, -, -⟩ := Optimization.IsTRqRun.complexity
+    (flow := 0) (fun y _ => by rw [hFdef]; exact Constrained.targetMerit_nonneg)
+    hμ.toLipschitzDerivsAnchored hXX₀ hA hxr0 hε' hϑ'
     hϑ1 hr
   have hex : ∃ i, i = kε ∨ Constrained.targetResidual f c t (xr i) < θ * ε 0 :=
     ⟨kε, Or.inl rfl⟩
@@ -1299,7 +1306,7 @@ theorem exists_trqCallData {t : ℝ} {L : ℕ → ℝ} {X₀ : Set ℝⁿ}
   have hnot : ∀ i < e, ¬ Chapter12.trqStop F P q (fun j => β * ρ * ε j) ϑ xr Δ d i :=
     fun i hi => hhit.2 i (by omega)
   have hε'0 : ∀ j ∈ Finset.Icc 1 q, 0 ≤ β * ρ * ε j := fun j hj => (hε' j hj).1.le
-  have hsub := Chapter12.trq_mem_sublevel hr hxr0 hε'0 hϑ0.le e hnot
+  have hsub := Optimization.IsTRqRun.mem_sublevel hr hxr0 hε'0 hϑ0.le e hnot
   have hmono : ∀ i < e, F (xr (i + 1)) ≤ F (xr i) := fun i hi =>
     trq_step_le hr hε'0 hϑ0.le fun l hl => hnot l (by omega)
   have hres : Constrained.targetResidual f c t (xr e) ≤ ρ := by
@@ -1390,9 +1397,11 @@ theorem exists_isTPqpGCTRqSCRun (hX : IsClosed X) (hq : 1 ≤ q) {X₀ : Set ℝ
       have hA : ∀ z ∈ X, phi2 c z ≤ phi2 c (x 0) → z ∈ nuSublevel c X x₀ := fun z hz hzy => by
         rw [hx0] at hzy
         exact ⟨hz, (norm_le_of_phi2_le hzy).trans hy0⟩
-      obtain ⟨kε, hhit, hmem, hrad, hcert, -, -⟩ := Chapter12.theorem_12_2_5_anchored (flow := 0)
-        (fun z _ => by rw [phi2_apply]; positivity) (hν x₀).1 hc.subset hA hxr0 hε' hϑ' hϑ1 hr
-      have hsub := Chapter12.trq_mem_sublevel hr hxr0 (fun j hj => (hε' j hj).1.le) hϑ0.le kε
+      obtain ⟨kε, hhit, hmem, hrad, hcert, -, -⟩ := Optimization.IsTRqRun.complexity
+        (flow := 0) (fun z _ => by rw [phi2_apply]; positivity) (hν x₀).1.toLipschitzDerivsAnchored
+        hc.subset hA hxr0 hε' hϑ' hϑ1 hr
+      have hsub := Optimization.IsTRqRun.mem_sublevel hr hxr0
+        (fun j hj => (hε' j hj).1.le) hϑ0.le kε
         hhit.2
       refine ⟨(x kε, fun _ => min (Δ kε) ϑ, Optimization.funEvalCount kε,
         Optimization.derivEvalCount (fun k => P.η₁ ≤ Chapter12.trqRho (phi2 c) x s jk k) kε),
