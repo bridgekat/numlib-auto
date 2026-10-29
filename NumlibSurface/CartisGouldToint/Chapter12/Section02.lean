@@ -364,6 +364,17 @@ structure AssumptionD1pLAnchoredTop (f : E → ℝ) (C A : Set E) (p : ℕ) (L :
   /-- The jet bounds at the anchors. -/
   norm_le : ∀ j ∈ Finset.Icc 2 p, ∀ x ∈ A, ‖iteratedFDeriv ℝ j f x‖ ≤ L (j - 1)
 
+/-- f.D1pL anchored at the top order is the backbone assumption `LipschitzDerivsAnchored`
+(orders `[p, p]`) with `L_{f,p} ≥ 1` and the jet bounds at the anchors. -/
+theorem assumptionD1pLAnchoredTop_iff {C A : Set E} : AssumptionD1pLAnchoredTop f C A p L ↔
+    LipschitzDerivsAnchored f C A p p L ∧ 1 ≤ L p ∧
+      ∀ j ∈ Finset.Icc 2 p, ∀ x ∈ A, ‖iteratedFDeriv ℝ j f x‖ ≤ L (j - 1) := by
+  refine ⟨fun h => ⟨⟨h.isOpen, h.convex, h.subset, h.contDiffAt, fun j hj => ?_⟩, h.one_le,
+    h.norm_le⟩, fun ⟨h, h1, hn⟩ => ⟨h.isOpen, h.convex, h.subset, h.contDiffAt, h1,
+      h.lipschitzAnchored p (Finset.mem_Icc.2 ⟨le_rfl, le_rfl⟩), hn⟩⟩
+  obtain rfl : j = p := le_antisymm (Finset.mem_Icc.1 hj).2 (Finset.mem_Icc.1 hj).1
+  exact h.lipschitzAnchored
+
 /-- The anchored condition at every order gives it at the top order with the jet bounds. -/
 theorem AssumptionD1pLAnchored.toTop {C A : Set E} (h : AssumptionD1pLAnchored f C A p L)
     (hp : 1 ≤ p) : AssumptionD1pLAnchoredTop f C A p L :=

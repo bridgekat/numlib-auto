@@ -1,0 +1,65 @@
+namespace = "Optimization"
+
+[[node]]
+id = "arqpcStepBoundUnit"
+source = "Cartis–Gould–Toint, (14.1.31), first case"
+
+[[node]]
+id = "arqpcStepBound"
+source = "Cartis–Gould–Toint, (14.1.31), second case"
+
+[[node]]
+id = "arqpcKappaDmUnit"
+source = "Cartis–Gould–Toint, Lemma 14.1.9"
+
+[[node]]
+id = "arqpcKappaDm"
+source = "Cartis–Gould–Toint, Lemma 14.1.9"
+
+[[node]]
+id = "IsARqpRun.compositeTaylorDecrement_ge"
+source = "Cartis–Gould–Toint, Lemma 14.1.5"
+
+[[node]]
+id = "IsARqpRun.mem_compositeSublevel"
+source = "Cartis–Gould–Toint, the remark after (14.2.10)"
+
+[[node]]
+id = "IsARqpRun.sigma_le_of_compositeAnchored"
+source = "Cartis–Gould–Toint, Lemma 14.1.6"
+
+[[node]]
+id = "IsARqpRun.exists_composite_radius_ineq"
+source = "Cartis–Gould–Toint, Lemma 14.1.7"
+
+[[node]]
+id = "IsARqpRun.composite_norm_step_ge"
+source = "Cartis–Gould–Toint, Lemma 14.1.8"
+
+[[node]]
+id = "IsARqpRun.arqpKappaDelta_mul_le_radius_composite"
+source = "Cartis–Gould–Toint, Lemma 14.1.3 and the radius policy (14.1.28)"
+
+[[node]]
+id = "IsARqpRun.composite_decrease_unit"
+source = "Cartis–Gould–Toint, Lemma 14.1.9, (14.1.32)–(14.1.33)"
+
+[[node]]
+id = "IsARqpRun.composite_decrease"
+source = "Cartis–Gould–Toint, Lemma 14.1.9"
+
+[[node]]
+id = "IsARqpRun.exists_isEpsDeltaApproxComposite_of_stop₂"
+source = "Cartis–Gould–Toint, Lemma 14.1.4 (ii)"
+
+[[node]]
+id = "IsARqpRun.compositeModel_lt_of_convex"
+source = "Cartis–Gould–Toint, Lemma 14.1.4 (i)"
+
+[[node]]
+id = "IsARqpRun.complexity_composite"
+source = "Cartis–Gould–Toint, Theorem 14.1.10, part 2"
+
+[[node]]
+id = "IsARqpRun.complexity_composite_unit"
+source = "Cartis–Gould–Toint, Theorem 14.1.10, part 1"

@@ -163,3 +163,7 @@ source = "Cartis–Gould–Toint, Lemma 14.1.9 under f.D1pLaB.X"
 [[node]]
 id = "theorem_14_1_10_ii_anchored"
 source = "Cartis–Gould–Toint, Theorem 14.1.10 (2) under f.D1pLaB.X (remark after (14.2.10))"
+
+[[node]]
+id = "anchoredCompositeBounds_iff"
+source = "Cartis–Gould–Toint, f.D1pLaB.X, (14.2.9)–(14.2.10), for the data of ARqpC"

@@ -2,6 +2,7 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 import Numlib.Analysis.Calculus.MultivariateTaylor.LinearComp
 import Numlib.Analysis.Calculus.MultivariateTaylor.VectorRemainder
 import Numlib.Optimization.ModelBased.HighOrder.ARqp
+import Numlib.Optimization.ModelBased.HighOrder.ARqpCComplexity
 import Numlib.Optimization.ModelBased.HighOrderStep
 import Numlib.Optimization.Complexity.SlowExample.ARp
 import Numlib.Optimization.Optimality.CurveConditions
@@ -24,12 +25,20 @@ decrement and the measure `φ^δ_{w,j}(x)` (14.1.6) are the backbone
 `ftaylorSeries ℝ f x`, `ftaylorSeries ℝ c x`; the regularized model `m̂_k` (14.1.11) and its
 decrements (14.1.14) are `Optimization.compositeRegularizedModel` and
 `Optimization.compositeModelDecrement`. ARqpC is the backbone ARqp run
-`Optimization.IsARqpRun` with composite model data `Optimization.ARqpData.ofComposite`, whose
-Step 2 is the detailed Step 2 `Optimization.IsDetailedStepOutput`. A feasible set `X` (closed,
-`x₀ ∈ X`) is carried throughout: `X = univ` is ARqpC, a general `X` is ARqpC-SC of §14.2.
+`Optimization.IsARqpRun` with composite model data `Optimization.arqpcData`, whose Step 2 is the
+detailed Step 2 `Optimization.IsARqpCDetailedStep`
+(`Numlib.Optimization.ModelBased.HighOrder.ARqpC`). A feasible set `X` (closed, `x₀ ∈ X`) is
+carried throughout: `X = univ` is ARqpC, a general `X` is ARqpC-SC of §14.2. The analysis
+(Lemmas 14.1.3–14.1.9, Theorem 14.1.10) is the backbone
+`Numlib.Optimization.ModelBased.HighOrder.ARqpCComplexity`, stated in normed spaces under the
+top-order anchored conditions `LipschitzDerivsAnchored` on `f` and `c`; the results below are its
+instances, with the componentwise constants of c.D1pL giving the operator-norm constants
+`√m L_{c,j}` (`compositeLipschitzWp_eq`, `compositeLipschitzW_eq`) and the book's constants being
+those of the backbone (`kappaDeltaMin_eq`, `stepBound1_eq`, `stepBound2_eq`, `kappaDm1_eq`,
+`kappaDm2_eq`).
 
 Assumption f.D1pL is `Chapter12.AssumptionD1pL f p Lf` (constants `L_{f,j} ≥ 1`), and the
-maxima `L_f`, `L_c` of (14.1.3) are `Chapter12.finMax 1 Lf p` and `Chapter12.finMax 0 Lc p`.
+maxima `L_f`, `L_c` of (14.1.3) are `Optimization.finMax 1 Lf p` and `Optimization.finMax 0 Lc p`.
 
 ## Main definitions
 
@@ -50,7 +59,9 @@ maxima `L_f`, `L_c` of (14.1.3) are `Chapter12.finMax 1 Lf p` and `Chapter12.fin
   outputs of Algorithm 14.1.2;
 * anchored analysis (the book's remark after (14.2.10) that only f.D1pLaB.X is used):
   `AnchoredCompositeBounds` (top-order Lipschitz condition anchored on a set `A ⊆ X₀` and jet
-  bounds on `A`, implied by f.D1pL, c.D1pL via `AnchoredCompositeBounds.of_global`), and, with `A`
+  bounds on `A`, implied by f.D1pL, c.D1pL via `AnchoredCompositeBounds.of_global`; it is the
+  backbone `LipschitzDerivsAnchored` for `f` and `c` with jet bounds,
+  `anchoredCompositeBounds_iff`), and, with `A`
   the sublevel set `compositeSublevel f c h X x₀` (which contains every iterate,
   `algorithm_14_1_1.mem_compositeSublevel`), `lemma_14_1_6_anchored`,
   `sigma_le_arqpcSigmaMax_anchored`, `lemma_14_1_7_anchored`, `lemma_14_1_8_anchored`,
@@ -172,28 +183,41 @@ theorem AssumptionCD1pL.norm_iteratedFDeriv_le {c : ℝⁿ → ℝᵐ} {p : ℕ}
 /-- The constant `L_w = L_f + √m L_{h,0} L_c` of [cartis2022evaluation], (14.1.3), with
 `L_f = max_{j ∈ [1 : p]} L_{f,j}` and `L_c = max_{j ∈ [1 : p]} L_{c,j}`. -/
 noncomputable def compositeLipschitzW (Lf Lc : ℕ → ℝ) (Lh : ℝ) (p m : ℕ) : ℝ :=
-  Chapter12.finMax 1 Lf p + Real.sqrt m * Lh * Chapter12.finMax 0 Lc p
+  Optimization.finMax 1 Lf p + Real.sqrt m * Lh * Optimization.finMax 0 Lc p
 
 /-- The constant `L_{w,p} = L_{f,p} + √m L_{h,0} L_{c,p}` of [cartis2022evaluation], (14.1.27). -/
 noncomputable def compositeLipschitzWp (Lf Lc : ℕ → ℝ) (Lh : ℝ) (p m : ℕ) : ℝ :=
   Lf p + Real.sqrt m * Lh * Lc p
+
+/-- `L_{w,p} = L_{f,p} + L_{h,0} (√m L_{c,p})`: the constant of the backbone analysis
+(`Optimization.IsARqpRun.sigma_le_of_compositeAnchored`) with the operator-norm constant
+`√m L_{c,p}` of `∇^p c`. -/
+theorem compositeLipschitzWp_eq {Lf Lc : ℕ → ℝ} {Lh : ℝ} {p : ℕ} :
+    compositeLipschitzWp Lf Lc Lh p m = Lf p + Lh * (Real.sqrt m * Lc p) := by
+  unfold compositeLipschitzWp; ring
+
+/-- `L_w = L_f + L_{h,0} (√m L_c)`, the jet constant of the backbone analysis. -/
+theorem compositeLipschitzW_eq {Lf Lc : ℕ → ℝ} {Lh : ℝ} {p : ℕ} :
+    compositeLipschitzW Lf Lc Lh p m =
+      Optimization.finMax 1 Lf p + Lh * (Real.sqrt m * Optimization.finMax 0 Lc p) := by
+  unfold compositeLipschitzW; ring
 
 /-- `L_{w,p} ≤ L_w`. -/
 theorem compositeLipschitzWp_le {Lf Lc : ℕ → ℝ} {Lh : ℝ} {p : ℕ} (hp : 1 ≤ p) (hLh : 0 ≤ Lh) :
     compositeLipschitzWp Lf Lc Lh p m ≤ compositeLipschitzW Lf Lc Lh p m := by
   have hp' : p ∈ Finset.Icc 1 p := Finset.mem_Icc.2 ⟨hp, le_rfl⟩
   unfold compositeLipschitzWp compositeLipschitzW
-  have := Chapter12.le_finMax (b := 0) (u := Lc) hp'
+  have := Optimization.le_finMax (b := 0) (u := Lc) hp'
   gcongr
-  exact Chapter12.le_finMax hp'
+  exact Optimization.le_finMax hp'
 
 /-- `L_w ≥ 1` as soon as `L_{h,0} ≥ 0` (the maxima in (14.1.3) are taken with `1` and `0`). -/
 theorem one_le_compositeLipschitzW_of {Lf Lc : ℕ → ℝ} {Lh : ℝ} {p : ℕ} (hLh : 0 ≤ Lh) :
     1 ≤ compositeLipschitzW Lf Lc Lh p m := by
   unfold compositeLipschitzW
-  have h1 : (1 : ℝ) ≤ Chapter12.finMax 1 Lf p := Chapter12.le_finMax_left
-  have h2 : (0 : ℝ) ≤ Chapter12.finMax 0 Lc p := Chapter12.le_finMax_left
-  have : 0 ≤ Real.sqrt m * Lh * Chapter12.finMax 0 Lc p := by positivity
+  have h1 : (1 : ℝ) ≤ Optimization.finMax 1 Lf p := Optimization.le_finMax_left
+  have h2 : (0 : ℝ) ≤ Optimization.finMax 0 Lc p := Optimization.le_finMax_left
+  have : 0 ≤ Real.sqrt m * Lh * Optimization.finMax 0 Lc p := by positivity
   linarith
 
 /-! ### Anchored assumptions -/
@@ -282,16 +306,51 @@ theorem contDiffAt_c (hA : AnchoredCompositeBounds f c X₀ A p Lf Lc) {y : ℝ�
 
 /-- The jet bounds `‖∇^i f(x)‖ ≤ L_f`, `‖∇^i c(x)‖ ≤ √m L_c` (`i ∈ [2 : p]`) at anchors `x`. -/
 theorem jet_bounds (hA : AnchoredCompositeBounds f c X₀ A p Lf Lc) {x : ℝⁿ} (hx : x ∈ A) :
-    (∀ i ∈ Finset.Icc 2 p, ‖ftaylorSeries ℝ f x i‖ ≤ Chapter12.finMax 1 Lf p) ∧
-    (∀ i ∈ Finset.Icc 2 p, ‖ftaylorSeries ℝ c x i‖ ≤ Real.sqrt m * Chapter12.finMax 0 Lc p) := by
+    (∀ i ∈ Finset.Icc 2 p, ‖ftaylorSeries ℝ f x i‖ ≤ Optimization.finMax 1 Lf p) ∧
+    (∀ i ∈ Finset.Icc 2 p, ‖ftaylorSeries ℝ c x i‖ ≤ Real.sqrt m * Optimization.finMax 0 Lc p) := by
   refine ⟨fun i hi => ?_, fun i hi => ?_⟩
   · have hi' : i - 1 ∈ Finset.Icc 1 p := by
       have := Finset.mem_Icc.1 hi; exact Finset.mem_Icc.2 ⟨by omega, by omega⟩
-    exact (hA.norm_f i hi x hx).trans (Chapter12.le_finMax hi')
+    exact (hA.norm_f i hi x hx).trans (Optimization.le_finMax hi')
   · have hi' : i - 1 ∈ Finset.Icc 1 p := by
       have := Finset.mem_Icc.1 hi; exact Finset.mem_Icc.2 ⟨by omega, by omega⟩
     exact (hA.norm_c i hi x hx).trans
-      (mul_le_mul_of_nonneg_left (Chapter12.le_finMax hi') (Real.sqrt_nonneg _))
+      (mul_le_mul_of_nonneg_left (Optimization.le_finMax hi') (Real.sqrt_nonneg _))
+
+/-- The anchored condition on `f` in the form of the backbone assumption (orders `[p, p]`). -/
+theorem lipschitzDerivsAnchored_f (hA : AnchoredCompositeBounds f c X₀ A p Lf Lc) :
+    LipschitzDerivsAnchored f X₀ A p p Lf :=
+  ⟨hA.isOpen, hA.convex, hA.subset, fun _ hy => hA.contDiffAt_f hy, fun j hj => by
+    obtain rfl : j = p := le_antisymm (Finset.mem_Icc.1 hj).2 (Finset.mem_Icc.1 hj).1
+    exact hA.lipschitz_f⟩
+
+/-- The anchored condition on `c` in the form of the backbone assumption (orders `[p, p]`), with
+the operator-norm constants `√m L_{c,j}`. -/
+theorem lipschitzDerivsAnchored_c (hA : AnchoredCompositeBounds f c X₀ A p Lf Lc) :
+    LipschitzDerivsAnchored c X₀ A p p (fun j => Real.sqrt m * Lc j) :=
+  ⟨hA.isOpen, hA.convex, hA.subset, fun _ hy => hA.contDiffAt_c hy, fun j hj => by
+    obtain rfl : j = p := le_antisymm (Finset.mem_Icc.1 hj).2 (Finset.mem_Icc.1 hj).1
+    exact hA.lipschitz_c⟩
+
+theorem sqrt_mul_nonneg (hA : AnchoredCompositeBounds f c X₀ A p Lf Lc) :
+    0 ≤ Real.sqrt m * Lc p :=
+  mul_nonneg (Real.sqrt_nonneg _) hA.nonneg
+
+/-- `AnchoredCompositeBounds` is the backbone top-order anchored condition
+(`LipschitzDerivsAnchored`) on `f` and on `c` (with the operator-norm constants `√m L_{c,j}`),
+with `L_{f,p} ≥ 1`, `L_{c,p} ≥ 0`, and the jet bounds at the anchors. -/
+theorem _root_.CartisGouldToint.Chapter14.anchoredCompositeBounds_iff :
+    AnchoredCompositeBounds f c X₀ A p Lf Lc ↔
+      LipschitzDerivsAnchored f X₀ A p p Lf ∧
+      LipschitzDerivsAnchored c X₀ A p p (fun j => Real.sqrt m * Lc j) ∧ 1 ≤ Lf p ∧
+      0 ≤ Lc p ∧ (∀ i ∈ Finset.Icc 2 p, ∀ x ∈ A, ‖iteratedFDeriv ℝ i f x‖ ≤ Lf (i - 1)) ∧
+      ∀ i ∈ Finset.Icc 2 p, ∀ x ∈ A, ‖iteratedFDeriv ℝ i c x‖ ≤ Real.sqrt m * Lc (i - 1) := by
+  refine ⟨fun hA => ⟨hA.lipschitzDerivsAnchored_f, hA.lipschitzDerivsAnchored_c, hA.one_le,
+    hA.nonneg, hA.norm_f, hA.norm_c⟩, fun ⟨hf, hc, h1, h0, hnf, hnc⟩ => ?_⟩
+  have hpp : p ∈ Finset.Icc p p := Finset.mem_Icc.2 ⟨le_rfl, le_rfl⟩
+  exact ⟨hf.isOpen, hf.convex, hf.subset, fun y hy => (hf.contDiffAt y hy).contDiffWithinAt,
+    fun y hy => (hc.contDiffAt y hy).contDiffWithinAt, h1, h0, hf.lipschitzAnchored p hpp,
+    hc.lipschitzAnchored p hpp, hnf, hnc⟩
 
 end AnchoredCompositeBounds
 
@@ -446,19 +505,21 @@ nonconvex-case conclusions.) -/
 def halvingSet (h : ℝᵐ → ℝ) (X : Set ℝⁿ) : Set ℕ :=
   {j | 2 ≤ j ∨ ¬ (ConvexOn ℝ univ h ∧ Convex ℝ X)}
 
+/-- The orders `j ∈ [1 : q]` that are never halved: `j = 1`, with `h` and `X` convex. -/
+theorem not_mem_halvingSet {h : ℝᵐ → ℝ} {X : Set ℝⁿ} {q j : ℕ} (hj : j ∈ Finset.Icc 1 q)
+    (hjJ : j ∉ halvingSet h X) : j = 1 ∧ ConvexOn ℝ univ h ∧ Convex ℝ X := by
+  simp only [halvingSet, mem_ofPred_eq, not_or, not_le, not_not] at hjJ
+  exact ⟨by have := (Finset.mem_Icc.1 hj).1; omega, hjJ.2.1, hjJ.2.2⟩
+
 /-- **Algorithm 14.1.2** of [cartis2022evaluation] (detailed Step 2 of ARqpC) as an output
 predicate: `(s, δ_s)` is returned by some execution of Algorithm 14.1.2 for the model
 `m̂ = compositeRegularizedModel (ftaylorSeries ℝ f x) (ftaylorSeries ℝ c x) h p σ` over the
 feasible steps `{s | x + s ∈ X}` (displacements `{d | x + s + d ∈ X}`), with model decrements
 (14.1.14) and halving set `halvingSet h X`. It is the backbone transition system
 `Optimization.DetailedStepTrans`, whose `h = 0`, `J = {j ≥ 3}` instance is Algorithm 12.2.3. -/
-def algorithm_14_1_2 (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (h : ℝᵐ → ℝ) (X : Set ℝⁿ) (p q : ℕ)
+abbrev algorithm_14_1_2 (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (h : ℝᵐ → ℝ) (X : Set ℝⁿ) (p q : ℕ)
     (P : ARqpCParams) (ε : ℕ → ℝ) (σ : ℝ) (x s : ℝⁿ) (δs : ℕ → ℝ) : Prop :=
-  Optimization.IsDetailedStepOutput
-    (Optimization.compositeRegularizedModel (ftaylorSeries ℝ f x) (ftaylorSeries ℝ c x) h p σ)
-    {s | x + s ∈ X} (fun s => {d | x + s + d ∈ X})
-    (fun j s d => Optimization.compositeModelDecrement (ftaylorSeries ℝ f x)
-      (ftaylorSeries ℝ c x) h p σ j s d) q P.ς P.θ ε (halvingSet h X) s δs
+  Optimization.IsARqpCDetailedStep f c h X p q P.toARqpParams ε (halvingSet h X) σ x s δs
 
 /-- The termination test of ARqpC at iteration `k` (Step 1 or Step 2). -/
 abbrev arqpcStop (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (h : ℝᵐ → ℝ) (p q : ℕ) (P : ARqpCParams)
@@ -498,33 +559,17 @@ section Step
 
 variable {f : ℝⁿ → ℝ} {c : ℝⁿ → ℝᵐ} {h : ℝᵐ → ℝ} {p : ℕ} {Lf Lc : ℕ → ℝ} {Lh : ℝ}
 
-/-- The jet bounds `‖∇^i f(x)‖ ≤ L_f`, `‖∇^i c(x)‖ ≤ √m L_c` for `i ∈ [2 : p]` used by the model
-lemmas. -/
-private theorem jet_bounds
-    (hf : Chapter12.AssumptionD1pL f p Lf)
-    (hc : AssumptionCD1pL c p Lc) (x : ℝⁿ) :
-    (∀ i ∈ Finset.Icc 2 p, ‖ftaylorSeries ℝ f x i‖ ≤ Chapter12.finMax 1 Lf p) ∧
-    (∀ i ∈ Finset.Icc 2 p, ‖ftaylorSeries ℝ c x i‖ ≤ Real.sqrt m * Chapter12.finMax 0 Lc p) := by
-  refine ⟨fun i hi => ?_, fun i hi => ?_⟩
-  · have hi' : i - 1 ∈ Finset.Icc 1 p := by
-      have := Finset.mem_Icc.1 hi; exact Finset.mem_Icc.2 ⟨by omega, by omega⟩
-    exact (hf.norm_iteratedFDeriv_le hi x).trans (Chapter12.le_finMax hi')
-  · have hi' : i - 1 ∈ Finset.Icc 1 p := by
-      have := Finset.mem_Icc.1 hi; exact Finset.mem_Icc.2 ⟨by omega, by omega⟩
-    exact (hc.norm_iteratedFDeriv_le hi x).trans
-      (mul_le_mul_of_nonneg_left (Chapter12.le_finMax hi') (Real.sqrt_nonneg _))
-
 /-- `L_w ≥ 1` under f.D1pL, c.D1pL and h.L. -/
 theorem one_le_compositeLipschitzW
     (hf : Chapter12.AssumptionD1pL f p Lf)
     (hc : AssumptionCD1pL c p Lc) (hL : AssumptionHLip h Lh) (hp : 1 ≤ p) :
     1 ≤ compositeLipschitzW Lf Lc Lh p m := by
   have h1 : (1 : ℕ) ∈ Finset.Icc 1 p := Finset.mem_Icc.2 ⟨le_rfl, hp⟩
-  have hf1 := (hf.one_le 1 h1).trans (Chapter12.le_finMax (b := 1) (u := Lf) h1)
-  have hc1 := (hc.nonneg 1 h1).trans (Chapter12.le_finMax (b := 0) (u := Lc) h1)
+  have hf1 := (hf.one_le 1 h1).trans (Optimization.le_finMax (b := 1) (u := Lf) h1)
+  have hc1 := (hc.nonneg 1 h1).trans (Optimization.le_finMax (b := 0) (u := Lc) h1)
   have := hL.nonneg
   unfold compositeLipschitzW
-  have : 0 ≤ Real.sqrt m * Lh * Chapter12.finMax 0 Lc p := by positivity
+  have : 0 ≤ Real.sqrt m * Lh * Optimization.finMax 0 Lc p := by positivity
   linarith
 
 /-- **Lemma 14.1.2** of [cartis2022evaluation] at a point with given jet bounds: under h.L and
@@ -574,15 +619,15 @@ theorem lemma_14_1_2 (hf : Chapter12.AssumptionD1pL f p Lf)
       Optimization.compositeRegularizedModel (ftaylorSeries ℝ f x) (ftaylorSeries ℝ c x) h p σ s -
         Optimization.compositeRegularizedModel (ftaylorSeries ℝ f x) (ftaylorSeries ℝ c x) h p σ
           (s + d) := by
-  obtain ⟨hDf, hDc⟩ := jet_bounds hf hc x
   have hp : 1 ≤ p := (Finset.mem_Icc.1 hj).1.trans (Finset.mem_Icc.1 hj).2
+  obtain ⟨hDf, hDc⟩ := (AnchoredCompositeBounds.of_global hf hc hp univ).jet_bounds (mem_univ x)
   have h1 : (1 : ℕ) ∈ Finset.Icc 1 p := Finset.mem_Icc.2 ⟨le_rfl, hp⟩
-  have hLc0 : 0 ≤ Real.sqrt m * Chapter12.finMax 0 Lc p :=
-    mul_nonneg (Real.sqrt_nonneg _) Chapter12.le_finMax_left
-  have e : Chapter12.finMax 1 Lf p + Lh * (Real.sqrt m * Chapter12.finMax 0 Lc p) =
+  have hLc0 : 0 ≤ Real.sqrt m * Optimization.finMax 0 Lc p :=
+    mul_nonneg (Real.sqrt_nonneg _) Optimization.le_finMax_left
+  have e : Optimization.finMax 1 Lf p + Lh * (Real.sqrt m * Optimization.finMax 0 Lc p) =
       compositeLipschitzW Lf Lc Lh p m := by
     unfold compositeLipschitzW; ring
-  exact lemma_14_1_2_of_jet hL hS Chapter12.le_finMax_left hLc0 hDf hDc hσ hs hj hδ0
+  exact lemma_14_1_2_of_jet hL hS Optimization.le_finMax_left hLc0 hDf hDc hσ hs hj hδ0
     (by rwa [e]) hd hdec
 
 /-- **Lemma 14.1.3** of [cartis2022evaluation] at a point with given jet bounds: under h.L and
@@ -598,93 +643,9 @@ theorem lemma_14_1_3_of_jet (hL : AssumptionHLip h Lh) (hS : AssumptionHS0 h)
     (hDc : ∀ i ∈ Finset.Icc 2 p, ‖ftaylorSeries ℝ c x i‖ ≤ Kc) {σ : ℝ} (hσ : 0 < σ) :
     ∃ s δs, algorithm_14_1_2 f c h X p q P ε σ x s δs ∧ (∀ j ∉ halvingSet h X, δs j = 1) ∧
       (‖s‖ < 1 → ∀ j ∈ Finset.Icc 1 q, j ∈ halvingSet h X →
-        P.ς * P.θ / (8 * (3 * (Kf + Lh * Kc) + σ)) * ε j ≤ δs j) := by
-  set Df := ftaylorSeries ℝ f x
-  set Dc := ftaylorSeries ℝ c x
-  set mod := Optimization.compositeRegularizedModel Df Dc h p σ
-  set T : Set ℝⁿ := {s | x + s ∈ X}
-  have hLh := hL.nonneg
-  set K := 3 * (Kf + Lh * Kc) + σ
-  have hK : 3 ≤ K := by
-    have : 0 ≤ Lh * Kc := mul_nonneg hLh hKc
-    simp only [K]; linarith
-  have hp : 1 ≤ p := hq.trans hqp
-  have hTc : IsClosed T := hX.preimage (continuous_const.add continuous_id)
-  have hT0 : (0 : ℝⁿ) ∈ T := by simpa [T] using hx
-  obtain ⟨sstar, hsT, hmin⟩ := Optimization.exists_isMinOn_compositeRegularizedModel
-    (Df := Df) (Dc := Dc) (p := p) hL.hasLipschitzConst hσ hTc hT0
-  have hinf : sInf (mod '' T) = mod sstar :=
-    IsLeast.csInf_eq ⟨⟨sstar, hsT, rfl⟩, by rintro _ ⟨t, ht, rfl⟩; exact isMinOn_iff.1 hmin t ht⟩
-  rcases le_or_gt 1 ‖sstar‖ with hlong | hshort
-  · -- a long step: returned at once (Step 2.3)
-    refine ⟨sstar, fun _ => 1, ⟨1, ⟨one_pos, le_rfl⟩, Relation.ReflTransGen.single
-      (Optimization.DetailedStepTrans.ret hsT (by rw [hinf, one_mul]) hlong)⟩,
-      fun _ _ => rfl, fun h' => absurd h' (not_lt.2 hlong)⟩
-  · -- a short step: Lemma 12.2.9's argument (`Optimization.exists_isDetailedStepOutput`)
-    have hς := P.ς_pos
-    have hθ := P.θ_pos
-    set δbar : ℕ → ℝ := fun j => min 1 (P.ς * P.θ * ε j / (4 * K))
-    have hfeas : ∀ d ∈ {d | x + sstar + d ∈ X}, sstar + d ∈ T := fun d hd => by
-      simpa [T, add_assoc] using hd
-    have hSd : IsClosed {d : ℝⁿ | x + sstar + d ∈ X} :=
-      hX.preimage (continuous_const.add continuous_id)
-    have hSd0 : (0 : ℝⁿ) ∈ {d : ℝⁿ | x + sstar + d ∈ X} := by simpa [T] using hsT
-    obtain ⟨δs, hout, h1, h2⟩ := Optimization.exists_isDetailedStepOutput (m := mod) (T := T)
-      (Sd := fun s => {d | x + s + d ∈ X})
-      (ΔT := fun j s d => Optimization.compositeModelDecrement Df Dc h p σ j s d)
-      (J := halvingSet h X) (δbar := δbar) (ε := ε) (ς := P.ς) (θ := P.θ) hq hsT
-      (fun t ht => isMinOn_iff.1 hmin t ht) hfeas hSd0 hς P.ς_le_one hθ
-      (fun j hj => (hε j hj).1)
-      (fun j _ => by simp [Optimization.compositeModelDecrement_def])
-      (fun j _ δ hδ => by
-        obtain ⟨d, hd, heq⟩ := Optimization.exists_compositeTaylorMeasure_eq
-          (Df := ftaylorSeries ℝ (Optimization.regularizedModel Df p σ) sstar)
-          (Dc := ftaylorSeries ℝ (Dc.taylorSum p) sstar) (h := h) (j := j)
-          hL.hasLipschitzConst.continuous hSd hSd0 hδ.1.le
-        refine ⟨d, hd, fun d' hd' => ?_⟩
-        simp only [Optimization.compositeModelDecrement_def]
-        rw [heq]
-        exact Optimization.compositeTaylorDecrement_le_compositeTaylorMeasure
-          hL.hasLipschitzConst hd')
-      (fun j hj hjJ d hd => by
-        simp only [halvingSet, mem_ofPred_eq, not_or, not_le, not_not] at hjJ
-        obtain ⟨hj2, hconvh, hconvX⟩ := hjJ
-        have hj1 : j = 1 := by have := (Finset.mem_Icc.1 hj).1; omega
-        subst hj1
-        have hTconv : Convex ℝ T := hconvX.translate_preimage_right x
-        have hmloc : IsLocalMinOn (fun z => Optimization.regularizedModel Df p σ z +
-            h (Dc.taylorSum p z)) T sstar := hmin.isLocalMinOn
-        exact Optimization.compositeTaylorDecrement_one_nonpos_of_isLocalMinOn hTconv hsT
-          ((Optimization.contDiff_regularizedModel (D := Df) (p := p) (σ := σ)).differentiable
-            (by exact_mod_cast Nat.one_le_iff_ne_zero.1 hp) sstar)
-          ((Dc.contDiff_taylorSum p (n := 1)).differentiable one_ne_zero sstar)
-          hconvh hL.hasLipschitzConst hmloc (hfeas d hd.2))
-      (fun j hj _ => ⟨lt_min one_pos (by have := (hε j hj).1; positivity), min_le_left _ _⟩)
-      (fun j hj _ δ hδ d hd hdec => by
-        have hj' : j ∈ Finset.Icc 1 p := Finset.mem_Icc.2
-          ⟨(Finset.mem_Icc.1 hj).1, (Finset.mem_Icc.1 hj).2.trans hqp⟩
-        have := lemma_14_1_2_of_jet hL hS hKf hKc hDf hDc hσ.le hshort.le hj'
-          (α := P.ς * P.θ * ε j) hδ.1
-          (by
-            refine hδ.2.trans (min_le_min le_rfl (le_of_eq ?_))
-            simp only [K])
-          (mem_closedBall_zero_iff.1 hd.1) hdec
-        calc P.ς * P.θ * ε j * δ ^ j / (2 * j !) = P.ς * P.θ * ε j / 2 * δ ^ j / j ! := by
-              field_simp
-          _ ≤ _ := this)
-    refine ⟨sstar, δs, hout, h1, fun _ j hj hjJ => (le_of_eq ?_).trans (h2 j hj hjJ)⟩
-    have hε1 := hε j hj
-    have hsm : P.ς * P.θ * ε j / (4 * K) ≤ 1 := by
-      rw [div_le_one (by positivity)]
-      have : P.ς * P.θ * ε j ≤ 1 := by
-        have := P.ς_le_one; have := P.θ_lt_one.le
-        have := hε1.1.le
-        calc P.ς * P.θ * ε j ≤ 1 * 1 * 1 := by gcongr; exact hε1.2
-          _ = 1 := by ring
-      linarith
-    simp only [δbar, min_eq_right hsm]
-    field_simp
-    ring
+        P.ς * P.θ / (8 * (3 * (Kf + Lh * Kc) + σ)) * ε j ≤ δs j) :=
+  Optimization.exists_isARqpCDetailedStep hL hS.1 hS.2 P.toARqpParams hq hqp hε hX hx hKf hKc
+    hDf hDc hσ fun _ hj hjJ => not_mem_halvingSet hj hjJ
 
 /-- **Lemma 14.1.3** of [cartis2022evaluation] (existence of a step for ARqpC), **with the
 corrected index range**. Under f.D1pL, c.D1pL, h.L and h.S0, for a closed feasible set `X ∋ x`,
@@ -702,14 +663,15 @@ theorem lemma_14_1_3 (hf : Chapter12.AssumptionD1pL f p Lf)
     ∃ s δs, algorithm_14_1_2 f c h X p q P ε σ x s δs ∧ (∀ j ∉ halvingSet h X, δs j = 1) ∧
       (‖s‖ < 1 → ∀ j ∈ Finset.Icc 1 q, j ∈ halvingSet h X →
         P.ς * P.θ / (8 * (3 * compositeLipschitzW Lf Lc Lh p m + σ)) * ε j ≤ δs j) := by
-  obtain ⟨hDf, hDc⟩ := jet_bounds hf hc x
-  have hLc0 : 0 ≤ Real.sqrt m * Chapter12.finMax 0 Lc p :=
-    mul_nonneg (Real.sqrt_nonneg _) Chapter12.le_finMax_left
-  have e : Chapter12.finMax 1 Lf p + Lh * (Real.sqrt m * Chapter12.finMax 0 Lc p) =
+  obtain ⟨hDf, hDc⟩ :=
+    (AnchoredCompositeBounds.of_global hf hc (hq.trans hqp) univ).jet_bounds (mem_univ x)
+  have hLc0 : 0 ≤ Real.sqrt m * Optimization.finMax 0 Lc p :=
+    mul_nonneg (Real.sqrt_nonneg _) Optimization.le_finMax_left
+  have e : Optimization.finMax 1 Lf p + Lh * (Real.sqrt m * Optimization.finMax 0 Lc p) =
       compositeLipschitzW Lf Lc Lh p m := by
     unfold compositeLipschitzW; ring
   obtain ⟨s, δs, h1, h2, h3⟩ := lemma_14_1_3_of_jet hL hS P hq hqp hε hX hx
-    Chapter12.le_finMax_left hLc0 hDf hDc hσ
+    Optimization.le_finMax_left hLc0 hDf hDc hσ
   rw [e] at h3
   exact ⟨s, δs, h1, h2, h3⟩
 
@@ -719,44 +681,8 @@ theorem algorithm_14_1_2.exists_arqpStep (hL : AssumptionHLip h Lh) {X : Set ℝ
     (hX : IsClosed X) {P : ARqpCParams} {q : ℕ} {ε : ℕ → ℝ} {σ : ℝ} (hσ : 0 < σ) {x s : ℝⁿ}
     (hx : x ∈ X) {δs : ℕ → ℝ} (hout : algorithm_14_1_2 f c h X p q P ε σ x s δs) :
     ∃ dm : ℕ → ℝⁿ,
-      Optimization.ARqpStep X P.toARqpParams q ε (arqpcData f c h p x σ) x s δs dm := by
-  classical
-  obtain ⟨hsT, -, hrad, -, hbr⟩ := hout.spec
-  have hTc : IsClosed {s : ℝⁿ | x + s ∈ X} := hX.preimage (continuous_const.add continuous_id)
-  have hT0 : (0 : ℝⁿ) ∈ {s : ℝⁿ | x + s ∈ X} := by simpa using hx
-  obtain ⟨smin, -, hmin⟩ := Optimization.exists_isMinOn_compositeRegularizedModel
-    (Df := ftaylorSeries ℝ f x) (Dc := ftaylorSeries ℝ c x) (p := p) hL hσ hTc hT0
-  have hbdd : BddBelow (Optimization.compositeRegularizedModel (ftaylorSeries ℝ f x)
-      (ftaylorSeries ℝ c x) h p σ '' {s | x + s ∈ X}) :=
-    ⟨_, by rintro _ ⟨t, ht, rfl⟩; exact isMinOn_iff.1 hmin t ht⟩
-  have hdm : ∀ j, ∃ d : ℝⁿ, j ∈ Finset.Icc 1 q → ‖s‖ < 1 →
-      Optimization.IsApproxMeasureStep ((arqpcData f c h p x σ).modelDec j s) (δs j)
-          {e | x + s + e ∈ X} P.ς d ∧
-        (arqpcData f c h p x σ).modelDec j s d ≤ P.ς * P.θ * ε j * δs j ^ j / j ! := by
-    intro j
-    by_cases hj : j ∈ Finset.Icc 1 q
-    · rcases hbr with hlong | hshort
-      · exact ⟨0, fun _ h' => absurd hlong (not_le.2 h')⟩
-      · obtain ⟨d, hd, h1, h2⟩ := hshort j hj
-        exact ⟨d, fun _ _ => ⟨⟨hd, h1⟩, h2⟩⟩
-    · exact ⟨0, fun h' => absurd h' hj⟩
-  choose dm hdm using hdm
-  refine ⟨dm, ⟨hsT, hout.le_of_bddBelow hT0 hbdd, fun heq => hout.isMinOn_of_eq hbdd heq,
-    fun j _ => (hrad j).1, fun j _ => (hrad j).2, ?_⟩⟩
-  rcases le_or_gt 1 ‖s‖ with hlong | hshort
-  · exact Or.inl hlong
-  · exact Or.inr fun j hj => hdm j hj hshort
-
-/-- One ARqpC iteration's state in the existence proof: iterate, weight, Step-1 radii and
-displacements, and the Step-2 step, radii and model displacements. -/
-private structure ARqpCState (n : ℕ) where
-  x : EuclideanSpace ℝ (Fin n)
-  σ : ℝ
-  δ : ℕ → ℝ
-  d : ℕ → EuclideanSpace ℝ (Fin n)
-  s : EuclideanSpace ℝ (Fin n)
-  δs : ℕ → ℝ
-  dm : ℕ → EuclideanSpace ℝ (Fin n)
+      Optimization.ARqpStep X P.toARqpParams q ε (arqpcData f c h p x σ) x s δs dm :=
+  Optimization.IsARqpCDetailedStep.exists_arqpStep hL hX hσ hx hout
 
 /-- **Existence of ARqpC(-SC) runs without smoothness assumptions** ([cartis2022evaluation],
 Algorithms 14.1.1–14.1.2 are well defined for any data): under h.L and h.S0, for any `f`, `c`, a
@@ -770,104 +696,10 @@ theorem exists_isARqpCRun_of_hLip (hL : AssumptionHLip h Lh) (hS : AssumptionHS0
     (hx₀ : x₀ ∈ X) :
     ∃ (x s : ℕ → ℝⁿ) (σ : ℕ → ℝ) (δ δs : ℕ → ℕ → ℝ) (d dm : ℕ → ℕ → ℝⁿ), x 0 = x₀ ∧
       algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs d dm := by
-  classical
-  let M : ℝⁿ → ℝ → Optimization.ARqpData ℝⁿ := fun y σ => arqpcData f c h p y σ
-  -- Step-1 displacements
-  have hwit : ∀ (y : ℝⁿ) (δ : ℕ → ℝ), ∃ d : ℕ → ℝⁿ, ∀ j, y ∈ X → 0 ≤ δ j →
-      Optimization.IsApproxMeasureStep ((M y 1).dec j) (δ j) {e | y + e ∈ X} P.ς (d j) := by
-    intro y δ
-    have h' : ∀ j, ∃ dj : ℝⁿ, y ∈ X → 0 ≤ δ j →
-        Optimization.IsApproxMeasureStep ((M y 1).dec j) (δ j) {e | y + e ∈ X} P.ς dj := by
-      intro j
-      by_cases hy : y ∈ X
-      · by_cases hδ : 0 ≤ δ j
-        · obtain ⟨dj, hdj⟩ := Optimization.exists_isApproxMeasureStep
-            (hX.preimage (continuous_const.add continuous_id)) (by simpa using hy) hδ
-            (Optimization.continuous_compositeTaylorDecrement _ _ h j hL.continuous).continuousOn
-            (Optimization.compositeTaylorDecrement_zero_right _ _ h j) P.ς_le_one
-          exact ⟨dj, fun _ _ => hdj⟩
-        · exact ⟨0, fun _ h'' => absurd h'' hδ⟩
-      · exact ⟨0, fun h'' => absurd h'' hy⟩
-    choose d hd using h'
-    exact ⟨d, hd⟩
-  choose wit hwit using hwit
-  -- Step-2 steps (Lemma 14.1.3)
-  have hstp : ∀ (y : ℝⁿ) (σ : ℝ), ∃ t : ℝⁿ × (ℕ → ℝ) × (ℕ → ℝⁿ), y ∈ X → 0 < σ →
-      algorithm_14_1_2 f c h X p q P ε σ y t.1 t.2.1 ∧
-        Optimization.ARqpStep X P.toARqpParams q ε (M y σ) y t.1 t.2.1 t.2.2 := by
-    intro y σ
-    by_cases hy : y ∈ X
-    · by_cases hσ : 0 < σ
-      · have hDf : ∀ i ∈ Finset.Icc 2 p, ‖ftaylorSeries ℝ f y i‖ ≤
-            1 + ∑ l ∈ Finset.Icc 2 p, ‖ftaylorSeries ℝ f y l‖ := fun i hi =>
-          (Finset.single_le_sum (f := fun l => ‖ftaylorSeries ℝ f y l‖)
-            (fun _ _ => norm_nonneg _) hi).trans (le_add_of_nonneg_left zero_le_one)
-        have hDc : ∀ i ∈ Finset.Icc 2 p, ‖ftaylorSeries ℝ c y i‖ ≤
-            ∑ l ∈ Finset.Icc 2 p, ‖ftaylorSeries ℝ c y l‖ := fun i hi =>
-          Finset.single_le_sum (f := fun l => ‖ftaylorSeries ℝ c y l‖)
-            (fun _ _ => norm_nonneg _) hi
-        obtain ⟨s, δs, hout, -⟩ := lemma_14_1_3_of_jet hL hS P hq hqp hε hX hy
-          (le_add_of_nonneg_right (Finset.sum_nonneg fun _ _ => norm_nonneg _))
-          (Finset.sum_nonneg fun _ _ => norm_nonneg _) hDf hDc hσ
-        obtain ⟨dm, hdm⟩ := hout.exists_arqpStep hL hX hσ hy
-        exact ⟨(s, δs, dm), fun _ _ => ⟨hout, hdm⟩⟩
-      · exact ⟨(0, 0, 0), fun _ h' => absurd h' hσ⟩
-    · exact ⟨(0, 0, 0), fun h' => absurd h' hy⟩
-  choose stp hstp using hstp
-  let mk : ℝⁿ → ℝ → (ℕ → ℝ) → (ℕ → ℝⁿ) → ARqpCState n := fun y σ δ d =>
-    ⟨y, σ, δ, d, (stp y σ).1, (stp y σ).2.1, (stp y σ).2.2⟩
-  let Good : ARqpCState n → Prop := fun a =>
-    a.x ∈ X ∧ P.σmin ≤ a.σ ∧ 0 < a.σ ∧ (∀ j ∈ Finset.Icc 1 q, 0 < a.δ j ∧ a.δ j ≤ 1) ∧
-      (∀ j ∈ Finset.Icc 1 q, Optimization.IsApproxMeasureStep ((M a.x a.σ).dec j) (a.δ j)
-        {e | a.x + e ∈ X} P.ς (a.d j)) ∧
-      algorithm_14_1_2 f c h X p q P ε a.σ a.x a.s a.δs ∧
-      Optimization.ARqpStep X P.toARqpParams q ε (M a.x a.σ) a.x a.s a.δs a.dm
-  have hmk : ∀ y σ δ d, y ∈ X → P.σmin ≤ σ → 0 < σ →
-      (∀ j ∈ Finset.Icc 1 q, 0 < δ j ∧ δ j ≤ 1) →
-      (∀ j ∈ Finset.Icc 1 q, Optimization.IsApproxMeasureStep ((M y σ).dec j) (δ j)
-        {e | y + e ∈ X} P.ς (d j)) → Good (mk y σ δ d) :=
-    fun y σ δ d hy h1 h2 h3 h4 => ⟨hy, h1, h2, h3, h4, hstp y σ hy h2⟩
-  let stopS : ARqpCState n → Prop := fun a =>
-    Optimization.MeasureTestPasses (M a.x a.σ).dec q P.ς ε a.δ a.d ∨
-      (M a.x a.σ).model a.s = (M a.x a.σ).model 0
-  let ratio : ARqpCState n → ℝ := fun a =>
-    Optimization.reductionRatio (fun y => f y + h (c y)) a.x a.s ((M a.x a.σ).pred a.s)
-  let Trans : ARqpCState n → ARqpCState n → Prop := fun a b =>
-    Optimization.ARAcceptance P.toARParams (ratio a) a.x a.s b.x a.σ b.σ ∧
-      (P.η₁ ≤ ratio a → b.δ = a.δs) ∧ (¬ P.η₁ ≤ ratio a → b.δ = a.δ ∧ b.d = a.d)
-  have hnext : ∀ a, Good a → ∃ b, Good b ∧ Trans a b := by
-    rintro a ⟨hx, hmin, hpos, hδ, hw, -, hst⟩
-    obtain ⟨σ', hacc, hmin', hpos'⟩ :=
-      Optimization.exists_arAcceptance P.toARParams (ratio a) a.x a.s hmin
-    by_cases hρ : P.η₁ ≤ ratio a
-    · simp only [hρ, ↓reduceIte] at hacc
-      refine ⟨mk (a.x + a.s) σ' a.δs (wit (a.x + a.s) a.δs), hmk _ _ _ _ hst.mem hmin'
-        (hpos' hpos) (fun j hj => ⟨hst.radius_pos j hj, hst.radius_le_one j hj⟩)
-        (fun j hj => hwit _ _ j hst.mem (hst.radius_pos j hj).le), hacc, fun _ => rfl,
-        fun h' => absurd hρ h'⟩
-    · simp only [hρ, ↓reduceIte] at hacc
-      exact ⟨mk a.x σ' a.δ a.d, hmk _ _ _ _ hx hmin' (hpos' hpos) hδ hw, hacc,
-        fun h' => absurd h' hρ, fun _ => ⟨rfl, rfl⟩⟩
-  set a₀ := mk x₀ P.σ₀ δ₀ (wit x₀ δ₀) with ha₀
-  have hgood₀ : Good a₀ := hmk _ _ _ _ hx₀ P.σmin_le_σ₀ P.σ₀_pos hδ₀
-    (fun j hj => hwit _ _ j hx₀ (hδ₀ j hj).1.le)
-  obtain ⟨r, hr0, hr⟩ := Optimization.exists_run_of_forall_exists_of_invariant
-    (init := fun a => a = a₀) (inv := fun _ a => Good a) (stop := fun _ a => stopS a)
-    (step := fun _ a b => Trans a b ∧ Good b) ⟨a₀, rfl⟩ (fun a ha => ha ▸ hgood₀)
-    (fun _ a ha _ => by
-      obtain ⟨b, hb, hab⟩ := hnext a ha
-      exact ⟨b, hb, hab, hb⟩)
-  have hgood : ∀ k, (∀ i < k, ¬ stopS (r i)) → Good (r k) := by
-    intro k hk
-    cases k with
-    | zero => rw [hr0]; exact hgood₀
-    | succ k => exact (hr k fun j hj => hk j (Nat.lt_succ_of_le hj)).2.2
-  refine ⟨fun k => (r k).x, fun k => (r k).s, fun k => (r k).σ, fun k => (r k).δ,
-    fun k => (r k).δs, fun k => (r k).d, fun k => (r k).dm, by simp [hr0, ha₀, mk], ?_⟩
-  exact ⟨hq, hqp, hε, hδ₀, ⟨⟨by simp [hr0, ha₀, mk], fun k hk _ => (hgood k hk).2.2.2.2.2.2,
-    fun k hk => (hr k hk).2.1.1⟩, (hgood 0 fun _ h => absurd h (Nat.not_lt_zero _)).1,
-    by simp [hr0, ha₀, mk], fun k hk => (hgood k hk).2.2.2.2.1, fun k hk => (hr k hk).2.1.2⟩,
-    fun k hk _ => (hgood k hk).2.2.2.2.2.1⟩
+  obtain ⟨x, s, σ, δ, δs, d, dm, h0, hrun, hdet⟩ := Optimization.exists_isARqpRun_composite
+    (f := f) (c := c) (p := p) hL hS.1 hS.2 P.toARqpParams hq hqp hε hδ₀ hX hx₀
+    (J := halvingSet h X) fun _ hj hjJ => not_mem_halvingSet hj hjJ
+  exact ⟨x, s, σ, δ, δs, d, dm, h0, ⟨hq, hqp, hε, hδ₀, hrun, fun k hk _ => hdet k hk⟩⟩
 
 /-- **Existence of ARqpC(-SC) runs** ([cartis2022evaluation], Algorithms 14.1.1–14.1.2 are well
 defined): under f.D1pL, c.D1pL, h.L and h.S0, for a closed feasible set `X`, `x₀ ∈ X`,
@@ -938,23 +770,9 @@ theorem lemma_14_1_4_ii (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ 
         (ftaylorSeries ℝ c (x k)) h p (σ k) 0) :
     ∃ δ' : ℕ → ℝ, (∀ j ∈ Finset.Icc 1 q, 0 < δ' j ∧ δ' j ≤ 1) ∧
       Optimization.IsEpsDeltaApproxComposite (ftaylorSeries ℝ f (x k))
-        (ftaylorSeries ℝ c (x k)) h {e | x k + e ∈ X} q ε δ' := by
-  have hmin := (hr.run.step hk h1).isMinOn_of_eq heq
-  have hT0 : (0 : ℝⁿ) ∈ {e | x k + e ∈ X} := by simpa using hr.mem hk
-  have hσ : 0 ≤ σ k := (hr.run.toIsARRun.sigma_pos hk k le_rfl).le
-  have hex : ∀ j, ∃ δ' : ℝ, j ∈ Finset.Icc 1 q → 0 < δ' ∧ δ' ≤ 1 ∧
-      Optimization.compositeTaylorMeasure (ftaylorSeries ℝ f (x k)) (ftaylorSeries ℝ c (x k))
-        h j δ' {e | x k + e ∈ X} ≤ ε j * δ' ^ j / j ! := by
-    intro j
-    by_cases hj : j ∈ Finset.Icc 1 q
-    · obtain ⟨δ₁, h1, h2, h3⟩ :=
-        Optimization.exists_radius_of_isMinOn_compositeRegularizedModel_zero
-          hL.hasLipschitzConst hS.1 hS.2 hσ hT0 hmin
-          ((Finset.mem_Icc.1 hj).2.trans hr.q_le_p) (hr.ε_mem j hj).1
-      exact ⟨δ₁, fun _ => ⟨h1, h2, h3 δ₁ h1.le le_rfl⟩⟩
-    · exact ⟨1, fun h' => absurd h' hj⟩
-  choose δ' hδ' using hex
-  exact ⟨δ', fun j hj => ⟨(hδ' j hj).1, (hδ' j hj).2.1⟩, fun j hj => (hδ' j hj).2.2⟩
+        (ftaylorSeries ℝ c (x k)) h {e | x k + e ∈ X} q ε δ' :=
+  hr.run.exists_isEpsDeltaApproxComposite_of_stop₂ hL hS.1 hS.2 hr.q_le_p
+    (fun j hj => (hr.ε_mem j hj).1) hk h1 heq
 
 /-- **Lemma 14.1.4** of [cartis2022evaluation] (termination in Step 2 of ARqpC). For an ARqpC run
 with `f`, `c` of class `C^p`, h.L and h.S0:
@@ -980,30 +798,11 @@ theorem lemma_14_1_4 (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs
           (ftaylorSeries ℝ c (x k)) h p (σ k) 0 →
       ∃ δ' : ℕ → ℝ, (∀ j ∈ Finset.Icc 1 q, 0 < δ' j ∧ δ' j ≤ 1) ∧
         Optimization.IsEpsDeltaApproxComposite (ftaylorSeries ℝ f (x k))
-          (ftaylorSeries ℝ c (x k)) h {e | x k + e ∈ X} q ε δ') := by
-  have hp : 1 ≤ p := hr.one_le_q.trans hr.q_le_p
-  refine ⟨fun hq hconv hX k hk h1 => ?_, fun k hk h1 heq => ?_⟩
-  · have hstep := hr.run.step hk h1
-    refine lt_of_le_of_ne hstep.model_le fun heq => h1 ?_
-    have hmin := hstep.isMinOn_of_eq heq
-    -- `0` minimizes the model on the feasible displacements: the Step-1 test passes
-    intro j hj
-    have hj1 : j = 1 := by have := Finset.mem_Icc.1 hj; omega
-    subst hj1
-    have hw := hr.run.witness k hk 1 hj
-    have hδ := (hr.delta_mem hk 1 hj).1
-    have hε := (hr.ε_mem 1 hj).1
-    have hTconv : Convex ℝ {e | x k + e ∈ X} := hX.translate_preimage_right (x k)
-    have hT0 : (0 : ℝⁿ) ∈ {e | x k + e ∈ X} := by simpa using hr.mem hk
-    have hdec :=
-      Optimization.compositeTaylorDecrement_one_nonpos_of_isLocalMinOn_compositeRegularizedModel
-      hL.hasLipschitzConst hconv (hfC.contDiffAt.isSymm_ftaylorSeries le_rfl)
-      (hcC.contDiffAt.isSymm_ftaylorSeries le_rfl) hp hTconv hT0 hmin.isLocalMinOn hw.mem
-    change Optimization.compositeTaylorDecrement _ _ h 1 (d k 1) ≤ _
-    refine hdec.trans ?_
-    have := P.ς_pos
-    positivity
-  · exact lemma_14_1_4_ii hr hL hS hk h1 heq
+          (ftaylorSeries ℝ c (x k)) h {e | x k + e ∈ X} q ε δ') :=
+  ⟨fun hq hconv hX _ hk h1 => hr.run.compositeModel_lt_of_convex hL hconv hX
+    (fun _ _ => hfC.contDiffAt) (fun _ _ => hcC.contDiffAt) hq (hr.one_le_q.trans hr.q_le_p)
+    (fun j hj => (hr.ε_mem j hj).1) hr.δ₀_mem hk h1,
+    fun _ hk h1 heq => lemma_14_1_4_ii hr hL hS hk h1 heq⟩
 
 /-- **Lemma 14.1.5** of [cartis2022evaluation] (Taylor decrease for ARqpC). At every iteration
 `k` of an ARqpC run at which Step 2 is executed,
@@ -1017,44 +816,23 @@ theorem lemma_14_1_5 (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs
         h p (s k) ∧
     (¬ Optimization.arqpStop₂ (fun k => arqpcData f c h p (x k) (σ k)) s k →
       0 < Optimization.compositeTaylorDecrement (ftaylorSeries ℝ f (x k))
-        (ftaylorSeries ℝ c (x k)) h p (s k)) := by
-  have hstep := hr.run.step hk h1
-  refine ⟨Optimization.le_compositeTaylorDecrement_of_compositeRegularizedModel_le
-    hstep.model_le, fun h2 => ?_⟩
-  have hlt := Optimization.lt_compositeTaylorDecrement_of_compositeRegularizedModel_lt
-    (lt_of_le_of_ne hstep.model_le h2)
-  have hσ := hr.run.toIsARRun.sigma_pos hk k le_rfl
-  exact lt_of_le_of_lt (by positivity) hlt
+        (ftaylorSeries ℝ c (x k)) h p (s k)) :=
+  hr.run.compositeTaylorDecrement_ge hk h1
 
 /-- The objective `w = f + h ∘ c` does not increase along an ARqpC run (before termination). -/
 theorem algorithm_14_1_1.w_succ_le (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs d dm)
     {k : ℕ}
     (hk : ∀ i ≤ k, ¬ arqpcStop f c h p q P ε x s σ δ d i) :
-    f (x (k + 1)) + h (c (x (k + 1))) ≤ f (x k) + h (c (x k)) := by
-  by_cases hs : P.η₁ ≤ Optimization.arqpRatio (fun y => f y + h (c y))
-      (fun k => arqpcData f c h p (x k) (σ k)) x s k
-  · have hk' : ∀ i < k, ¬ arqpcStop f c h p q P ε x s σ δ d i := fun i hi => hk i hi.le
-    have hpos := (lemma_14_1_5 hr hk' (fun h' => hk k le_rfl (Or.inl h'))).2
-      (fun h' => hk k le_rfl (Or.inr h'))
-    have := (hr.run.toIsARRun.sub_ge_of_succ (w := fun y => f y + h (c y))
-      (pred := fun k => Optimization.compositeTaylorDecrement (ftaylorSeries ℝ f (x k))
-        (ftaylorSeries ℝ c (x k)) h p (s k)) hk rfl hpos hs).2
-    have := mul_pos P.η₁_pos hpos
-    linarith
-  · rw [hr.run.toIsARRun.eq_of_not_succ hk (not_le.1 hs)]
+    f (x (k + 1)) + h (c (x (k + 1))) ≤ f (x k) + h (c (x k)) :=
+  hr.run.composite_objective_succ_le hk
 
 /-- The iterates of an ARqpC run lie in the sublevel set `{y ∈ X | w(y) ≤ w(x₀)}` up to (and
 including) the first termination index. -/
 theorem algorithm_14_1_1.mem_compositeSublevel
     (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs d dm) {k : ℕ}
     (hk : ∀ i < k, ¬ arqpcStop f c h p q P ε x s σ δ d i) :
-    x k ∈ compositeSublevel f c h X (x 0) := by
-  refine ⟨hr.mem hk, ?_⟩
-  induction k with
-  | zero => exact le_rfl
-  | succ k ih =>
-    exact (hr.w_succ_le fun i hi => hk i (Nat.lt_succ_of_le hi)).trans
-      (ih fun i hi => hk i (hi.trans k.lt_succ_self))
+    x k ∈ compositeSublevel f c h X (x 0) :=
+  hr.run.mem_compositeSublevel hk
 
 /-- **Lemma 14.1.6** of [cartis2022evaluation] (upper bound on the regularization parameter for
 ARqpC). Under f.DpL (`f` is `C^p` with `L_{f,p}`-Lipschitz `∇^p f`), c.DpL (componentwise
@@ -1063,58 +841,18 @@ constant `L_{c,p}`) and h.L, every ARqpC run satisfies
 termination index, with `L_{w,p} = L_{f,p} + √m L_{h,0} L_{c,p}` (14.1.27). -/
 theorem lemma_14_1_6 (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs d dm)
     (hfC : ContDiff ℝ p f) (hLfp : IteratedFDerivLipschitzOn f p (Lf p) univ)
-    (hLf0 : 0 ≤ Lf p) (hcC : ContDiff ℝ p c)
-    (hLcp : ∀ i, IteratedFDerivLipschitzOn (fun y => c y i) p (Lc p) univ) (hLc0 : 0 ≤ Lc p)
+    (hcC : ContDiff ℝ p c)
+    (hLcp : ∀ i, IteratedFDerivLipschitzOn (fun y => c y i) p (Lc p) univ)
     (hL : AssumptionHLip h Lh) {K : ℕ} (hK : ∀ i < K, ¬ arqpcStop f c h p q P ε x s σ δ d i) :
     ∀ k ≤ K, σ k ≤ Optimization.arSigmaMax P.toARParams (compositeLipschitzWp Lf Lc Lh p m) := by
-  set Lw := compositeLipschitzWp Lf Lc Lh p m
-  have hLw : 0 ≤ Lw := by have := hL.nonneg; unfold Lw compositeLipschitzWp; positivity
-  have hη := P.one_sub_η₂_pos
-  have hLc : IteratedFDerivLipschitzOn c p (Real.sqrt m * Lc p) univ :=
-    iteratedFDerivLipschitzOn_of_forall_component (fun _ _ => hcC.contDiffAt) hLcp
-  have hforce : ∀ k, (∀ j ≤ k, ¬ arqpcStop f c h p q P ε x s σ δ d j) →
-      Lw / (1 - P.η₂) ≤ σ k →
-        P.η₂ ≤ Optimization.arqpRatio (fun y => f y + h (c y))
-          (fun k => arqpcData f c h p (x k) (σ k)) x s k := by
-    intro k hk hσk
-    have hk' : ∀ i < k, ¬ arqpcStop f c h p q P ε x s σ δ d i := fun i hi => hk i hi.le
-    have h1 : ¬ algorithm_14_1_1.Stop₁ f c h p q P ε x σ δ d k := fun h' => hk k le_rfl (Or.inl h')
-    have h2 : ¬ Optimization.arqpStop₂ (fun k => arqpcData f c h p (x k) (σ k)) s k :=
-      fun h' => hk k le_rfl (Or.inr h')
-    obtain ⟨hdec, hpos⟩ := lemma_14_1_5 hr hk' h1
-    have hpos := hpos h2
-    set pred := Optimization.compositeTaylorDecrement (ftaylorSeries ℝ f (x k))
-      (ftaylorSeries ℝ c (x k)) h p (s k)
-    have hrem := Optimization.abs_sub_compositeTaylor_le_of_lipschitz convex_univ
-      (fun _ _ => hfC.contDiffAt) (fun _ _ => hcC.contDiffAt) hLfp hLc
-      hL.hasLipschitzConst
-      (x := x k) (s := s k) (mem_univ _) (mem_univ _)
-    have hLw' : Lf p + Lh * (Real.sqrt m * Lc p) = Lw := by
-      unfold Lw compositeLipschitzWp; ring
-    rw [hLw'] at hrem
-    have hσL : Lw ≤ (1 - P.η₂) * σ k := by
-      rw [div_le_iff₀ hη] at hσk; linarith
-    have hfac : (0 : ℝ) < ((p + 1)! : ℝ) := by positivity
-    have hR : Lw / ((p + 1)! : ℝ) * ‖s k‖ ^ (p + 1) ≤ (1 - P.η₂) * pred := by
-      calc Lw / ((p + 1)! : ℝ) * ‖s k‖ ^ (p + 1)
-          ≤ (1 - P.η₂) * σ k / ((p + 1)! : ℝ) * ‖s k‖ ^ (p + 1) := by gcongr
-        _ = (1 - P.η₂) * (σ k / ((p + 1)! : ℝ) * ‖s k‖ ^ (p + 1)) := by ring
-        _ ≤ (1 - P.η₂) * pred := by gcongr
-    have hval : f (x k) + h (c (x k)) - pred =
-        taylorPolynomial f p (x k) (s k) + h ((ftaylorSeries ℝ c (x k)).taylorSum p (s k)) := by
-      have := algorithm_14_1_1.compositeTaylorDecrement_eq_sub (f := f) (c := c) (h := h)
-        (p := p) (x k) (s k)
-      linarith
-    have := Optimization.le_reductionRatio_of_abs_sub_le (f := fun y => f y + h (c y))
-      (x := x k) (s := s k) hpos (c := 1 - P.η₂) (by
-        rw [hval]
-        exact hrem.trans hR)
-    change P.η₂ ≤ Optimization.reductionRatio _ _ _ pred
-    linarith
-  intro k hkK
-  have := (hr.run.toIsARRun.sigma_le_max hforce hK k hkK).2.2
-  refine this.trans (le_of_eq ?_)
-  rw [Optimization.arSigmaMax_def, mul_div_assoc]
+  have hpp : ∀ j ∈ Finset.Icc p p, j = p := fun j hj =>
+    le_antisymm (Finset.mem_Icc.1 hj).2 (Finset.mem_Icc.1 hj).1
+  exact hr.run.sigma_le_of_compositeAnchored (A := univ)
+    (LipschitzDerivsAnchored.of_contDiff hfC (fun j hj => hpp j hj ▸ hLfp) univ)
+    (LipschitzDerivsAnchored.of_contDiff hcC (L := fun j => Real.sqrt m * Lc j) (fun j hj =>
+      hpp j hj ▸ iteratedFDerivLipschitzOn_of_forall_component (fun _ _ => hcC.contDiffAt) hLcp)
+      univ)
+    hL compositeLipschitzWp_eq.ge (subset_univ X) (fun _ _ _ => mem_univ _) hK
 
 /-- **Lemma 14.1.6** of [cartis2022evaluation] under the anchored assumptions
 (`AnchoredCompositeBounds` on the sublevel set of `w` at `x₀`, with an open convex `X₀ ⊇ X`):
@@ -1124,61 +862,12 @@ theorem lemma_14_1_6_anchored (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s 
     {X₀ : Set ℝⁿ} (hA : AnchoredCompositeBounds f c X₀ (compositeSublevel f c h X (x 0)) p Lf Lc)
     (hX : X ⊆ X₀) (hL : AssumptionHLip h Lh) {K : ℕ}
     (hK : ∀ i < K, ¬ arqpcStop f c h p q P ε x s σ δ d i) :
-    ∀ k ≤ K, σ k ≤ Optimization.arSigmaMax P.toARParams (compositeLipschitzWp Lf Lc Lh p m) := by
-  set Lw := compositeLipschitzWp Lf Lc Lh p m
-  have hLf0 : 0 ≤ Lf p := zero_le_one.trans hA.one_le
-  have hLc0 := hA.nonneg
-  have hLw : 0 ≤ Lw := by have := hL.nonneg; unfold Lw compositeLipschitzWp; positivity
-  have hη := P.one_sub_η₂_pos
-  have hforce : ∀ k, (∀ j ≤ k, ¬ arqpcStop f c h p q P ε x s σ δ d j) →
-      Lw / (1 - P.η₂) ≤ σ k →
-        P.η₂ ≤ Optimization.arqpRatio (fun y => f y + h (c y))
-          (fun k => arqpcData f c h p (x k) (σ k)) x s k := by
-    intro k hk hσk
-    have hk' : ∀ i < k, ¬ arqpcStop f c h p q P ε x s σ δ d i := fun i hi => hk i hi.le
-    have h1 : ¬ algorithm_14_1_1.Stop₁ f c h p q P ε x σ δ d k := fun h' => hk k le_rfl (Or.inl h')
-    have h2 : ¬ Optimization.arqpStop₂ (fun k => arqpcData f c h p (x k) (σ k)) s k :=
-      fun h' => hk k le_rfl (Or.inr h')
-    obtain ⟨hdec, hpos⟩ := lemma_14_1_5 hr hk' h1
-    have hpos := hpos h2
-    set pred := Optimization.compositeTaylorDecrement (ftaylorSeries ℝ f (x k))
-      (ftaylorSeries ℝ c (x k)) h p (s k)
-    have hxA := hr.mem_compositeSublevel hk'
-    have hxs : x k + s k ∈ X := (hr.run.step hk' h1).mem
-    have hrem := Optimization.abs_sub_compositeTaylor_le_of_lipschitzAnchored hA.convex
-      (fun _ hy => hA.contDiffAt_f hy) (fun _ hy => hA.contDiffAt_c hy)
-      (hA.lipschitz_f.lipschitzAt hxA)
-      (hA.lipschitz_c.lipschitzAt hxA) hL.hasLipschitzConst
-      (hA.subset hxA) (hX hxs)
-    have hLw' : Lf p + Lh * (Real.sqrt m * Lc p) = Lw := by
-      unfold Lw compositeLipschitzWp; ring
-    rw [hLw'] at hrem
-    have hσL : Lw ≤ (1 - P.η₂) * σ k := by
-      rw [div_le_iff₀ hη] at hσk; linarith
-    have hfac : (0 : ℝ) < ((p + 1)! : ℝ) := by positivity
-    have hR : Lw / ((p + 1)! : ℝ) * ‖s k‖ ^ (p + 1) ≤ (1 - P.η₂) * pred := by
-      calc Lw / ((p + 1)! : ℝ) * ‖s k‖ ^ (p + 1)
-          ≤ (1 - P.η₂) * σ k / ((p + 1)! : ℝ) * ‖s k‖ ^ (p + 1) := by gcongr
-        _ = (1 - P.η₂) * (σ k / ((p + 1)! : ℝ) * ‖s k‖ ^ (p + 1)) := by ring
-        _ ≤ (1 - P.η₂) * pred := by gcongr
-    have hval : f (x k) + h (c (x k)) - pred =
-        taylorPolynomial f p (x k) (s k) + h ((ftaylorSeries ℝ c (x k)).taylorSum p (s k)) := by
-      have := algorithm_14_1_1.compositeTaylorDecrement_eq_sub (f := f) (c := c) (h := h)
-        (p := p) (x k) (s k)
-      linarith
-    have := Optimization.le_reductionRatio_of_abs_sub_le (f := fun y => f y + h (c y))
-      (x := x k) (s := s k) hpos (c := 1 - P.η₂) (by
-        rw [hval]
-        exact hrem.trans hR)
-    change P.η₂ ≤ Optimization.reductionRatio _ _ _ pred
-    linarith
-  intro k hkK
-  have := (hr.run.toIsARRun.sigma_le_max hforce hK k hkK).2.2
-  refine this.trans (le_of_eq ?_)
-  rw [Optimization.arSigmaMax_def, mul_div_assoc]
+    ∀ k ≤ K, σ k ≤ Optimization.arSigmaMax P.toARParams (compositeLipschitzWp Lf Lc Lh p m) :=
+  hr.run.sigma_le_of_compositeAnchored hA.lipschitzDerivsAnchored_f hA.lipschitzDerivsAnchored_c hL
+    compositeLipschitzWp_eq.ge hX
+    (fun _ hy hw => ⟨hy, hw⟩) hK
 
 end Analysis
-
 
 /-! ### Lemmas 14.1.7 and 14.1.8 -/
 
@@ -1196,6 +885,11 @@ noncomputable abbrev arqpcSigmaMax (P : ARqpCParams) (Lf Lc : ℕ → ℝ) (Lh :
 noncomputable def kappaDeltaMin (P : ARqpCParams) (Lf Lc : ℕ → ℝ) (Lh : ℝ) (p m : ℕ) : ℝ :=
   P.ς * P.θ / (8 * (3 * compositeLipschitzW Lf Lc Lh p m + arqpcSigmaMax P Lf Lc Lh p m))
 
+/-- `κ_{δ,min}` is the backbone radius constant `κ_δ(σ_max)` of the composite constant `L_w`. -/
+theorem kappaDeltaMin_eq (P : ARqpCParams) (Lf Lc : ℕ → ℝ) (Lh : ℝ) (p m : ℕ) :
+    kappaDeltaMin P Lf Lc Lh p m = Optimization.arqpKappaDelta P.toARqpParams
+      (compositeLipschitzW Lf Lc Lh p m) (arqpcSigmaMax P Lf Lc Lh p m) := rfl
+
 /-- Lemma 14.1.6 under f.D1pL and c.D1pL: `σ_k ≤ σ_max` up to termination. -/
 theorem sigma_le_arqpcSigmaMax (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs d dm)
     (hf : Chapter12.AssumptionD1pL f p Lf)
@@ -1203,9 +897,8 @@ theorem sigma_le_arqpcSigmaMax (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s
     (hK : ∀ i < K, ¬ arqpcStop f c h p q P ε x s σ δ d i) :
     ∀ k ≤ K, σ k ≤ arqpcSigmaMax P Lf Lc Lh p m := by
   have hp' : p ∈ Finset.Icc 1 p := Finset.mem_Icc.2 ⟨hr.one_le_q.trans hr.q_le_p, le_rfl⟩
-  exact lemma_14_1_6 hr hf.contDiff (hf.lipschitz p hp') (zero_le_one.trans (hf.one_le p hp'))
-    hc.contDiff
-    (fun i => hc.lipschitz_component i p hp') (hc.nonneg p hp') hL hK
+  exact lemma_14_1_6 hr hf.contDiff (hf.lipschitz p hp') hc.contDiff
+    (fun i => hc.lipschitz_component i p hp') hL hK
 
 /-- Lemma 14.1.6 under the anchored assumptions: `σ_k ≤ σ_max` up to termination. -/
 theorem sigma_le_arqpcSigmaMax_anchored (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs d dm)
@@ -1214,86 +907,6 @@ theorem sigma_le_arqpcSigmaMax_anchored (hr : algorithm_14_1_1 f c h X p q P ε 
     (hK : ∀ i < K, ¬ arqpcStop f c h p q P ε x s σ δ d i) :
     ∀ k ≤ K, σ k ≤ arqpcSigmaMax P Lf Lc Lh p m :=
   lemma_14_1_6_anchored hr hA hX hL hK
-
-/-- **Lemma 14.1.7** of [cartis2022evaluation] (a useful inequality for ARqpC), **corrected**.
-Under f.D1pL, c.D1pL and h.L: if iteration `k` of an ARqpC run is successful, the
-run has not terminated up to `k`, the Step-1 test fails at `k + 1`, and the step is short
-(`‖s_k‖ < 1`, so that (14.1.13) holds), then for some `j ∈ [1 : q]`
-`(ς - θ) ε_j δ_{k+1,j}^j/j! < (L_{w,p} + σ_max) ∑_{ℓ=1}^j δ_{k+1,j}^ℓ/ℓ! ‖s_k‖^{p-ℓ+1} +
-2 √m L_{h,0} L_{c,p}/(p+1)! ‖s_k‖^{p+1}` (14.1.30). (The printed `(1 - θ)` presumes `ς = 1`, and
-the last term lacks the factor `2`.) -/
-private theorem lemma_14_1_7_of_short (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs d dm)
-    {X₀ : Set ℝⁿ} (hA : AnchoredCompositeBounds f c X₀ (compositeSublevel f c h X (x 0)) p Lf Lc)
-    (hX : X ⊆ X₀) (hL : AssumptionHLip h Lh) {k : ℕ}
-    (hk : ∀ i ≤ k, ¬ arqpcStop f c h p q P ε x s σ δ d i)
-    (hsucc : P.η₁ ≤ Optimization.arqpRatio (fun y => f y + h (c y))
-      (fun k => arqpcData f c h p (x k) (σ k)) x s k)
-    (h1 : ¬ algorithm_14_1_1.Stop₁ f c h p q P ε x σ δ d (k + 1)) (hshort : ‖s k‖ < 1) :
-    ∃ j ∈ Finset.Icc 1 q, (P.ς - P.θ) * ε j * δ (k + 1) j ^ j / j ! <
-      (compositeLipschitzWp Lf Lc Lh p m + arqpcSigmaMax P Lf Lc Lh p m) *
-        ∑ ℓ ∈ Finset.Icc 1 j, δ (k + 1) j ^ ℓ / ℓ ! * ‖s k‖ ^ (p - ℓ + 1) +
-      2 * Real.sqrt m * Lh * Lc p / ((p + 1)! : ℝ) * ‖s k‖ ^ (p + 1) := by
-  have hk' : ∀ i < k + 1, ¬ arqpcStop f c h p q P ε x s σ δ d i :=
-    fun i hi => hk i (Nat.lt_succ_iff.1 hi)
-  have hstep := hr.run.step (fun i hi => hk i hi.le) fun h' => hk k le_rfl (Or.inl h')
-  have hbr := hstep.branch.resolve_left (not_le.2 hshort)
-  have hrad := ((hr.run.radii k hk).1 hsucc)
-  have hx1 : x (k + 1) = x k + s k := hr.run.toIsARRun.eq_add_of_succ hk hsucc
-  -- the failed Step-1 test at `k + 1`
-  simp only [algorithm_14_1_1.Stop₁, Optimization.arqpStop₁, Optimization.MeasureTestPasses,
-    not_forall, not_le] at h1
-  obtain ⟨j, hj, hlt⟩ := h1
-  refine ⟨j, hj, ?_⟩
-  have hjp : j ≤ p := (Finset.mem_Icc.1 hj).2.trans hr.q_le_p
-  have hw := hr.run.witness (k + 1) hk' j hj
-  have hδ := (hr.delta_mem hk' j hj).1
-  have hmem : x (k + 1) ∈ X := hr.mem hk'
-  have hS0 : (0 : ℝⁿ) ∈ {e | x k + s k + e ∈ X} := by simpa [← hx1] using hmem
-  have hσ0 : 0 ≤ σ k := (hr.run.toIsARRun.sigma_pos hk' k k.le_succ).le
-  have hσmax := sigma_le_arqpcSigmaMax_anchored hr hA hX hL hk' k k.le_succ
-  -- the measure at `x_{k+1}` exceeds `ς ε δ^j/j!`
-  have h₁ : P.ς * ε j * δ (k + 1) j ^ j / (j ! : ℝ) - 0 <
-      Optimization.compositeTaylorMeasure (ftaylorSeries ℝ f (x k + s k))
-        (ftaylorSeries ℝ c (x k + s k)) h j (δ (k + 1) j) {e | x k + s k + e ∈ X} := by
-    rw [sub_zero]
-    have hdm : Optimization.compositeTaylorDecrement (ftaylorSeries ℝ f (x (k + 1)))
-        (ftaylorSeries ℝ c (x (k + 1))) h j (d (k + 1) j) ≤
-        Optimization.compositeTaylorMeasure (ftaylorSeries ℝ f (x (k + 1)))
-          (ftaylorSeries ℝ c (x (k + 1))) h j (δ (k + 1) j) {e | x (k + 1) + e ∈ X} :=
-      Optimization.compositeTaylorDecrement_le_compositeTaylorMeasure hL.hasLipschitzConst hw.1
-    change P.ς * ε j * δ (k + 1) j ^ j / (j ! : ℝ) <
-      Optimization.compositeTaylorDecrement (ftaylorSeries ℝ f (x (k + 1)))
-        (ftaylorSeries ℝ c (x (k + 1))) h j (d (k + 1) j) at hlt
-    rw [hx1] at hdm hlt
-    exact hlt.trans_le hdm
-  -- the model measure at `s_k` is at most `θ ε δ^j/j!`
-  have h₂ : Optimization.compositeTaylorMeasure
-      (ftaylorSeries ℝ (Optimization.regularizedModel (ftaylorSeries ℝ f (x k)) p (σ k)) (s k))
-      (ftaylorSeries ℝ ((ftaylorSeries ℝ c (x k)).taylorSum p) (s k)) h j (δ (k + 1) j)
-      {e | x k + s k + e ∈ X} ≤ P.θ * ε j * δ (k + 1) j ^ j / j ! := by
-    obtain ⟨happ, hsmall⟩ := hbr j hj
-    rw [hrad]
-    have hm := happ.2.trans hsmall
-    have hς := P.ς_pos
-    have : P.ς * Optimization.compositeTaylorMeasure
-        (ftaylorSeries ℝ (Optimization.regularizedModel (ftaylorSeries ℝ f (x k)) p (σ k)) (s k))
-        (ftaylorSeries ℝ ((ftaylorSeries ℝ c (x k)).taylorSum p) (s k)) h j (δs k j)
-        {e | x k + s k + e ∈ X} ≤ P.ς * (P.θ * ε j * δs k j ^ j / j !) := by
-      refine hm.trans (le_of_eq ?_)
-      ring
-    exact le_of_mul_le_mul_left this hς
-  have hxA := hr.mem_compositeSublevel (fun i hi => hk i hi.le)
-  have := Optimization.radius_inequality_of_compositeTaylorMeasure_gt_anchored hA.convex
-    (fun _ hy => hA.contDiffAt_f hy) (fun _ hy => hA.contDiffAt_c hy)
-    (hA.lipschitz_f.lipschitzAt hxA)
-    (hA.lipschitz_c.lipschitzAt hxA) hL.hasLipschitzConst
-    (zero_le_one.trans hA.one_le) (mul_nonneg (Real.sqrt_nonneg _) hA.nonneg) (hA.subset hxA)
-    (hX (hx1 ▸ hmem)) hσ0 hσmax hjp hS0 hδ.le h₁ h₂
-  have e1 : Lf p + Lh * (Real.sqrt m * Lc p) = compositeLipschitzWp Lf Lc Lh p m := by
-    unfold compositeLipschitzWp; ring
-  have e2 : 2 * Lh * (Real.sqrt m * Lc p) = 2 * Real.sqrt m * Lh * Lc p := by ring
-  rw [e1, e2, add_zero] at this
-  exact this
 
 /-- **Lemma 14.1.7** of [cartis2022evaluation] (a useful inequality for ARqpC), **corrected**,
 under the anchored assumptions (`AnchoredCompositeBounds` on the sublevel set of `w` at `x₀`,
@@ -1314,32 +927,11 @@ theorem lemma_14_1_7_anchored (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s 
       (compositeLipschitzWp Lf Lc Lh p m + arqpcSigmaMax P Lf Lc Lh p m) *
         ∑ ℓ ∈ Finset.Icc 1 j, δ (k + 1) j ^ ℓ / ℓ ! * ‖s k‖ ^ (p - ℓ + 1) +
       2 * Real.sqrt m * Lh * Lc p / ((p + 1)! : ℝ) * ‖s k‖ ^ (p + 1) := by
-  rcases lt_or_ge ‖s k‖ 1 with hshort | hlong
-  · exact lemma_14_1_7_of_short hr hA hX hL hk hsucc h1 hshort
-  have hk' : ∀ i < k + 1, ¬ arqpcStop f c h p q P ε x s σ δ d i :=
-    fun i hi => hk i (Nat.lt_succ_iff.1 hi)
-  have hj1 : (1 : ℕ) ∈ Finset.Icc 1 q := Finset.mem_Icc.2 ⟨le_rfl, hr.one_le_q⟩
-  refine ⟨1, hj1, ?_⟩
-  have hδ := (hr.delta_mem hk' 1 hj1).1
-  have hε := hr.ε_mem 1 hj1
-  have hLc0 := hA.nonneg
-  have hA1 : 1 ≤ compositeLipschitzWp Lf Lc Lh p m + arqpcSigmaMax P Lf Lc Lh p m := by
-    have := hA.one_le
-    have := hL.nonneg
-    have := Optimization.arSigmaMax_pos P.toARParams (compositeLipschitzWp Lf Lc Lh p m)
-    unfold compositeLipschitzWp
-    have : 0 ≤ Real.sqrt m * Lh * Lc p := by positivity
-    linarith
-  have hB : 0 ≤ 2 * Real.sqrt m * Lh * Lc p / ((p + 1)! : ℝ) * ‖s k‖ ^ (p + 1) := by
-    have := hL.nonneg
-    positivity
-  have hsp : 1 ≤ ‖s k‖ ^ (p - 1 + 1) := one_le_pow₀ hlong
-  have hlhs : (P.ς - P.θ) * ε 1 < 1 := by
-    have := P.ς_le_one; have := P.θ_pos
-    nlinarith [hε.1, hε.2]
-  simp only [Finset.Icc_self, Finset.sum_singleton, pow_one, Nat.factorial_one, Nat.cast_one,
-    div_one]
-  nlinarith [mul_le_mul_of_nonneg_left hsp hδ.le]
+  obtain ⟨j, hj, hlt⟩ := hr.run.exists_composite_radius_ineq hA.lipschitzDerivsAnchored_f
+    hA.lipschitzDerivsAnchored_c hL hA.one_le
+    hA.sqrt_mul_nonneg compositeLipschitzWp_eq.ge hX (fun _ hy hw => ⟨hy, hw⟩) hr.one_le_q
+    hr.q_le_p hr.ε_mem hr.δ₀_mem hk hsucc h1
+  exact ⟨j, hj, hlt.trans_eq (by ring)⟩
 
 /-- **Lemma 14.1.7** of [cartis2022evaluation] (a useful inequality for ARqpC), **corrected**.
 Under f.D1pL, c.D1pL and h.L: if iteration `k` of an ARqpC run is successful, the run has not
@@ -1364,7 +956,6 @@ theorem lemma_14_1_7 (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs
 
 end StepLength
 
-
 section StepLength2
 
 variable {f : ℝⁿ → ℝ} {c : ℝⁿ → ℝᵐ} {h : ℝᵐ → ℝ} {X : Set ℝⁿ} {p q : ℕ} {P : ARqpCParams}
@@ -1387,42 +978,15 @@ noncomputable def stepBound2 (P : ARqpCParams) (Lf Lc : ℕ → ℝ) (Lh : ℝ) 
     arqpcSigmaMax P Lf Lc Lh p m)) * kappaDeltaMin P Lf Lc Lh p m ^ j / 3) ^
       (1 / ((p : ℝ) - j + 1)) * εj ^ (((j : ℝ) + 1) / ((p : ℝ) + 1))
 
-/-- Positivity and size facts for the constants of Lemma 14.1.8. -/
-private theorem consts_facts (hθς : P.θ < P.ς) (hL : AssumptionHLip h Lh)
-    (hLfp : 1 ≤ Lf p) (hLcp : 0 ≤ Lc p) (hp : 1 ≤ p) {j : ℕ} :
-    0 < P.ς - P.θ ∧ P.ς - P.θ ≤ (j ! : ℝ) *
-      (compositeLipschitzWp Lf Lc Lh p m + arqpcSigmaMax P Lf Lc Lh p m) ∧
-    0 < compositeLipschitzWp Lf Lc Lh p m + arqpcSigmaMax P Lf Lc Lh p m ∧
-    0 ≤ 2 * Real.sqrt m * Lh * Lc p / ((p + 1)! : ℝ) ∧
-    2 * Real.sqrt m * Lh * Lc p / ((p + 1)! : ℝ) ≤
-      compositeLipschitzWp Lf Lc Lh p m + arqpcSigmaMax P Lf Lc Lh p m ∧
-    0 < kappaDeltaMin P Lf Lc Lh p m ∧ kappaDeltaMin P Lf Lc Lh p m ≤ 1 := by
-  have hLh := hL.nonneg
-  have hσ := Optimization.arSigmaMax_pos P.toARParams (compositeLipschitzWp Lf Lc Lh p m)
-  have hW := one_le_compositeLipschitzW_of (m := m) (Lf := Lf) (Lc := Lc) (p := p) hL.nonneg
-  have hB0 : 0 ≤ Real.sqrt m * Lh * Lc p := by positivity
-  have hWp : Lf p + Real.sqrt m * Lh * Lc p = compositeLipschitzWp Lf Lc Lh p m := rfl
-  have hfac2 : (2 : ℝ) ≤ ((p + 1)! : ℝ) := by
-    have : 2 ≤ (p + 1)! := by
-      calc 2 = (1 + 1)! := rfl
-        _ ≤ (p + 1)! := Nat.factorial_le (by omega)
-    exact_mod_cast this
-  have hjf : (1 : ℝ) ≤ (j ! : ℝ) := by
-    exact_mod_cast Nat.one_le_iff_ne_zero.2 (Nat.factorial_ne_zero j)
-  have hς1 := P.ς_le_one
-  have hθ := P.θ_pos
-  refine ⟨by linarith, ?_, by rw [← hWp]; positivity, by positivity, ?_, ?_, ?_⟩
-  · calc P.ς - P.θ ≤ 1 := by linarith
-      _ ≤ 1 * (compositeLipschitzWp Lf Lc Lh p m + arqpcSigmaMax P Lf Lc Lh p m) := by
-          rw [one_mul, ← hWp]; linarith
-      _ ≤ _ := by gcongr; rw [← hWp]; positivity
-  · rw [div_le_iff₀ (by positivity), ← hWp]
-    nlinarith
-  · unfold kappaDeltaMin; have := P.ς_pos; positivity
-  · unfold kappaDeltaMin
-    rw [div_le_one (by positivity)]
-    have : P.ς * P.θ ≤ 1 := by nlinarith [P.θ_lt_one]
-    linarith
+/-- The bounds of (14.1.31) are the backbone `Optimization.arqpcStepBoundUnit` and
+`Optimization.arqpcStepBound` of the constants `L_{w,p}`, `L_w`. -/
+theorem stepBound1_eq (P : ARqpCParams) (Lf Lc : ℕ → ℝ) (Lh : ℝ) (p m j : ℕ) (εj : ℝ) :
+    stepBound1 P Lf Lc Lh p m j εj = Optimization.arqpcStepBoundUnit P.toARqpParams
+      (compositeLipschitzWp Lf Lc Lh p m) p j εj := rfl
+
+theorem stepBound2_eq (P : ARqpCParams) (Lf Lc : ℕ → ℝ) (Lh : ℝ) (p m j : ℕ) (εj : ℝ) :
+    stepBound2 P Lf Lc Lh p m j εj = Optimization.arqpcStepBound P.toARqpParams
+      (compositeLipschitzWp Lf Lc Lh p m) (compositeLipschitzW Lf Lc Lh p m) p j εj := rfl
 
 /-- **Lemma 14.1.8** of [cartis2022evaluation] (lower bound on the step for ARqpC),
 **corrected**, under the anchored assumptions (`AnchoredCompositeBounds` on the sublevel set of
@@ -1447,64 +1011,11 @@ theorem lemma_14_1_8_anchored (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s 
     ∃ j ∈ Finset.Icc 1 q,
       (δ (k + 1) j = 1 → stepBound1 P Lf Lc Lh p m j (ε j) ≤ ‖s k‖) ∧
       (kappaDeltaMin P Lf Lc Lh p m * ε j ≤ δ (k + 1) j →
-        stepBound2 P Lf Lc Lh p m j (ε j) ≤ ‖s k‖) := by
-  have hp : 1 ≤ p := hr.one_le_q.trans hr.q_le_p
-  have hk' : ∀ i < k + 1, ¬ arqpcStop f c h p q P ε x s σ δ d i :=
-    fun i hi => hk i (Nat.lt_succ_iff.1 hi)
-  -- bounds below `1`
-  have hsmall : ∀ j ∈ Finset.Icc 1 q, stepBound1 P Lf Lc Lh p m j (ε j) ≤ 1 ∧
-      stepBound2 P Lf Lc Lh p m j (ε j) ≤ 1 := by
-    intro j hj
-    obtain ⟨ha, haA, hA, -, -, hκ, hκ1⟩ := consts_facts (j := j) hθς hL hA.one_le hA.nonneg hp
-    have hjp : j ≤ p := (Finset.mem_Icc.1 hj).2.trans hr.q_le_p
-    have hε := hr.ε_mem j hj
-    have hα : 0 ≤ (P.ς - P.θ) / ((j ! : ℝ) * (compositeLipschitzWp Lf Lc Lh p m +
-        arqpcSigmaMax P Lf Lc Lh p m)) := by positivity
-    have hα1 : (P.ς - P.θ) / ((j ! : ℝ) * (compositeLipschitzWp Lf Lc Lh p m +
-        arqpcSigmaMax P Lf Lc Lh p m)) ≤ 1 := by
-      rw [div_le_one (by positivity)]; exact haA
-    have he : 0 ≤ 1 / ((p : ℝ) - j + 1) := by
-      have : (j : ℝ) ≤ p := by exact_mod_cast hjp
-      exact div_nonneg zero_le_one (by linarith)
-    refine ⟨Real.rpow_le_one (by have := hε.1.le; positivity)
-      (by nlinarith [hε.2]) he, ?_⟩
-    have hb1 : ((P.ς - P.θ) / ((j ! : ℝ) * (compositeLipschitzWp Lf Lc Lh p m +
-        arqpcSigmaMax P Lf Lc Lh p m)) * kappaDeltaMin P Lf Lc Lh p m ^ j / 3) ^
-          (1 / ((p : ℝ) - j + 1)) ≤ 1 := by
-      have : kappaDeltaMin P Lf Lc Lh p m ^ j ≤ 1 := pow_le_one₀ hκ.le hκ1
-      exact Real.rpow_le_one (by positivity) (by nlinarith [pow_nonneg hκ.le j]) he
-    have hb2 : ε j ^ (((j : ℝ) + 1) / ((p : ℝ) + 1)) ≤ 1 :=
-      Real.rpow_le_one hε.1.le hε.2 (by positivity)
-    unfold stepBound2
-    calc _ ≤ 1 * 1 := mul_le_mul hb1 hb2 (Real.rpow_nonneg hε.1.le _) zero_le_one
-      _ = 1 := one_mul 1
-  rcases le_or_gt 1 ‖s k‖ with hlong | hshort
-  · have hj1 : (1 : ℕ) ∈ Finset.Icc 1 q := Finset.mem_Icc.2 ⟨le_rfl, hr.one_le_q⟩
-    exact ⟨1, hj1, fun _ => (hsmall 1 hj1).1.trans hlong,
-      fun _ => (hsmall 1 hj1).2.trans hlong⟩
-  · obtain ⟨j, hj, hlt⟩ := lemma_14_1_7_anchored hr hA hX hL hk hsucc h1
-    refine ⟨j, hj, ?_⟩
-    obtain ⟨ha, haA, hA, hB, hBA, hκ, hκ1⟩ := consts_facts (j := j) hθς hL hA.one_le hA.nonneg hp
-    have hjp : j ≤ p := (Finset.mem_Icc.1 hj).2.trans hr.q_le_p
-    have hε := hr.ε_mem j hj
-    have hδ := (hr.delta_mem hk' j hj).1
-    -- the step is nonzero: the predicted decrease is positive
-    have ht : 0 < ‖s k‖ := by
-      refine norm_pos_iff.2 fun h0 => ?_
-      have hpos := (lemma_14_1_5 hr (fun i hi => hk i hi.le)
-        (fun h' => hk k le_rfl (Or.inl h'))).2 (fun h' => hk k le_rfl (Or.inr h'))
-      rw [h0, Optimization.compositeTaylorDecrement_zero_right] at hpos
-      exact lt_irrefl _ hpos
-    have hineq : Optimization.MeasureIneq
-        (compositeLipschitzWp Lf Lc Lh p m + arqpcSigmaMax P Lf Lc Lh p m)
-        (2 * Real.sqrt m * Lh * Lc p / ((p + 1)! : ℝ)) (P.ς - P.θ) (ε j) (δ (k + 1) j) ‖s k‖
-        j p := by
-      rw [Optimization.measureIneq_iff]
-      exact hlt.le
-    obtain ⟨hc1, hc2⟩ := Optimization.norm_step_ge_of_measure_ineq hineq hA hB hBA ha haA hε.1
-      hε.2 ht hδ hjp
-    refine ⟨fun hδ1 => hc1 (by rw [hδ1]; exact hshort.le), fun hpol => ?_⟩
-    exact hc2 _ hκ hκ1 hpol
+        stepBound2 P Lf Lc Lh p m j (ε j) ≤ ‖s k‖) :=
+  hr.run.composite_norm_step_ge (Kw := compositeLipschitzW Lf Lc Lh p m)
+    hA.lipschitzDerivsAnchored_f hA.lipschitzDerivsAnchored_c hL hA.one_le
+    hA.sqrt_mul_nonneg compositeLipschitzWp_eq.ge (one_le_compositeLipschitzW_of hL.nonneg) hX
+    (fun _ hy hw => ⟨hy, hw⟩) hr.one_le_q hr.q_le_p hθς hr.ε_mem hr.δ₀_mem hk hsucc h1
 
 /-- **Lemma 14.1.8** of [cartis2022evaluation] (lower bound on the step for ARqpC),
 **corrected**. Under f.D1pL, c.D1pL and h.L with `θ < ς`, if iteration `k` of an ARqpC run is
@@ -1561,54 +1072,15 @@ theorem algorithm_14_1_1.kappaDeltaMin_mul_le_radius_anchored
     (hL : AssumptionHLip h Lh) (hS : AssumptionHS0 h) {k : ℕ}
     (hk : ∀ i < k, ¬ arqpcStop f c h p q P ε x s σ δ d i)
     (h1 : ¬ algorithm_14_1_1.Stop₁ f c h p q P ε x σ δ d k) :
-    ∀ j ∈ Finset.Icc 1 q, kappaDeltaMin P Lf Lc Lh p m * ε j ≤ δs k j := by
-  intro j hj
-  have hW := one_le_compositeLipschitzW_of (m := m) (Lf := Lf) (Lc := Lc) (p := p) hL.nonneg
-  obtain ⟨hDf, hDc⟩ := hA.jet_bounds (hr.mem_compositeSublevel hk)
-  have hLc0 : 0 ≤ Real.sqrt m * Chapter12.finMax 0 Lc p :=
-    mul_nonneg (Real.sqrt_nonneg _) Chapter12.le_finMax_left
-  have eW : Chapter12.finMax 1 Lf p + Lh * (Real.sqrt m * Chapter12.finMax 0 Lc p) =
-      compositeLipschitzW Lf Lc Lh p m := by
-    unfold compositeLipschitzW; ring
-  have hε := hr.ε_mem j hj
-  have hσ : 0 < σ k := hr.run.toIsARRun.sigma_pos hk k le_rfl
-  have hσmax := sigma_le_arqpcSigmaMax_anchored hr hA hX hL hk k le_rfl
-  have hς := P.ς_pos
-  have hθ := P.θ_pos
-  set K := 3 * compositeLipschitzW Lf Lc Lh p m + σ k
-  have hK : 3 ≤ K := by simp only [K]; linarith
-  have hκ1 : kappaDeltaMin P Lf Lc Lh p m * ε j ≤ P.ς * P.θ / (8 * K) * ε j := by
-    unfold kappaDeltaMin
-    gcongr
-    · exact hε.1.le
-    · simp only [K]; linarith
-  refine hκ1.trans ?_
-  by_cases hJ : j ∈ halvingSet h X
-  · set δbar : ℕ → ℝ := fun i => min 1 (P.ς * P.θ * ε i / (4 * K))
-    have hsm : P.ς * P.θ * ε j / (4 * K) ≤ 1 := by
-      have hςθ : P.ς * P.θ ≤ 1 := by nlinarith [P.ς_le_one, P.θ_lt_one]
-      rw [div_le_one (by positivity)]
-      nlinarith [hε.2, hε.1]
-    have hge := (hr.detailed k hk h1).radius_ge (δbar := δbar) hr.one_le_q
-      (fun i _ _ => min_le_left _ _)
-      (fun s' hs' hs'1 i _ hiq δ' hδ' d' hd' hdec => by
-        have hi' : i ∈ Finset.Icc 1 p := Finset.mem_Icc.2
-          ⟨(Finset.mem_Icc.1 hiq).1, (Finset.mem_Icc.1 hiq).2.trans hr.q_le_p⟩
-        have := lemma_14_1_2_of_jet hL hS Chapter12.le_finMax_left hLc0 hDf hDc hσ.le hs'1.le hi'
-          (α := P.ς * P.θ * ε i) hδ'.1 (by rw [eW]; exact hδ'.2.trans (min_le_min le_rfl le_rfl))
-          (mem_closedBall_zero_iff.1 hd'.1) hdec
-        calc P.ς * P.θ * ε i * δ' ^ i / (2 * i !) = P.ς * P.θ * ε i / 2 * δ' ^ i / i ! := by
-              field_simp
-          _ ≤ _ := this) j hJ hj
-    refine le_trans (le_of_eq ?_) hge
-    simp only [δbar, min_eq_right hsm]
-    field_simp
-    ring
-  · rw [hr.radius_eq_one hk h1 hJ]
-    have : P.ς * P.θ / (8 * K) ≤ 1 := by
-      rw [div_le_one (by positivity)]; nlinarith [P.ς_le_one, P.θ_lt_one]
-    nlinarith [hε.2, hε.1, div_nonneg (by positivity : (0 : ℝ) ≤ P.ς * P.θ)
-      (by positivity : (0 : ℝ) ≤ 8 * K)]
+    ∀ j ∈ Finset.Icc 1 q, kappaDeltaMin P Lf Lc Lh p m * ε j ≤ δs k j :=
+  hr.run.arqpKappaDelta_mul_le_radius_composite (Kf := Optimization.finMax 1 Lf p)
+    (Kc := Real.sqrt m * Optimization.finMax 0 Lc p) hA.lipschitzDerivsAnchored_f
+    hA.lipschitzDerivsAnchored_c hL hS.1 hS.2
+    compositeLipschitzWp_eq.ge (zero_le_one.trans Optimization.le_finMax_left)
+    (mul_nonneg (Real.sqrt_nonneg _) Optimization.le_finMax_left) compositeLipschitzW_eq.ge
+    (one_le_compositeLipschitzW_of hL.nonneg) (fun i hi _ hy => (hA.jet_bounds hy).1 i hi)
+    (fun i hi _ hy => (hA.jet_bounds hy).2 i hi) hX (fun _ hy hw => ⟨hy, hw⟩) hr.one_le_q
+    hr.q_le_p hr.ε_mem hk (hr.detailed k hk h1)
 
 /-- **The radii of Algorithm 14.1.2 are bounded below at every iteration reaching Step 2**
 ([cartis2022evaluation], Lemma 14.1.3): `δ_{s_k,j} ≥ κ_{δ,min} ε_j` for `j ∈ [1 : q]`, whatever
@@ -1638,7 +1110,6 @@ theorem algorithm_14_1_1.radius_policy
 
 end RadiusPolicy
 
-
 /-! ### Lemma 14.1.9 and Theorem 14.1.10 -/
 
 section Complexity
@@ -1661,13 +1132,15 @@ noncomputable def kappaDm2 (P : ARqpCParams) (Lf Lc : ℕ → ℝ) (Lh : ℝ) (p
     ((q ! : ℝ) * (compositeLipschitzWp Lf Lc Lh p m + arqpcSigmaMax P Lf Lc Lh p m)) *
       kappaDeltaMin P Lf Lc Lh p m ^ q / 3) ^ (((p : ℝ) + 1) / ((p : ℝ) - q + 1))
 
-/-- `(b^{1/e})^{p+1} = b^{(p+1)/e}`. -/
-private theorem rpow_pow_succ {b e : ℝ} (hb : 0 ≤ b) (p : ℕ) :
-    (b ^ (1 / e)) ^ (p + 1) = b ^ (((p : ℝ) + 1) / e) := by
-  rw [← Real.rpow_natCast, ← Real.rpow_mul hb]
-  congr 1
-  push_cast
-  ring
+/-- The constants of Lemma 14.1.9 are the backbone `Optimization.arqpcKappaDmUnit` and
+`Optimization.arqpcKappaDm` of the constants `L_{w,p}`, `L_w`. -/
+theorem kappaDm1_eq (P : ARqpCParams) (Lf Lc : ℕ → ℝ) (Lh : ℝ) (p m : ℕ) :
+    kappaDm1 P Lf Lc Lh p m = Optimization.arqpcKappaDmUnit P.toARqpParams
+      (compositeLipschitzWp Lf Lc Lh p m) p := rfl
+
+theorem kappaDm2_eq (P : ARqpCParams) (Lf Lc : ℕ → ℝ) (Lh : ℝ) (p q m : ℕ) :
+    kappaDm2 P Lf Lc Lh p q m = Optimization.arqpcKappaDm P.toARqpParams
+      (compositeLipschitzWp Lf Lc Lh p m) (compositeLipschitzW Lf Lc Lh p m) p q := rfl
 
 /-- **Lemma 14.1.9** of [cartis2022evaluation] (model and function decreases for ARqpC),
 **corrected**, under the anchored assumptions (`AnchoredCompositeBounds` on the sublevel set of `w`
@@ -1700,139 +1173,16 @@ theorem lemma_14_1_9_anchored (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s 
           Optimization.compositeTaylorDecrement (ftaylorSeries ℝ f (x k))
             (ftaylorSeries ℝ c (x k)) h p (s k) ∧
         P.η₁ * (kappaDm2 P Lf Lc Lh p q m * ε j ^ (j + 1)) ≤
-          (f (x k) + h (c (x k))) - (f (x (k + 1)) + h (c (x (k + 1))))) := by
-  have hp : 1 ≤ p := hr.one_le_q.trans hr.q_le_p
-  set pred := Optimization.compositeTaylorDecrement (ftaylorSeries ℝ f (x k))
-    (ftaylorSeries ℝ c (x k)) h p (s k)
-  have hk' : ∀ i < k, ¬ arqpcStop f c h p q P ε x s σ δ d i := fun i hi => hk i hi.le
-  obtain ⟨hpred5, hpos⟩ := lemma_14_1_5 hr hk' (fun h' => hk k le_rfl (Or.inl h'))
-  have hpos := hpos fun h' => hk k le_rfl (Or.inr h')
-  have hσmin : P.σmin ≤ σ k := hr.run.toIsARRun.sigmaMin_le hk' k le_rfl
-  have hfac : (0 : ℝ) < ((p + 1)! : ℝ) := by positivity
-  have hpred : P.σmin / ((p + 1)! : ℝ) * ‖s k‖ ^ (p + 1) ≤ pred :=
-    le_trans (by gcongr) hpred5
-  have hdecr : P.η₁ * pred ≤ (f (x k) + h (c (x k))) - (f (x (k + 1)) + h (c (x (k + 1)))) :=
-    (hr.run.toIsARRun.sub_ge_of_succ (w := fun y => f y + h (c y))
-      (pred := fun k => Optimization.compositeTaylorDecrement (ftaylorSeries ℝ f (x k))
-        (ftaylorSeries ℝ c (x k)) h p (s k)) hk rfl hpos hsucc).2
-  have hη := P.η₁_pos
-  have hσm := P.σmin_pos
-  have finish : ∀ v : ℝ, v ≤ pred →
-      v ≤ pred ∧ P.η₁ * v ≤ (f (x k) + h (c (x k))) - (f (x (k + 1)) + h (c (x (k + 1)))) :=
-    fun v hv => ⟨hv, (mul_le_mul_of_nonneg_left hv hη.le).trans hdecr⟩
-  obtain ⟨j₀, hj₀, hb1, hb2⟩ := lemma_14_1_8_anchored hr hθς hA hX hL hk hsucc h1
-  refine ⟨fun hq hδ1 => ?_, fun hpol => ?_⟩
-  · -- the case `q = 1`
-    have hj₀1 : j₀ = 1 := by have := Finset.mem_Icc.1 hj₀; omega
-    subst hj₀1
-    have hb := hb1 hδ1
-    obtain ⟨ha, -, hA, -⟩ := consts_facts (j := 1) hθς hL hA.one_le hA.nonneg hp
-    have hε := hr.ε_mem 1 hj₀
-    have hbase : 0 ≤ (P.ς - P.θ) / (((1 : ℕ)! : ℝ) * (compositeLipschitzWp Lf Lc Lh p m +
-        arqpcSigmaMax P Lf Lc Lh p m)) * ε 1 / 3 :=
-      div_nonneg (mul_nonneg (div_nonneg ha.le (mul_nonneg (by positivity) hA.le)) hε.1.le)
-        (by norm_num)
-    refine finish _ ((le_of_eq ?_).trans (le_trans (mul_le_mul_of_nonneg_left
-      (pow_le_pow_left₀ (Real.rpow_nonneg hbase _) hb (p + 1)) (by positivity)) hpred))
-    unfold kappaDm1
-    have hexp : (p : ℝ) - ((1 : ℕ) : ℝ) + 1 = p := by push_cast; ring
-    rw [hexp, rpow_pow_succ hbase, Nat.factorial_one, Nat.cast_one, one_mul,
-      show (P.ς - P.θ) / (compositeLipschitzWp Lf Lc Lh p m +
-        arqpcSigmaMax P Lf Lc Lh p m) * ε 1 / 3 = ((P.ς - P.θ) /
-        (compositeLipschitzWp Lf Lc Lh p m + arqpcSigmaMax P Lf Lc Lh p m) / 3) * ε 1 by ring,
-      Real.mul_rpow (by positivity) hε.1.le]
-    ring
-  · -- the general case
-    obtain ⟨ha1, -, hA1, -, -, hκ, hκ1⟩ := consts_facts (j := 1) hθς hL hA.one_le hA.nonneg hp
-    set A := compositeLipschitzWp Lf Lc Lh p m + arqpcSigmaMax P Lf Lc Lh p m
-    set κ := kappaDeltaMin P Lf Lc Lh p m
-    -- the base `B_q ≤ 1` of `kappaDm2`
-    have hq1 : (1 : ℝ) ≤ (q ! : ℝ) := by
-      exact_mod_cast Nat.one_le_iff_ne_zero.2 (Nat.factorial_ne_zero q)
-    have hBq0 : 0 < (P.ς - P.θ) / ((q ! : ℝ) * A) * κ ^ q / 3 := by positivity
-    have hqp : (q : ℝ) ≤ p := by exact_mod_cast hr.q_le_p
-    have hBq1 : (P.ς - P.θ) / ((q ! : ℝ) * A) * κ ^ q / 3 ≤ 1 := by
-      have h1' : (P.ς - P.θ) / ((q ! : ℝ) * A) ≤ 1 := by
-        rw [div_le_one (by positivity)]
-        have := (consts_facts (j := q) hθς hL hA.one_le hA.nonneg hp).2.1
-        exact this
-      have h2' : κ ^ q ≤ 1 := pow_le_one₀ hκ.le hκ1
-      have : 0 ≤ (P.ς - P.θ) / ((q ! : ℝ) * A) := by positivity
-      nlinarith [pow_nonneg hκ.le q]
-    have hKdm : kappaDm2 P Lf Lc Lh p q m ≤ P.σmin / ((p + 1)! : ℝ) := by
-      unfold kappaDm2
-      have : ((P.ς - P.θ) / ((q ! : ℝ) * A) * κ ^ q / 3) ^ (((p : ℝ) + 1) / ((p : ℝ) - q + 1))
-          ≤ 1 := Real.rpow_le_one hBq0.le hBq1 (div_nonneg (by positivity) (by linarith))
-      calc _ ≤ P.σmin / ((p + 1)! : ℝ) * 1 := by gcongr
-        _ = _ := mul_one _
-    rcases le_or_gt 1 ‖s k‖ with hlong | hshort
-    · -- a long step
-      have hj1 : (1 : ℕ) ∈ Finset.Icc 1 q := Finset.mem_Icc.2 ⟨le_rfl, hr.one_le_q⟩
-      refine ⟨1, hj1, finish _ (le_trans ?_ hpred)⟩
-      have hε := hr.ε_mem 1 hj1
-      have h1' : ε 1 ^ (1 + 1) ≤ 1 := pow_le_one₀ hε.1.le hε.2
-      have h2' : 1 ≤ ‖s k‖ ^ (p + 1) := one_le_pow₀ hlong
-      have h3' : 0 ≤ kappaDm2 P Lf Lc Lh p q m := by
-        unfold kappaDm2; exact mul_nonneg (by positivity) (Real.rpow_nonneg hBq0.le _)
-      calc kappaDm2 P Lf Lc Lh p q m * ε 1 ^ (1 + 1) ≤ kappaDm2 P Lf Lc Lh p q m * 1 :=
-            mul_le_mul_of_nonneg_left h1' h3'
-        _ ≤ P.σmin / ((p + 1)! : ℝ) * ‖s k‖ ^ (p + 1) := by nlinarith
-    · have hpol' := hpol.resolve_left (not_le.2 hshort)
-      have hb := hb2 (hpol' j₀ hj₀)
-      refine ⟨j₀, hj₀, finish _ (le_trans ?_ hpred)⟩
-      have hε := hr.ε_mem j₀ hj₀
-      obtain ⟨hj1, hjq⟩ := Finset.mem_Icc.1 hj₀
-      have hjq' : (j₀ : ℝ) ≤ q := by exact_mod_cast hjq
-      have hBj0 : 0 < (P.ς - P.θ) / ((j₀ ! : ℝ) * A) * κ ^ j₀ / 3 := by positivity
-      -- `B_q ≤ B_j`
-      have hBqj : (P.ς - P.θ) / ((q ! : ℝ) * A) * κ ^ q / 3 ≤
-          (P.ς - P.θ) / ((j₀ ! : ℝ) * A) * κ ^ j₀ / 3 := by
-        have hf : (j₀ ! : ℝ) ≤ (q ! : ℝ) := by exact_mod_cast Nat.factorial_le hjq
-        have hk' : κ ^ q ≤ κ ^ j₀ := pow_le_pow_of_le_one hκ.le hκ1 hjq
-        have hd : (P.ς - P.θ) / ((q ! : ℝ) * A) ≤ (P.ς - P.θ) / ((j₀ ! : ℝ) * A) :=
-          div_le_div_of_nonneg_left ha1.le (by positivity) (by gcongr)
-        have : 0 ≤ (P.ς - P.θ) / ((q ! : ℝ) * A) := by positivity
-        gcongr
-      have hBj1 : (P.ς - P.θ) / ((j₀ ! : ℝ) * A) * κ ^ j₀ / 3 ≤ 1 := by
-        have h1' : (P.ς - P.θ) / ((j₀ ! : ℝ) * A) ≤ 1 := by
-          rw [div_le_one (by positivity)]
-          exact (consts_facts (j := j₀) hθς hL hA.one_le hA.nonneg hp).2.1
-        have h2' : κ ^ j₀ ≤ 1 := pow_le_one₀ hκ.le hκ1
-        have : 0 ≤ (P.ς - P.θ) / ((j₀ ! : ℝ) * A) := by positivity
-        nlinarith [pow_nonneg hκ.le j₀]
-      have hej : 0 < (p : ℝ) - j₀ + 1 := by linarith
-      have heq : 0 < (p : ℝ) - q + 1 := by linarith
-      have hexp : ((p : ℝ) + 1) / ((p : ℝ) - j₀ + 1) ≤ ((p : ℝ) + 1) / ((p : ℝ) - q + 1) :=
-        div_le_div_of_nonneg_left (by positivity) heq (by linarith)
-      have hmono : ((P.ς - P.θ) / ((q ! : ℝ) * A) * κ ^ q / 3) ^
-            (((p : ℝ) + 1) / ((p : ℝ) - q + 1)) ≤
-          ((P.ς - P.θ) / ((j₀ ! : ℝ) * A) * κ ^ j₀ / 3) ^
-            (((p : ℝ) + 1) / ((p : ℝ) - j₀ + 1)) :=
-        (Real.rpow_le_rpow hBq0.le hBqj (by positivity)).trans
-          (Real.rpow_le_rpow_of_exponent_ge hBj0 hBj1 hexp)
-      have hsb : (stepBound2 P Lf Lc Lh p m j₀ (ε j₀)) ^ (p + 1) =
-          ((P.ς - P.θ) / ((j₀ ! : ℝ) * A) * κ ^ j₀ / 3) ^
-            (((p : ℝ) + 1) / ((p : ℝ) - j₀ + 1)) * ε j₀ ^ (j₀ + 1) := by
-        unfold stepBound2
-        rw [mul_pow, rpow_pow_succ hBj0.le, ← Real.rpow_natCast (ε j₀ ^ _),
-          ← Real.rpow_mul hε.1.le, ← Real.rpow_natCast (ε j₀) (j₀ + 1)]
-        congr 2
-        have : (p : ℝ) + 1 ≠ 0 := by positivity
-        push_cast
-        field_simp
-      have hsb0 : 0 ≤ stepBound2 P Lf Lc Lh p m j₀ (ε j₀) :=
-        mul_nonneg (Real.rpow_nonneg hBj0.le _) (Real.rpow_nonneg hε.1.le _)
-      have hpow := pow_le_pow_left₀ hsb0 hb (p + 1)
-      rw [hsb] at hpow
-      unfold kappaDm2
-      calc P.σmin / ((p + 1)! : ℝ) * ((P.ς - P.θ) / ((q ! : ℝ) * A) * κ ^ q / 3) ^
-            (((p : ℝ) + 1) / ((p : ℝ) - q + 1)) * ε j₀ ^ (j₀ + 1)
-          ≤ P.σmin / ((p + 1)! : ℝ) * (((P.ς - P.θ) / ((j₀ ! : ℝ) * A) * κ ^ j₀ / 3) ^
-            (((p : ℝ) + 1) / ((p : ℝ) - j₀ + 1)) * ε j₀ ^ (j₀ + 1)) := by
-            rw [mul_assoc]
-            exact mul_le_mul_of_nonneg_left (mul_le_mul_of_nonneg_right hmono
-              (pow_nonneg hε.1.le _)) (by positivity)
-        _ ≤ P.σmin / ((p + 1)! : ℝ) * ‖s k‖ ^ (p + 1) := by gcongr
+          (f (x k) + h (c (x k))) - (f (x (k + 1)) + h (c (x (k + 1))))) :=
+  ⟨fun hq hδ1 => hr.run.composite_decrease_unit hA.lipschitzDerivsAnchored_f
+    hA.lipschitzDerivsAnchored_c hL hA.one_le hA.sqrt_mul_nonneg
+    compositeLipschitzWp_eq.ge hX (fun _ hy hw => ⟨hy, hw⟩) hq hr.q_le_p hθς hr.ε_mem hr.δ₀_mem hk
+    hsucc h1 hδ1,
+    fun hpol => hr.run.composite_decrease (Kw := compositeLipschitzW Lf Lc Lh p m)
+    hA.lipschitzDerivsAnchored_f hA.lipschitzDerivsAnchored_c hL
+      hA.one_le hA.sqrt_mul_nonneg compositeLipschitzWp_eq.ge
+      (one_le_compositeLipschitzW_of hL.nonneg) hX (fun _ hy hw => ⟨hy, hw⟩) hr.one_le_q hr.q_le_p
+      hθς hr.ε_mem hr.δ₀_mem hk hsucc h1 hpol⟩
 
 /-- **Lemma 14.1.9** of [cartis2022evaluation] (model and function decreases for ARqpC),
 **corrected**. Under f.D1pL, c.D1pL and h.L with `θ < ς`, if iteration `k` of an ARqpC run is
@@ -1869,57 +1219,25 @@ theorem lemma_14_1_9 (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs
 
 end Complexity
 
-
 section Theorem
 
 variable {f : ℝⁿ → ℝ} {c : ℝⁿ → ℝᵐ} {h : ℝᵐ → ℝ} {X : Set ℝⁿ} {p q : ℕ} {P : ARqpCParams}
   {ε δ₀ : ℕ → ℝ} {x s : ℕ → ℝⁿ} {σ : ℕ → ℝ} {δ δs : ℕ → ℕ → ℝ} {d dm : ℕ → ℕ → ℝⁿ}
   {Lf Lc : ℕ → ℝ} {Lh : ℝ}
 
-/-- The radii policy `δ_{k,1} = 1` propagates along the run. -/
-private theorem delta_one_eq (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs d dm)
-    (hδ₀ : δ₀ 1 = 1)
-    (hpol : ∀ k, (∀ i < k, ¬ arqpcStop f c h p q P ε x s σ δ d i) →
-      ¬ algorithm_14_1_1.Stop₁ f c h p q P ε x σ δ d k → δs k 1 = 1) :
-    ∀ k, (∀ i < k, ¬ arqpcStop f c h p q P ε x s σ δ d i) → δ k 1 = 1 := by
-  intro k
-  induction k with
-  | zero => intro _; rw [hr.run.delta_zero, hδ₀]
-  | succ k ih =>
-    intro hk
-    have hk' : ∀ i ≤ k, ¬ arqpcStop f c h p q P ε x s σ δ d i :=
-      fun i hi => hk i (Nat.lt_succ_of_le hi)
-    obtain ⟨h1, h2⟩ := hr.run.radii k hk'
-    by_cases hs : P.η₁ ≤ Optimization.arqpRatio (fun y => f y + h (c y))
-        (fun k => arqpcData f c h p (x k) (σ k)) x s k
-    · rw [h1 hs]
-      exact hpol k (fun i hi => hk' i hi.le) fun h' => hk' k le_rfl (Or.inl h')
-    · rw [(h2 hs).1]
-      exact ih fun i hi => hk' i hi.le
-
-/-- The Step-1 termination certifies (14.1.9) with the current radii. -/
-private theorem isEpsDeltaApprox_of_stop₁
-    (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs d dm) {k : ℕ}
-    (hk : ∀ i < k, ¬ arqpcStop f c h p q P ε x s σ δ d i)
-    (h1 : algorithm_14_1_1.Stop₁ f c h p q P ε x σ δ d k) :
-    Optimization.IsEpsDeltaApproxComposite (ftaylorSeries ℝ f (x k)) (ftaylorSeries ℝ c (x k))
-      h {e | x k + e ∈ X} q ε (δ k) :=
-  Optimization.MeasureTestPasses.isEpsDeltaApproxComposite P.ς_pos
-    (fun j hj => hr.run.witness k hk j hj) h1
-
 /-- **Theorem 14.1.10, part 1** of [cartis2022evaluation] (`q = 1`, `h` convex; for ARqpC-SC also
-`X` convex). Under f.D1pL, c.D1pL, h.L, h.S0, w.Bb (on `X`) and `θ < ς`, if the initial
-radius is `δ_{0,1} = 1` (Algorithm 14.1.2 then keeps `δ_{s_k,1} = 1`, since it never halves the
-first-order radius when `h` and `X` are convex), the ARqpC run terminates at some
+`X` convex). Under f.D1pL, c.D1pL, h.L, w.Bb (on `X`) and `θ < ς` (h.S0 is not needed), if the
+initial radius is `δ_{0,1} = 1` (Algorithm 14.1.2 then keeps `δ_{s_k,1} = 1`, since it never
+halves the first-order radius when `h` and `X` are convex), the ARqpC run terminates at some
 `k_ε` with `φ^1_{w,1}(x_{k_ε}) ≤ ε_1`, using at most
 `κ_A (w(x₀) - w_low)/δ + κ_C` evaluations of `f` and `c` (14.1.34) and at most
 `(w(x₀) - w_low)/δ + 2` evaluations of their derivatives (14.1.35), where
-`δ = η₁ κ_{Δm} ε_1^{(p+1)/p}` (`κ_{Δm} = kappaDm1`, so that `1/(η₁ κ_{Δm}) = κ^{s,1}`),
-`κ_A = 1 + |log γ₁|/log γ₂` (`κ^{a,1} = κ^{s,1} κ_A`) and
+`δ = η₁ κ_{Δm} ε_1^{(p+1)/p}` (`κ_{Δm} = kappaDm1`, so that `1/(η₁ κ_{Δm}) = κ^{s,1}` with the
+book's `(1 - θ)` read as `(ς - θ)`), `κ_A = 1 + |log γ₁|/log γ₂` (`κ^{a,1} = κ^{s,1} κ_A`) and
 `κ_C = (|log γ₁| + log(σ_max/σ₀))/log γ₂ + 2`. This is `O(ε_1^{-(p+1)/p})`. -/
 theorem theorem_14_1_10_i (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs d dm)
     (hθς : P.θ < P.ς) (hf : Chapter12.AssumptionD1pL f p Lf)
-    (hc : AssumptionCD1pL c p Lc) (hL : AssumptionHLip h Lh) (hS : AssumptionHS0 h) {wlow : ℝ}
+    (hc : AssumptionCD1pL c p Lc) (hL : AssumptionHLip h Lh) {wlow : ℝ}
     (hw : AssumptionWBb f c h X wlow) (hq : q = 1) (hconv : ConvexOn ℝ univ h)
     (hXc : Convex ℝ X) (hδ₀ : δ₀ 1 = 1) :
     ∃ kε, Optimization.IsFirstHit (arqpcStop f c h p q P ε x s σ δ d) kε ∧
@@ -1935,45 +1253,13 @@ theorem theorem_14_1_10_i (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ �
           (fun y => f y + h (c y)) (fun k => arqpcData f c h p (x k) (σ k)) x s k) kε : ℝ) ≤
         (f (x 0) + h (c (x 0)) - wlow) /
           (P.η₁ * (kappaDm1 P Lf Lc Lh p m * ε 1 ^ (((p : ℝ) + 1) / p))) + 2 := by
-  have hp : 1 ≤ p := hr.one_le_q.trans hr.q_le_p
-  have hpol : ∀ k, (∀ i < k, ¬ arqpcStop f c h p q P ε x s σ δ d i) →
-      ¬ algorithm_14_1_1.Stop₁ f c h p q P ε x σ δ d k → δs k 1 = 1 := fun k hk h1 =>
-    hr.radius_eq_one hk h1 (by simp [halvingSet, hconv, hXc])
-  have hj1 : (1 : ℕ) ∈ Finset.Icc 1 q := Finset.mem_Icc.2 ⟨le_rfl, hr.one_le_q⟩
-  have hε := hr.ε_mem 1 hj1
-  obtain ⟨ha, -, hA, -⟩ := consts_facts (j := 1) hθς hL
-    (hf.one_le p (Finset.mem_Icc.2 ⟨hp, le_rfl⟩))
-    (hc.nonneg p (Finset.mem_Icc.2 ⟨hp, le_rfl⟩)) hp
-  have hκ : 0 < kappaDm1 P Lf Lc Lh p m := by
-    unfold kappaDm1
-    have := P.σmin_pos
-    exact mul_pos (by positivity) (Real.rpow_pos_of_pos
-      (div_pos (div_pos ha hA) (by norm_num)) _)
-  have hδ : 0 < P.η₁ * (kappaDm1 P Lf Lc Lh p m * ε 1 ^ (((p : ℝ) + 1) / p)) :=
-    mul_pos P.η₁_pos (mul_pos hκ (Real.rpow_pos_of_pos hε.1 _))
-  obtain ⟨kε, hhit, hF, hD⟩ := hr.run.toIsARRun.exists_isFirstHit_of_decrease
-    (σmax := arqpcSigmaMax P Lf Lc Lh p m)
-    (fun k hk => sigma_le_arqpcSigmaMax hr hf hc hL hk k le_rfl)
-    (V := fun k => f (x k) + h (c (x k))) (Vlow := wlow) hδ
-    (fun k hk => hr.w_succ_le hk) (fun k hk => hw _ (hr.mem hk))
-    (fun k hk hs => by
-      have hk' : ∀ i ≤ k, ¬ arqpcStop f c h p q P ε x s σ δ d i :=
-        fun i hi => hk i (hi.trans k.le_succ)
-      have h1 : ¬ algorithm_14_1_1.Stop₁ f c h p q P ε x σ δ d (k + 1) :=
-        fun h' => hk (k + 1) le_rfl (Or.inl h')
-      have hδ1 := delta_one_eq hr hδ₀ hpol (k + 1) fun i hi => hk i hi.le
-      exact ((lemma_14_1_9 hr hθς hf hc hL hk' hs h1).1 hq hδ1).2)
-  refine ⟨kε, hhit, ?_, hF, hD⟩
-  -- termination is in Step 1, with `δ_{k_ε,1} = 1`
-  have hbef := hhit.2
-  have h1 : algorithm_14_1_1.Stop₁ f c h p q P ε x σ δ d kε := by
-    rcases hhit.1 with h1 | h2
-    · exact h1
-    · by_contra hn
-      exact ne_of_lt ((lemma_14_1_4 hr hf.contDiff hc.contDiff hL hS).1 hq hconv hXc kε hbef hn) h2
-  have happ := isEpsDeltaApprox_of_stop₁ hr hbef h1 1 hj1
-  rw [delta_one_eq hr hδ₀ hpol kε hbef] at happ
-  simpa using happ
+  have hA := AnchoredCompositeBounds.of_global hf hc (hr.one_le_q.trans hr.q_le_p)
+    (compositeSublevel f c h X (x 0))
+  exact hr.run.complexity_composite_unit hA.lipschitzDerivsAnchored_f hA.lipschitzDerivsAnchored_c
+    hL hconv hXc hA.one_le hA.sqrt_mul_nonneg
+    compositeLipschitzWp_eq.ge (subset_univ X) (fun _ hy hw => ⟨hy, hw⟩) hq hr.q_le_p hθς
+    P.σmin_pos hr.ε_mem hr.δ₀_mem hδ₀
+    (fun k hk h1 => hr.radius_eq_one hk h1 (by simp [halvingSet, hconv, hXc])) hw
 
 /-- **Theorem 14.1.10, part 2** of [cartis2022evaluation] (`h` nonconvex or `q > 1`) under the
 anchored assumptions (`AnchoredCompositeBounds` on the sublevel set of `w` at `x₀`, with an open
@@ -2004,46 +1290,15 @@ theorem theorem_14_1_10_ii_anchored (hr : algorithm_14_1_1 f c h X p q P ε δ�
           Real.log P.γ₂ + 2) ∧
       (Optimization.derivEvalCount (fun k => P.η₁ ≤ Optimization.arqpRatio
           (fun y => f y + h (c y)) (fun k => arqpcData f c h p (x k) (σ k)) x s k) kε : ℝ) ≤
-        (f (x 0) + h (c (x 0)) - wlow) / (P.η₁ * (kappaDm2 P Lf Lc Lh p q m * mε)) + 2 := by
-  have hp : 1 ≤ p := hr.one_le_q.trans hr.q_le_p
-  have hpol := fun k hk h1 =>
-    Or.inr (a := 1 ≤ ‖s k‖) (hr.kappaDeltaMin_mul_le_radius_anchored hA hX hL hS (k := k) hk h1)
-  obtain ⟨ha, -, hApos, -, -, hκδ, hκδ1⟩ := consts_facts (j := 1) hθς hL hA.one_le hA.nonneg hp
-  have hBq0 : 0 < (P.ς - P.θ) / ((q ! : ℝ) * (compositeLipschitzWp Lf Lc Lh p m +
-      arqpcSigmaMax P Lf Lc Lh p m)) * kappaDeltaMin P Lf Lc Lh p m ^ q / 3 := by
-    have : 0 < (P.ς - P.θ) / ((q ! : ℝ) * (compositeLipschitzWp Lf Lc Lh p m +
-      arqpcSigmaMax P Lf Lc Lh p m)) := div_pos ha (by positivity)
-    positivity
-  have hκ : 0 < kappaDm2 P Lf Lc Lh p q m := by
-    unfold kappaDm2
-    have := P.σmin_pos
-    exact mul_pos (by positivity) (Real.rpow_pos_of_pos hBq0 _)
-  have hδ : 0 < P.η₁ * (kappaDm2 P Lf Lc Lh p q m * mε) :=
-    mul_pos P.η₁_pos (mul_pos hκ hmε0)
-  obtain ⟨kε, hhit, hF, hD⟩ := hr.run.toIsARRun.exists_isFirstHit_of_decrease
-    (σmax := arqpcSigmaMax P Lf Lc Lh p m)
-    (fun k hk => sigma_le_arqpcSigmaMax_anchored hr hA hX hL hk k le_rfl)
-    (V := fun k => f (x k) + h (c (x k))) (Vlow := wlow) hδ
-    (fun k hk => hr.w_succ_le hk) (fun k hk => hw _ (hr.mem hk))
-    (fun k hk hs => by
-      have hk' : ∀ i ≤ k, ¬ arqpcStop f c h p q P ε x s σ δ d i :=
-        fun i hi => hk i (hi.trans k.le_succ)
-      have h1 : ¬ algorithm_14_1_1.Stop₁ f c h p q P ε x σ δ d (k + 1) :=
-        fun h' => hk (k + 1) le_rfl (Or.inl h')
-      have hrad : δ (k + 1) = δs k := (hr.run.radii k hk').1 hs
-      have hpol' := hpol k (fun i hi => hk' i hi.le) fun h' => hk' k le_rfl (Or.inl h')
-      rw [← hrad] at hpol'
-      obtain ⟨j, hj, -, hdec⟩ := (lemma_14_1_9_anchored hr hθς hA hX hL hk' hs h1).2 hpol'
-      refine le_trans ?_ hdec
-      gcongr
-      · exact P.η₁_pos.le
-      · exact hmε j hj)
-  refine ⟨kε, hhit, ?_, hF, hD⟩
-  have hbef := hhit.2
-  rcases em (algorithm_14_1_1.Stop₁ f c h p q P ε x σ δ d kε) with h1 | h1
-  · exact ⟨δ kε, hr.delta_mem hbef, isEpsDeltaApprox_of_stop₁ hr hbef h1⟩
-  · have h2 := hhit.1.resolve_left h1
-    exact lemma_14_1_4_ii hr hL hS hbef h1 h2
+        (f (x 0) + h (c (x 0)) - wlow) / (P.η₁ * (kappaDm2 P Lf Lc Lh p q m * mε)) + 2 :=
+  hr.run.complexity_composite (Kf := Optimization.finMax 1 Lf p)
+    (Kc := Real.sqrt m * Optimization.finMax 0 Lc p) hA.lipschitzDerivsAnchored_f
+    hA.lipschitzDerivsAnchored_c hL hS.1 hS.2 hA.one_le
+    hA.sqrt_mul_nonneg compositeLipschitzWp_eq.ge (zero_le_one.trans Optimization.le_finMax_left)
+    (mul_nonneg (Real.sqrt_nonneg _) Optimization.le_finMax_left) compositeLipschitzW_eq.ge
+    (one_le_compositeLipschitzW_of hL.nonneg) (fun i hi _ hy => (hA.jet_bounds hy).1 i hi)
+    (fun i hi _ hy => (hA.jet_bounds hy).2 i hi) hX (fun _ hy hw => ⟨hy, hw⟩) hr.one_le_q
+    hr.q_le_p hθς P.σmin_pos hr.ε_mem hr.δ₀_mem (fun k hk h1 => hr.detailed k hk h1) hw hmε0 hmε
 
 /-- **Theorem 14.1.10, part 2** of [cartis2022evaluation] (`h` nonconvex or `q > 1`). Under
 f.D1pL, c.D1pL, h.L, h.S0, w.Bb (on `X`) and `θ < ς` (the radius policy (14.1.28) holds for
@@ -2089,41 +1344,9 @@ theorem algorithm_14_1_2_of_isMinOn {f : ℝⁿ → ℝ} {c : ℝⁿ → ℝᵐ}
     (hs : x + s ∈ X)
     (hmin : IsMinOn (Optimization.compositeRegularizedModel (ftaylorSeries ℝ f x)
       (ftaylorSeries ℝ c x) h p σ) {t | x + t ∈ X} s) :
-    algorithm_14_1_2 f c h X p 1 P ε σ x s (fun _ => 1) := by
-  set mod := Optimization.compositeRegularizedModel (ftaylorSeries ℝ f x) (ftaylorSeries ℝ c x) h
-    p σ
-  set T : Set ℝⁿ := {t | x + t ∈ X}
-  have hsT : s ∈ T := hs
-  have hinf : sInf (mod '' T) = mod s :=
-    IsLeast.csInf_eq ⟨⟨s, hsT, rfl⟩, by rintro _ ⟨t, ht, rfl⟩; exact isMinOn_iff.1 hmin t ht⟩
-  rcases le_or_gt 1 ‖s‖ with hlong | hshort
-  · exact ⟨1, ⟨one_pos, le_rfl⟩, Relation.ReflTransGen.single
-      (Optimization.DetailedStepTrans.ret hsT (by rw [hinf, one_mul]) hlong)⟩
-  set D : Set ℝⁿ := closedBall (0 : ℝⁿ) 1 ∩ {d | x + s + d ∈ X}
-  have hnp : ∀ d ∈ D, Optimization.compositeModelDecrement (ftaylorSeries ℝ f x)
-      (ftaylorSeries ℝ c x) h p σ 1 s d ≤ 0 := fun d hd =>
-    Optimization.compositeTaylorDecrement_one_nonpos_of_isLocalMinOn
-      (hX.translate_preimage_right x) hsT
-      ((Optimization.contDiff_regularizedModel (D := ftaylorSeries ℝ f x) (p := p)
-        (σ := σ)).differentiable (by exact_mod_cast Nat.one_le_iff_ne_zero.1 hp) s)
-      (((ftaylorSeries ℝ c x).contDiff_taylorSum p (n := 1)).differentiable one_ne_zero s)
-      hconv hL.hasLipschitzConst hmin.isLocalMinOn (by simpa [T, add_assoc] using hd.2)
-  have h0 : (0 : ℝⁿ) ∈ D := ⟨by simp, by simpa using hs⟩
-  have hsup : sSup ((fun d => Optimization.compositeModelDecrement (ftaylorSeries ℝ f x)
-      (ftaylorSeries ℝ c x) h p σ 1 s d) '' D) ≤ 0 :=
-    csSup_le ⟨_, ⟨0, h0, rfl⟩⟩ (by rintro _ ⟨d, hd, rfl⟩; exact hnp d hd)
-  have hdec0 : Optimization.compositeModelDecrement (ftaylorSeries ℝ f x) (ftaylorSeries ℝ c x)
-      h p σ 1 s 0 = 0 := by
-    simp [Optimization.compositeModelDecrement_def]
-  refine ⟨1, ⟨one_pos, le_rfl⟩, Relation.ReflTransGen.head
-    (Optimization.DetailedStepTrans.start hsT (by rw [hinf, one_mul]) hshort)
-    (Relation.ReflTransGen.single (Optimization.DetailedStepTrans.finish (d := 0) h0 ?_ ?_ le_rfl))⟩
-  · rw [hdec0]
-    exact mul_nonpos_of_nonneg_of_nonpos P.ς_pos.le hsup
-  · rw [hdec0]
-    have := P.ς_pos
-    have := P.θ_pos
-    positivity
+    algorithm_14_1_2 f c h X p 1 P ε σ x s (fun _ => 1) :=
+  Optimization.isARqpCDetailedStep_of_isMinOn hp hL hconv hX P.toARqpParams (halvingSet h X) hε hs
+    hmin
 
 section Corollary
 

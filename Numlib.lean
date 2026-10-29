@@ -450,6 +450,7 @@ import Numlib.Data.Fin.Tuple.Sort
 import Numlib.Data.Finset.Card
 import Numlib.Data.List.Fold
 import Numlib.Data.Matrix.Mul
+import Numlib.Data.Nat.SeqAppend
 import Numlib.Data.Set.Basic
 import Numlib.Data.Subtype
 import Numlib.Direct.ConditionEstimation
@@ -683,6 +684,7 @@ import Numlib.Optimization.Complexity.ResistingOracle
 import Numlib.Optimization.Complexity.ScaledRestart
 import Numlib.Optimization.Complexity.SlowExample.ARp
 import Numlib.Optimization.Complexity.SlowExample.Basic
+import Numlib.Optimization.Complexity.SlowExample.DynamicAccuracy
 import Numlib.Optimization.Complexity.SlowExample.HighOrder
 import Numlib.Optimization.Complexity.SlowExample.Ridge
 import Numlib.Optimization.Complexity.SlowExample.SeparatedJets
@@ -707,6 +709,8 @@ import Numlib.Optimization.ModelBased.ARRun
 import Numlib.Optimization.ModelBased.ARpRun
 import Numlib.Optimization.ModelBased.ConvexConstrained
 import Numlib.Optimization.ModelBased.HighOrder.ARqp
+import Numlib.Optimization.ModelBased.HighOrder.ARqpC
+import Numlib.Optimization.ModelBased.HighOrder.ARqpCComplexity
 import Numlib.Optimization.ModelBased.HighOrder.ARqpComplexity
 import Numlib.Optimization.ModelBased.HighOrder.ARqpDetailedStep
 import Numlib.Optimization.ModelBased.HighOrder.DynamicAccuracy.ARqpDAStep

@@ -123,7 +123,7 @@ theorem lemma_13_3_2 (hf : AssumptionD0qL f P.q L)
 `(ε, δ_k)`-approximate `q`-th order minimizer, `δ_k = min(Δ_k, ϑ) ∈ (0, 1]`. -/
 theorem lemma_13_3_3_i (hrun : algorithm_13_3_1 f P ε x₀ x Δ h D dd jk s acc fx fxs h₀ R)
     (hk : ∀ j < k, ¬ edaStopTR P ε D Δ h dd j) (hstop : edaStopTR P ε D Δ h dd k) :
-    IsEpsDeltaApprox (ftaylorSeries ℝ f (x k)) univ P.q ε (fun _ => trRadius P Δ k) := by
+    IsEpsDeltaApprox (ftaylorSeries ℝ f (x k)) univ P.q ε (fun _ => trqDARadius P Δ k) := by
   have := IsTRqEDARun.isEpsDeltaApprox_of_stop hrun hk hstop
   rwa [Set.setOf_add_mem_univ] at this
 
@@ -135,7 +135,7 @@ theorem lemma_13_3_3_ii (hf : AssumptionD0qL f P.q L)
     (hrun : algorithm_13_3_1 f P ε x₀ x Δ h D dd jk s acc fx fxs h₀ R) {κΔ : ℝ}
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) 1 κΔ)
     (hk : ∀ j < k, ¬ edaStopTR P ε D Δ h dd j)
-    (hpass : ∀ j ∈ Finset.Icc 1 P.q, ¬ trFail P ε D Δ dd k j)
+    (hpass : ∀ j ∈ Finset.Icc 1 P.q, ¬ trqDAFail P ε D Δ dd k j)
     (hh : ∀ i ∈ Finset.Icc 1 P.q, h k i ≤
       P.ς ^ (P.q + 1) * (κΔ / 2) ^ P.q / (4 * P.q !) * epsMin P.q ε ^ (P.q + 1)) :
     edaStopTR P ε D Δ h dd k :=
@@ -154,8 +154,8 @@ theorem theorem_13_3_4 (hf : AssumptionD0qL f P.q L) {flow : ℝ}
     (hrun : algorithm_13_3_1 f P ε x₀ x Δ h D dd jk s acc fx fxs h₀ R) {κΔ : ℝ}
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) 1 κΔ) :
     ∃ kε, IsFirstHit (edaStopTR P ε D Δ h dd) kε ∧
-      IsEpsDeltaApprox (ftaylorSeries ℝ f (x kε)) univ P.q ε (fun _ => trRadius P Δ kε) ∧
-      0 < trRadius P Δ kε ∧ trRadius P Δ kε ≤ 1 ∧
+      IsEpsDeltaApprox (ftaylorSeries ℝ f (x kε)) univ P.q ε (fun _ => trqDARadius P Δ kε) ∧
+      0 < trqDARadius P Δ kε ∧ trqDARadius P Δ kε ≤ 1 ∧
       (edaFunEvalCount acc R kε : ℝ) ≤
         2 * (trKappaS P κΔ * (1 + Real.log P.γ₃ / |Real.log P.γ₂|) * (f x₀ - flow) /
             epsMin P.q ε ^ (P.q + 1)) +
@@ -198,7 +198,7 @@ theorem exists_algorithm_13_3_1 {f : ℝⁿ → ℝ} {P : TRqIDAParams} {ε : �
   · have hΔk := trqDA_delta_pos (k := k) (fun i _ => hstep i) hΔ
     obtain ⟨hφ, hdec⟩ := TRqDAStep.trqGap_ge (hstep k) ha hΔk
     have hφ0 : 0 < P.ς * epsMin P.q ε / 2 := by have := P.ς_pos; positivity
-    have hδ := (trRadius_mem (P := P) hΔk).1
+    have hδ := (trqDARadius_mem (P := P) hΔk).1
     have hpos : 0 < (O (x k) (h k)).taylorDecrement (jk k) (s k) :=
       lt_of_lt_of_le (by have := hφ0.trans_le hφ; positivity) hdec
     have h0 := (mul_pos P.κs_pos hpos).le
@@ -258,7 +258,7 @@ theorem lemma_13_3_6_ii (hf : AssumptionD0pL f P.p L)
     (hrun : algorithm_13_3_2 f P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
     (hrc : ∀ i, RadiiControl P ε (lipMax L P.p + P.κh) σ δs s acc i)
     (hk : ∀ j < k, ¬ edaStopAR P ε D δ₁ h dd j)
-    (hpass : ∀ j ∈ Finset.Icc 1 P.q, arPass P ε D δ₁ dd k j)
+    (hpass : ∀ j ∈ Finset.Icc 1 P.q, arqpDAPass P ε D δ₁ dd k j)
     (hh : ∀ i ∈ Finset.Icc 1 P.p, h k i ≤ P.ς * arKappaDelta1 P (lipMax L P.p + P.κh)
       (arqpIDASigmaMax P (L P.p) 1) ^ P.q / (4 * P.q !) * epsMin P.q ε ^ (P.q + 1)) :
     edaStopAR P ε D δ₁ h dd k :=
@@ -280,7 +280,7 @@ theorem eda_radius_inequality (hf : AssumptionD0pL f P.p L)
     (hk : ∀ j ≤ k, ¬ edaStopAR P ε D δ₁ h dd j) (ha : ¬ acc k)
     (hρ : P.η₁ ≤ edaRatio fx fxs (fun i => (D i).taylorDecrement P.p (s i)) k)
     (hs1 : ‖s k‖ < 1)
-    (hnot : ¬ ((∀ j ∈ Finset.Icc 1 P.q, arPass P ε D δ₁ dd (k + 1) j) ∧
+    (hnot : ¬ ((∀ j ∈ Finset.Icc 1 P.q, arqpDAPass P ε D δ₁ dd (k + 1) j) ∧
       ∀ j ∈ Finset.Icc 1 P.q, δ₁ (k + 1) j = δ (k + 1) j)) :
     ∃ j ∈ Finset.Icc 1 P.q, (P.ς / 2 - P.θ) * ε j * δ (k + 1) j ^ j / j ! ≤
       (L P.p + arqpIDASigmaMax P (L P.p) 1 + 4 * P.κs) *

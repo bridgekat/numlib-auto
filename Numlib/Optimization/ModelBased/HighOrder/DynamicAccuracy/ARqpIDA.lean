@@ -173,16 +173,16 @@ theorem IsARqpIDARun.not_acc_of_le (hf : LipschitzDerivsAnchored f C A 0 P.p L)
     (hL : ∀ j ≤ P.p, 1 ≤ L j)
     (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
     (hrun : IsARqpIDARun f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc) {u : Prop}
-    (hrc : ∀ i < k, RadiiControlOf u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i)
+    (hrc : ∀ i < k, ARqpDARadiiControl u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i)
     {σbar : ℝ} (hσ : ∀ i ≤ k, σ i ≤ σbar) :
-    ((∃ j ∈ Finset.Icc 1 P.q, ¬ arPass P ε D δ₁ dd k j) →
+    ((∃ j ∈ Finset.Icc 1 P.q, ¬ arqpDAPass P ε D δ₁ dd k j) →
         0 < P.ς * ε (jk k) * δ₁ k (jk k) ^ jk k / (jk k)! / 4 ∧
         P.ς * ε (jk k) * δ₁ k (jk k) ^ jk k / (jk k)! / 4 ≤ arModelDec P D σ k (s k) ∧
         s k ≠ 0) ∧
       (∀ j ∈ Finset.Icc 1 P.q,
         arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh) σbar * ε j ≤ δ₁ k j ∧
           δ₁ k j ≤ δ k j) ∧
-      ((∃ j ∈ Finset.Icc 1 P.q, ¬ arPass P ε D δ₁ dd k j) →
+      ((∃ j ∈ Finset.Icc 1 P.q, ¬ arqpDAPass P ε D δ₁ dd k j) →
         (∀ i ∈ Finset.Icc 1 P.p, h k i ≤
           P.κs * (P.ς * arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh) σbar ^ P.q /
             (12 * P.q ! * max (lipMax L P.p + ordMax P.p κg * P.κh) σbar)) ^ P.p *
@@ -290,8 +290,8 @@ theorem IsARqpIDARun.arqpIDATest_of_pass (hf : LipschitzDerivsAnchored f C A 0 P
     (hL : ∀ j ≤ P.p, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
     (hrun : IsARqpIDARun f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc) {u : Prop}
-    (hrc : ∀ i < k, RadiiControlOf u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i)
-    (hpass : ∀ j ∈ Finset.Icc 1 P.q, arPass P ε D δ₁ dd k j)
+    (hrc : ∀ i < k, ARqpDARadiiControl u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i)
+    (hpass : ∀ j ∈ Finset.Icc 1 P.q, arqpDAPass P ε D δ₁ dd k j)
     (hh : ∀ i ∈ Finset.Icc 1 P.p, ordMax P.p κg * h k i ≤
       P.ς * arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
         (arqpIDASigmaMax P (L P.p) (ordMax P.p κg)) ^ P.q / (4 * P.q !) *
@@ -422,7 +422,8 @@ theorem IsARqpIDARun.step_bound (hf : LipschitzDerivsAnchored f C A 0 P.p L)
     (hL : ∀ j ≤ P.p, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
     (hrun : IsARqpIDARun f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc) {u : Prop}
-    (hrc : RadiiControlOf u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc k) (hk : ¬ acc k)
+    (hrc : ARqpDARadiiControl u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc k)
+    (hk : ¬ acc k)
     (hρ : P.η₁ ≤ arqpIDARatio f P D x s k)
     (hnot : ¬ IsEpsDeltaApprox (ftaylorSeries ℝ f (x (k + 1))) {e | x (k + 1) + e ∈ X} P.q ε
       (δ (k + 1))) :
@@ -477,7 +478,8 @@ theorem IsARqpIDARun.norm_step_ge (hf : LipschitzDerivsAnchored f C A 0 P.p L)
     (hL : ∀ j ≤ P.p, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
     (hrun : IsARqpIDARun f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc) {u : Prop}
-    (hrc : RadiiControlOf u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc k) (hk : ¬ acc k)
+    (hrc : ARqpDARadiiControl u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc k)
+    (hk : ¬ acc k)
     (hρ : P.η₁ ≤ arqpIDARatio f P D x s k)
     (hnot : ¬ IsEpsDeltaApprox (ftaylorSeries ℝ f (x (k + 1))) {e | x (k + 1) + e ∈ X} P.q ε
       (δ (k + 1))) :
@@ -548,7 +550,8 @@ theorem IsARqpIDARun.decrease_ge (hf : LipschitzDerivsAnchored f C A 0 P.p L)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
     (hrun : IsARqpIDARun f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc) {u : Prop}
     [Decidable u]
-    (hrc : RadiiControlOf u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc k) (hk : ¬ acc k)
+    (hrc : ARqpDARadiiControl u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc k)
+    (hk : ¬ acc k)
     (hρ : P.η₁ ≤ arqpIDARatio f P D x s k) (hnot : ¬ arqpIDATest f X P ε x (k + 1)) :
     P.σmin / ((P.p + 1)! : ℝ) * arStepConstOf u P.q P.p (1 - P.θ) (arConstA P L (ordMax P.p κg))
         (arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
@@ -653,12 +656,12 @@ theorem mul_arKappaAcc_le {P : ARqpIDAParams} {κ Lb σmax κm : ℝ} (hκ : 0 �
 [cartis2022evaluation]): under `LipschitzDerivsAnchored f C A 0 p L` (`L_j ≥ 1`, `A ⊇ {y ∈ X |
 f(y) ≤ f(x₀)}`) and the radii control at every iteration, if no iterate `x_j`, `j ≤ k`, is
 approximately optimal on `X`, then `|𝒜_k| ≤ p(q+1)/|log γ_h| |log ε_min| +
-|log(κ_acc/κ_h)|/|log γ_h| + 1` (either mode of the radii control, `RadiiControlOf`). -/
+|log(κ_acc/κ_h)|/|log γ_h| + 1` (either mode of the radii control, `ARqpDARadiiControl`). -/
 theorem IsARqpIDARun.card_acc_le (hf : LipschitzDerivsAnchored f C A 0 P.p L)
     (hL : ∀ j ≤ P.p, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
     (hrun : IsARqpIDARun f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc) {u : Prop}
-    (hrc : ∀ i, RadiiControlOf u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i) {k : ℕ}
+    (hrc : ∀ i, ARqpDARadiiControl u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ arqpIDATest f X P ε x j) :
     ((successSet acc k).card : ℝ) ≤
       P.p * (P.q + 1) / |Real.log P.γh| * |Real.log (epsMin P.q ε)| +
@@ -700,7 +703,7 @@ theorem IsARqpIDARun.card_acc_le (hf : LipschitzDerivsAnchored f C A 0 P.p L)
       push Not at hcon
       have hhi : ∀ i ∈ Finset.Icc 1 P.p, h j i ≤ κacc * em ^ (P.p * (P.q + 1)) :=
         fun i hi => (le_ordMax hi).trans hcon
-      by_cases hfail : ∃ i ∈ Finset.Icc 1 P.q, ¬ arPass P ε D δ₁ dd j i
+      by_cases hfail : ∃ i ∈ Finset.Icc 1 P.q, ¬ arqpDAPass P ε D δ₁ dd j i
       · refine (IsARqpIDARun.not_acc_of_le hf hL hAX hrun (fun i _ => hrc i) (k := j)
           (fun i _ => hσk i)).2.2 hfail
           (fun i hi => (hhi i hi).trans ?_) ha
@@ -732,7 +735,7 @@ theorem IsARqpIDARun.complexity (hf : LipschitzDerivsAnchored f C A 0 P.p L)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A) {flow : ℝ}
     (hb : ∀ y ∈ X, flow ≤ f y)
     (hrun : IsARqpIDARun f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc) {u : Prop}
-    (hrc : ∀ i, RadiiControlOf u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i)
+    (hrc : ∀ i, ARqpDARadiiControl u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i)
     {c : ℝ} (hc : 0 < c)
     (hdec : ∀ k, ¬ acc k → P.η₁ ≤ arqpIDARatio f P D x s k → ¬ arqpIDATest f X P ε x (k + 1) →
       c ≤ f (x k) - f (x (k + 1))) :
@@ -1014,13 +1017,13 @@ ARqpIDA run with a feasible set under `LipschitzDerivsAnchored f C A 0 p L` (`L_
 that is approximately optimal on `X` satisfies `k ≤ κ_uns |𝒮_k| + κ_unc` (14.2.13) with
 `κ_uns = 1 + |log γ₁|/log γ₂` and `κ_unc = log(σ_max/σ₀)/log γ₂ + N_𝒜`,
 `N_𝒜 = p(q+1)/|log γ_h| |log ε_min| + |log(κ_acc/κ_h)|/|log γ_h| + 1`. The radii control
-(`RadiiControlOf u`) may be in either mode (unit radii, or the (12.2.51)-type lower bounds at every
-order). -/
+(`ARqpDARadiiControl u`) may be in either mode (unit radii, or the (12.2.51)-type lower bounds
+at every order). -/
 theorem IsARqpIDARun.le_card_succ (hf : LipschitzDerivsAnchored f C A 0 P.p L)
     (hL : ∀ j ≤ P.p, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
     (hrun : IsARqpIDARun f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
-    (hrc : ∀ i, RadiiControlOf u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i) {k : ℕ}
+    (hrc : ∀ i, ARqpDARadiiControl u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i) {k : ℕ}
     (hk : ∀ j < k, ¬ arqpIDATest f X P ε x j) :
     (k : ℝ) ≤ (successSet (fun i => ¬ acc i ∧ P.η₁ ≤ arqpIDARatio f P D x s i) k).card *
         (1 + |Real.log P.γ₁| / Real.log P.γ₂) +
@@ -1056,7 +1059,7 @@ order minimizer on `X` for some radii `δ_ε ∈ (0, 1]^q` (`arqpIDATest`), befo
 `(1 + |log γ₁|/log γ₂) (f(x₀) - f_low)/c + κ^C` function evaluations and
 `(f(x₀) - f_low)/c + κ^E |log ε_min| + κ^F + 3` derivative estimates are made, where
 `c = ½ η₁ κ_{Δm} min_j ε_j^{π_j}` is the decrease of Lemma 14.2.2, and the constants are those of
-Theorem 13.1.19, with the radii control in either mode `u` (`RadiiControlOf`): unit radii
+Theorem 13.1.19, with the radii control in either mode `u` (`ARqpDARadiiControl`): unit radii
 `δ_{s_k} = 1` (`u`), which Step 2 guarantees for `X = E` with `q ≤ 2` or for `q = 1` with `X`
 convex, with `π_j = (p+1)/(p-j+1)`, or the (12.2.51)-type lower bounds at every order (`¬ u`),
 available for every `q` and `X`, with `π_j = j(p+1)/p` (`π_j = arPiOf u p j`; the radii control of
@@ -1067,7 +1070,7 @@ theorem IsARqpIDARun.complexity_of_radiiControl (hf : LipschitzDerivsAnchored f 
     (hb : ∀ y ∈ X, flow ≤ f y)
     (hrun : IsARqpIDARun f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
     [Decidable u]
-    (hrc : ∀ i, RadiiControlOf u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i) :
+    (hrc : ∀ i, ARqpDARadiiControl u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i) :
     ∃ kε, IsFirstHit (arqpIDATest f X P ε x) kε ∧ x kε ∈ X ∧
       (derivEvalCount (fun i => ¬ acc i) kε : ℝ) ≤
         (1 + |Real.log P.γ₁| / Real.log P.γ₂) * ((f x₀ - flow) /

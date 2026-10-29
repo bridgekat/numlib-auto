@@ -1,0 +1,28 @@
+namespace = "Nat"
+
+[[node]]
+id = "seqAppend"
+
+[[node]]
+id = "seqAppend_of_lt"
+
+[[node]]
+id = "seqAppend_of_le"
+
+[[node]]
+id = "seqAppend_succ_of_le"
+
+[[node]]
+id = "seqAppend_eq_of_le"
+
+[[node]]
+id = "seqAppend_add"
+
+[[node]]
+id = "seqAppend_self"
+
+[[node]]
+id = "seqAppend_comp_add"
+
+[[node]]
+id = "seqAppend_eq_append_take"

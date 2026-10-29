@@ -103,7 +103,7 @@ product space, on a feasible set `X` and under the anchored smoothness hypothesi
   (`δ_{s_k} = 1` if `q ≤ 2`; the lower bounds `ς θ ε_j/(24 max(L̄, σ_k))` at every order if
   `q > 2`), which the book's condition implies (`Optimization.RadiiControl.of_unit_le_two`); for
   `q > 2` the proofs do not use `δ = 1` at the orders `j ≤ 2`. The library's analysis takes the
-  mode as a parameter (`Optimization.RadiiControlOf u`: unit radii if `u`, the lower bounds at
+  mode as a parameter (`Optimization.ARqpDARadiiControl u`: unit radii if `u`, the lower bounds at
   every order if `¬ u`, with exponents `arPiOf u`), so that the lower-bound mode also covers
   `q ≤ 2` when unit radii are not available (§14.2); `RadiiControl` is the mode `u = (q ≤ 2)`.
 * **Lemma 13.1.17** (`q > 2`): the printed constant `κ_{δ,min}^{j-1}` is replaced by
@@ -257,7 +257,7 @@ noncomputable abbrev phiHat (D : FormalMultilinearSeries ℝ ℝⁿ ℝ) (j : �
 with the radius `δ_k = min(Δ_k, ϑ)` at all orders. -/
 def trTest (f : ℝⁿ → ℝ) (P : TRqIDAParams) (ε : ℕ → ℝ) (x : ℕ → ℝⁿ) (Δ : ℕ → ℝ) (k : ℕ) :
     Prop :=
-  IsEpsDeltaApprox (ftaylorSeries ℝ f (x k)) univ P.q ε (fun _ => trRadius P Δ k)
+  IsEpsDeltaApprox (ftaylorSeries ℝ f (x k)) univ P.q ε (fun _ => trqDARadius P Δ k)
 
 theorem trqIDATest_univ {f : ℝⁿ → ℝ} {P : TRqIDAParams} {ε : ℕ → ℝ} {x : ℕ → ℝⁿ}
     {Δ : ℕ → ℝ} : trqIDATest f univ P ε x Δ = trTest f P ε x Δ := by
@@ -297,8 +297,8 @@ TRqEDA) with `Δ_k > 0`, the scaled criticality `φ̂_{f,k}` of (13.1.25) satisf
 `\overline{ΔT}_{f,j_k}(x_k, s_k) ≥ φ̂_{f,k} δ_k^{j_k} / j_k!`. -/
 theorem lemma_13_1_2 (hs : TRqDAStep X P ε x Δ h D dd jk s acc ρ k) (hk : ¬ acc k)
     (hΔ : 0 < Δ k) :
-    P.ς * epsMin P.q ε / 2 ≤ phiHat (D k) (jk k) (trRadius P Δ k) (dd k (jk k)) ∧
-      phiHat (D k) (jk k) (trRadius P Δ k) (dd k (jk k)) * trRadius P Δ k ^ jk k / (jk k)! ≤
+    P.ς * epsMin P.q ε / 2 ≤ phiHat (D k) (jk k) (trqDARadius P Δ k) (dd k (jk k)) ∧
+      phiHat (D k) (jk k) (trqDARadius P Δ k) (dd k (jk k)) * trqDARadius P Δ k ^ jk k / (jk k)! ≤
         (D k).taylorDecrement (jk k) (s k) :=
   TRqDAStep.trqGap_ge hs hk hΔ
 
@@ -367,7 +367,7 @@ theorem lemma_13_1_4 (hf : AssumptionD0qL f P.q L)
     (∀ hne : (successSet (fun i => ¬ acc i) k).Nonempty, min (P.γ₁ * P.ϑ)
         (κΔ * (successSet (fun i => ¬ acc i) k).inf' hne (trPhiHat P Δ D dd jk)) ≤ Δ k) ∧
       (successSet (fun i => ¬ acc i) k = ∅ → P.γ₁ * P.ϑ ≤ Δ k) ∧
-      P.ς * (κΔ / 2) * epsMin P.q ε ≤ trRadius P Δ k :=
+      P.ς * (κΔ / 2) * epsMin P.q ε ≤ trqDARadius P Δ k :=
   IsTRqIDARun.delta_ge hf.lipschitzDerivsAnchored hf.normalized (subset_univ _)
     (fun _ _ _ => Set.mem_univ _) hrun hκΔ0 hκΔ1 hκΔ k
 
@@ -395,7 +395,7 @@ in (13.1.63), for the bound (13.1.24).) -/
 theorem lemma_13_1_6 (hf : AssumptionD0qL f P.q L)
     (hrun : algorithm_13_1_1 f κg P ε x₀ x Δ h D dd jk s acc) {κΔ : ℝ}
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) (ordMax P.q κg) κΔ)
-    (hb : ∃ j ∈ Finset.Icc 1 P.q, trFail P ε D Δ dd k j)
+    (hb : ∃ j ∈ Finset.Icc 1 P.q, trqDAFail P ε D Δ dd k j)
     (hh : ∀ i ∈ Finset.Icc 1 P.q, h k i ≤ P.κs * (P.ς ^ (P.q + 1) * (κΔ / 2) ^ P.q /
       (4 * P.q ! * (lipMax L P.q + ordMax P.q κg * P.κh))) ^ P.q *
         epsMin P.q ε ^ (P.q * (P.q + 1))) :
@@ -411,7 +411,7 @@ order) and (13.1.37) `κ_{∇,max} h_{k,i} ≤ ς^{q+1} κ_δ^q/(4 q!) ε_min^{q
 theorem lemma_13_1_7 (hf : AssumptionD0qL f P.q L)
     (hrun : algorithm_13_1_1 f κg P ε x₀ x Δ h D dd jk s acc) {κΔ : ℝ}
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) (ordMax P.q κg) κΔ)
-    (hpass : ∀ j ∈ Finset.Icc 1 P.q, ¬ trFail P ε D Δ dd k j)
+    (hpass : ∀ j ∈ Finset.Icc 1 P.q, ¬ trqDAFail P ε D Δ dd k j)
     (hh : ∀ i ∈ Finset.Icc 1 P.q, ordMax P.q κg * h k i ≤
       P.ς ^ (P.q + 1) * (κΔ / 2) ^ P.q / (4 * P.q !) * epsMin P.q ε ^ (P.q + 1)) :
     trTest f P ε x Δ k := by
@@ -434,7 +434,7 @@ theorem theorem_13_1_8 (hf : AssumptionD0qL f P.q L) {flow : ℝ}
     (hb : Chapter02.AssumptionBb f flow)
     (hrun : algorithm_13_1_1 f κg P ε x₀ x Δ h D dd jk s acc) {κΔ : ℝ}
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) (ordMax P.q κg) κΔ) :
-    ∃ kε, IsFirstHit (trTest f P ε x Δ) kε ∧ 0 < trRadius P Δ kε ∧ trRadius P Δ kε ≤ 1 ∧
+    ∃ kε, IsFirstHit (trTest f P ε x Δ) kε ∧ 0 < trqDARadius P Δ kε ∧ trqDARadius P Δ kε ≤ 1 ∧
       (derivEvalCount (fun i => ¬ acc i) kε : ℝ) ≤
         trKappaS P κΔ * (1 + Real.log P.γ₃ / |Real.log P.γ₂|) * (f x₀ - flow) /
             epsMin P.q ε ^ (P.q + 1) +
@@ -603,14 +603,14 @@ theorem lemma_13_1_12 (hf : AssumptionD0pL f P.p L)
     (hrun : algorithm_13_1_2 f κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
     (hrc : ∀ i < k, RadiiControl P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i)
     {σbar : ℝ} (hσ : ∀ i ≤ k, σ i ≤ σbar) :
-    ((∃ j ∈ Finset.Icc 1 P.q, ¬ arPass P ε D δ₁ dd k j) →
+    ((∃ j ∈ Finset.Icc 1 P.q, ¬ arqpDAPass P ε D δ₁ dd k j) →
         0 < P.ς * ε (jk k) * δ₁ k (jk k) ^ jk k / (jk k)! / 4 ∧
         P.ς * ε (jk k) * δ₁ k (jk k) ^ jk k / (jk k)! / 4 ≤ arModelDec P D σ k (s k) ∧
         s k ≠ 0) ∧
       (∀ j ∈ Finset.Icc 1 P.q,
         arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh) σbar * ε j ≤ δ₁ k j ∧
           δ₁ k j ≤ δ k j) ∧
-      ((∃ j ∈ Finset.Icc 1 P.q, ¬ arPass P ε D δ₁ dd k j) →
+      ((∃ j ∈ Finset.Icc 1 P.q, ¬ arqpDAPass P ε D δ₁ dd k j) →
         (∀ i ∈ Finset.Icc 1 P.p, h k i ≤
           P.κs * (P.ς * arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh) σbar ^ P.q /
             (12 * P.q ! * max (lipMax L P.p + ordMax P.p κg * P.κh) σbar)) ^ P.p *
@@ -638,7 +638,7 @@ particular `arTest k`). (The book writes `δ_k` for the radii `δ^{(1)}_k` at th
 theorem lemma_13_1_15 (hf : AssumptionD0pL f P.p L)
     (hrun : algorithm_13_1_2 f κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
     (hrc : ∀ i < k, RadiiControl P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i)
-    (hpass : ∀ j ∈ Finset.Icc 1 P.q, arPass P ε D δ₁ dd k j)
+    (hpass : ∀ j ∈ Finset.Icc 1 P.q, arqpDAPass P ε D δ₁ dd k j)
     (hh : ∀ i ∈ Finset.Icc 1 P.p, ordMax P.p κg * h k i ≤
       P.ς * arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
         (arqpIDASigmaMax P (L P.p) (ordMax P.p κg)) ^ P.q / (4 * P.q !) *

@@ -25,11 +25,11 @@ id = "arqp_pow_succ_ge"
 source = "Cartis–Gould–Toint, Lemma 13.1.18"
 
 [[node]]
-id = "RadiiControlOf"
+id = "ARqpDARadiiControl"
 source = "Cartis–Gould–Toint, Theorem 13.1.19, (13.1.69)–(13.1.70); §14.2 (radius policy with simple constraints, (12.2.51))"
 
 [[node]]
-id = "RadiiControlOf.kappa_mul_le"
+id = "ARqpDARadiiControl.kappa_mul_le"
 source = "Cartis–Gould–Toint, proof of Lemma 13.1.12, (13.1.71)"
 
 [[node]]
@@ -45,7 +45,7 @@ id = "ARqpDAStep.congr"
 source = "Cartis–Gould–Toint, Algorithm 13.1.2"
 
 [[node]]
-id = "RadiiControlOf.of_unit"
+id = "ARqpDARadiiControl.of_unit"
 source = "Cartis–Gould–Toint, Theorem 13.1.19, (13.1.69)–(13.1.70)"
 
 [[node]]

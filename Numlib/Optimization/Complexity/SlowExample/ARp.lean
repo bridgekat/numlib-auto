@@ -1,3 +1,4 @@
+import Numlib.Analysis.InnerProductSpace.Normalize
 import Numlib.Optimization.Complexity.SlowExample.Ridge
 import Numlib.Optimization.Complexity.SlowExample.HighOrder
 import Numlib.Optimization.ModelBased.ARpRun
@@ -290,8 +291,7 @@ theorem taylorDecrement_regularizedModel_ridge_spike (he : ‖e‖ = 1)
     {α σ : ℝ} (hd : IsSpikeJetOf p G q ⟪e, x⟫ α) {ℓ : ℕ} (hℓp : ℓ ≤ p) (t : ℝ) (d : E) :
     (ftaylorSeries ℝ (regularizedModel (ftaylorSeries ℝ (ridge G e) x) p σ) (t • e)).taylorDecrement
         ℓ d = (ftaylorSeries ℝ (negMonomialRegModel p q σ α) t).taylorDecrement ℓ ⟪e, d⟫ := by
-  have hee : ⟪e, t • e⟫ = t := by
-    rw [inner_smul_right, real_inner_self_eq_norm_sq, he]; ring
+  have hee : ⟪e, t • e⟫ = t := inner_smul_self_of_norm_eq_one he t
   rw [FormalMultilinearSeries.taylorDecrement_eq, FormalMultilinearSeries.taylorDecrement_eq]
   congr 1
   refine Finset.sum_congr rfl fun i hi => ?_

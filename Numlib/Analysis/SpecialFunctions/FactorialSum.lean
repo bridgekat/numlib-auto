@@ -13,7 +13,8 @@ Lemma A.10.1 and (A.34)–(A.35)). They all follow from `∑_{i < n} δ^i/i! ≤
 * `sum_pow_div_factorial_le_two_mul_pow`: `∑_{ℓ=1}^j δ^ℓ/ℓ! ≤ 2δ^j` for `δ ≥ 1` (A.35);
 * `sum_inv_factorial_sub_le_exp_one`: `∑_{ℓ=j}^p 1/(ℓ-j)! ≤ e` (towards (A.36));
 * `half_mul_pow_div_factorial_le`: the closing step of the model-decrease lemmas
-  (Lemmas 12.2.8, 13.1.10, 14.1.2).
+  (Lemmas 12.2.8, 13.1.10, 14.1.2);
+* `pow_div_factorial_le_of_lt`: `ε^q/q! ≤ ε^j/(c j!)` for `j < q`, `ε ∈ [0, 1]`, `c ε ≤ 1`.
 -/
 
 open Finset
@@ -119,3 +120,22 @@ theorem half_mul_pow_div_factorial_le {K α δ a b : ℝ} {j : ℕ} (hδ : 0 ≤
   have e : α / 2 * δ ^ j / (j ! : ℝ) = α * δ ^ j / (j ! : ℝ) - α / 2 * δ ^ j / (j ! : ℝ) := by
     ring
   linarith
+
+/-- `ε^q/q! ≤ ε^j/(c j!)` for `j < q`, `0 ≤ ε ≤ 1` and `c ε ≤ 1` (`c > 0`): the higher-order
+thresholds of the Step-1 test are dominated by the lower-order ones. -/
+theorem pow_div_factorial_le_of_lt {ε c : ℝ} {j q : ℕ} (hε : 0 ≤ ε) (hε1 : ε ≤ 1) (hc : 0 < c)
+    (hcε : c * ε ≤ 1) (hjq : j < q) : ε ^ q / q ! ≤ ε ^ j / j ! / c := by
+  have h1 : ε ^ q ≤ ε ^ j / c := by
+    have e : ε ^ q = ε ^ j * ε ^ (q - j) := by rw [← pow_add]; congr 1; omega
+    have h2 : ε ^ (q - j) ≤ ε := pow_le_of_le_one hε hε1 (by omega)
+    rw [e, le_div_iff₀ hc]
+    have hj := pow_nonneg hε j
+    calc ε ^ j * ε ^ (q - j) * c ≤ ε ^ j * ε * c := by gcongr
+      _ = ε ^ j * (c * ε) := by ring
+      _ ≤ ε ^ j * 1 := by gcongr
+      _ = ε ^ j := mul_one _
+  have hjf : (j ! : ℝ) ≤ q ! := by exact_mod_cast Nat.factorial_le hjq.le
+  have hj0 : (0 : ℝ) < j ! := by positivity
+  calc ε ^ q / q ! ≤ ε ^ j / c / q ! := div_le_div_of_nonneg_right h1 (by positivity)
+    _ ≤ ε ^ j / c / j ! := div_le_div_of_nonneg_left (by positivity) hj0 hjf
+    _ = ε ^ j / j ! / c := by ring

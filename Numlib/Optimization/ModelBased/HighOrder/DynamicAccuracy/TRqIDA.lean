@@ -102,13 +102,13 @@ variable {X : Set E} {P : TRqIDAParams} {ε : ℕ → ℝ} {x : ℕ → E} {Δ :
   {s : ℕ → E} {acc : ℕ → Prop} {ρ : ℕ → ℝ} {k : ℕ}
 
 /-- The optimality radius `δ_k = min(Δ_k, ϑ)` of TRqIDA (Step 1). -/
-noncomputable abbrev trRadius (P : TRqIDAParams) (Δ : ℕ → ℝ) (k : ℕ) : ℝ := min (Δ k) P.ϑ
+noncomputable abbrev trqDARadius (P : TRqIDAParams) (Δ : ℕ → ℝ) (k : ℕ) : ℝ := min (Δ k) P.ϑ
 
 /-- The Step-1.2 test (13.1.14) at order `j` fails to certify optimality:
 `\overline{ΔT}_{f,j}(x_k, d_{k,j}) > ½ ς ε_j δ_k^j / j!`. -/
-def trFail (P : TRqIDAParams) (ε : ℕ → ℝ) (D : ℕ → FormalMultilinearSeries ℝ E ℝ)
+def trqDAFail (P : TRqIDAParams) (ε : ℕ → ℝ) (D : ℕ → FormalMultilinearSeries ℝ E ℝ)
     (Δ : ℕ → ℝ) (dd : ℕ → ℕ → E) (k j : ℕ) : Prop :=
-  P.ς * ε j * trRadius P Δ k ^ j / j ! / 2 < (D k).taylorDecrement j (dd k j)
+  P.ς * ε j * trqDARadius P Δ k ^ j / j ! / 2 < (D k).taylorDecrement j (dd k j)
 
 /-- Step 2 of TRqIDA ((13.1.15) and the accuracy test (13.1.9)), entered at the least order `j_k`
 at which (13.1.14) holds: `s_k ∈ B_{Δ_k}` (feasible) does at least as well as `d_k = d_{k,j_k}`
@@ -120,9 +120,9 @@ structure TRqStep2 (X : Set E) (P : TRqIDAParams) (ε : ℕ → ℝ) (x : ℕ �
   /-- `j_k ∈ [1, q]`. -/
   jk_mem : jk k ∈ Finset.Icc 1 P.q
   /-- (13.1.14) holds at `j_k`. -/
-  fail : trFail P ε D Δ dd k (jk k)
+  fail : trqDAFail P ε D Δ dd k (jk k)
   /-- `j_k` is the least such order. -/
-  pass_lt : ∀ j ∈ Finset.Icc 1 P.q, j < jk k → ¬ trFail P ε D Δ dd k j
+  pass_lt : ∀ j ∈ Finset.Icc 1 P.q, j < jk k → ¬ trqDAFail P ε D Δ dd k j
   /-- The trial point is feasible. -/
   mem : x k + s k ∈ X
   /-- `s_k ∈ B_{Δ_k}`. -/
@@ -144,11 +144,11 @@ structure TRqDAStep (X : Set E) (P : TRqIDAParams) (ε : ℕ → ℝ) (x : ℕ �
     (s : ℕ → E) (acc : ℕ → Prop) (ρ : ℕ → ℝ) (k : ℕ) : Prop where
   /-- (13.1.13): `ς`-approximate optimality displacements at every order. -/
   witness : ∀ j ∈ Finset.Icc 1 P.q, IsApproxMeasureStep ((D k).taylorDecrement j)
-    (trRadius P Δ k) {e | x k + e ∈ X} P.ς (dd k j)
+    (trqDARadius P Δ k) {e | x k + e ∈ X} P.ς (dd k j)
   /-- Step 1 → Step 5 when (13.1.14) fails at every order. -/
-  acc_of_pass : (∀ j ∈ Finset.Icc 1 P.q, ¬ trFail P ε D Δ dd k j) → acc k
+  acc_of_pass : (∀ j ∈ Finset.Icc 1 P.q, ¬ trqDAFail P ε D Δ dd k j) → acc k
   /-- Step 2 when (13.1.14) holds at some order. -/
-  step2 : (∃ j ∈ Finset.Icc 1 P.q, trFail P ε D Δ dd k j) →
+  step2 : (∃ j ∈ Finset.Icc 1 P.q, trqDAFail P ε D Δ dd k j) →
     TRqStep2 X P ε x Δ h D dd jk s acc k
   /-- Steps 3–4 on a trial iteration. -/
   accept : ¬ acc k → TRAcceptance P.toTRParams (ρ k) (x k) (s k) (x (k + 1)) (Δ k) (Δ (k + 1))
@@ -218,12 +218,12 @@ theorem congr {x' : ℕ → E} {Δ' : ℕ → ℝ} {h' : ℕ → ℕ → ℝ}
     (hρ : ρ' k' = ρ k) :
     TRqDAStep X P ε x' Δ' h' D' dd' jk' s' acc' ρ' k' := by
   obtain ⟨hw, hap, hst, hac, hle, hht, hdu, hxa, hΔa, hha⟩ := hs
-  have hF : ∀ j, trFail P ε D' Δ' dd' k' j ↔ trFail P ε D Δ dd k j := fun j => by
-    simp only [trFail, trRadius, hD, hΔ, hdd]
+  have hF : ∀ j, trqDAFail P ε D' Δ' dd' k' j ↔ trqDAFail P ε D Δ dd k j := fun j => by
+    simp only [trqDAFail, trqDARadius, hD, hΔ, hdd]
   refine ⟨fun j hj => ?_, fun hp => hacc.2 (hap fun j hj hf => hp j hj ((hF j).2 hf)),
     fun ⟨j, hj, hf⟩ => ?_, fun ha => ?_, fun ha => ?_, fun ha => ?_, fun ha hr => ?_,
     fun ha => ?_, fun ha => ?_, fun ha => ?_⟩
-  · simpa only [trRadius, hD, hΔ, hx, hdd] using hw j hj
+  · simpa only [trqDARadius, hD, hΔ, hx, hdd] using hw j hj
   · obtain ⟨hjm, hfl, hpl, hmem, hnl, hdl, hai⟩ := hst ⟨j, hj, (hF j).1 hf⟩
     refine ⟨hjk ▸ hjm, (hF _).2 (hjk ▸ hfl), fun i hi hlt hfi => hpl i hi (hjk ▸ hlt)
       ((hF i).1 hfi), by rw [hx, hs']; exact hmem, by rw [hs', hΔ]; exact hnl,
@@ -278,7 +278,7 @@ theorem trqDA_invariants (hstep : ∀ i < k, TRqDAStep X P ε x Δ h D dd jk s a
     · exact ⟨⟨(hk.accept ha).pos hΔ, hk.le_Δmax ha⟩, by rw [hk.h_trial ha]; exact hh⟩
 
 /-- The optimality radius lies in `(0, 1]`. -/
-theorem trRadius_mem (hΔ : 0 < Δ k) : 0 < trRadius P Δ k ∧ trRadius P Δ k ≤ 1 :=
+theorem trqDARadius_mem (hΔ : 0 < Δ k) : 0 < trqDARadius P Δ k ∧ trqDARadius P Δ k ≤ 1 :=
   ⟨lt_min hΔ P.ϑ_pos, (min_le_right _ _).trans P.ϑ_le_one⟩
 
 /-! ### Counting the trial iterations -/
@@ -326,12 +326,12 @@ iteration `k ∈ 𝒯` of TRqIDA (or TRqEDA) with `Δ_k > 0`, the scaled critica
 and (13.1.27), `\overline{ΔT}_{f,j_k}(x_k, s_k) ≥ φ̂_{f,k} δ_k^{j_k} / j_k!`. -/
 theorem TRqDAStep.trqGap_ge (hs : TRqDAStep X P ε x Δ h D dd jk s acc ρ k) (hk : ¬ acc k)
     (hΔ : 0 < Δ k) :
-    P.ς * epsMin P.q ε / 2 ≤ trqGap (D k) (jk k) (trRadius P Δ k) (dd k (jk k)) ∧
-      trqGap (D k) (jk k) (trRadius P Δ k) (dd k (jk k)) * trRadius P Δ k ^ jk k / (jk k)! ≤
+    P.ς * epsMin P.q ε / 2 ≤ trqGap (D k) (jk k) (trqDARadius P Δ k) (dd k (jk k)) ∧
+      trqGap (D k) (jk k) (trqDARadius P Δ k) (dd k (jk k)) * trqDARadius P Δ k ^ jk k / (jk k)! ≤
         (D k).taylorDecrement (jk k) (s k) := by
   have h2 := hs.step2_of_not_acc hk
-  have hδ := (trRadius_mem (P := P) hΔ).1
-  set δ := trRadius P Δ k
+  have hδ := (trqDARadius_mem (P := P) hΔ).1
+  set δ := trqDARadius P Δ k
   set j := jk k
   have hf : (0 : ℝ) < (j ! : ℝ) := by positivity
   have hδj : 0 < δ ^ j := pow_pos hδ j
@@ -339,7 +339,7 @@ theorem TRqDAStep.trqGap_ge (hs : TRqDAStep X P ε x Δ h D dd jk s acc ρ k) (h
     rw [trqGap]; field_simp
   refine ⟨?_, heq ▸ h2.dec_le⟩
   have hfail := h2.fail
-  unfold trFail at hfail
+  unfold trqDAFail at hfail
   rw [trqGap, le_div_iff₀ hδj]
   have hεj := epsMin_le (ε := ε) h2.jk_mem
   have : P.ς * epsMin P.q ε / 2 * δ ^ j ≤ P.ς * ε j * δ ^ j / 2 := by
@@ -356,14 +356,14 @@ theorem TRqDAStep.taylorDecrement_pos (hs : TRqDAStep X P ε x Δ h D dd jk s ac
     (hk : ¬ acc k) (hΔ : 0 < Δ k) (hε : 0 < epsMin P.q ε) :
     0 < (D k).taylorDecrement (jk k) (s k) := by
   obtain ⟨hφ, hdec⟩ := TRqDAStep.trqGap_ge hs hk hΔ
-  have hδ := (trRadius_mem (P := P) hΔ).1
+  have hδ := (trqDARadius_mem (P := P) hΔ).1
   have h0 : 0 < P.ς * epsMin P.q ε / 2 := by have := P.ς_pos; positivity
   exact lt_of_lt_of_le (div_pos (mul_pos (h0.trans_le hφ) (pow_pos hδ _)) (by positivity)) hdec
 
 /-- The scaled criticality `φ̂_{f,i}` (13.1.25) of iteration `i`. -/
 noncomputable abbrev trPhiHat (P : TRqIDAParams) (Δ : ℕ → ℝ)
     (D : ℕ → FormalMultilinearSeries ℝ E ℝ) (dd : ℕ → ℕ → E) (jk : ℕ → ℕ) (i : ℕ) : ℝ :=
-  trqGap (D i) (jk i) (trRadius P Δ i) (dd i (jk i))
+  trqGap (D i) (jk i) (trqDARadius P Δ i) (dd i (jk i))
 
 /-- **The radius bound behind Lemma 13.1.4** ([cartis2022evaluation], Appendix B), for sequences
 satisfying the TRqIDA step predicate at every iteration `i < k` with `Δ_0 = Δ₀`. Suppose that a
@@ -413,7 +413,7 @@ trial iteration of the TRqIDA step predicate: if `0 < ε_min ≤ 1`, `0 ≤ κ_�
 theorem TRqDAStep.taylorDecrement_ge (hs : TRqDAStep X P ε x Δ h D dd jk s acc ρ k)
     (hk : ¬ acc k) (hΔ : 0 < Δ k) {κδ : ℝ} (hκδ0 : 0 ≤ κδ) (hκδ : κδ ≤ 1 / 2)
     (hεmin : 0 < epsMin P.q ε) (hεmin1 : epsMin P.q ε ≤ 1)
-    (hδ : P.ς * κδ * epsMin P.q ε ≤ trRadius P Δ k) :
+    (hδ : P.ς * κδ * epsMin P.q ε ≤ trqDARadius P Δ k) :
     (P.ς * κδ) ^ (P.q + 1) / P.q ! * epsMin P.q ε ^ (P.q + 1) ≤
       (D k).taylorDecrement (jk k) (s k) := by
   obtain ⟨hφ, hdec⟩ := TRqDAStep.trqGap_ge hs hk hΔ
@@ -421,7 +421,7 @@ theorem TRqDAStep.taylorDecrement_ge (hs : TRqDAStep X P ε x Δ h D dd jk s acc
   obtain ⟨hj1, hjq⟩ := Finset.mem_Icc.1 h2.jk_mem
   set m := P.ς * κδ * epsMin P.q ε with hm
   set ph := trPhiHat P Δ D dd jk k
-  set δ := trRadius P Δ k
+  set δ := trqDARadius P Δ k
   set j := jk k
   have hm0 : 0 ≤ m := by have := P.ς_pos.le; positivity
   have hm1 : m ≤ 1 := by
@@ -458,7 +458,7 @@ TRqIDA step predicate that goes through Step 2: if `‖∇̄^i f(x_k)‖ ≤ L̄
 theorem TRqStep2.not_acc_of_le (h2 : TRqStep2 X P ε x Δ h D dd jk s acc k) (hΔ : 0 < Δ k)
     {Lb κδ : ℝ} (hLb : 1 ≤ Lb) (hD : ∀ i ∈ Finset.Icc 1 P.q, ‖D k i‖ ≤ Lb)
     (hκδ0 : 0 ≤ κδ) (hκδ : κδ ≤ 1) (hε : ∀ j ∈ Finset.Icc 1 P.q, ε j ∈ Set.Ioc 0 1)
-    (hδ : P.ς * κδ * epsMin P.q ε ≤ trRadius P Δ k)
+    (hδ : P.ς * κδ * epsMin P.q ε ≤ trqDARadius P Δ k)
     (hh : ∀ i ∈ Finset.Icc 1 P.q, h k i ≤
       P.κs * (P.ς ^ (P.q + 1) * κδ ^ P.q / (4 * P.q ! * Lb)) ^ P.q *
         epsMin P.q ε ^ (P.q * (P.q + 1))) :
@@ -491,12 +491,12 @@ theorem TRqStep2.not_acc_of_le (h2 : TRqStep2 X P ε x Δ h D dd jk s acc k) (h�
     · exact Or.inr h1
     left
     have hfail := h2.fail
-    unfold trFail at hfail
+    unfold trqDAFail at hfail
     have hup := taylorDecrement_le_two_mul (D := D k) (j := j) hLb0.le
       (fun i hi => hD i (Finset.Icc_subset_Icc le_rfl hjq hi)) h1.le
     have hlow := hfail.trans_le (h2.dec_le.trans hup)
-    have hδ0 := (trRadius_mem (P := P) hΔ).1
-    set δ := trRadius P Δ k
+    have hδ0 := (trqDARadius_mem (P := P) hΔ).1
+    set δ := trqDARadius P Δ k
     have hm0 : 0 ≤ P.ς * κδ * em := by positivity
     have hm1 : P.ς * κδ * em ≤ 1 := by
       calc P.ς * κδ * em ≤ 1 * 1 * 1 := by gcongr
@@ -548,7 +548,7 @@ minimizer of `f` on the feasible set `X` (measures over the feasible displacemen
 e ∈ X}`) with the radius `δ_k = min(Δ_k, ϑ)`. The unconstrained test is the case `X = univ`. -/
 def trqIDATest (f : E → ℝ) (X : Set E) (P : TRqIDAParams) (ε : ℕ → ℝ) (x : ℕ → E)
     (Δ : ℕ → ℝ) (k : ℕ) : Prop :=
-  IsEpsDeltaApprox (ftaylorSeries ℝ f (x k)) {e | x k + e ∈ X} P.q ε (fun _ => trRadius P Δ k)
+  IsEpsDeltaApprox (ftaylorSeries ℝ f (x k)) {e | x k + e ∈ X} P.q ε (fun _ => trqDARadius P Δ k)
 
 /-- **TRqIDA with a feasible set** ([cartis2022evaluation], Algorithm 13.1.1; TRqIDA-SC of
 §14.2) as a run predicate, for the objective `f`, the closed feasible set `X` (closedness is
@@ -658,9 +658,9 @@ theorem IsTRqIDARun.ratio_ge (hf : LipschitzDerivsAnchored f C A 0 P.q L)
   have hΔpos := hrun.delta_pos k
   obtain ⟨hφ, hdec⟩ := TRqDAStep.trqGap_ge hs hk hΔpos
   obtain ⟨hj1, hjq⟩ := Finset.mem_Icc.1 h2.jk_mem
-  have hδeq : trRadius P Δ k = Δ k := min_eq_left (hΔ.trans (min_le_left _ _))
+  have hδeq : trqDARadius P Δ k = Δ k := min_eq_left (hΔ.trans (min_le_left _ _))
   set j := jk k
-  set δ := trRadius P Δ k
+  set δ := trqDARadius P Δ k
   set ph := trPhiHat P Δ D dd jk k
   set Lf := lipMax L P.q
   set κm := ordMax P.q κg
@@ -669,8 +669,8 @@ theorem IsTRqIDARun.ratio_ge (hf : LipschitzDerivsAnchored f C A 0 P.q L)
   have hκm : 0 ≤ κm := hrun.kappaMax_nonneg
   have hκs := P.κs_pos
   have hC : 0 < C := by positivity
-  have hδ0 : 0 < δ := (trRadius_mem (P := P) hΔpos).1
-  have hδ1 : δ ≤ 1 := (trRadius_mem (P := P) hΔpos).2
+  have hδ0 : 0 < δ := (trqDARadius_mem (P := P) hΔpos).1
+  have hδ1 : δ ≤ 1 := (trqDARadius_mem (P := P) hΔpos).2
   have hφ0 : 0 < ph := lt_of_lt_of_le (by have := P.ς_pos; have := hrun.epsMin_pos; positivity) hφ
   have hfj : (0 : ℝ) < j ! := by positivity
   set ΔTb := (D k).taylorDecrement j (s k)
@@ -748,7 +748,7 @@ theorem IsTRqIDARun.delta_ge (hf : LipschitzDerivsAnchored f C A 0 P.q L)
     (∀ hne : (successSet (fun i => ¬ acc i) k).Nonempty, min (P.γ₁ * P.ϑ)
         (κΔ * (successSet (fun i => ¬ acc i) k).inf' hne (trPhiHat P Δ D dd jk)) ≤ Δ k) ∧
       (successSet (fun i => ¬ acc i) k = ∅ → P.γ₁ * P.ϑ ≤ Δ k) ∧
-      P.ς * (κΔ / 2) * epsMin P.q ε ≤ trRadius P Δ k := by
+      P.ς * (κΔ / 2) * epsMin P.q ε ≤ trqDARadius P Δ k := by
   set a := (1 - P.η₂) / (lipMax L P.q + 4 * (P.q + 1)! * P.κs * ordMax P.q κg) with ha_def
   have hLf := one_le_lipMax hL
   have hκm := hrun.kappaMax_nonneg
@@ -840,7 +840,7 @@ theorem IsTRqIDARun.not_acc_of_le (hf : LipschitzDerivsAnchored f C A 0 P.q L)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
     (hrun : IsTRqIDARun f X κg P ε x₀ x Δ h D dd jk s acc) {κΔ : ℝ}
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) (ordMax P.q κg) κΔ)
-    (hb : ∃ j ∈ Finset.Icc 1 P.q, trFail P ε D Δ dd k j)
+    (hb : ∃ j ∈ Finset.Icc 1 P.q, trqDAFail P ε D Δ dd k j)
     (hh : ∀ i ∈ Finset.Icc 1 P.q, h k i ≤ P.κs * (P.ς ^ (P.q + 1) * (κΔ / 2) ^ P.q /
       (4 * P.q ! * (lipMax L P.q + ordMax P.q κg * P.κh))) ^ P.q *
         epsMin P.q ε ^ (P.q * (P.q + 1))) :
@@ -863,20 +863,20 @@ theorem IsTRqIDARun.trqIDATest_of_pass (hf : LipschitzDerivsAnchored f C A 0 P.q
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
     (hrun : IsTRqIDARun f X κg P ε x₀ x Δ h D dd jk s acc) {κΔ : ℝ}
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) (ordMax P.q κg) κΔ)
-    (hpass : ∀ j ∈ Finset.Icc 1 P.q, ¬ trFail P ε D Δ dd k j)
+    (hpass : ∀ j ∈ Finset.Icc 1 P.q, ¬ trqDAFail P ε D Δ dd k j)
     (hh : ∀ i ∈ Finset.Icc 1 P.q, ordMax P.q κg * h k i ≤
       P.ς ^ (P.q + 1) * (κΔ / 2) ^ P.q / (4 * P.q !) * epsMin P.q ε ^ (P.q + 1)) :
     trqIDATest f X P ε x Δ k := by
   obtain ⟨hκΔ0, hκΔ1, hκΔ'⟩ := hκΔ
   have hδm := (IsTRqIDARun.delta_ge hf hL hXC hAX hrun hκΔ0 hκΔ1 hκΔ' k).2.2
-  have hδ := trRadius_mem (P := P) (hrun.delta_pos k)
+  have hδ := trqDARadius_mem (P := P) (hrun.delta_pos k)
   have hεmin := hrun.epsMin_pos
   have hεmin1 := hrun.epsMin_le_one
   have hς := P.ς_pos
   have hς1 := P.ς_le_one
   intro j hj
   obtain ⟨hj1, hjq⟩ := Finset.mem_Icc.1 hj
-  set δ := trRadius P Δ k
+  set δ := trqDARadius P Δ k
   set em := epsMin P.q ε
   set m := P.ς * (κΔ / 2) * em
   have hm0 : 0 ≤ m := by positivity
@@ -995,7 +995,7 @@ theorem IsTRqIDARun.card_acc_le (hf : LipschitzDerivsAnchored f C A 0 P.q L)
       push Not at hcon
       have hhi : ∀ i ∈ Finset.Icc 1 P.q, h j i ≤ κacc * em ^ (P.q * (P.q + 1)) :=
         fun i hi => (le_ordMax hi).trans hcon
-      by_cases hfail : ∃ i ∈ Finset.Icc 1 P.q, trFail P ε D Δ dd j i
+      by_cases hfail : ∃ i ∈ Finset.Icc 1 P.q, trqDAFail P ε D Δ dd j i
       · refine IsTRqIDARun.not_acc_of_le hf hL hXC hAX hrun hκΔ'' hfail
           (fun i hi => (hhi i hi).trans ?_) ha
         exact mul_le_mul_of_nonneg_right trKappaAcc_le (by positivity)
@@ -1029,7 +1029,7 @@ theorem IsTRqIDARun.complexity (hf : LipschitzDerivsAnchored f C A 0 P.q L)
     (hb : ∀ y ∈ X, flow ≤ f y)
     (hrun : IsTRqIDARun f X κg P ε x₀ x Δ h D dd jk s acc) {κΔ : ℝ}
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) (ordMax P.q κg) κΔ) :
-    ∃ kε, IsFirstHit (trqIDATest f X P ε x Δ) kε ∧ 0 < trRadius P Δ kε ∧ trRadius P Δ kε ≤ 1 ∧
+    ∃ kε, IsFirstHit (trqIDATest f X P ε x Δ) kε ∧ 0 < trqDARadius P Δ kε ∧ trqDARadius P Δ kε ≤ 1 ∧
       (derivEvalCount (fun i => ¬ acc i) kε : ℝ) ≤
         trKappaS P κΔ * (1 + Real.log P.γ₃ / |Real.log P.γ₂|) * (f x₀ - flow) /
             epsMin P.q ε ^ (P.q + 1) +
@@ -1120,7 +1120,7 @@ theorem IsTRqIDARun.complexity (hf : LipschitzDerivsAnchored f C A 0 P.q L)
       rw [hNS_def]; ring
     rw [this]
     exact le_mul_of_one_le_left hNS0 hA'1
-  refine ⟨kε, hkε, (trRadius_mem (hrun.delta_pos kε)).1, (trRadius_mem (hrun.delta_pos kε)).2,
+  refine ⟨kε, hkε, (trqDARadius_mem (hrun.delta_pos kε)).1, (trqDARadius_mem (hrun.delta_pos kε)).2,
     ?_, ?_⟩
   · calc (derivEvalCount (fun i => ¬ acc i) kε : ℝ) ≤ NT + 1 := hT
       _ = _ := by rw [hNT_def]; ring
@@ -1151,7 +1151,7 @@ variable (f : E → ℝ) (P : TRqIDAParams) (ε : ℕ → ℝ)
   (O : E → (ℕ → ℝ) → FormalMultilinearSeries ℝ E ℝ)
 
 /-- The Step-1.2 test of a state. -/
-private def trFailS (a : TRState E) (j : ℕ) : Prop :=
+private def trqDAFailS (a : TRState E) (j : ℕ) : Prop :=
   P.ς * ε j * min a.Δ P.ϑ ^ j / j ! / 2 < (O a.x a.h).taylorDecrement j (a.dd j)
 
 /-- Steps 1–2 of a state, and the radius invariant. -/
@@ -1159,10 +1159,10 @@ private def TRLocal (a : TRState E) : Prop :=
   (0 < a.Δ ∧ a.Δ ≤ P.Δmax) ∧
   (∀ j ∈ Finset.Icc 1 P.q, IsApproxMeasureStep ((O a.x a.h).taylorDecrement j) (min a.Δ P.ϑ)
     univ P.ς (a.dd j)) ∧
-  ((∀ j ∈ Finset.Icc 1 P.q, ¬ trFailS P ε O a j) → a.acc) ∧
-  ((∃ j ∈ Finset.Icc 1 P.q, trFailS P ε O a j) →
-    a.jk ∈ Finset.Icc 1 P.q ∧ trFailS P ε O a a.jk ∧
-    (∀ j ∈ Finset.Icc 1 P.q, j < a.jk → ¬ trFailS P ε O a j) ∧ ‖a.s‖ ≤ a.Δ ∧
+  ((∀ j ∈ Finset.Icc 1 P.q, ¬ trqDAFailS P ε O a j) → a.acc) ∧
+  ((∃ j ∈ Finset.Icc 1 P.q, trqDAFailS P ε O a j) →
+    a.jk ∈ Finset.Icc 1 P.q ∧ trqDAFailS P ε O a a.jk ∧
+    (∀ j ∈ Finset.Icc 1 P.q, j < a.jk → ¬ trqDAFailS P ε O a j) ∧ ‖a.s‖ ≤ a.Δ ∧
     (O a.x a.h).taylorDecrement a.jk (a.dd a.jk) ≤ (O a.x a.h).taylorDecrement a.jk a.s ∧
     (a.acc ↔ ∃ i ∈ Finset.Icc 1 P.q, P.κs * ‖a.s‖ ^ (P.q - i + 1) < a.h i))
 
@@ -1207,14 +1207,14 @@ private theorem exists_trNext (a : TRState E) (ha : TRLocal P ε O a) :
     · exact ⟨mul_pos P.γ₂_pos hΔ, (mul_le_of_le_one_left hΔ.le P.γ₂_lt_one.le).trans hΔm⟩
   obtain ⟨dd', jk', s', acc', hloc⟩ := exists_trLocal P ε O x' hΔ'.1 hΔ'.2 h'
   refine ⟨⟨x', Δ', h', dd', jk', s', acc'⟩, hloc, fun r k hra hrb => ?_⟩
-  have hfail : ∀ j, trFail P ε (fun i => O (r i).x (r i).h) (fun i => (r i).Δ)
-      (fun i => (r i).dd) k j ↔ trFailS P ε O a j := by
-    intro j; simp only [trFail, trRadius, trFailS, hra]
+  have hfail : ∀ j, trqDAFail P ε (fun i => O (r i).x (r i).h) (fun i => (r i).Δ)
+      (fun i => (r i).dd) k j ↔ trqDAFailS P ε O a j := by
+    intro j; simp only [trqDAFail, trqDARadius, trqDAFailS, hra]
   have hratio : trqRatio f (fun i => O (r i).x (r i).h) (fun i => (r i).x) (fun i => (r i).s)
       (fun i => (r i).jk) k = ρ := by simp only [trqRatio, hra, hρ]
   refine ⟨fun j hj => ?_, fun hp => ?_, fun he => ?_, fun hk => ?_, fun hk => ?_, fun hk => ?_,
     fun hk hlt => ?_, fun hk => ?_, fun hk => ?_, fun hk i => ?_⟩
-  · simp only [trRadius, hra, Set.setOf_add_mem_univ]; exact hw j hj
+  · simp only [trqDARadius, hra, Set.setOf_add_mem_univ]; exact hw j hj
   · simp only [hra]; exact hpass fun j hj => (hfail j).not.1 (hp j hj)
   · obtain ⟨j, hj, hf⟩ := he
     obtain ⟨h1, h2, h3, h4, h5, h6⟩ := hst ⟨j, hj, (hfail j).1 hf⟩
