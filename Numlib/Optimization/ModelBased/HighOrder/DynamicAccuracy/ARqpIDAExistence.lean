@@ -110,7 +110,7 @@ variable (P : ARqpIDAParams) (ε : ℕ → ℝ) (O : E → (ℕ → ℝ) → For
   (Lb : ℝ)
 
 /-- The Step-1.2 test (13.1.53) of a state. -/
-private def arPassS (a : ARState E) (j : ℕ) : Prop :=
+private def arqpDAPassS (a : ARState E) (j : ℕ) : Prop :=
   (O a.x a.h).taylorDecrement j (a.dd j) ≤ P.ς * ε j * a.δ₁ j ^ j / j ! / 2
 
 /-- Step 2 of a state. -/
@@ -118,9 +118,9 @@ private structure ARStep2S (a : ARState E) : Prop where
   /-- See `ARqpStep2`. -/
   jk_mem : a.jk ∈ Finset.Icc 1 P.q
   /-- See `ARqpStep2`. -/
-  not_pass : ¬ arPassS P ε O a a.jk
+  not_pass : ¬ arqpDAPassS P ε O a a.jk
   /-- See `ARqpStep2`. -/
-  pass_lt : ∀ j ∈ Finset.Icc 1 P.q, j < a.jk → arPassS P ε O a j
+  pass_lt : ∀ j ∈ Finset.Icc 1 P.q, j < a.jk → arqpDAPassS P ε O a j
   /-- See `ARqpStep2`. -/
   radius_gt : ∀ j ∈ Finset.Icc 1 P.q, a.jk < j → a.δ₁ j = a.δ j
   /-- See `ARqpStep2`. -/
@@ -166,9 +166,9 @@ private structure ARLocal (a : ARState E) : Prop where
   witness : ∀ j ∈ Finset.Icc 1 P.q, IsApproxMeasureStep ((O a.x a.h).taylorDecrement j)
     (a.δ₁ j) {e | a.x + e ∈ (univ : Set E)} P.ς (a.dd j)
   /-- See `ARqpDAStep` and `RadiiControl`. -/
-  acc_of_pass : (∀ j ∈ Finset.Icc 1 P.q, arPassS P ε O a j) → a.acc
+  acc_of_pass : (∀ j ∈ Finset.Icc 1 P.q, arqpDAPassS P ε O a j) → a.acc
   /-- See `ARqpDAStep` and `RadiiControl`. -/
-  step2 : (∃ j ∈ Finset.Icc 1 P.q, ¬ arPassS P ε O a j) → ARStep2S P ε O a
+  step2 : (∃ j ∈ Finset.Icc 1 P.q, ¬ arqpDAPassS P ε O a j) → ARStep2S P ε O a
   /-- See `ARqpDAStep` and `RadiiControl`. -/
   rc : ¬ a.acc → ‖a.s‖ < 1 → (∀ j ∈ Finset.Icc 1 (min 2 P.q), a.δs j = 1) ∧
     ∀ j ∈ Finset.Icc 3 P.q, P.ς * P.θ * ε j / (24 * max Lb a.σ) ≤ a.δs j
@@ -244,11 +244,11 @@ private theorem exists_arLocal (hε : ∀ j ∈ Finset.Icc 1 P.q, ε j ∈ Set.I
       · exact (hH j hj).2.2.1
     · exfalso
       have := hpass jk hjk
-      simp only [arPassS, δ₁, dd, lt_irrefl, ite_false] at this
+      simp only [arqpDAPassS, δ₁, dd, lt_irrefl, ite_false] at this
       exact hfjk this
-    · have hpass_jk : ¬ arPassS P ε O ⟨x, σ, δ, δ₁, δs, h, dd, jk, s,
+    · have hpass_jk : ¬ arqpDAPassS P ε O ⟨x, σ, δ, δ₁, δs, h, dd, jk, s,
           ‖s‖ < 1 ∧ ∃ i ∈ Finset.Icc 1 P.p, P.κs * ‖s‖ ^ (P.p - i + 1) < h i⟩ jk := by
-        simp only [arPassS, δ₁, dd, lt_irrefl, ite_false]; exact hfjk
+        simp only [arqpDAPassS, δ₁, dd, lt_irrefl, ite_false]; exact hfjk
       have hdec : P.ς * ε jk * δ₁h jk ^ jk / jk ! / 4 ≤
           regularizedModel D P.p σ 0 - regularizedModel D P.p σ (ddh jk) :=
         (hH jk hjk).2.2.2.1.resolve_left hfjk
@@ -256,7 +256,7 @@ private theorem exists_arLocal (hε : ∀ j ∈ Finset.Icc 1 P.q, ε j ∈ Set.I
       refine ⟨hjk, hpass_jk, fun j hj hlt => ?_, fun j hj hlt => ?_, ?_, ?_, ?_, Iff.rfl⟩
       · dsimp only at hlt
         have hlt' : ¬ jk < j := by omega
-        simp only [arPassS, δ₁, dd, hlt', ite_false]; exact hjkmin j hj hlt
+        simp only [arqpDAPassS, δ₁, dd, hlt', ite_false]; exact hjkmin j hj hlt
       · dsimp only at hlt ⊢; simp only [δ₁, hlt, ite_true]
       · dsimp only; simp only [δ₁, dd, lt_irrefl, ite_false]; exact hdec
       · dsimp only; simp only [dd, lt_irrefl, ite_false]
@@ -347,9 +347,9 @@ private theorem exists_arNext (f : E → ℝ) (hε : ∀ j ∈ Finset.Icc 1 P.q,
   obtain ⟨δ₁', δs', dd', jk', s', acc', hloc⟩ :=
     exists_arLocal P ε O Lb hε hLb1 hO x' hσ' hδ' hh'
   refine ⟨⟨x', σ', δ', δ₁', δs', h', dd', jk', s', acc'⟩, hloc, fun r k hra hrb => ?_⟩
-  have hpass : ∀ j, arPass P ε (fun i => O (r i).x (r i).h) (fun i => (r i).δ₁)
-      (fun i => (r i).dd) k j ↔ arPassS P ε O a j := by
-    intro j; simp only [arPass, arPassS, hra]
+  have hpass : ∀ j, arqpDAPass P ε (fun i => O (r i).x (r i).h) (fun i => (r i).δ₁)
+      (fun i => (r i).dd) k j ↔ arqpDAPassS P ε O a j := by
+    intro j; simp only [arqpDAPass, arqpDAPassS, hra]
   have hratio : arqpIDARatio f P (fun i => O (r i).x (r i).h) (fun i => (r i).x)
       (fun i => (r i).s) k = ρ := by simp only [arqpIDARatio, hra, hρ]
   refine ⟨⟨⟨?_, ?_, ?_, ?_, ?_⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_⟩

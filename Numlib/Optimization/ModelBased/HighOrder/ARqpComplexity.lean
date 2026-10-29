@@ -82,6 +82,9 @@ noncomputable abbrev arqpRho (f : E → ℝ) (p : ℕ) (x s : ℕ → E) (σ : �
 noncomputable def arqpKappaDelta (P : ARqpParams) (Lf σ : ℝ) : ℝ :=
   P.ς * P.θ / (8 * (3 * Lf + σ))
 
+theorem arqpKappaDelta_def (P : ARqpParams) (Lf σ : ℝ) :
+    arqpKappaDelta P Lf σ = P.ς * P.θ / (8 * (3 * Lf + σ)) := rfl
+
 theorem arqpKappaDelta_pos (P : ARqpParams) {Lf σ : ℝ} (hL : 0 ≤ Lf) (hσ : 0 < σ) :
     0 < arqpKappaDelta P Lf σ := by
   have := P.ς_pos; have := P.θ_pos

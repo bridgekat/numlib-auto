@@ -40,7 +40,7 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 `∑_{i=1}^j h_{k,i} (δ^{(1)}_{k,j})^i/i! ≤ ½ ς ε_j (δ^{(1)}_{k,j})^j/j!` for every `j ∈ [1, q]`. -/
 def edaStopAR (P : ARqpIDAParams) (ε : ℕ → ℝ) (D : ℕ → FormalMultilinearSeries ℝ E ℝ)
     (δ₁ : ℕ → ℕ → ℝ) (h : ℕ → ℕ → ℝ) (dd : ℕ → ℕ → E) (k : ℕ) : Prop :=
-  (∀ j ∈ Finset.Icc 1 P.q, arPass P ε D δ₁ dd k j) ∧
+  (∀ j ∈ Finset.Icc 1 P.q, arqpDAPass P ε D δ₁ dd k j) ∧
     ∀ j ∈ Finset.Icc 1 P.q, ∑ i ∈ Finset.Icc 1 j, h k i * δ₁ k j ^ i / i ! ≤
       P.ς * ε j * δ₁ k j ^ j / j ! / 2
 
@@ -282,9 +282,9 @@ theorem IsARqpEDARun.stop_of_pass (hf : LipschitzDerivsAnchored f C A 0 P.p L)
     (hL : ∀ j ≤ P.p, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
     (hrun : IsARqpEDARun f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
-    {u : Prop} (hrc : ∀ i, RadiiControlOf u P ε (lipMax L P.p + P.κh) σ δs s acc i)
+    {u : Prop} (hrc : ∀ i, ARqpDARadiiControl u P ε (lipMax L P.p + P.κh) σ δs s acc i)
     (hk : ∀ j < k, ¬ edaStopAR P ε D δ₁ h dd j)
-    (hpass : ∀ j ∈ Finset.Icc 1 P.q, arPass P ε D δ₁ dd k j)
+    (hpass : ∀ j ∈ Finset.Icc 1 P.q, arqpDAPass P ε D δ₁ dd k j)
     (hh : ∀ i ∈ Finset.Icc 1 P.p, h k i ≤ P.ς * arKappaDelta1 P (lipMax L P.p + P.κh)
       (arqpIDASigmaMax P (L P.p) 1) ^ P.q / (4 * P.q !) * epsMin P.q ε ^ (P.q + 1)) :
     edaStopAR P ε D δ₁ h dd k := by
@@ -349,7 +349,7 @@ theorem IsARqpEDARun.measure_ineq (hf : LipschitzDerivsAnchored f C A 0 P.p L)
     (hk : ∀ j ≤ k, ¬ edaStopAR P ε D δ₁ h dd j) (ha : ¬ acc k)
     (hρ : P.η₁ ≤ edaRatio fx fxs (fun i => (D i).taylorDecrement P.p (s i)) k)
     (hs1 : ‖s k‖ < 1)
-    (hnot : ¬ ((∀ j ∈ Finset.Icc 1 P.q, arPass P ε D δ₁ dd (k + 1) j) ∧
+    (hnot : ¬ ((∀ j ∈ Finset.Icc 1 P.q, arqpDAPass P ε D δ₁ dd (k + 1) j) ∧
       ∀ j ∈ Finset.Icc 1 P.q, δ₁ (k + 1) j = δ (k + 1) j)) :
     ∃ j ∈ Finset.Icc 1 P.q, (P.ς / 2 - P.θ) * ε j * δ (k + 1) j ^ j / j ! ≤
       (L P.p + arqpIDASigmaMax P (L P.p) 1 + 4 * P.κs) *
@@ -364,12 +364,12 @@ theorem IsARqpEDARun.measure_ineq (hf : LipschitzDerivsAnchored f C A 0 P.p L)
       x (k + 1) + d₀ ∈ X ∧
       P.ς * ε j * δ (k + 1) j ^ j / j ! / 2 < (D (k + 1)).taylorDecrement j d₀ := by
     by_cases hall : ∀ j ∈ Finset.Icc 1 P.q, δ₁ (k + 1) j = δ (k + 1) j
-    · have : ¬ ∀ j ∈ Finset.Icc 1 P.q, arPass P ε D δ₁ dd (k + 1) j := fun hp => hnot ⟨hp, hall⟩
+    · have : ¬ ∀ j ∈ Finset.Icc 1 P.q, arqpDAPass P ε D δ₁ dd (k + 1) j := fun hp => hnot ⟨hp, hall⟩
       push Not at this
       obtain ⟨j, hj, hfail⟩ := this
       refine ⟨j, hj, dd (k + 1) j, ?_, (hS1.witness j hj).mem, ?_⟩
       · rw [← hall j hj]; exact (hS1.witness j hj).norm_le
-      · unfold arPass at hfail; rw [← hall j hj]; exact not_le.1 hfail
+      · unfold arqpDAPass at hfail; rw [← hall j hj]; exact not_le.1 hfail
     · push Not at hall
       obtain ⟨j, hj, hne⟩ := hall
       obtain ⟨-, -, d₀, hd₀n, hd₀X, hd₀⟩ :=
@@ -446,7 +446,7 @@ theorem one_le_arEDAConstA {P : ARqpIDAParams} {L : ℕ → ℝ} (hL : 1 ≤ L P
 /-- Step 1 at iteration `i` passes every test (13.3.15) with unchanged radii. -/
 def edaPassUnchanged (P : ARqpIDAParams) (ε : ℕ → ℝ) (D : ℕ → FormalMultilinearSeries ℝ E ℝ)
     (δ δ₁ : ℕ → ℕ → ℝ) (dd : ℕ → ℕ → E) (i : ℕ) : Prop :=
-  (∀ j ∈ Finset.Icc 1 P.q, arPass P ε D δ₁ dd i j) ∧ ∀ j ∈ Finset.Icc 1 P.q, δ₁ i j = δ i j
+  (∀ j ∈ Finset.Icc 1 P.q, arqpDAPass P ε D δ₁ dd i j) ∧ ∀ j ∈ Finset.Icc 1 P.q, δ₁ i j = δ i j
 
 /-- The step-length bounds of ARqpEDA (as `IsARqpIDARun.step_bound`): at a successful iteration `k`
 reached by ARqpEDA with the radii control at `k`, such that `‖s_k‖ ≥ 1` or Step 1 at `k + 1`
@@ -457,7 +457,8 @@ theorem IsARqpEDARun.step_bound (hf : LipschitzDerivsAnchored f C A 0 P.p L)
     (hL : ∀ j ≤ P.p, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
     (hrun : IsARqpEDARun f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
-    {u : Prop} (hrc : RadiiControlOf u P ε (lipMax L P.p + P.κh) σ δs s acc k) (hθ : P.θ < P.ς / 2)
+    {u : Prop} (hrc : ARqpDARadiiControl u P ε (lipMax L P.p + P.κh) σ δs s acc k)
+    (hθ : P.θ < P.ς / 2)
     (hk : ∀ j ≤ k, ¬ edaStopAR P ε D δ₁ h dd j) (ha : ¬ acc k)
     (hρ : P.η₁ ≤ edaRatio fx fxs (fun i => (D i).taylorDecrement P.p (s i)) k)
     (hgood : 1 ≤ ‖s k‖ ∨ ¬ edaPassUnchanged P ε D δ δ₁ dd (k + 1)) :
@@ -511,7 +512,7 @@ theorem IsARqpEDARun.decrease_ge (hf : LipschitzDerivsAnchored f C A 0 P.p L)
     (hL : ∀ j ≤ P.p, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
     (hrun : IsARqpEDARun f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
-    {u : Prop} [Decidable u] (hrc : RadiiControlOf u P ε (lipMax L P.p + P.κh) σ δs s acc k)
+    {u : Prop} [Decidable u] (hrc : ARqpDARadiiControl u P ε (lipMax L P.p + P.κh) σ δs s acc k)
     (hθ : P.θ < P.ς / 2)
     (hk : ∀ j ≤ k, ¬ edaStopAR P ε D δ₁ h dd j) (ha : ¬ acc k)
     (hρ : P.η₁ ≤ edaRatio fx fxs (fun i => (D i).taylorDecrement P.p (s i)) k)
@@ -583,7 +584,7 @@ theorem IsARqpEDARun.card_acc_le (hf : LipschitzDerivsAnchored f C A 0 P.p L)
     (hL : ∀ j ≤ P.p, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
     (hrun : IsARqpEDARun f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
-    {u : Prop} (hrc : ∀ i, RadiiControlOf u P ε (lipMax L P.p + P.κh) σ δs s acc i) {k : ℕ}
+    {u : Prop} (hrc : ∀ i, ARqpDARadiiControl u P ε (lipMax L P.p + P.κh) σ δs s acc i) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ edaStopAR P ε D δ₁ h dd j) :
     ((successSet acc k).card : ℝ) ≤
       P.p * (P.q + 1) / |Real.log P.γh| * |Real.log (epsMin P.q ε)| +
@@ -627,7 +628,7 @@ theorem IsARqpEDARun.card_acc_le (hf : LipschitzDerivsAnchored f C A 0 P.p L)
       push Not at hcon
       have hhi : ∀ i ∈ Finset.Icc 1 P.p, h j i ≤ κacc * em ^ (P.p * (P.q + 1)) :=
         fun i hi => (le_ordMax hi).trans hcon
-      by_cases hfail : ∃ i ∈ Finset.Icc 1 P.q, ¬ arPass P ε D δ₁ dd j i
+      by_cases hfail : ∃ i ∈ Finset.Icc 1 P.q, ¬ arqpDAPass P ε D δ₁ dd j i
       · have hrad := arqpDA_radius_ge (hrun.steps_lt hjlt) (hrun.step1 j hjlt) hrun.σ_zero
           hrun.δ_zero hrun.h_zero hrun.eps_mem hrun.eps_le hLb
           (fun i hi ℓ hℓ => hrun.norm_D_le hf hL hAX (fun l hl => hjlt l (hl.trans_le hi)) hℓ)
@@ -667,7 +668,7 @@ theorem IsARqpEDARun.complexity (hf : LipschitzDerivsAnchored f C A 0 P.p L)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A) {flow : ℝ}
     (hb : ∀ y ∈ X, flow ≤ f y)
     (hrun : IsARqpEDARun f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
-    {u : Prop} (hrc : ∀ i, RadiiControlOf u P ε (lipMax L P.p + P.κh) σ δs s acc i) {c : ℝ}
+    {u : Prop} (hrc : ∀ i, ARqpDARadiiControl u P ε (lipMax L P.p + P.κh) σ δs s acc i) {c : ℝ}
     (hc : 0 < c)
     (hdec : ∀ k, (∀ j ≤ k, ¬ edaStopAR P ε D δ₁ h dd j) → ¬ acc k →
       P.η₁ ≤ edaRatio fx fxs (fun i => (D i).taylorDecrement P.p (s i)) k →
@@ -829,13 +830,13 @@ ARqpEDA run with a feasible set under `LipschitzDerivsAnchored f C A 0 p L` (`L_
 including termination) satisfies `k ≤ κ_uns |𝒮_k| + κ_unc` (14.2.13) with
 `κ_uns = 1 + |log γ₁|/log γ₂` and `κ_unc = log(σ_max/σ₀)/log γ₂ + N_𝒜`,
 `N_𝒜 = p(q+1)/|log γ_h| |log ε_min| + |log(κ_acc/κ_h)|/|log γ_h| + 1`. The radii control
-(`RadiiControlOf u`) may be in either mode (unit radii, or the (12.2.51)-type lower bounds at every
-order). -/
+(`ARqpDARadiiControl u`) may be in either mode (unit radii, or the (12.2.51)-type lower bounds
+at every order). -/
 theorem IsARqpEDARun.le_card_succ (hf : LipschitzDerivsAnchored f C A 0 P.p L)
     (hL : ∀ j ≤ P.p, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
     (hrun : IsARqpEDARun f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
-    (hrc : ∀ i, RadiiControlOf u P ε (lipMax L P.p + P.κh) σ δs s acc i) {k : ℕ}
+    (hrc : ∀ i, ARqpDARadiiControl u P ε (lipMax L P.p + P.κh) σ δs s acc i) {k : ℕ}
     (hk : ∀ j < k, ¬ edaStopAR P ε D δ₁ h dd j) :
     (k : ℝ) ≤ (successSet (fun i => ¬ acc i ∧
           P.η₁ ≤ edaRatio fx fxs (fun i => (D i).taylorDecrement P.p (s i)) i) k).card *
@@ -874,16 +875,17 @@ with a feasible set terminates at some `k_ε` with `x_{k_ε} ∈ X` an `(ε, δ^
 derivative estimates, where `N = (f(x₀) - f_low)/c` with `c = ½ η₁ κ'_{Δm} min_j ε_j^{π_j}` the
 decrease of Lemma 14.2.2, `M = p(q+1)/|log γ_h| |log ε_min| + |log(κ_acc/κ_h)|/|log γ_h| + 1` and
 `c_T = 1 + |log γ₁|/log γ₂` (as in Theorem 13.3.8), with the radii control in either mode `u`
-(`RadiiControlOf`): unit radii `δ_{s_k} = 1` (`u`), which Step 2 guarantees for `X = E` with `q ≤ 2`
-or for `q = 1` with `X` convex, with `π_j = (p+1)/(p-j+1)`, or the (12.2.51)-type lower bounds at
-every order (`¬ u`), available for every `q` and `X`, with `π_j = j(p+1)/p` (`π_j = arPiOf u p j`;
-the radii control of Theorem 13.1.19, `RadiiControl`, is the mode `u = (q ≤ 2)`). -/
+(`ARqpDARadiiControl`): unit radii `δ_{s_k} = 1` (`u`), which Step 2 guarantees for `X = E` with
+`q ≤ 2` or for `q = 1` with `X` convex, with `π_j = (p+1)/(p-j+1)`, or the (12.2.51)-type
+lower bounds at every order (`¬ u`), available for every `q` and `X`, with `π_j = j(p+1)/p`
+(`π_j = arPiOf u p j`; the radii control of Theorem 13.1.19, `RadiiControl`, is the mode
+`u = (q ≤ 2)`). -/
 theorem IsARqpEDARun.complexity_of_radiiControl (hf : LipschitzDerivsAnchored f C A 0 P.p L)
     (hL : ∀ j ≤ P.p, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A) {flow : ℝ}
     (hb : ∀ y ∈ X, flow ≤ f y)
     (hrun : IsARqpEDARun f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
-    [Decidable u] (hrc : ∀ i, RadiiControlOf u P ε (lipMax L P.p + P.κh) σ δs s acc i)
+    [Decidable u] (hrc : ∀ i, ARqpDARadiiControl u P ε (lipMax L P.p + P.κh) σ δs s acc i)
     (hθ : P.θ < P.ς / 2) :
     ∃ kε, IsFirstHit (edaStopAR P ε D δ₁ h dd) kε ∧ x kε ∈ X ∧
       (∀ j ∈ Finset.Icc 1 P.q, δ₁ kε j ∈ Set.Ioc 0 1) ∧

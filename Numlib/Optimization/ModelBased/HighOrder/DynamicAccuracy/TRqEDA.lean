@@ -93,9 +93,9 @@ theorem edaFunEvalCount_le (acc R : ℕ → Prop) (k : ℕ) :
 (13.3.7) fails at every order and (13.3.8) `∑_{i=1}^q h_{k,i} δ_k^i/i! ≤ ½ ς ε_min δ_k^q/q!`. -/
 def edaStopTR (P : TRqIDAParams) (ε : ℕ → ℝ) (D : ℕ → FormalMultilinearSeries ℝ E ℝ)
     (Δ : ℕ → ℝ) (h : ℕ → ℕ → ℝ) (dd : ℕ → ℕ → E) (k : ℕ) : Prop :=
-  (∀ j ∈ Finset.Icc 1 P.q, ¬ trFail P ε D Δ dd k j) ∧
-    ∑ i ∈ Finset.Icc 1 P.q, h k i * trRadius P Δ k ^ i / i ! ≤
-      P.ς * epsMin P.q ε * trRadius P Δ k ^ P.q / P.q ! / 2
+  (∀ j ∈ Finset.Icc 1 P.q, ¬ trqDAFail P ε D Δ dd k j) ∧
+    ∑ i ∈ Finset.Icc 1 P.q, h k i * trqDARadius P Δ k ^ i / i ! ≤
+      P.ς * epsMin P.q ε * trqDARadius P Δ k ^ P.q / P.q ! / 2
 
 /-- **TRqEDA with a feasible set** ([cartis2022evaluation], Algorithm 13.3.1; TRqEDA-SC of §14.2) as
 a run predicate, with the TRqIDA constants `P` satisfying (13.3.5) `κ_s ≤ min(η₁, 1 - η₂)/4`,
@@ -128,7 +128,7 @@ structure IsTRqEDARun (f : E → ℝ) (X : Set E) (P : TRqIDAParams) (ε : ℕ �
     JetApprox (ftaylorSeries ℝ f (x k)) (D k) P.q (fun i => h k i)
   /-- (13.3.6) at every iteration reached. -/
   witness : ∀ k, (∀ j < k, ¬ edaStopTR P ε D Δ h dd j) → ∀ j ∈ Finset.Icc 1 P.q,
-    IsApproxMeasureStep ((D k).taylorDecrement j) (trRadius P Δ k) {e | x k + e ∈ X} P.ς (dd k j)
+    IsApproxMeasureStep ((D k).taylorDecrement j) (trqDARadius P Δ k) {e | x k + e ∈ X} P.ς (dd k j)
   /-- Steps 1–5 until termination. -/
   run : UntilHit (edaStopTR P ε D Δ h dd) fun k =>
     TRqDAStep X P ε x Δ h D dd jk s acc
@@ -245,17 +245,17 @@ theorem IsTRqEDARun.ratio_ge (hf : LipschitzDerivsAnchored f C A 0 P.q L)
   have hΔpos := (hrun.invariants hklt).1.1
   obtain ⟨hφ, hdec⟩ := TRqDAStep.trqGap_ge hs ha hΔpos
   obtain ⟨hj1, hjq⟩ := Finset.mem_Icc.1 h2.jk_mem
-  have hδeq : trRadius P Δ k = Δ k := min_eq_left (hΔ.trans (min_le_left _ _))
+  have hδeq : trqDARadius P Δ k = Δ k := min_eq_left (hΔ.trans (min_le_left _ _))
   set j := jk k
-  set δ := trRadius P Δ k
+  set δ := trqDARadius P Δ k
   set ph := trPhiHat P Δ D dd jk k
   set Lf := lipMax L P.q
   set C := Lf + 4 * (P.q + 1)! * P.κs
   have hLf : 1 ≤ Lf := one_le_lipMax hL
   have hκs := P.κs_pos
   have hC : 0 < C := by positivity
-  have hδ0 : 0 < δ := (trRadius_mem (P := P) hΔpos).1
-  have hδ1 : δ ≤ 1 := (trRadius_mem (P := P) hΔpos).2
+  have hδ0 : 0 < δ := (trqDARadius_mem (P := P) hΔpos).1
+  have hδ1 : δ ≤ 1 := (trqDARadius_mem (P := P) hΔpos).2
   have hφ0 : 0 < ph := lt_of_lt_of_le (by have := P.ς_pos; have := hrun.epsMin_pos; positivity) hφ
   have hfj : (0 : ℝ) < j ! := by positivity
   set ΔTb := (D k).taylorDecrement j (s k)
@@ -329,7 +329,7 @@ theorem IsTRqEDARun.delta_ge (hf : LipschitzDerivsAnchored f C A 0 P.q L)
     (hrun : IsTRqEDARun f X P ε x₀ x Δ h D dd jk s acc fx fxs h₀ R) {κΔ : ℝ}
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) 1 κΔ)
     (hk : ∀ j < k, ¬ edaStopTR P ε D Δ h dd j) :
-    P.ς * (κΔ / 2) * epsMin P.q ε ≤ trRadius P Δ k := by
+    P.ς * (κΔ / 2) * epsMin P.q ε ≤ trqDARadius P Δ k := by
   obtain ⟨hκΔ0, hκΔ1, hκΔ'⟩ := hκΔ
   rw [mul_one] at hκΔ'
   set a := (1 - P.η₂) / (lipMax L P.q + 4 * (P.q + 1)! * P.κs) with ha_def
@@ -403,13 +403,13 @@ theorem IsTRqEDARun.isEpsDeltaApprox_of_stop
     (hrun : IsTRqEDARun f X P ε x₀ x Δ h D dd jk s acc fx fxs h₀ R)
     (hk : ∀ j < k, ¬ edaStopTR P ε D Δ h dd j) (hstop : edaStopTR P ε D Δ h dd k) :
     IsEpsDeltaApprox (ftaylorSeries ℝ f (x k)) {e | x k + e ∈ X} P.q ε
-      (fun _ => trRadius P Δ k) := by
+      (fun _ => trqDARadius P Δ k) := by
   have hΔ := (hrun.invariants hk).1.1
-  obtain ⟨hδ0, hδ1⟩ := trRadius_mem (P := P) hΔ
+  obtain ⟨hδ0, hδ1⟩ := trqDARadius_mem (P := P) hΔ
   have hor := hrun.oracle k hk
   intro j hj
   obtain ⟨hj1, hjq⟩ := Finset.mem_Icc.1 hj
-  set δ := trRadius P Δ k
+  set δ := trqDARadius P Δ k
   have hεmin := hrun.epsMin_pos
   have hς := P.ς_pos
   have hs : ∑ i ∈ Finset.Icc 1 j, h k i * δ ^ i / i ! ≤ ε j * δ ^ j / j ! / 2 := by
@@ -442,15 +442,15 @@ theorem IsTRqEDARun.stop_of_pass (hf : LipschitzDerivsAnchored f C A 0 P.q L)
     (hrun : IsTRqEDARun f X P ε x₀ x Δ h D dd jk s acc fx fxs h₀ R) {κΔ : ℝ}
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) 1 κΔ)
     (hk : ∀ j < k, ¬ edaStopTR P ε D Δ h dd j)
-    (hpass : ∀ j ∈ Finset.Icc 1 P.q, ¬ trFail P ε D Δ dd k j)
+    (hpass : ∀ j ∈ Finset.Icc 1 P.q, ¬ trqDAFail P ε D Δ dd k j)
     (hh : ∀ i ∈ Finset.Icc 1 P.q, h k i ≤
       P.ς ^ (P.q + 1) * (κΔ / 2) ^ P.q / (4 * P.q !) * epsMin P.q ε ^ (P.q + 1)) :
     edaStopTR P ε D Δ h dd k := by
   refine ⟨hpass, ?_⟩
   have hΔ := (hrun.invariants hk).1.1
-  obtain ⟨hδ0, hδ1⟩ := trRadius_mem (P := P) hΔ
+  obtain ⟨hδ0, hδ1⟩ := trqDARadius_mem (P := P) hΔ
   have hδm := IsTRqEDARun.delta_ge hf hL hXC hAX hrun hκΔ hk
-  set δ := trRadius P Δ k
+  set δ := trqDARadius P Δ k
   set em := epsMin P.q ε
   have hεmin := hrun.epsMin_pos
   have hεmin1 := hrun.epsMin_le_one
@@ -522,7 +522,7 @@ theorem IsTRqEDARun.card_acc_le (hf : LipschitzDerivsAnchored f C A 0 P.q L)
       push Not at hcon
       have hhi : ∀ i ∈ Finset.Icc 1 P.q, h j i ≤ κacc * em ^ (P.q * (P.q + 1)) :=
         fun i hi => (le_ordMax hi).trans hcon
-      by_cases hfail : ∃ i ∈ Finset.Icc 1 P.q, trFail P ε D Δ dd j i
+      by_cases hfail : ∃ i ∈ Finset.Icc 1 P.q, trqDAFail P ε D Δ dd j i
       · refine (((hrun.step hjs).step2 hfail).not_acc_of_le (Lb := Lb)
           (hrun.invariants hjlt).1.1 hLb1 (fun i hi => hrun.norm_D_le hf hL hAX hjlt hi)
           (by positivity) (by linarith) hrun.eps_mem
@@ -557,8 +557,8 @@ theorem IsTRqEDARun.complexity (hf : LipschitzDerivsAnchored f C A 0 P.q L)
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) 1 κΔ) :
     ∃ kε, IsFirstHit (edaStopTR P ε D Δ h dd) kε ∧
       IsEpsDeltaApprox (ftaylorSeries ℝ f (x kε)) {e | x kε + e ∈ X} P.q ε
-        (fun _ => trRadius P Δ kε) ∧
-      0 < trRadius P Δ kε ∧ trRadius P Δ kε ≤ 1 ∧
+        (fun _ => trqDARadius P Δ kε) ∧
+      0 < trqDARadius P Δ kε ∧ trqDARadius P Δ kε ≤ 1 ∧
       (edaFunEvalCount acc R kε : ℝ) ≤
         2 * (trKappaS P κΔ * (1 + Real.log P.γ₃ / |Real.log P.γ₂|) * (f x₀ - flow) /
             epsMin P.q ε ^ (P.q + 1)) +
@@ -654,8 +654,8 @@ theorem IsTRqEDARun.complexity (hf : LipschitzDerivsAnchored f C A 0 P.q L)
     exact le_mul_of_one_le_left hNS0 hA'1
   have hklt : ∀ j < kε, ¬ stop j := fun j hj => hkε.not_test_of_lt hj
   have hΔ := (hrun.invariants hklt).1.1
-  refine ⟨kε, hkε, IsTRqEDARun.isEpsDeltaApprox_of_stop hrun hklt hkε.test, (trRadius_mem hΔ).1,
-    (trRadius_mem hΔ).2,
+  refine ⟨kε, hkε, IsTRqEDARun.isEpsDeltaApprox_of_stop hrun hklt hkε.test, (trqDARadius_mem hΔ).1,
+    (trqDARadius_mem hΔ).2,
     ?_, ?_⟩
   · have := edaFunEvalCount_le acc R kε
     calc (edaFunEvalCount acc R kε : ℝ) ≤ 2 * ((derivEvalCount (fun i => ¬ acc i) kε : ℝ) - 1) :=

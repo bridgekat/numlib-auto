@@ -42,14 +42,14 @@ subproblems. It therefore has no declaration of its own.
   Chapter 12's TRq with a feasible set; Lemma 14.2.3 through Lemma 12.2.3 with a feasible set);
   `lemma_14_2_2_arqp`, `lemma_14_2_3`, `theorem_14_2_4_arqp` — the ARqp-SC rows (from Chapter 12's
   ARqp with a feasible set), in either radii mode `u` (unit radii, order `(p+1)/(p-j+1)`, or
-  (12.2.51) at every order, order `j(p+1)/p`; `Chapter12.arqpPiOf u`);
+  (12.2.51) at every order, order `j(p+1)/p`; `Optimization.arqpPiOf u`);
 * `lemma_14_2_2_trqida`, `lemma_14_2_3_trqida`, `theorem_14_2_4_trqida` (TRqIDA-SC),
   `lemma_14_2_2_trqeda`, `lemma_14_2_3_trqeda`, `theorem_14_2_4_trqeda` (TRqEDA-SC),
   `lemma_14_2_2_arqpida`, `lemma_14_2_3_arqpida`, `theorem_14_2_4_arqpida` (ARqpIDA-SC),
   `lemma_14_2_2_arqpeda`, `lemma_14_2_3_arqpeda`, `theorem_14_2_4_arqpeda` (ARqpEDA-SC) — the
   dynamic-accuracy rows, from the library's runs with a feasible set
   (`Optimization.IsTRqIDARun`, …, `Optimization.IsARqpEDARun`), the
-  regularization rows in either mode of the radii control (`Optimization.RadiiControlOf u`: unit
+  regularization rows in either mode of the radii control (`Optimization.ARqpDARadiiControl u`: unit
   radii, order `(p+1)/(p-j+1)`, or (12.2.51) at every order, order `j(p+1)/p`);
   `theorem_14_2_4_arqpida_le_two` — on `X = ℝⁿ` with `q ≤ 2`, every ARqpIDA run satisfies the
   bound of the unit-radii mode whatever its radii mode;
@@ -93,11 +93,11 @@ subproblems. It therefore has no declaration of its own.
   iterate. The ARqpIDA-SC row of Lemma 14.2.2 holds at successful iterations followed by an
   iterate that is not approximately optimal, and the ARqpEDA-SC row needs `θ < ς/2` and holds at
   the successful iterations of Lemma 13.3.7 (the corrections of Lemmas 13.1.18 and 13.3.7).
-* The ARqp-SC rows are stated by radii mode `u` (exponents `Chapter12.arqpPiOf u`), while the
+* The ARqp-SC rows are stated by radii mode `u` (exponents `Optimization.arqpPiOf u`), while the
   table keys them by `(q, X)`: the mode `u = False` ((12.2.51) at every order) gives the
   "otherwise" entries `j(p+1)/p` for every `q` and `X`, and the unit-radii entries
   `(p+1)/(p-j+1)` hold under the hypothesis that the radii are `1`.
-* The IDA/EDA regularization rows are stated by radii mode (`Chapter13.RadiiControlOf u`), while
+* The IDA/EDA regularization rows are stated by radii mode (`Chapter13.ARqpDARadiiControl u`), while
   the table keys them by `(q, X)`. On `ℝⁿ` with `q ≤ 2` every ARqpIDA run satisfies the
   unit-radii bound of the table in either mode (`theorem_14_2_4_arqpida_le_two`, a strengthening
   of Theorem 13.1.19 (1), which assumes unit radii): a failure of the criterion is a failure at
@@ -167,6 +167,25 @@ structure AssumptionD1qLaBX (f : ℝⁿ → ℝ) (X X₀ : Set ℝⁿ) (x₀ : �
     IteratedFDerivLipschitzAnchored f j (L j) (sublevel f X x₀) X₀
   /-- The derivative bound (14.2.10). -/
   norm_le : ∀ j ∈ Finset.Icc j₀ q, ∀ x ∈ sublevel f X x₀, ‖iteratedFDeriv ℝ j f x‖ ≤ B j
+
+/-- f.D1qLaB.X gives the backbone smoothness hypothesis `LipschitzDerivsAnchored` on `X₀` with
+the orders `[j₀ : q]` and the anchor set `𝓛_f(x₀)` (the bound (14.2.10) is not used). -/
+theorem AssumptionD1qLaBX.toLipschitzDerivsAnchored {f : ℝⁿ → ℝ} {X X₀ : Set ℝⁿ} {x₀ : ℝⁿ}
+    {j₀ q : ℕ} {L B : ℕ → ℝ} (h : AssumptionD1qLaBX f X X₀ x₀ j₀ q L B) :
+    LipschitzDerivsAnchored f X₀ (sublevel f X x₀) j₀ q L :=
+  ⟨h.isOpen, h.convex, sublevel_subset.trans h.subset,
+    fun _ hy => h.contDiffOn.contDiffAt (h.isOpen.mem_nhds hy), h.lipschitzAnchored⟩
+
+/-- f.D1qLaB.X is the backbone assumption `LipschitzDerivsAnchored` (orders `[j₀ : q]`, anchor
+set `𝓛_f(x₀)`) with `X ⊆ X₀`, normalized constants `L_j, B_j ≥ 1` and the bound (14.2.10). -/
+theorem assumptionD1qLaBX_iff {f : ℝⁿ → ℝ} {X X₀ : Set ℝⁿ} {x₀ : ℝⁿ} {j₀ q : ℕ}
+    {L B : ℕ → ℝ} : AssumptionD1qLaBX f X X₀ x₀ j₀ q L B ↔
+      LipschitzDerivsAnchored f X₀ (sublevel f X x₀) j₀ q L ∧ X ⊆ X₀ ∧
+        (∀ j ∈ Finset.Icc j₀ q, 1 ≤ L j) ∧ (∀ j ∈ Finset.Icc j₀ q, 1 ≤ B j) ∧
+        ∀ j ∈ Finset.Icc j₀ q, ∀ x ∈ sublevel f X x₀, ‖iteratedFDeriv ℝ j f x‖ ≤ B j :=
+  ⟨fun h => ⟨h.toLipschitzDerivsAnchored, h.subset, h.one_le_lip, h.one_le_bound, h.norm_le⟩,
+    fun ⟨h, hX, hL, hB, hn⟩ => ⟨h.isOpen, h.convex, hX,
+      fun y hy => (h.contDiffAt y hy).contDiffWithinAt, hL, hB, h.lipschitzAnchored, hn⟩⟩
 
 /-- **Assumption f.bB.X** of [cartis2022evaluation], §14.2.1: `f` is bounded below on `X` by
 `flow`. -/
@@ -360,7 +379,7 @@ theorem theorem_14_2_4_arqpc (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s �
 convex: Theorem 14.1.10, part 1, for ARqpC-SC runs, with moreover `x_{k_ε} ∈ X`. -/
 theorem theorem_14_2_4_arqpc_convex (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs d dm)
     (hθς : P.θ < P.ς) (hf : Chapter12.AssumptionD1pL f p Lf)
-    (hc : AssumptionCD1pL c p Lc) (hL : AssumptionHLip h Lh) (hS : AssumptionHS0 h) {wlow : ℝ}
+    (hc : AssumptionCD1pL c p Lc) (hL : AssumptionHLip h Lh) {wlow : ℝ}
     (hw : AssumptionWBb f c h X wlow) (hq : q = 1) (hconv : ConvexOn ℝ univ h)
     (hXc : Convex ℝ X) (hδ₀ : δ₀ 1 = 1) :
     ∃ kε, Optimization.IsFirstHit (arqpcStop f c h p q P ε x s σ δ d) kε ∧ x kε ∈ X ∧
@@ -377,7 +396,7 @@ theorem theorem_14_2_4_arqpc_convex (hr : algorithm_14_1_1 f c h X p q P ε δ�
         (f (x 0) + h (c (x 0)) - wlow) /
           (P.η₁ * (kappaDm1 P Lf Lc Lh p m * ε 1 ^ (((p : ℝ) + 1) / p))) + 2 := by
   obtain ⟨kε, hhit, h2, h3, h4⟩ :=
-    theorem_14_1_10_i hr hθς hf hc hL hS hw hq hconv hXc hδ₀
+    theorem_14_1_10_i hr hθς hf hc hL hw hq hconv hXc hδ₀
   exact ⟨kε, hhit, hr.mem hhit.2, h2, h3, h4⟩
 
 end ARqpCSC
@@ -395,14 +414,14 @@ convex `C`, every iteration `k` before termination has a Taylor decrease at leas
 (Lemma 12.2.4 with a feasible set; `π_j = q + 1`). -/
 theorem lemma_14_2_2_trq (h : Chapter12.algorithm_12_2_1_feasible f X P q ε ϑ x s Δ jk d)
     (hf : Chapter12.AssumptionD1pLOn f C q L) (hXC : X ⊆ C) (hx0 : x 0 ∈ X)
-    (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hϑ : Chapter12.finMin 1 ε q ≤ ϑ) (hϑ1 : ϑ ≤ 1)
+    (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hϑ : Optimization.finMin 1 ε q ≤ ϑ) (hϑ1 : ϑ ≤ 1)
     {k : ℕ} (hk : ∀ i ≤ k, ¬ Chapter12.trqStop f P q ε ϑ x Δ d i) :
-    (P.ς * Chapter12.trqKappaDelta f P q L ϑ (x 0)) ^ (q + 1) / q ! *
-        Chapter12.finMin 1 ε q ^ (q + 1) ≤
+    (P.ς * Optimization.trqKappaDelta f P q L ϑ (x 0)) ^ (q + 1) / q ! *
+        Optimization.finMin 1 ε q ^ (q + 1) ≤
         (ftaylorSeries ℝ f (x k)).taylorDecrement (jk k) (s k) ∧
       (P.η₁ ≤ Chapter12.trqRho f x s jk k →
-        P.η₁ * ((P.ς * Chapter12.trqKappaDelta f P q L ϑ (x 0)) ^ (q + 1) / q ! *
-          Chapter12.finMin 1 ε q ^ (q + 1)) ≤ f (x k) - f (x (k + 1))) :=
+        P.η₁ * ((P.ς * Optimization.trqKappaDelta f P q L ϑ (x 0)) ^ (q + 1) / q ! *
+          Optimization.finMin 1 ε q ^ (q + 1)) ≤ f (x k) - f (x (k + 1))) :=
   Optimization.IsTRqRun.taylorDecrement_ge_of_anchored h (hf.toLipschitzDerivsAnchored hXC) hXC
     (fun _ hy _ => hy) hx0 hε hϑ hϑ1 hk
 
@@ -411,20 +430,20 @@ theorem lemma_14_2_2_trq (h : Chapter12.algorithm_12_2_1_feasible f X P q ε ϑ 
 within the bounds of Theorem 12.2.5 (`O(max_j ε_j^{-(q+1)})`). -/
 theorem theorem_14_2_4_trq {flow : ℝ} (hb : ∀ y ∈ X, flow ≤ f y)
     (hf : Chapter12.AssumptionD1pLOn f C q L) (hXC : X ⊆ C) (hx0 : x 0 ∈ X)
-    (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hϑ : Chapter12.finMin 1 ε q ≤ ϑ) (hϑ1 : ϑ ≤ 1)
+    (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hϑ : Optimization.finMin 1 ε q ≤ ϑ) (hϑ1 : ϑ ≤ 1)
     (h : Chapter12.algorithm_12_2_1_feasible f X P q ε ϑ x s Δ jk d) :
     ∃ kε, Optimization.IsFirstHit (Chapter12.trqStop f P q ε ϑ x Δ d) kε ∧ x kε ∈ X ∧
       min (Δ kε) ϑ ∈ Ioc 0 1 ∧
       Optimization.IsEpsDeltaApprox (ftaylorSeries ℝ f (x kε)) {e | x kε + e ∈ X} q ε
         (fun _ => min (Δ kε) ϑ) ∧
       (Optimization.funEvalCount kε : ℝ) ≤
-        Chapter12.kappaATRq f P q L ϑ (x 0) * (f (x 0) - flow) /
-            Chapter12.finMin 1 ε q ^ (q + 1) +
-          Chapter12.kappaBTRq P * |Real.log (Chapter12.finMin 1 ε q)| +
-          Chapter12.kappaCTRq f P q L ϑ (x 0) ∧
+        Optimization.kappaATRq f P q L ϑ (x 0) * (f (x 0) - flow) /
+            Optimization.finMin 1 ε q ^ (q + 1) +
+          Optimization.kappaBTRq P * |Real.log (Optimization.finMin 1 ε q)| +
+          Optimization.kappaCTRq f P q L ϑ (x 0) ∧
       (Optimization.derivEvalCount (fun k => P.η₁ ≤ Chapter12.trqRho f x s jk k) kε : ℝ) ≤
-        Chapter12.kappaSTRq f P q L ϑ (x 0) * (f (x 0) - flow) /
-          Chapter12.finMin 1 ε q ^ (q + 1) + 1 :=
+        Optimization.kappaSTRq f P q L ϑ (x 0) * (f (x 0) - flow) /
+          Optimization.finMin 1 ε q ^ (q + 1) + 1 :=
   Optimization.IsTRqRun.complexity hb (hf.toLipschitzDerivsAnchored hXC) hXC
     (fun _ hy _ => hy) hx0 hε hϑ hϑ1 h
 
@@ -436,13 +455,13 @@ every iteration `k` reached (up to and including termination) satisfies `k ≤ �
 `κ_unc = |log(min(γ₁ ϑ, κ_Δ ς ε_min)/Δ₀)|/|log γ₂|` (`κ_Δ` of (12.2.14)). -/
 theorem lemma_14_2_3_trq (h : Chapter12.algorithm_12_2_1_feasible f X P q ε ϑ x s Δ jk d)
     (hf : Chapter12.AssumptionD1pLOn f C q L) (hXC : X ⊆ C) (hx0 : x 0 ∈ X)
-    (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hϑ : Chapter12.finMin 1 ε q ≤ ϑ) (hϑ1 : ϑ ≤ 1)
+    (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hϑ : Optimization.finMin 1 ε q ≤ ϑ) (hϑ1 : ϑ ≤ 1)
     {k : ℕ} (hk : ∀ i < k, ¬ Chapter12.trqStop f P q ε ϑ x Δ d i) :
     (k : ℝ) ≤
       (Optimization.successSet (fun j => P.η₁ ≤ Chapter12.trqRho f x s jk j) k).card *
           (1 + Real.log P.γ₃ / |Real.log P.γ₂|) +
-        |Real.log (min (P.γ₁ * ϑ) (Chapter12.trqKappaDelta f P q L ϑ (x 0) *
-          (P.ς * Chapter12.finMin 1 ε q)) / P.Δ₀)| / |Real.log P.γ₂| :=
+        |Real.log (min (P.γ₁ * ϑ) (Optimization.trqKappaDelta f P q L ϑ (x 0) *
+          (P.ς * Optimization.finMin 1 ε q)) / P.Δ₀)| / |Real.log P.γ₂| :=
   Optimization.IsTRqRun.le_succ_count_of_anchored h (hf.toLipschitzDerivsAnchored hXC) hXC
     (fun _ hy _ => hy) hx0 hε hϑ hϑ1 hk
 
@@ -459,26 +478,26 @@ for an ARqp-SC run (`Chapter12.algorithm_12_2_2_feasible`, `X ⊆ C`) under f.D1
 `C` and `θ < ς`, every successful iteration `k` not followed by termination decreases `f` by at
 least `η₁ κ_{Δm} min_j ε_j^{π_j}`, provided the radius policy holds in radii mode `u`: unit radii
 `δ_{k+1,j} = 1` (`u`, `π_j = (p+1)/(p-j+1)`), or a long step or the lower bound (12.2.51) at every
-order (`¬ u`, `π_j = j(p+1)/p`), with `π_j = Chapter12.arqpPiOf u p j` and
-`κ_{Δm} = Chapter12.arqpKappaDmOf u`. The mode `u = False` gives the "otherwise" entry
+order (`¬ u`, `π_j = j(p+1)/p`), with `π_j = Optimization.arqpPiOf u p j` and
+`κ_{Δm} = Optimization.arqpKappaDmOf u`. The mode `u = False` gives the "otherwise" entry
 `j(p+1)/p` of the table for every `q` and `X`; the unit-radii entries need `δ_{k,2} = 1` (the
 table's `X = ℝⁿ`, `q = 2`) and `δ_{k,1} = 1` (convex `X`), which here is the hypothesis `u` on the
 radii. The book's split is the mode `u = (q ≤ 2)` (`Chapter12.arqpPi`, `Chapter12.arqpKappaDm`). -/
 theorem lemma_14_2_2_arqp (hf : Chapter12.AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (hq : 1 ≤ q)
     (hqp : q ≤ p) (hθς : P.θ < P.ς) (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1)
     (h : Chapter12.algorithm_12_2_2_feasible f X P p q ε δ₀ x s σ δ δs d dm) {k : ℕ}
-    (hk : ∀ i ≤ k, ¬ Chapter12.arqpStop f P p q ε x s σ δ d i)
-    (hs : P.η₁ ≤ Chapter12.arqpRho f p x s σ k)
-    (hk1 : ¬ Optimization.arqpStop₁ P q ε (Chapter12.arqpData f p x σ) δ d (k + 1))
+    (hk : ∀ i ≤ k, ¬ Optimization.arqpStop f P p q ε x s σ δ d i)
+    (hs : P.η₁ ≤ Optimization.arqpRho f p x s σ k)
+    (hk1 : ¬ Optimization.arqpStop₁ P q ε (Optimization.arqpData f p x σ) δ d (k + 1))
     {u : Prop} [Decidable u] (hrad : (u → ∀ j ∈ Finset.Icc 1 q, δ (k + 1) j = 1) ∧
       (¬ u → 1 ≤ ‖s k‖ ∨ ∀ j ∈ Finset.Icc 1 q,
-        Chapter12.arqpKappaDelta P (Chapter12.finMax 1 L p)
+        Optimization.arqpKappaDelta P (Optimization.finMax 1 L p)
           (Optimization.arSigmaMax P.toARParams (L p)) * ε j ≤ δ (k + 1) j)) :
-    Chapter12.arqpKappaDmOf u P L p q *
-        Chapter12.finMin 1 (fun j => ε j ^ Chapter12.arqpPiOf u p j) q ≤
+    Optimization.arqpKappaDmOf u P L p q *
+        Optimization.finMin 1 (fun j => ε j ^ Optimization.arqpPiOf u p j) q ≤
         (ftaylorSeries ℝ f (x k)).taylorDecrement p (s k) ∧
-      P.η₁ * (Chapter12.arqpKappaDmOf u P L p q *
-        Chapter12.finMin 1 (fun j => ε j ^ Chapter12.arqpPiOf u p j) q) ≤
+      P.η₁ * (Optimization.arqpKappaDmOf u P L p q *
+        Optimization.finMin 1 (fun j => ε j ^ Optimization.arqpPiOf u p j) q) ≤
         f (x k) - f (x (k + 1)) :=
   have hT := hf.anchoredTop hXC (hq.trans hqp)
   Optimization.IsARqpRun.decrease hT.toLipschitzDerivsAnchored hT.one_le hXC
@@ -492,8 +511,8 @@ reached, `k ≤ κ_uns |𝒮_k| + κ_unc` (14.2.13) with `κ_uns = 1 + |log γ�
 `lemma_14_2_3_trqida`, `lemma_14_2_3_trqeda`, `lemma_14_2_3_arqpida` and `lemma_14_2_3_arqpeda`. -/
 theorem lemma_14_2_3 (hf : Chapter12.AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (hp : 1 ≤ p)
     (h : Chapter12.algorithm_12_2_2_feasible f X P p q ε δ₀ x s σ δ δs d dm) {k : ℕ}
-    (hk : ∀ i < k, ¬ Chapter12.arqpStop f P p q ε x s σ δ d i) :
-    (k : ℝ) ≤ (Optimization.successSet (fun j => P.η₁ ≤ Chapter12.arqpRho f p x s σ j) k).card *
+    (hk : ∀ i < k, ¬ Optimization.arqpStop f P p q ε x s σ δ d i) :
+    (k : ℝ) ≤ (Optimization.successSet (fun j => P.η₁ ≤ Optimization.arqpRho f p x s σ j) k).card *
         (1 + |Real.log P.γ₁| / Real.log P.γ₂) +
       Real.log (Optimization.arSigmaMax P.toARParams (L p) / P.σ₀) / Real.log P.γ₂ :=
   have hT := hf.anchoredTop hXC hp
@@ -506,7 +525,7 @@ set): under f.bB.X, f.D1pL on an open convex `C ⊇ X`, `σ_min > 0`, `θ < ς` 
 in radii mode `u` (`δ = 1` if `u`, (12.2.51) at every order if `¬ u`), every ARqp-SC run
 terminates at some `k_ε` with `x_{k_ε} ∈ X` and an `(ε, δ_ε)`-approximate `q`-th order
 certificate over `{d | x_{k_ε} + d ∈ X}`, within the bounds of Theorem 12.2.14 (orders
-`O(max_j ε_j^{-π_j})`, `π_j = Chapter12.arqpPiOf u p j`). The mode `u = False` gives the
+`O(max_j ε_j^{-π_j})`, `π_j = Optimization.arqpPiOf u p j`). The mode `u = False` gives the
 "otherwise" order `j(p+1)/p` of the table for every `q` and `X`; the book's split is the mode
 `u = (q ≤ 2)` (`Chapter12.arqpPi`). -/
 theorem theorem_14_2_4_arqp {flow : ℝ} (hb : ∀ y ∈ X, flow ≤ f y)
@@ -516,20 +535,20 @@ theorem theorem_14_2_4_arqp {flow : ℝ} (hb : ∀ y ∈ X, flow ≤ f y)
     (h : Chapter12.algorithm_12_2_2_feasible f X P p q ε δ₀ x s σ δ δs d dm)
     {u : Prop} [Decidable u]
     (hrad : (u → (∀ j ∈ Finset.Icc 1 q, δ₀ j = 1) ∧
-        ∀ k, (∀ i ≤ k, ¬ Chapter12.arqpStop f P p q ε x s σ δ d i) →
+        ∀ k, (∀ i ≤ k, ¬ Optimization.arqpStop f P p q ε x s σ δ d i) →
           ∀ j ∈ Finset.Icc 1 q, δs k j = 1) ∧
-      (¬ u → ∀ k, (∀ i ≤ k, ¬ Chapter12.arqpStop f P p q ε x s σ δ d i) → ‖s k‖ < 1 →
+      (¬ u → ∀ k, (∀ i ≤ k, ¬ Optimization.arqpStop f P p q ε x s σ δ d i) → ‖s k‖ < 1 →
         ∀ j ∈ Finset.Icc 1 q,
-          Chapter12.arqpKappaDelta P (Chapter12.finMax 1 L p) (σ k) * ε j ≤ δs k j)) :
-    ∃ kε, Optimization.IsFirstHit (Chapter12.arqpStop f P p q ε x s σ δ d) kε ∧ x kε ∈ X ∧
+          Optimization.arqpKappaDelta P (Optimization.finMax 1 L p) (σ k) * ε j ≤ δs k j)) :
+    ∃ kε, Optimization.IsFirstHit (Optimization.arqpStop f P p q ε x s σ δ d) kε ∧ x kε ∈ X ∧
       (∃ δε : ℕ → ℝ, (∀ j ∈ Finset.Icc 1 q, δε j ∈ Ioc 0 1) ∧
         Optimization.IsEpsDeltaApprox (ftaylorSeries ℝ f (x kε)) {e | x kε + e ∈ X} q ε δε) ∧
-      (Optimization.funEvalCount kε : ℝ) ≤ Chapter12.kappaAARqpOf u P L p q * (f (x 0) - flow) /
-        Chapter12.finMin 1 (fun j => ε j ^ Chapter12.arqpPiOf u p j) q +
-          Chapter12.kappaCARqp P L p ∧
-      (Optimization.derivEvalCount (fun k => P.η₁ ≤ Chapter12.arqpRho f p x s σ k) kε : ℝ) ≤
-        Chapter12.kappaSARqpOf u P L p q * (f (x 0) - flow) /
-          Chapter12.finMin 1 (fun j => ε j ^ Chapter12.arqpPiOf u p j) q + 2 :=
+      (Optimization.funEvalCount kε : ℝ) ≤ Optimization.kappaAARqpOf u P L p q * (f (x 0) - flow) /
+        Optimization.finMin 1 (fun j => ε j ^ Optimization.arqpPiOf u p j) q +
+          Optimization.kappaCARqp P L p ∧
+      (Optimization.derivEvalCount (fun k => P.η₁ ≤ Optimization.arqpRho f p x s σ k) kε : ℝ) ≤
+        Optimization.kappaSARqpOf u P L p q * (f (x 0) - flow) /
+          Optimization.finMin 1 (fun j => ε j ^ Optimization.arqpPiOf u p j) q + 2 :=
   have hT := hf.anchoredTop hXC (hq.trans hqp)
   Optimization.IsARqpRun.complexity hb hT.toLipschitzDerivsAnchored hT.one_le hT.jet hXC
     (fun _ hy _ => hy)
@@ -613,6 +632,13 @@ theorem AssumptionD0qLaBX.normalized {x₀ : ℝⁿ} {q : ℕ} (h : AssumptionD0
   · exact h.one_le_lip_zero
   · exact h.one_le_lip j (Finset.mem_Icc.2 ⟨hj0, hj⟩)
 
+/-- f.D0qLaB.X is f.D1qLaB.X together with (14.2.9) for `j = 0`, with `L_{f,0} ≥ 1`. -/
+theorem assumptionD0qLaBX_iff {x₀ : ℝⁿ} {q : ℕ} : AssumptionD0qLaBX f X X₀ x₀ q L B ↔
+    AssumptionD1qLaBX f X X₀ x₀ 1 q L B ∧ 1 ≤ L 0 ∧
+      IteratedFDerivLipschitzAnchored f 0 (L 0) (sublevel f X x₀) X₀ :=
+  ⟨fun h => ⟨h.toAssumptionD1qLaBX, h.one_le_lip_zero, h.lipschitzAnchored_zero⟩,
+    fun ⟨h, h1, h0⟩ => ⟨h, h1, h0⟩⟩
+
 section TRq
 
 variable {P : Optimization.TRqParams} {q : ℕ} {ε : ℕ → ℝ} {ϑ : ℝ} {x s : ℕ → ℝⁿ} {Δ : ℕ → ℝ}
@@ -622,50 +648,50 @@ variable {P : Optimization.TRqParams} {q : ℕ} {ε : ℕ → ℝ} {ϑ : ℝ} {x
 `x₀ = x 0`; the remark after (14.2.10)): the decreases of `lemma_14_2_2_trq`. -/
 theorem lemma_14_2_2_trq_anchored (h : Chapter12.algorithm_12_2_1_feasible f X P q ε ϑ x s Δ jk d)
     (hf : AssumptionD1qLaBX f X X₀ (x 0) 1 q L B) (hx0 : x 0 ∈ X)
-    (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hϑ : Chapter12.finMin 1 ε q ≤ ϑ) (hϑ1 : ϑ ≤ 1)
+    (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hϑ : Optimization.finMin 1 ε q ≤ ϑ) (hϑ1 : ϑ ≤ 1)
     {k : ℕ} (hk : ∀ i ≤ k, ¬ Chapter12.trqStop f P q ε ϑ x Δ d i) :
-    (P.ς * Chapter12.trqKappaDelta f P q L ϑ (x 0)) ^ (q + 1) / q ! *
-        Chapter12.finMin 1 ε q ^ (q + 1) ≤
+    (P.ς * Optimization.trqKappaDelta f P q L ϑ (x 0)) ^ (q + 1) / q ! *
+        Optimization.finMin 1 ε q ^ (q + 1) ≤
         (ftaylorSeries ℝ f (x k)).taylorDecrement (jk k) (s k) ∧
       (P.η₁ ≤ Chapter12.trqRho f x s jk k →
-        P.η₁ * ((P.ς * Chapter12.trqKappaDelta f P q L ϑ (x 0)) ^ (q + 1) / q ! *
-          Chapter12.finMin 1 ε q ^ (q + 1)) ≤ f (x k) - f (x (k + 1))) :=
-  Optimization.IsTRqRun.taylorDecrement_ge_of_anchored h hf.toAnchored.toLipschitzDerivsAnchored
+        P.η₁ * ((P.ς * Optimization.trqKappaDelta f P q L ϑ (x 0)) ^ (q + 1) / q ! *
+          Optimization.finMin 1 ε q ^ (q + 1)) ≤ f (x k) - f (x (k + 1))) :=
+  Optimization.IsTRqRun.taylorDecrement_ge_of_anchored h hf.toLipschitzDerivsAnchored
     hf.subset (fun _ hy hfy => ⟨hy, hfy⟩) hx0 hε hϑ hϑ1 hk
 
 /-- **Lemma 14.2.3** of [cartis2022evaluation], TRq-SC row under f.D1qLaB.X (with the anchor point
 `x₀ = x 0`): the bound (14.2.13) of `lemma_14_2_3_trq`. -/
 theorem lemma_14_2_3_trq_anchored (h : Chapter12.algorithm_12_2_1_feasible f X P q ε ϑ x s Δ jk d)
     (hf : AssumptionD1qLaBX f X X₀ (x 0) 1 q L B) (hx0 : x 0 ∈ X)
-    (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hϑ : Chapter12.finMin 1 ε q ≤ ϑ) (hϑ1 : ϑ ≤ 1)
+    (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hϑ : Optimization.finMin 1 ε q ≤ ϑ) (hϑ1 : ϑ ≤ 1)
     {k : ℕ} (hk : ∀ i < k, ¬ Chapter12.trqStop f P q ε ϑ x Δ d i) :
     (k : ℝ) ≤
       (Optimization.successSet (fun j => P.η₁ ≤ Chapter12.trqRho f x s jk j) k).card *
           (1 + Real.log P.γ₃ / |Real.log P.γ₂|) +
-        |Real.log (min (P.γ₁ * ϑ) (Chapter12.trqKappaDelta f P q L ϑ (x 0) *
-          (P.ς * Chapter12.finMin 1 ε q)) / P.Δ₀)| / |Real.log P.γ₂| :=
-  Optimization.IsTRqRun.le_succ_count_of_anchored h hf.toAnchored.toLipschitzDerivsAnchored
+        |Real.log (min (P.γ₁ * ϑ) (Optimization.trqKappaDelta f P q L ϑ (x 0) *
+          (P.ς * Optimization.finMin 1 ε q)) / P.Δ₀)| / |Real.log P.γ₂| :=
+  Optimization.IsTRqRun.le_succ_count_of_anchored h hf.toLipschitzDerivsAnchored
     hf.subset (fun _ hy hfy => ⟨hy, hfy⟩) hx0 hε hϑ hϑ1 hk
 
 /-- **Theorem 14.2.4** of [cartis2022evaluation], TRq-SC row under f.bB.X and f.D1qLaB.X (with the
 anchor point `x₀ = x 0`; the remark after (14.2.10)): the conclusion of `theorem_14_2_4_trq`. -/
 theorem theorem_14_2_4_trq_anchored {flow : ℝ} (hb : AssumptionBbX f X flow)
     (hf : AssumptionD1qLaBX f X X₀ (x 0) 1 q L B) (hx0 : x 0 ∈ X)
-    (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hϑ : Chapter12.finMin 1 ε q ≤ ϑ) (hϑ1 : ϑ ≤ 1)
+    (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hϑ : Optimization.finMin 1 ε q ≤ ϑ) (hϑ1 : ϑ ≤ 1)
     (h : Chapter12.algorithm_12_2_1_feasible f X P q ε ϑ x s Δ jk d) :
     ∃ kε, Optimization.IsFirstHit (Chapter12.trqStop f P q ε ϑ x Δ d) kε ∧ x kε ∈ X ∧
       min (Δ kε) ϑ ∈ Ioc 0 1 ∧
       Optimization.IsEpsDeltaApprox (ftaylorSeries ℝ f (x kε)) {e | x kε + e ∈ X} q ε
         (fun _ => min (Δ kε) ϑ) ∧
       (Optimization.funEvalCount kε : ℝ) ≤
-        Chapter12.kappaATRq f P q L ϑ (x 0) * (f (x 0) - flow) /
-            Chapter12.finMin 1 ε q ^ (q + 1) +
-          Chapter12.kappaBTRq P * |Real.log (Chapter12.finMin 1 ε q)| +
-          Chapter12.kappaCTRq f P q L ϑ (x 0) ∧
+        Optimization.kappaATRq f P q L ϑ (x 0) * (f (x 0) - flow) /
+            Optimization.finMin 1 ε q ^ (q + 1) +
+          Optimization.kappaBTRq P * |Real.log (Optimization.finMin 1 ε q)| +
+          Optimization.kappaCTRq f P q L ϑ (x 0) ∧
       (Optimization.derivEvalCount (fun k => P.η₁ ≤ Chapter12.trqRho f x s jk k) kε : ℝ) ≤
-        Chapter12.kappaSTRq f P q L ϑ (x 0) * (f (x 0) - flow) /
-          Chapter12.finMin 1 ε q ^ (q + 1) + 1 :=
-  Optimization.IsTRqRun.complexity hb hf.toAnchored.toLipschitzDerivsAnchored hf.subset
+        Optimization.kappaSTRq f P q L ϑ (x 0) * (f (x 0) - flow) /
+          Optimization.finMin 1 ε q ^ (q + 1) + 1 :=
+  Optimization.IsTRqRun.complexity hb hf.toLipschitzDerivsAnchored hf.subset
     (fun _ hy hfy => ⟨hy, hfy⟩) hx0 hε hϑ hϑ1 h
 
 end TRq
@@ -681,18 +707,18 @@ radii mode `u`. -/
 theorem lemma_14_2_2_arqp_anchored (hf : AssumptionD1qLaBX f X X₀ (x 0) 1 p L B) (hq : 1 ≤ q)
     (hqp : q ≤ p) (hθς : P.θ < P.ς) (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1)
     (h : Chapter12.algorithm_12_2_2_feasible f X P p q ε δ₀ x s σ δ δs d dm) {k : ℕ}
-    (hk : ∀ i ≤ k, ¬ Chapter12.arqpStop f P p q ε x s σ δ d i)
-    (hs : P.η₁ ≤ Chapter12.arqpRho f p x s σ k)
-    (hk1 : ¬ Optimization.arqpStop₁ P q ε (Chapter12.arqpData f p x σ) δ d (k + 1))
+    (hk : ∀ i ≤ k, ¬ Optimization.arqpStop f P p q ε x s σ δ d i)
+    (hs : P.η₁ ≤ Optimization.arqpRho f p x s σ k)
+    (hk1 : ¬ Optimization.arqpStop₁ P q ε (Optimization.arqpData f p x σ) δ d (k + 1))
     {u : Prop} [Decidable u] (hrad : (u → ∀ j ∈ Finset.Icc 1 q, δ (k + 1) j = 1) ∧
       (¬ u → 1 ≤ ‖s k‖ ∨ ∀ j ∈ Finset.Icc 1 q,
-        Chapter12.arqpKappaDelta P (Chapter12.finMax 1 L p)
+        Optimization.arqpKappaDelta P (Optimization.finMax 1 L p)
           (Optimization.arSigmaMax P.toARParams (L p)) * ε j ≤ δ (k + 1) j)) :
-    Chapter12.arqpKappaDmOf u P L p q *
-        Chapter12.finMin 1 (fun j => ε j ^ Chapter12.arqpPiOf u p j) q ≤
+    Optimization.arqpKappaDmOf u P L p q *
+        Optimization.finMin 1 (fun j => ε j ^ Optimization.arqpPiOf u p j) q ≤
         (ftaylorSeries ℝ f (x k)).taylorDecrement p (s k) ∧
-      P.η₁ * (Chapter12.arqpKappaDmOf u P L p q *
-        Chapter12.finMin 1 (fun j => ε j ^ Chapter12.arqpPiOf u p j) q) ≤
+      P.η₁ * (Optimization.arqpKappaDmOf u P L p q *
+        Optimization.finMin 1 (fun j => ε j ^ Optimization.arqpPiOf u p j) q) ≤
         f (x k) - f (x (k + 1)) :=
   have hT := hf.toAnchored.toTop (hq.trans hqp)
   Optimization.IsARqpRun.decrease hT.toLipschitzDerivsAnchored hT.one_le hf.subset
@@ -702,8 +728,8 @@ theorem lemma_14_2_2_arqp_anchored (hf : AssumptionD1qLaBX f X X₀ (x 0) 1 p L 
 point `x₀ = x 0`): the bound (14.2.13) of `lemma_14_2_3`. -/
 theorem lemma_14_2_3_anchored (hf : AssumptionD1qLaBX f X X₀ (x 0) 1 p L B) (hp : 1 ≤ p)
     (h : Chapter12.algorithm_12_2_2_feasible f X P p q ε δ₀ x s σ δ δs d dm) {k : ℕ}
-    (hk : ∀ i < k, ¬ Chapter12.arqpStop f P p q ε x s σ δ d i) :
-    (k : ℝ) ≤ (Optimization.successSet (fun j => P.η₁ ≤ Chapter12.arqpRho f p x s σ j) k).card *
+    (hk : ∀ i < k, ¬ Optimization.arqpStop f P p q ε x s σ δ d i) :
+    (k : ℝ) ≤ (Optimization.successSet (fun j => P.η₁ ≤ Optimization.arqpRho f p x s σ j) k).card *
         (1 + |Real.log P.γ₁| / Real.log P.γ₂) +
       Real.log (Optimization.arSigmaMax P.toARParams (L p) / P.σ₀) / Real.log P.γ₂ :=
   have hT := hf.toAnchored.toTop hp
@@ -721,20 +747,20 @@ theorem theorem_14_2_4_arqp_anchored {flow : ℝ} (hb : AssumptionBbX f X flow)
     (h : Chapter12.algorithm_12_2_2_feasible f X P p q ε δ₀ x s σ δ δs d dm)
     {u : Prop} [Decidable u]
     (hrad : (u → (∀ j ∈ Finset.Icc 1 q, δ₀ j = 1) ∧
-        ∀ k, (∀ i ≤ k, ¬ Chapter12.arqpStop f P p q ε x s σ δ d i) →
+        ∀ k, (∀ i ≤ k, ¬ Optimization.arqpStop f P p q ε x s σ δ d i) →
           ∀ j ∈ Finset.Icc 1 q, δs k j = 1) ∧
-      (¬ u → ∀ k, (∀ i ≤ k, ¬ Chapter12.arqpStop f P p q ε x s σ δ d i) → ‖s k‖ < 1 →
+      (¬ u → ∀ k, (∀ i ≤ k, ¬ Optimization.arqpStop f P p q ε x s σ δ d i) → ‖s k‖ < 1 →
         ∀ j ∈ Finset.Icc 1 q,
-          Chapter12.arqpKappaDelta P (Chapter12.finMax 1 L p) (σ k) * ε j ≤ δs k j)) :
-    ∃ kε, Optimization.IsFirstHit (Chapter12.arqpStop f P p q ε x s σ δ d) kε ∧ x kε ∈ X ∧
+          Optimization.arqpKappaDelta P (Optimization.finMax 1 L p) (σ k) * ε j ≤ δs k j)) :
+    ∃ kε, Optimization.IsFirstHit (Optimization.arqpStop f P p q ε x s σ δ d) kε ∧ x kε ∈ X ∧
       (∃ δε : ℕ → ℝ, (∀ j ∈ Finset.Icc 1 q, δε j ∈ Ioc 0 1) ∧
         Optimization.IsEpsDeltaApprox (ftaylorSeries ℝ f (x kε)) {e | x kε + e ∈ X} q ε δε) ∧
-      (Optimization.funEvalCount kε : ℝ) ≤ Chapter12.kappaAARqpOf u P L p q * (f (x 0) - flow) /
-        Chapter12.finMin 1 (fun j => ε j ^ Chapter12.arqpPiOf u p j) q +
-          Chapter12.kappaCARqp P L p ∧
-      (Optimization.derivEvalCount (fun k => P.η₁ ≤ Chapter12.arqpRho f p x s σ k) kε : ℝ) ≤
-        Chapter12.kappaSARqpOf u P L p q * (f (x 0) - flow) /
-          Chapter12.finMin 1 (fun j => ε j ^ Chapter12.arqpPiOf u p j) q + 2 :=
+      (Optimization.funEvalCount kε : ℝ) ≤ Optimization.kappaAARqpOf u P L p q * (f (x 0) - flow) /
+        Optimization.finMin 1 (fun j => ε j ^ Optimization.arqpPiOf u p j) q +
+          Optimization.kappaCARqp P L p ∧
+      (Optimization.derivEvalCount (fun k => P.η₁ ≤ Optimization.arqpRho f p x s σ k) kε : ℝ) ≤
+        Optimization.kappaSARqpOf u P L p q * (f (x 0) - flow) /
+          Optimization.finMin 1 (fun j => ε j ^ Optimization.arqpPiOf u p j) q + 2 :=
   have hT := hf.toAnchored.toTop (hq.trans hqp)
   Optimization.IsARqpRun.complexity hb hT.toLipschitzDerivsAnchored hT.one_le
     hT.jet hf.subset
@@ -755,10 +781,11 @@ Chapter 13) under `LipschitzDerivsAnchored`. Each row `N` is stated twice: `N` u
 (`AssumptionD0qLaBX`, anchors `𝓛_f(x₀)`).
 For the IDA algorithms, which have no termination rule, "before termination" reads
 "before the first iterate that is approximately optimal on `X`"; for the regularization
-algorithms the radius policy is the radii control in either mode (`Optimization.RadiiControlOf u`):
-unit radii `δ = 1` (`u`), achievable for `X = ℝⁿ` with `q ≤ 2` or for `q = 1` with `X` convex,
-or the (12.2.51)-type bounds at every order (`¬ u`), available in every case; the radii control
-of Theorem 13.1.19 (`Optimization.RadiiControl`) is the mode `u = (q ≤ 2)`. -/
+algorithms the radius policy is the radii control in either mode
+(`Optimization.ARqpDARadiiControl u`): unit radii `δ = 1` (`u`), achievable for `X = ℝⁿ` with
+`q ≤ 2` or for `q = 1` with `X` convex, or the (12.2.51)-type bounds at every order (`¬ u`),
+available in every case; the radii control of Theorem 13.1.19 (`Optimization.RadiiControl`) is the
+mode `u = (q ≤ 2)`. -/
 
 section TRqIDASC
 
@@ -844,8 +871,8 @@ theorem theorem_14_2_4_trqida (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C) 
     (hb : ∀ y ∈ X, flow ≤ f y)
     (hrun : IsTRqIDARun f X κg P ε x₀ x Δ h D dd jk s acc)
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) (ordMax P.q κg) κΔ) :
-    ∃ kε, IsFirstHit (trqIDATest f X P ε x Δ) kε ∧ x kε ∈ X ∧ 0 < trRadius P Δ kε ∧
-      trRadius P Δ kε ≤ 1 ∧
+    ∃ kε, IsFirstHit (trqIDATest f X P ε x Δ) kε ∧ x kε ∈ X ∧ 0 < trqDARadius P Δ kε ∧
+      trqDARadius P Δ kε ≤ 1 ∧
       (derivEvalCount (fun i => ¬ acc i) kε : ℝ) ≤
         trKappaS P κΔ * (1 + Real.log P.γ₃ / |Real.log P.γ₂|) * (f x₀ - flow) /
             epsMin P.q ε ^ (P.q + 1) +
@@ -868,8 +895,8 @@ theorem theorem_14_2_4_trqida_anchored (hf : AssumptionD0qLaBX f X X₀ x₀ P.q
     (hb : ∀ y ∈ X, flow ≤ f y)
     (hrun : IsTRqIDARun f X κg P ε x₀ x Δ h D dd jk s acc)
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) (ordMax P.q κg) κΔ) :
-    ∃ kε, IsFirstHit (trqIDATest f X P ε x Δ) kε ∧ x kε ∈ X ∧ 0 < trRadius P Δ kε ∧
-      trRadius P Δ kε ≤ 1 ∧
+    ∃ kε, IsFirstHit (trqIDATest f X P ε x Δ) kε ∧ x kε ∈ X ∧ 0 < trqDARadius P Δ kε ∧
+      trqDARadius P Δ kε ≤ 1 ∧
       (derivEvalCount (fun i => ¬ acc i) kε : ℝ) ≤
         trKappaS P κΔ * (1 + Real.log P.γ₃ / |Real.log P.γ₂|) * (f x₀ - flow) /
             epsMin P.q ε ^ (P.q + 1) +
@@ -973,8 +1000,8 @@ theorem theorem_14_2_4_trqeda (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C) 
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) 1 κΔ) :
     ∃ kε, IsFirstHit (edaStopTR P ε D Δ h dd) kε ∧ x kε ∈ X ∧
       IsEpsDeltaApprox (ftaylorSeries ℝ f (x kε)) {e | x kε + e ∈ X} P.q ε
-        (fun _ => trRadius P Δ kε) ∧
-      0 < trRadius P Δ kε ∧ trRadius P Δ kε ≤ 1 ∧
+        (fun _ => trqDARadius P Δ kε) ∧
+      0 < trqDARadius P Δ kε ∧ trqDARadius P Δ kε ≤ 1 ∧
       (edaFunEvalCount acc R kε : ℝ) ≤
         2 * (trKappaS P κΔ * (1 + Real.log P.γ₃ / |Real.log P.γ₂|) * (f x₀ - flow) /
             epsMin P.q ε ^ (P.q + 1)) +
@@ -1000,8 +1027,8 @@ theorem theorem_14_2_4_trqeda_anchored (hf : AssumptionD0qLaBX f X X₀ x₀ P.q
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) 1 κΔ) :
     ∃ kε, IsFirstHit (edaStopTR P ε D Δ h dd) kε ∧ x kε ∈ X ∧
       IsEpsDeltaApprox (ftaylorSeries ℝ f (x kε)) {e | x kε + e ∈ X} P.q ε
-        (fun _ => trRadius P Δ kε) ∧
-      0 < trRadius P Δ kε ∧ trRadius P Δ kε ≤ 1 ∧
+        (fun _ => trqDARadius P Δ kε) ∧
+      0 < trqDARadius P Δ kε ∧ trqDARadius P Δ kε ≤ 1 ∧
       (edaFunEvalCount acc R kε : ℝ) ≤
         2 * (trKappaS P κΔ * (1 + Real.log P.γ₃ / |Real.log P.γ₂|) * (f x₀ - flow) /
             epsMin P.q ε ^ (P.q + 1)) +
@@ -1035,14 +1062,15 @@ for an ARqpIDA-SC run (`Optimization.IsARqpIDARun`) under f.D0pL on an open conv
 and the radii control at `k`, every successful iteration `k` whose successor `x_{k+1}` is not
 approximately optimal on `X` decreases `f` by at least `½ η₁ κ_{Δm} min_j ε_j^{π_j}`, with
 `κ_{Δm}` of Lemma 13.1.18 and the radii control in either mode `u`
-(`Optimization.RadiiControlOf`): unit radii `δ_{s_k} = 1` (`u`), which Step 2 guarantees for
+(`Optimization.ARqpDARadiiControl`): unit radii `δ_{s_k} = 1` (`u`), which Step 2 guarantees for
 `X = ℝⁿ` with `q ≤ 2` or for `q = 1` with `X` convex, with `π_j = (p+1)/(p-j+1)`, or the
 (12.2.51)-type lower bounds at every order (`¬ u`), available for every `q` and `X`, with
 `π_j = j(p+1)/p` (`π_j = Optimization.arPiOf u p j`; the radii control of Theorem 13.1.19,
 `Optimization.RadiiControl`, is the mode `u = (q ≤ 2)`). -/
 theorem lemma_14_2_2_arqpida (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
     (hrun : IsARqpIDARun f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc) {k : ℕ}
-    [Decidable u] (hrc : RadiiControlOf u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc k)
+    [Decidable u]
+    (hrc : ARqpDARadiiControl u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc k)
     (hk : ¬ acc k)
     (hρ : P.η₁ ≤ arqpIDARatio f P D x s k) (hnot : ¬ arqpIDATest f X P ε x (k + 1)) :
     P.η₁ * (P.σmin / ((P.p + 1)! : ℝ) * arStepConstOf u P.q P.p (1 - P.θ)
@@ -1057,7 +1085,8 @@ point `x₀`, the starting point; the remark after (14.2.10)): the conclusion of
 `lemma_14_2_2_arqpida`. -/
 theorem lemma_14_2_2_arqpida_anchored (hf : AssumptionD0qLaBX f X X₀ x₀ P.p L B)
     (hrun : IsARqpIDARun f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc) {k : ℕ}
-    [Decidable u] (hrc : RadiiControlOf u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc k)
+    [Decidable u]
+    (hrc : ARqpDARadiiControl u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc k)
     (hk : ¬ acc k)
     (hρ : P.η₁ ≤ arqpIDARatio f P D x s k) (hnot : ¬ arqpIDATest f X P ε x (k + 1)) :
     P.η₁ * (P.σmin / ((P.p + 1)! : ℝ) * arStepConstOf u P.q P.p (1 - P.θ)
@@ -1074,11 +1103,11 @@ ARqpIDA-SC run under f.D0pL on an open convex `C ⊇ X` and the radii control, e
 to the first iterate that is approximately optimal on `X` satisfies `k ≤ κ_uns |𝒮_k| + κ_unc`
 (14.2.13) with `κ_uns = 1 + |log γ₁|/log γ₂` and `κ_unc = log(σ_max/σ₀)/log γ₂ + N_𝒜`, `N_𝒜 =
 p(q+1)/|log γ_h| |log ε_min| + |log(κ_acc/κ_h)|/|log γ_h| + 1`. The radii control
-(`Optimization.RadiiControlOf u`) may be in either mode (unit radii, or the (12.2.51)-type lower
+(`Optimization.ARqpDARadiiControl u`) may be in either mode (unit radii, or the (12.2.51)-type lower
 bounds at every order). -/
 theorem lemma_14_2_3_arqpida (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
     (hrun : IsARqpIDARun f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
-    (hrc : ∀ i, RadiiControlOf u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i) {k : ℕ}
+    (hrc : ∀ i, ARqpDARadiiControl u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i) {k : ℕ}
     (hk : ∀ j < k, ¬ arqpIDATest f X P ε x j) :
     (k : ℝ) ≤ (successSet (fun i => ¬ acc i ∧ P.η₁ ≤ arqpIDARatio f P D x s i) k).card *
         (1 + |Real.log P.γ₁| / Real.log P.γ₂) +
@@ -1096,7 +1125,7 @@ point `x₀`, the starting point; the remark after (14.2.10)): the conclusion of
 `lemma_14_2_3_arqpida`. -/
 theorem lemma_14_2_3_arqpida_anchored (hf : AssumptionD0qLaBX f X X₀ x₀ P.p L B)
     (hrun : IsARqpIDARun f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
-    (hrc : ∀ i, RadiiControlOf u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i) {k : ℕ}
+    (hrc : ∀ i, ARqpDARadiiControl u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i) {k : ℕ}
     (hk : ∀ j < k, ¬ arqpIDATest f X P ε x j) :
     (k : ℝ) ≤ (successSet (fun i => ¬ acc i ∧ P.η₁ ≤ arqpIDARatio f P D x s i) k).card *
         (1 + |Real.log P.γ₁| / Real.log P.γ₂) +
@@ -1117,7 +1146,7 @@ minimizer on `X` for some radii `δ_ε ∈ (0, 1]^q` (`Optimization.arqpIDATest`
 `(1 + |log γ₁|/log γ₂) (f(x₀) - f_low)/c + κ^C` function evaluations and `(f(x₀) - f_low)/c + κ^E
 |log ε_min| + κ^F + 3` derivative estimates are made, where `c = ½ η₁ κ_{Δm} min_j ε_j^{π_j}` is the
 decrease of Lemma 14.2.2, and the constants are those of Theorem 13.1.19, with the radii control
-in either mode `u` (`Optimization.RadiiControlOf`): unit radii `δ_{s_k} = 1` (`u`), which
+in either mode `u` (`Optimization.ARqpDARadiiControl`): unit radii `δ_{s_k} = 1` (`u`), which
 Step 2 guarantees for `X = ℝⁿ` with `q ≤ 2` or for `q = 1` with `X` convex, with
 `π_j = (p+1)/(p-j+1)`, or the (12.2.51)-type lower bounds at every order (`¬ u`), available for
 every `q` and `X`, with `π_j = j(p+1)/p` (`π_j = Optimization.arPiOf u p j`; the radii control of
@@ -1126,7 +1155,7 @@ theorem theorem_14_2_4_arqpida (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
     (hb : ∀ y ∈ X, flow ≤ f y)
     (hrun : IsARqpIDARun f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
     [Decidable u]
-    (hrc : ∀ i, RadiiControlOf u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i) :
+    (hrc : ∀ i, ARqpDARadiiControl u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i) :
     ∃ kε, IsFirstHit (arqpIDATest f X P ε x) kε ∧ x kε ∈ X ∧
       (derivEvalCount (fun i => ¬ acc i) kε : ℝ) ≤
         (1 + |Real.log P.γ₁| / Real.log P.γ₂) * ((f x₀ - flow) /
@@ -1157,7 +1186,7 @@ theorem theorem_14_2_4_arqpida_anchored (hf : AssumptionD0qLaBX f X X₀ x₀ P.
     (hb : ∀ y ∈ X, flow ≤ f y)
     (hrun : IsARqpIDARun f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
     [Decidable u]
-    (hrc : ∀ i, RadiiControlOf u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i) :
+    (hrc : ∀ i, ARqpDARadiiControl u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i) :
     ∃ kε, IsFirstHit (arqpIDATest f X P ε x) kε ∧ x kε ∈ X ∧
       (derivEvalCount (fun i => ¬ acc i) kε : ℝ) ≤
         (1 + |Real.log P.γ₁| / Real.log P.γ₂) * ((f x₀ - flow) /
@@ -1185,18 +1214,18 @@ theorem theorem_14_2_4_arqpida_anchored (hf : AssumptionD0qLaBX f X X₀ x₀ P.
 /-- **Theorem 14.2.4** of [cartis2022evaluation], ARqpIDA-SC row on `X = ℝⁿ` with `q ≤ 2`, in
 either mode of the radii control (a strengthening of Theorem 13.1.19 (1), which assumes unit
 radii): under f.bB and f.D0pL, every
-ARqpIDA run on `ℝⁿ` with `q ≤ 2` whose radii satisfy `Optimization.RadiiControlOf u` for *some* mode
-`u` (in particular the lower-bound mode `u = False`) satisfies the bounds of the unit-radii mode,
-of order `max_j ε_j^{-(p+1)/(p-j+1)}`: a failure of the criterion `Optimization.arqpIDATest`
-(approximate optimality for some radii in `(0, 1]^q`) is a failure at unit radii, and for `q ≤ 2`
-the bound (13.1.57) on the model transfers to unit radii
+ARqpIDA run on `ℝⁿ` with `q ≤ 2` whose radii satisfy `Optimization.ARqpDARadiiControl u` for
+*some* mode `u` (in particular the lower-bound mode `u = False`) satisfies the bounds of the
+unit-radii mode, of order `max_j ε_j^{-(p+1)/(p-j+1)}`: a failure of the criterion
+`Optimization.arqpIDATest` (approximate optimality for some radii in `(0, 1]^q`) is a failure at
+unit radii, and for `q ≤ 2` the bound (13.1.57) on the model transfers to unit radii
 (`Optimization.IsARqpIDARun.decrease_ge_unit`). Hence
 the mode-`False` bound of `theorem_14_2_4_arqpida`, of order `ε^{-2(p+1)/p}`, is not sharp for
 `q = 2 < p` on `ℝⁿ` (it exceeds `ε^{-(p+1)/(p-1)}`). -/
 theorem theorem_14_2_4_arqpida_le_two (hf : AssumptionD0pLOn f univ P.p L) {flow : ℝ}
     (hb : ∀ y, flow ≤ f y) (hq2 : P.q ≤ 2)
     (hrun : IsARqpIDARun f univ κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
-    (hrc : ∀ i, RadiiControlOf u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i) :
+    (hrc : ∀ i, ARqpDARadiiControl u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i) :
     ∃ kε, IsFirstHit (arqpIDATest f univ P ε x) kε ∧
       (derivEvalCount (fun i => ¬ acc i) kε : ℝ) ≤
         (1 + |Real.log P.γ₁| / Real.log P.γ₂) * ((f x₀ - flow) /
@@ -1252,14 +1281,14 @@ for an ARqpEDA-SC run (`Optimization.IsARqpEDARun`) under f.D0pL on an open conv
 X`, the radii control at `k` and `θ < ς/2`, every successful iteration `k` before termination with
 `‖s_k‖ ≥ 1` or such that Step 1 at `k + 1` does not pass with unchanged radii decreases `f` by at
 least `½ η₁ κ'_{Δm} min_j ε_j^{π_j}` (`κ'_{Δm}` of Lemma 13.3.7), with the radii control
-in either mode `u` (`Optimization.RadiiControlOf`): unit radii `δ_{s_k} = 1` (`u`), which
+in either mode `u` (`Optimization.ARqpDARadiiControl`): unit radii `δ_{s_k} = 1` (`u`), which
 Step 2 guarantees for `X = ℝⁿ` with `q ≤ 2` or for `q = 1` with `X` convex, with
 `π_j = (p+1)/(p-j+1)`, or the (12.2.51)-type lower bounds at every order (`¬ u`), available for
 every `q` and `X`, with `π_j = j(p+1)/p` (`π_j = Optimization.arPiOf u p j`; the radii control of
 Theorem 13.1.19, `Optimization.RadiiControl`, is the mode `u = (q ≤ 2)`). -/
 theorem lemma_14_2_2_arqpeda (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
     (hrun : IsARqpEDARun f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
-    {k : ℕ} [Decidable u] (hrc : RadiiControlOf u P ε (lipMax L P.p + P.κh) σ δs s acc k)
+    {k : ℕ} [Decidable u] (hrc : ARqpDARadiiControl u P ε (lipMax L P.p + P.κh) σ δs s acc k)
     (hθ : P.θ < P.ς / 2)
     (hk : ∀ j ≤ k, ¬ edaStopAR P ε D δ₁ h dd j) (ha : ¬ acc k)
     (hρ : P.η₁ ≤ edaRatio fx fxs (fun i => (D i).taylorDecrement P.p (s i)) k)
@@ -1275,7 +1304,7 @@ point `x₀`, the starting point; the remark after (14.2.10)): the conclusion of
 `lemma_14_2_2_arqpeda`. -/
 theorem lemma_14_2_2_arqpeda_anchored (hf : AssumptionD0qLaBX f X X₀ x₀ P.p L B)
     (hrun : IsARqpEDARun f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
-    {k : ℕ} [Decidable u] (hrc : RadiiControlOf u P ε (lipMax L P.p + P.κh) σ δs s acc k)
+    {k : ℕ} [Decidable u] (hrc : ARqpDARadiiControl u P ε (lipMax L P.p + P.κh) σ δs s acc k)
     (hθ : P.θ < P.ς / 2)
     (hk : ∀ j ≤ k, ¬ edaStopAR P ε D δ₁ h dd j) (ha : ¬ acc k)
     (hρ : P.η₁ ≤ edaRatio fx fxs (fun i => (D i).taylorDecrement P.p (s i)) k)
@@ -1292,11 +1321,11 @@ of Lemma 13.3.5, and the count of accuracy-improving iterations of Theorem 13.3.
 ARqpEDA-SC run under f.D0pL on an open convex `C ⊇ X` and the radii control, every iteration `k`
 reached (up to and including termination) satisfies `k ≤ κ_uns |𝒮_k| + κ_unc` (14.2.13) with `κ_uns
 = 1 + |log γ₁|/log γ₂` and `κ_unc = log(σ_max/σ₀)/log γ₂ + N_𝒜`, `N_𝒜 = p(q+1)/|log γ_h| |log ε_min|
-+ |log(κ_acc/κ_h)|/|log γ_h| + 1`. The radii control (`Optimization.RadiiControlOf u`) may be in
++ |log(κ_acc/κ_h)|/|log γ_h| + 1`. The radii control (`Optimization.ARqpDARadiiControl u`) may be in
 either mode (unit radii, or the (12.2.51)-type lower bounds at every order). -/
 theorem lemma_14_2_3_arqpeda (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
     (hrun : IsARqpEDARun f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
-    (hrc : ∀ i, RadiiControlOf u P ε (lipMax L P.p + P.κh) σ δs s acc i) {k : ℕ}
+    (hrc : ∀ i, ARqpDARadiiControl u P ε (lipMax L P.p + P.κh) σ δs s acc i) {k : ℕ}
     (hk : ∀ j < k, ¬ edaStopAR P ε D δ₁ h dd j) :
     (k : ℝ) ≤ (successSet (fun i => ¬ acc i ∧
           P.η₁ ≤ edaRatio fx fxs (fun i => (D i).taylorDecrement P.p (s i)) i) k).card *
@@ -1314,7 +1343,7 @@ point `x₀`, the starting point; the remark after (14.2.10)): the conclusion of
 `lemma_14_2_3_arqpeda`. -/
 theorem lemma_14_2_3_arqpeda_anchored (hf : AssumptionD0qLaBX f X X₀ x₀ P.p L B)
     (hrun : IsARqpEDARun f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
-    (hrc : ∀ i, RadiiControlOf u P ε (lipMax L P.p + P.κh) σ δs s acc i) {k : ℕ}
+    (hrc : ∀ i, ARqpDARadiiControl u P ε (lipMax L P.p + P.κh) σ δs s acc i) {k : ℕ}
     (hk : ∀ j < k, ¬ edaStopAR P ε D δ₁ h dd j) :
     (k : ℝ) ≤ (successSet (fun i => ¬ acc i ∧
           P.η₁ ≤ edaRatio fx fxs (fun i => (D i).taylorDecrement P.p (s i)) i) k).card *
@@ -1336,7 +1365,7 @@ set): under f.bB.X, f.D0pL on an open convex `C ⊇ X`, the radii control at eve
 derivative estimates, where `N = (f(x₀) - f_low)/c` with `c = ½ η₁ κ'_{Δm} min_j ε_j^{π_j}` the
 decrease of Lemma 14.2.2, `M = p(q+1)/|log γ_h| |log ε_min| + |log(κ_acc/κ_h)|/|log γ_h| + 1` and
 `c_T = 1 + |log γ₁|/log γ₂` (as in Theorem 13.3.8), with the radii control in either mode `u`
-(`Optimization.RadiiControlOf`): unit radii `δ_{s_k} = 1` (`u`), which Step 2 guarantees for
+(`Optimization.ARqpDARadiiControl`): unit radii `δ_{s_k} = 1` (`u`), which Step 2 guarantees for
 `X = ℝⁿ` with `q ≤ 2` or for `q = 1` with `X` convex, with `π_j = (p+1)/(p-j+1)`, or the
 (12.2.51)-type lower bounds at every order (`¬ u`), available for every `q` and `X`, with
 `π_j = j(p+1)/p` (`π_j = Optimization.arPiOf u p j`; the radii control of Theorem 13.1.19,
@@ -1344,7 +1373,7 @@ decrease of Lemma 14.2.2, `M = p(q+1)/|log γ_h| |log ε_min| + |log(κ_acc/κ_h
 theorem theorem_14_2_4_arqpeda (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C) {flow : ℝ}
     (hb : ∀ y ∈ X, flow ≤ f y)
     (hrun : IsARqpEDARun f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
-    [Decidable u] (hrc : ∀ i, RadiiControlOf u P ε (lipMax L P.p + P.κh) σ δs s acc i)
+    [Decidable u] (hrc : ∀ i, ARqpDARadiiControl u P ε (lipMax L P.p + P.κh) σ δs s acc i)
     (hθ : P.θ < P.ς / 2) :
     ∃ kε, IsFirstHit (edaStopAR P ε D δ₁ h dd) kε ∧ x kε ∈ X ∧
       (∀ j ∈ Finset.Icc 1 P.q, δ₁ kε j ∈ Set.Ioc 0 1) ∧
@@ -1380,7 +1409,7 @@ point `x₀`, the starting point; the remark after (14.2.10)): the conclusion of
 theorem theorem_14_2_4_arqpeda_anchored (hf : AssumptionD0qLaBX f X X₀ x₀ P.p L B) {flow : ℝ}
     (hb : ∀ y ∈ X, flow ≤ f y)
     (hrun : IsARqpEDARun f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
-    [Decidable u] (hrc : ∀ i, RadiiControlOf u P ε (lipMax L P.p + P.κh) σ δs s acc i)
+    [Decidable u] (hrc : ∀ i, ARqpDARadiiControl u P ε (lipMax L P.p + P.κh) σ δs s acc i)
     (hθ : P.θ < P.ς / 2) :
     ∃ kε, IsFirstHit (edaStopAR P ε D δ₁ h dd) kε ∧ x kε ∈ X ∧
       (∀ j ∈ Finset.Icc 1 P.q, δ₁ kε j ∈ Set.Ioc 0 1) ∧

@@ -27,19 +27,22 @@ module imports the section modules and adds nothing of its own.
   14.1.1, Lemmas 14.1.2–14.1.9, Theorem 14.1.10 (`theorem_14_1_10_i`, `theorem_14_1_10_ii`);
   existence of runs (`exists_isARqpCRun`) and the radius policy (14.1.28) for every run
   (`algorithm_14_1_1.radius_policy`); Corollary 14.1.11 (`corollary_14_1_11`, with the
-  admissibility of the slow steps for `|c|` that the book does not check)
+  admissibility of the slow steps for `|c|` that the book does not check). The algorithm and its
+  analysis are the backbone `Numlib.Optimization.ModelBased.HighOrder.ARqpC` and
+  `Numlib.Optimization.ModelBased.HighOrder.ARqpCComplexity` (normed spaces, anchored
+  assumptions `LipschitzDerivsAnchored` on `f` and `c`), of which the book items are instances
 * §14.2, `Chapter14.Section02`: simple constraints; assumptions X.CNe, f.D1qLaB.X (and
   variants), f.bB.X; Theorem 14.2.1, Lemma 14.2.5 (sparse first-order measure); the ARqpC-SC,
   TRq-SC and ARqp-SC rows of Lemmas 14.2.2–14.2.3 and Theorem 14.2.4 (`lemma_14_2_2_arqpc`,
   `lemma_14_2_2_trq`, `lemma_14_2_2_arqp`, `lemma_14_2_3`, `lemma_14_2_3_trq`,
   `lemma_14_2_3_arqpc`, `theorem_14_2_4_trq`, `theorem_14_2_4_arqp`, `theorem_14_2_4_arqpc`,
   `theorem_14_2_4_arqpc_convex`; the ARqp-SC rows in either radii mode, unit radii or (12.2.51)
-  at every order, `Chapter12.arqpPiOf`), the TRqIDA-SC, TRqEDA-SC, ARqpIDA-SC and ARqpEDA-SC rows
+  at every order, `Optimization.arqpPiOf`), the TRqIDA-SC, TRqEDA-SC, ARqpIDA-SC and ARqpEDA-SC rows
   (`lemma_14_2_2_trqida`, …, `theorem_14_2_4_arqpeda`, from the Chapter 13 runs with a feasible
   set; the regularization rows in either radii mode, unit radii or (12.2.51) at every order,
-  `Chapter13.RadiiControlOf`; on `ℝⁿ` with `q ≤ 2` every ARqpIDA-SC run attains the unit-radii
-  bound in either mode, `theorem_14_2_4_arqpida_le_two`); the TRq-SC and ARqp-SC rows also under
-  the anchored f.D1qLaB.X / f.D1pLaB.X (`lemma_14_2_2_trq_anchored`, …,
+  `Optimization.ARqpDARadiiControl`; on `ℝⁿ` with `q ≤ 2` every ARqpIDA-SC run attains the
+  unit-radii bound in either mode, `theorem_14_2_4_arqpida_le_two`); the TRq-SC and ARqp-SC rows
+  also under the anchored f.D1qLaB.X / f.D1pLaB.X (`lemma_14_2_2_trq_anchored`, …,
   `theorem_14_2_4_arqp_anchored`, from the anchored Chapter 12 analysis), and the
   dynamic-accuracy rows also under the anchored f.D0qLaB.X / f.D0pLaB.X
   (`lemma_14_2_2_trqida_anchored`, …, `theorem_14_2_4_arqpeda_anchored`, from the anchored

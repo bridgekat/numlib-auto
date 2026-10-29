@@ -1,0 +1,24 @@
+namespace = "Optimization"
+
+[[node]]
+id = "slowTRq_trqDAStep"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, TRqIDA-SC and TRqEDA-SC rows)"
+
+[[node]]
+id = "slowARqp_arqpDAStep"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, ARqpIDA-SC and ARqpEDA-SC rows)"
+
+[[node]]
+id = "slowARqpTop_arqpDAStep"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, ARqpIDA-SC row, lower-bound mode)"
+
+[[node]]
+id = "slowGrad_arqpDAStep"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, ARqpEDA-SC row, lower-bound mode)"
+
+[[node]]
+id = "slit_arqpDAStep"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, ARqpIDA-SC row with a feasible set)"
+
+[[node]]
+id = "slit_arqpDAStep_of_acc"

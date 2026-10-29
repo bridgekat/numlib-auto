@@ -19,7 +19,7 @@ step-length algebra used by both analyses. The iteration is stated on a feasible
 ## Main definitions
 
 * `ARqpIDAParams`, `ARqpStep1`, `ARqpStep2`, `ARqpDAStep`;
-* `RadiiControlOf u`: the radii control, with unit radii (mode `u`) or the lower bounds of the
+* `ARqpDARadiiControl u`: the radii control, with unit radii (mode `u`) or the lower bounds of the
   type (12.2.51) at every order (mode `¬ u`); `RadiiControl` is the mode `u = (q ≤ 2)`;
 * `arPiOf`, `arStepConstOf`: the exponents `π_j` and the constants of the step-length bounds.
 
@@ -107,7 +107,7 @@ theorem arModelDec_eq (k : ℕ) (v : E) :
 
 /-- The Step-1.2 test (13.1.53) passes at order `j` with the radius `δ^{(1)}_{k,j}`:
 `\overline{ΔT}_{f,j}(x_k, d_{k,j}) ≤ ½ ς ε_j (δ^{(1)}_{k,j})^j/j!`. -/
-def arPass (P : ARqpIDAParams) (ε : ℕ → ℝ) (D : ℕ → FormalMultilinearSeries ℝ E ℝ)
+def arqpDAPass (P : ARqpIDAParams) (ε : ℕ → ℝ) (D : ℕ → FormalMultilinearSeries ℝ E ℝ)
     (δ₁ : ℕ → ℕ → ℝ) (dd : ℕ → ℕ → E) (k j : ℕ) : Prop :=
   (D k).taylorDecrement j (dd k j) ≤ P.ς * ε j * δ₁ k j ^ j / j ! / 2
 
@@ -122,9 +122,9 @@ structure ARqpStep2 (X : Set E) (P : ARqpIDAParams) (ε : ℕ → ℝ) (x : ℕ 
   /-- `j_k ∈ [1, q]`. -/
   jk_mem : jk k ∈ Finset.Icc 1 P.q
   /-- (13.1.53) fails at `j_k`. -/
-  not_pass : ¬ arPass P ε D δ₁ dd k (jk k)
+  not_pass : ¬ arqpDAPass P ε D δ₁ dd k (jk k)
   /-- (13.1.53) holds below `j_k`. -/
-  pass_lt : ∀ j ∈ Finset.Icc 1 P.q, j < jk k → arPass P ε D δ₁ dd k j
+  pass_lt : ∀ j ∈ Finset.Icc 1 P.q, j < jk k → arqpDAPass P ε D δ₁ dd k j
   /-- The radii above `j_k` are not examined in Step 1. -/
   radius_gt : ∀ j ∈ Finset.Icc 1 P.q, jk k < j → δ₁ k j = δ k j
   /-- (13.1.54) at `j_k`. -/
@@ -186,9 +186,9 @@ structure ARqpDAStep (X : Set E) (P : ARqpIDAParams) (ε : ℕ → ℝ) (x : ℕ
     (dd : ℕ → ℕ → E) (jk : ℕ → ℕ) (s : ℕ → E) (acc : ℕ → Prop) (ρ : ℕ → ℝ) (k : ℕ) :
     Prop extends ARqpStep1 X P ε x σ δ δ₁ D dd k where
   /-- Step 1 → Step 5 when (13.1.53) holds at every order. -/
-  acc_of_pass : (∀ j ∈ Finset.Icc 1 P.q, arPass P ε D δ₁ dd k j) → acc k
+  acc_of_pass : (∀ j ∈ Finset.Icc 1 P.q, arqpDAPass P ε D δ₁ dd k j) → acc k
   /-- Step 2 otherwise. -/
-  step2 : (∃ j ∈ Finset.Icc 1 P.q, ¬ arPass P ε D δ₁ dd k j) →
+  step2 : (∃ j ∈ Finset.Icc 1 P.q, ¬ arqpDAPass P ε D δ₁ dd k j) →
     ARqpStep2 X P ε x σ δ δ₁ δs h D dd jk s acc k
   /-- Steps 3–4 on a trial iteration. -/
   accept : ¬ acc k → ARAcceptance P.toARParams (ρ k) (x k) (s k) (x (k + 1)) (σ k) (σ (k + 1))
@@ -216,19 +216,19 @@ bound at every order). Unit radii are what Algorithm 12.2.3 delivers for `q ≤ 
 constraints (or for `q = 1` on a convex feasible set); the lower bound is available in every
 case, in particular for `q > 2` or with a general feasible set. The complexity orders depend on
 the mode (`arPiOf u`). -/
-def RadiiControlOf (u : Prop) (P : ARqpIDAParams) (ε : ℕ → ℝ) (Lb : ℝ) (σ : ℕ → ℝ)
+def ARqpDARadiiControl (u : Prop) (P : ARqpIDAParams) (ε : ℕ → ℝ) (Lb : ℝ) (σ : ℕ → ℝ)
     (δs : ℕ → ℕ → ℝ) (s : ℕ → E) (acc : ℕ → Prop) (k : ℕ) : Prop :=
   ¬ acc k → ‖s k‖ < 1 → (u → ∀ j ∈ Finset.Icc 1 P.q, δs k j = 1) ∧
     (¬ u → ∀ j ∈ Finset.Icc 1 P.q, P.ς * P.θ * ε j / (24 * max Lb (σ k)) ≤ δs k j)
 
-/-- The radii control in the mode determined by the order: `RadiiControlOf` with unit radii
+/-- The radii control in the mode determined by the order: `ARqpDARadiiControl` with unit radii
 exactly when `q ≤ 2`, i.e. after a trial iteration with a short step, `δ_{s_k,j} = 1` for all
 `j ∈ [1, q]` if `q ≤ 2`, and `δ_{s_k,j} ≥ ς θ ε_j/(24 max(L̄, σ_k))` for all `j ∈ [1, q]` if
 `q > 2` (cf. [cartis2022evaluation], (13.1.69)–(13.1.70)). Unit radii at the orders `j ≤ 2` and
 the lower bound at the orders `j ≥ 3` imply it (`RadiiControl.of_unit_le_two`). -/
 def RadiiControl (P : ARqpIDAParams) (ε : ℕ → ℝ) (Lb : ℝ) (σ : ℕ → ℝ) (δs : ℕ → ℕ → ℝ)
     (s : ℕ → E) (acc : ℕ → Prop) (k : ℕ) : Prop :=
-  RadiiControlOf (P.q ≤ 2) P ε Lb σ δs s acc k
+  ARqpDARadiiControl (P.q ≤ 2) P ε Lb σ δs s acc k
 
 omit [InnerProductSpace ℝ E] in
 /-- `RadiiControl` unfolded, with the case `2 < q` for the lower bounds. -/
@@ -237,17 +237,17 @@ theorem radiiControl_iff {P : ARqpIDAParams} {ε : ℕ → ℝ} {Lb : ℝ} {σ :
     RadiiControl P ε Lb σ δs s acc k ↔
       (¬ acc k → ‖s k‖ < 1 → (P.q ≤ 2 → ∀ j ∈ Finset.Icc 1 P.q, δs k j = 1) ∧
         (2 < P.q → ∀ j ∈ Finset.Icc 1 P.q, P.ς * P.θ * ε j / (24 * max Lb (σ k)) ≤ δs k j)) := by
-  simp only [RadiiControl, RadiiControlOf, not_le]
+  simp only [RadiiControl, ARqpDARadiiControl, not_le]
 
 omit [InnerProductSpace ℝ E] in
 /-- Unit radii give the radii control in either mode: if `δ_{s_k,j} = 1` for all `j ∈ [1, q]`
-after a trial iteration with a short step, `ε_j ≤ 1` and `L̄ ≥ 1`, then `RadiiControlOf u` holds
+after a trial iteration with a short step, `ε_j ≤ 1` and `L̄ ≥ 1`, then `ARqpDARadiiControl u` holds
 for every `u` (the lower bound `ς θ ε_j/(24 max(L̄, σ_k)) ≤ 1` is automatic). -/
-theorem RadiiControlOf.of_unit {P : ARqpIDAParams} {ε : ℕ → ℝ} {Lb : ℝ} {σ : ℕ → ℝ}
+theorem ARqpDARadiiControl.of_unit {P : ARqpIDAParams} {ε : ℕ → ℝ} {Lb : ℝ} {σ : ℕ → ℝ}
     {δs : ℕ → ℕ → ℝ} {s : ℕ → E} {acc : ℕ → Prop} {k : ℕ} {u : Prop} (hLb : 1 ≤ Lb)
     (hε : ∀ j ∈ Finset.Icc 1 P.q, ε j ≤ 1)
     (h1 : ¬ acc k → ‖s k‖ < 1 → ∀ j ∈ Finset.Icc 1 P.q, δs k j = 1) :
-    RadiiControlOf u P ε Lb σ δs s acc k := by
+    ARqpDARadiiControl u P ε Lb σ δs s acc k := by
   intro hk hs1
   refine ⟨fun _ => h1 hk hs1, fun _ j hj => ?_⟩
   rw [h1 hk hs1 j hj]
@@ -337,8 +337,8 @@ theorem congr {x' : ℕ → E} {σ' : ℕ → ℝ} {δ' δ₁' δs' : ℕ → �
     (hs' : s' k' = s k) (hacc : acc' k' ↔ acc k) (hρ : ρ' k' = ρ k) :
     ARqpDAStep X P ε x' σ' δ' δ₁' δs' h' D' dd' jk' s' acc' ρ' k' := by
   obtain ⟨⟨hpos, hle, hhalf, hdy, hw⟩, hap, hst, hac, hrt, hht, hdu, hxa, hδa, hσa, hha⟩ := hs
-  have hP : ∀ j, arPass P ε D' δ₁' dd' k' j ↔ arPass P ε D δ₁ dd k j := fun j => by
-    simp only [arPass, hD, hδ₁, hdd]
+  have hP : ∀ j, arqpDAPass P ε D' δ₁' dd' k' j ↔ arqpDAPass P ε D δ₁ dd k j := fun j => by
+    simp only [arqpDAPass, hD, hδ₁, hdd]
   have hM : ∀ v, arModelDec P D' σ' k' v = arModelDec P D σ k v := fun v => by
     simp only [arModelDec, hD, hσ]
   refine ⟨⟨fun j hj => ?_, fun j hj => ?_, fun j hj hlt => ?_, fun j hj => ?_, fun j hj => ?_⟩,
@@ -530,9 +530,9 @@ theorem arKappaDelta1_le_one {P : ARqpIDAParams} {Lb σ : ℝ} (hLb : 1 ≤ Lb) 
 omit [InnerProductSpace ℝ E] in
 /-- Either mode of the radii control gives the lower bound `κ^{(1)}_δ(σ̄) ε_j ≤ δ_{s_k,j}` after
 a trial iteration with a short step, when `ε ∈ (0, 1]^q`, `L̄ ≥ 1` and `σ_k ≤ σ̄`. -/
-theorem RadiiControlOf.kappa_mul_le {u : Prop} {P : ARqpIDAParams} {ε : ℕ → ℝ} {Lb : ℝ}
+theorem ARqpDARadiiControl.kappa_mul_le {u : Prop} {P : ARqpIDAParams} {ε : ℕ → ℝ} {Lb : ℝ}
     {σ : ℕ → ℝ} {δs : ℕ → ℕ → ℝ} {s : ℕ → E} {acc : ℕ → Prop} {k : ℕ}
-    (hrc : RadiiControlOf u P ε Lb σ δs s acc k) (hk : ¬ acc k) (hs : ‖s k‖ < 1)
+    (hrc : ARqpDARadiiControl u P ε Lb σ δs s acc k) (hk : ¬ acc k) (hs : ‖s k‖ < 1)
     (hε : ∀ j ∈ Finset.Icc 1 P.q, ε j ∈ Set.Ioc 0 1) (hLb : 1 ≤ Lb) {σbar : ℝ}
     (hσ : σ k ≤ σbar) {j : ℕ} (hj : j ∈ Finset.Icc 1 P.q) :
     arKappaDelta1 P Lb σbar * ε j ≤ δs k j := by
@@ -555,7 +555,7 @@ theorem RadiiControlOf.kappa_mul_le {u : Prop} {P : ARqpIDAParams} {ε : ℕ →
 /-- **The radius bound (13.1.71) of Lemma 13.1.12** ([cartis2022evaluation]), for sequences
 satisfying the ARqpIDA step predicate at every iteration `i < k` and Step 1 at `k`, with
 `ε ∈ (0, 1]^q`, `ε ≤ δ₀`, `‖∇̄^ℓ f(x_i)‖ ≤ L̄` (`L̄ ≥ 1`), `σ_i ≤ σ̄` for `i ≤ k` and the radii
-control (`RadiiControlOf`, either mode) at every `i < k`:
+control (`ARqpDARadiiControl`, either mode) at every `i < k`:
 `δ^{(0)}_{k,j} ≥ δ^{(1)}_{k,j} ≥ κ^{(1)}_δ(σ̄) ε_j` for `j ∈ [1, q]`. -/
 theorem arqpDA_radius_ge (hstep : ∀ i < k, ARqpDAStep X P ε x σ δ δ₁ δs h D dd jk s acc ρ i)
     (hstep1 : ARqpStep1 X P ε x σ δ δ₁ D dd k) (hσ0 : σ 0 = P.σ₀) (hδ0 : δ 0 = P.δ₀)
@@ -563,7 +563,7 @@ theorem arqpDA_radius_ge (hstep : ∀ i < k, ARqpDAStep X P ε x σ δ δ₁ δs
     (hε : ∀ j ∈ Finset.Icc 1 P.q, ε j ∈ Set.Ioc 0 1) (hεδ : ∀ j ∈ Finset.Icc 1 P.q, ε j ≤ P.δ₀ j)
     {Lb σbar : ℝ} (hLb : 1 ≤ Lb) (hD : ∀ i ≤ k, ∀ ℓ ∈ Finset.Icc 1 P.p, ‖D i ℓ‖ ≤ Lb)
     (hσ : ∀ i ≤ k, σ i ≤ σbar) {u : Prop}
-    (hrc : ∀ i < k, RadiiControlOf u P ε Lb σ δs s acc i) :
+    (hrc : ∀ i < k, ARqpDARadiiControl u P ε Lb σ δs s acc i) :
     ∀ j ∈ Finset.Icc 1 P.q, arKappaDelta1 P Lb σbar * ε j ≤ δ₁ k j ∧ δ₁ k j ≤ δ k j := by
   have hLb0 : 0 < Lb := zero_lt_one.trans_le hLb
   set κ := arKappaDelta1 P Lb σbar with hκdef
@@ -756,7 +756,7 @@ theorem arqp_pow_ge_of_radius_ineq {a A t ε δ κ : ℝ} {j p q : ℕ} {u : Pro
     rw [this]
     gcongr
 
-/-- The exponent `π_j` of Lemma 13.1.18 in the radii mode `u` (`RadiiControlOf`):
+/-- The exponent `π_j` of Lemma 13.1.18 in the radii mode `u` (`ARqpDARadiiControl`):
 `(p+1)/(p-j+1)` with unit radii (`u`) and `j(p+1)/p` with the lower-bound radii (`¬ u`). -/
 noncomputable def arPiOf (u : Prop) [Decidable u] (p j : ℕ) : ℝ :=
   if u then ((p : ℝ) + 1) / ((p - j + 1 : ℕ) : ℝ) else (j : ℝ) * ((p : ℝ) + 1) / p

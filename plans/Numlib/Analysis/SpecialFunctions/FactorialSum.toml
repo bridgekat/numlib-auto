@@ -13,3 +13,6 @@ source = "Cartis–Gould–Toint, (A.34)"
 [[node]]
 id = "sum_pow_div_factorial_le_two_mul_pow"
 source = "Cartis–Gould–Toint, (A.35)"
+
+[[node]]
+id = "pow_div_factorial_le_of_lt"

@@ -546,7 +546,7 @@ theorem callOut_one_step {n : ℕ} {F : EuclideanSpace ℝ (Fin n) → ℝ}
             P.σ₀) s).taylorDecrement j d := by
         funext j s d
         exact congrFun (Optimization.compositeModelDecrement_zero_fun _ _ _ _ j s) d
-      unfold algorithm_14_1_2
+      unfold algorithm_14_1_2 Optimization.IsARqpCDetailedStep
       simp only [hx0, ss, σs, δ]
       rw [em, eΔ]
       exact Optimization.IsDetailedStepOutput.of_short_step hq hxs hbdd (by rw [hm0]; exact hmod)

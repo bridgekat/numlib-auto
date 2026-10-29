@@ -251,6 +251,34 @@ theorem delta_mem (h : IsARqpRun w X P q ε δ₀ M x s σ δ δs d dm)
     · rw [(hu hρ).1]
       exact ih (fun i hi => hk' i hi.le) j hj
 
+/-- **Restricting an unconstrained run to a feasible set**: an ARqp run on `univ` is a run on `X`
+if its iterates reached, their Step-1 displacements, and the trial points and Step-2
+displacements of its short steps lie in `X`, and the decrements are bounded above on balls (as
+for Taylor data). -/
+theorem of_univ (h : IsARqpRun w univ P q ε δ₀ M x s σ δ δs d dm) {X : Set E}
+    (hdec : ∀ k j r, BddAbove ((M k).dec j '' (closedBall 0 r ∩ {e | x k + e ∈ univ})))
+    (hmdec : ∀ k j r, BddAbove
+      ((M k).modelDec j (s k) '' (closedBall 0 r ∩ {e | x k + s k + e ∈ univ})))
+    (hX : ∀ k, (∀ i < k, ¬ IsARRun.Stop (arqpStop₁ P q ε M δ d) (arqpStop₂ M s) i) →
+      x k ∈ X ∧ (∀ j ∈ Finset.Icc 1 q, x k + d k j ∈ X) ∧ x k + s k ∈ X ∧
+        (‖s k‖ < 1 → ∀ j ∈ Finset.Icc 1 q, x k + s k + dm k j ∈ X)) :
+    IsARqpRun w X P q ε δ₀ M x s σ δ δs d dm := by
+  have hς := P.ς_pos.le
+  refine ⟨⟨h.toIsARRun.sigma_zero, fun k hk h1 => ?_, h.toIsARRun.accept⟩,
+    (hX 0 fun _ h => absurd h (Nat.not_lt_zero _)).1, h.delta_zero, fun k hk j hj => ?_, h.radii⟩
+  · have hst := h.toIsARRun.step k hk h1
+    obtain ⟨-, -, hs, hdm⟩ := hX k hk
+    refine ⟨hs, hst.model_le, fun he => (hst.isMinOn_of_eq he).of_subset (subset_univ _),
+      hst.radius_pos, hst.radius_le_one, ?_⟩
+    rcases hst.branch with hl | hb
+    · exact Or.inl hl
+    rcases le_or_gt 1 ‖s k‖ with hl | hl
+    · exact Or.inl hl
+    · exact Or.inr fun j hj => ⟨(hb j hj).1.mono_set hς (hmdec k j _) (fun _ _ => mem_univ _)
+        (hdm hl j hj), (hb j hj).2⟩
+  · exact (h.witness k hk j hj).mono_set hς (hdec k j _) (fun _ _ => mem_univ _)
+      ((hX k hk).2.1 j hj)
+
 end IsARqpRun
 
 /-! ### Existence of runs -/
@@ -296,6 +324,103 @@ private structure ARqpState (E : Type*) where
   δs : ℕ → ℝ
   dm : ℕ → E
 
+omit [InnerProductSpace ℝ E] in
+/-- **Existence of ARqp runs from the existence of the steps** (the conceptual algorithm is well
+defined as soon as its steps are): let `M y σ` be model data at the point `y` with weight `σ`,
+let every feasible `y` and radii `δ ∈ (0, 1]^q` admit Step-1 witnesses (`ς`-approximate
+optimality displacements of the decrements `(M y σ).dec j` over `{e | y + e ∈ X}`, valid for
+every weight `σ`), and let every feasible `y` and `σ > 0` admit a Step-2 triple `(s, δs, dm)`
+(`ARqpStep`) with a further property `Q y σ s δs dm`. Then from every `x₀ ∈ X` there is an ARqp
+run with model data `M (x k) (σ k)` whose Step-2 triples satisfy `Q` at every iteration
+reached. -/
+theorem exists_isARqpRun_of_forall (w : E → ℝ) (X : Set E) (P : ARqpParams) {q : ℕ}
+    {ε δ₀ : ℕ → ℝ} (hδ₀ : ∀ j ∈ Finset.Icc 1 q, 0 < δ₀ j ∧ δ₀ j ≤ 1) (M : E → ℝ → ARqpData E)
+    (Q : E → ℝ → E → (ℕ → ℝ) → (ℕ → E) → Prop)
+    (hwit : ∀ y ∈ X, ∀ δ : ℕ → ℝ, (∀ j ∈ Finset.Icc 1 q, 0 < δ j ∧ δ j ≤ 1) →
+      ∃ d : ℕ → E, ∀ σ, ∀ j ∈ Finset.Icc 1 q,
+        IsApproxMeasureStep ((M y σ).dec j) (δ j) {e | y + e ∈ X} P.ς (d j))
+    (hstep : ∀ y ∈ X, ∀ σ, 0 < σ → ∃ (s : E) (δs : ℕ → ℝ) (dm : ℕ → E),
+      ARqpStep X P q ε (M y σ) y s δs dm ∧ Q y σ s δs dm)
+    {x₀ : E} (hx₀ : x₀ ∈ X) :
+    ∃ (x s : ℕ → E) (σ : ℕ → ℝ) (δ δs : ℕ → ℕ → ℝ) (d dm : ℕ → ℕ → E), x 0 = x₀ ∧
+      IsARqpRun w X P q ε δ₀ (fun k => M (x k) (σ k)) x s σ δ δs d dm ∧
+      ∀ k, (∀ i < k, ¬ IsARRun.Stop (arqpStop₁ P q ε (fun k => M (x k) (σ k)) δ d)
+          (arqpStop₂ (fun k => M (x k) (σ k)) s) i) →
+        Q (x k) (σ k) (s k) (δs k) (dm k) := by
+  classical
+  -- Step-1 witnesses
+  have hwit' : ∀ (y : E) (δ : ℕ → ℝ), ∃ d : ℕ → E, y ∈ X →
+      (∀ j ∈ Finset.Icc 1 q, 0 < δ j ∧ δ j ≤ 1) → ∀ σ, ∀ j ∈ Finset.Icc 1 q,
+        IsApproxMeasureStep ((M y σ).dec j) (δ j) {e | y + e ∈ X} P.ς (d j) := by
+    intro y δ
+    by_cases h : y ∈ X ∧ ∀ j ∈ Finset.Icc 1 q, 0 < δ j ∧ δ j ≤ 1
+    · obtain ⟨d, hd⟩ := hwit y h.1 δ h.2
+      exact ⟨d, fun _ _ => hd⟩
+    · exact ⟨0, fun hy hδ => absurd ⟨hy, hδ⟩ h⟩
+  choose wit hwit using hwit'
+  -- Step-2 steps
+  have hstp : ∀ (y : E) (σ : ℝ), ∃ t : E × (ℕ → ℝ) × (ℕ → E), y ∈ X → 0 < σ →
+      ARqpStep X P q ε (M y σ) y t.1 t.2.1 t.2.2 ∧ Q y σ t.1 t.2.1 t.2.2 := by
+    intro y σ
+    by_cases h : y ∈ X ∧ 0 < σ
+    · obtain ⟨s, δs, dm, h'⟩ := hstep y h.1 σ h.2
+      exact ⟨(s, δs, dm), fun _ _ => h'⟩
+    · exact ⟨(0, 0, 0), fun hy hσ => absurd ⟨hy, hσ⟩ h⟩
+  choose stp hstp using hstp
+  -- the states and their invariant
+  let mk : E → ℝ → (ℕ → ℝ) → (ℕ → E) → ARqpState E := fun y σ δ d =>
+    ⟨y, σ, δ, d, (stp y σ).1, (stp y σ).2.1, (stp y σ).2.2⟩
+  let Good : ARqpState E → Prop := fun a =>
+    a.x ∈ X ∧ P.σmin ≤ a.σ ∧ 0 < a.σ ∧ (∀ j ∈ Finset.Icc 1 q, 0 < a.δ j ∧ a.δ j ≤ 1) ∧
+      (∀ σ, ∀ j ∈ Finset.Icc 1 q,
+        IsApproxMeasureStep ((M a.x σ).dec j) (a.δ j) {e | a.x + e ∈ X} P.ς (a.d j)) ∧
+      ARqpStep X P q ε (M a.x a.σ) a.x a.s a.δs a.dm ∧ Q a.x a.σ a.s a.δs a.dm
+  have hmk : ∀ y σ δ d, y ∈ X → P.σmin ≤ σ → 0 < σ →
+      (∀ j ∈ Finset.Icc 1 q, 0 < δ j ∧ δ j ≤ 1) →
+      (∀ σ, ∀ j ∈ Finset.Icc 1 q,
+        IsApproxMeasureStep ((M y σ).dec j) (δ j) {e | y + e ∈ X} P.ς (d j)) →
+      Good (mk y σ δ d) := fun y σ δ d hy h1 h2 h3 h4 => ⟨hy, h1, h2, h3, h4, hstp y σ hy h2⟩
+  let stopS : ARqpState E → Prop := fun a =>
+    MeasureTestPasses (M a.x a.σ).dec q P.ς ε a.δ a.d ∨ (M a.x a.σ).model a.s = (M a.x a.σ).model 0
+  let ratio : ARqpState E → ℝ := fun a => reductionRatio w a.x a.s ((M a.x a.σ).pred a.s)
+  let Trans : ARqpState E → ARqpState E → Prop := fun a b =>
+    ARAcceptance P.toARParams (ratio a) a.x a.s b.x a.σ b.σ ∧
+      (P.η₁ ≤ ratio a → b.δ = a.δs) ∧ (¬ P.η₁ ≤ ratio a → b.δ = a.δ ∧ b.d = a.d)
+  have hnext : ∀ a, Good a → ∃ b, Good b ∧ Trans a b := by
+    rintro a ⟨hx, hmin, hpos, hδ, hw, hst, -⟩
+    obtain ⟨σ', hacc, hmin', hpos'⟩ := exists_arAcceptance P.toARParams (ratio a) a.x a.s hmin
+    by_cases hρ : P.η₁ ≤ ratio a
+    · simp only [hρ, ↓reduceIte] at hacc
+      have hδs : ∀ j ∈ Finset.Icc 1 q, 0 < a.δs j ∧ a.δs j ≤ 1 :=
+        fun j hj => ⟨hst.radius_pos j hj, hst.radius_le_one j hj⟩
+      refine ⟨mk (a.x + a.s) σ' a.δs (wit (a.x + a.s) a.δs), hmk _ _ _ _ hst.mem hmin'
+        (hpos' hpos) hδs (hwit _ _ hst.mem hδs), hacc, fun _ => rfl,
+        fun h => absurd hρ h⟩
+    · simp only [hρ, ↓reduceIte] at hacc
+      exact ⟨mk a.x σ' a.δ a.d, hmk _ _ _ _ hx hmin' (hpos' hpos) hδ hw, hacc,
+        fun h => absurd h hρ, fun _ => ⟨rfl, rfl⟩⟩
+  -- the initial state
+  set a₀ := mk x₀ P.σ₀ δ₀ (wit x₀ δ₀) with ha₀
+  have hgood₀ : Good a₀ := hmk _ _ _ _ hx₀ P.σmin_le_σ₀ P.σ₀_pos hδ₀ (hwit _ _ hx₀ hδ₀)
+  obtain ⟨r, hr0, hr⟩ := exists_run_of_forall_exists_of_invariant
+    (init := fun a => a = a₀) (inv := fun _ a => Good a) (stop := fun _ a => stopS a)
+    (step := fun _ a b => Trans a b ∧ Good b) ⟨a₀, rfl⟩ (fun a ha => ha ▸ hgood₀)
+    (fun _ a ha _ => by
+      obtain ⟨b, hb, hab⟩ := hnext a ha
+      exact ⟨b, hb, hab, hb⟩)
+  have hgood : ∀ k, (∀ i < k, ¬ stopS (r i)) → Good (r k) := by
+    intro k hk
+    cases k with
+    | zero => rw [hr0]; exact hgood₀
+    | succ k => exact (hr k fun j hj => hk j (Nat.lt_succ_of_le hj)).2.2
+  refine ⟨fun k => (r k).x, fun k => (r k).s, fun k => (r k).σ, fun k => (r k).δ,
+    fun k => (r k).δs, fun k => (r k).d, fun k => (r k).dm, by simp [hr0, ha₀, mk], ?_,
+    fun k hk => (hgood k hk).2.2.2.2.2.2⟩
+  exact ⟨⟨by simp [hr0, ha₀, mk], fun k hk _ => (hgood k hk).2.2.2.2.2.1,
+    fun k hk => (hr k hk).2.1.1⟩, (hgood 0 fun _ h => absurd h (Nat.not_lt_zero _)).1,
+    by simp [hr0, ha₀, mk], fun k hk => (hgood k hk).2.2.2.2.1 (r k).σ,
+    fun k hk => (hr k hk).2.1.2⟩
+
 /-- **Existence of ARqp runs** ([cartis2022evaluation], Lemmas 12.2.9–12.2.10: the conceptual
 ARqp algorithm is well defined). Let `E` be finite-dimensional, `f : E → ℝ`, `1 ≤ p`, `q ≤ p`,
 `ε_j > 0` and `δ₀_j ∈ (0, 1]` for `j = 1, …, q`, and `L : E → ℝ` a nonnegative bound
@@ -316,90 +441,24 @@ theorem exists_isARqpRun [FiniteDimensional ℝ E] (f : E → ℝ) (P : ARqpPara
           (arqpStop₂ (fun k => ARqpData.ofTaylor (ftaylorSeries ℝ f (x k)) p (σ k)) s) i) →
         (∀ j ∈ Finset.Icc 1 q, j ≤ 2 → δs k j = 1) ∧
         ∀ j ∈ Finset.Icc 3 q, δs k j = min 1 (P.ς * P.θ * ε j / (4 * (3 * L (x k) + σ k))) := by
-  classical
-  -- the model data at a point and weight
-  let M : E → ℝ → ARqpData E := fun y σ => ARqpData.ofTaylor (ftaylorSeries ℝ f y) p σ
-  -- Step-1 witnesses
-  have hwit : ∀ (y : E) (δ : ℕ → ℝ), ∃ d : ℕ → E, ∀ j, 0 ≤ δ j →
-      IsApproxMeasureStep ((M y 1).dec j) (δ j) {e | y + e ∈ (univ : Set E)} P.ς (d j) := by
-    intro y δ
-    have h : ∀ j, ∃ dj : E, 0 ≤ δ j →
-        IsApproxMeasureStep ((M y 1).dec j) (δ j) {e | y + e ∈ (univ : Set E)} P.ς dj := by
+  refine exists_isARqpRun_of_forall f univ P hδ₀
+    (fun y σ => ARqpData.ofTaylor (ftaylorSeries ℝ f y) p σ)
+    (fun y σ _ δs _ => (∀ j ∈ Finset.Icc 1 q, j ≤ 2 → δs j = 1) ∧
+      ∀ j ∈ Finset.Icc 3 q, δs j = min 1 (P.ς * P.θ * ε j / (4 * (3 * L y + σ))))
+    (fun y _ δ hδ => ?_) (fun y _ σ hσ => ?_) (mem_univ x₀)
+  · have h : ∀ j, ∃ dj : E, j ∈ Finset.Icc 1 q → IsApproxMeasureStep
+        ((ftaylorSeries ℝ f y).taylorDecrement j) (δ j) {e | y + e ∈ (univ : Set E)} P.ς dj := by
       intro j
-      by_cases hδ : 0 ≤ δ j
+      by_cases hj : j ∈ Finset.Icc 1 q
       · obtain ⟨dj, hdj⟩ := exists_isApproxMeasureStep_taylorDecrement (ftaylorSeries ℝ f y) j
-          (S := {e | y + e ∈ (univ : Set E)}) (by simp) (by simp) hδ P.ς_le_one
+          (S := {e | y + e ∈ (univ : Set E)}) (by simp) (by simp) (hδ j hj).1.le P.ς_le_one
         exact ⟨dj, fun _ => hdj⟩
-      · exact ⟨0, fun h' => absurd h' hδ⟩
+      · exact ⟨0, fun h' => absurd h' hj⟩
     choose d hd using h
-    exact ⟨d, hd⟩
-  choose wit hwit using hwit
-  -- Step-2 steps
-  have hstp : ∀ (y : E) (σ : ℝ), ∃ t : E × (ℕ → ℝ) × (ℕ → E), 0 < σ →
-      ARqpStep univ P q ε (M y σ) y t.1 t.2.1 t.2.2 ∧
-        (∀ j ∈ Finset.Icc 1 q, j ≤ 2 → t.2.1 j = 1) ∧
-        ∀ j ∈ Finset.Icc 3 q, t.2.1 j = min 1 (P.ς * P.θ * ε j / (4 * (3 * L y + σ))) := by
-    intro y σ
-    by_cases hσ : 0 < σ
-    · obtain ⟨s, δs, dm, h⟩ := exists_arqpStep_ofTaylor P hp hq hε (hL0 y) (hL y) hσ y
-        (D := ftaylorSeries ℝ f y)
-      exact ⟨(s, δs, dm), fun _ => h⟩
-    · exact ⟨(0, 0, 0), fun h' => absurd h' hσ⟩
-  choose stp hstp using hstp
-  -- the states and their invariant
-  let mk : E → ℝ → (ℕ → ℝ) → (ℕ → E) → ARqpState E := fun y σ δ d =>
-    ⟨y, σ, δ, d, (stp y σ).1, (stp y σ).2.1, (stp y σ).2.2⟩
-  let Good : ARqpState E → Prop := fun a =>
-    P.σmin ≤ a.σ ∧ 0 < a.σ ∧ (∀ j ∈ Finset.Icc 1 q, 0 < a.δ j ∧ a.δ j ≤ 1) ∧
-      (∀ j ∈ Finset.Icc 1 q,
-        IsApproxMeasureStep ((M a.x a.σ).dec j) (a.δ j) {e | a.x + e ∈ (univ : Set E)} P.ς
-          (a.d j)) ∧
-      ARqpStep univ P q ε (M a.x a.σ) a.x a.s a.δs a.dm ∧
-      (∀ j ∈ Finset.Icc 1 q, j ≤ 2 → a.δs j = 1) ∧
-      ∀ j ∈ Finset.Icc 3 q, a.δs j = min 1 (P.ς * P.θ * ε j / (4 * (3 * L a.x + a.σ)))
-  have hmk : ∀ y σ δ d, P.σmin ≤ σ → 0 < σ → (∀ j ∈ Finset.Icc 1 q, 0 < δ j ∧ δ j ≤ 1) →
-      (∀ j ∈ Finset.Icc 1 q,
-        IsApproxMeasureStep ((M y σ).dec j) (δ j) {e | y + e ∈ (univ : Set E)} P.ς (d j)) →
-      Good (mk y σ δ d) := fun y σ δ d h1 h2 h3 h4 => ⟨h1, h2, h3, h4, hstp y σ h2⟩
-  let stopS : ARqpState E → Prop := fun a =>
-    MeasureTestPasses (M a.x a.σ).dec q P.ς ε a.δ a.d ∨ (M a.x a.σ).model a.s = (M a.x a.σ).model 0
-  let ratio : ARqpState E → ℝ := fun a => reductionRatio f a.x a.s ((M a.x a.σ).pred a.s)
-  let Trans : ARqpState E → ARqpState E → Prop := fun a b =>
-    ARAcceptance P.toARParams (ratio a) a.x a.s b.x a.σ b.σ ∧
-      (P.η₁ ≤ ratio a → b.δ = a.δs) ∧ (¬ P.η₁ ≤ ratio a → b.δ = a.δ ∧ b.d = a.d)
-  have hnext : ∀ a, Good a → ∃ b, Good b ∧ Trans a b := by
-    rintro a ⟨hmin, hpos, hδ, hw, hst, -, -⟩
-    obtain ⟨σ', hacc, hmin', hpos'⟩ := exists_arAcceptance P.toARParams (ratio a) a.x a.s hmin
-    by_cases hρ : P.η₁ ≤ ratio a
-    · simp only [hρ, ↓reduceIte] at hacc
-      refine ⟨mk (a.x + a.s) σ' a.δs (wit (a.x + a.s) a.δs), hmk _ _ _ _ hmin' (hpos' hpos)
-        (fun j hj => ⟨hst.radius_pos j hj, hst.radius_le_one j hj⟩)
-        (fun j hj => hwit _ _ j (hst.radius_pos j hj).le), hacc, fun _ => rfl,
-        fun h => absurd hρ h⟩
-    · simp only [hρ, ↓reduceIte] at hacc
-      exact ⟨mk a.x σ' a.δ a.d, hmk _ _ _ _ hmin' (hpos' hpos) hδ hw, hacc,
-        fun h => absurd h hρ, fun _ => ⟨rfl, rfl⟩⟩
-  -- the initial state
-  set a₀ := mk x₀ P.σ₀ δ₀ (wit x₀ δ₀) with ha₀
-  have hgood₀ : Good a₀ := hmk _ _ _ _ P.σmin_le_σ₀ P.σ₀_pos hδ₀
-    (fun j hj => hwit _ _ j (hδ₀ j hj).1.le)
-  obtain ⟨r, hr0, hr⟩ := exists_run_of_forall_exists_of_invariant
-    (init := fun a => a = a₀) (inv := fun _ a => Good a) (stop := fun _ a => stopS a)
-    (step := fun _ a b => Trans a b ∧ Good b) ⟨a₀, rfl⟩ (fun a ha => ha ▸ hgood₀)
-    (fun _ a ha _ => by
-      obtain ⟨b, hb, hab⟩ := hnext a ha
-      exact ⟨b, hb, hab, hb⟩)
-  have hgood : ∀ k, (∀ i < k, ¬ stopS (r i)) → Good (r k) := by
-    intro k hk
-    cases k with
-    | zero => rw [hr0]; exact hgood₀
-    | succ k => exact (hr k fun j hj => hk j (Nat.lt_succ_of_le hj)).2.2
-  refine ⟨fun k => (r k).x, fun k => (r k).s, fun k => (r k).σ, fun k => (r k).δ,
-    fun k => (r k).δs, fun k => (r k).d, fun k => (r k).dm, by simp [hr0, ha₀, mk], ?_,
-    fun k hk => ((hgood k hk).2.2.2.2.2)⟩
-  refine ⟨⟨by simp [hr0, ha₀, mk], fun k hk _ => (hgood k hk).2.2.2.2.1,
-    fun k hk => (hr k hk).2.1.1⟩, mem_univ _, by simp [hr0, ha₀, mk],
-    fun k hk => (hgood k hk).2.2.2.1, fun k hk => (hr k hk).2.1.2⟩
+    exact ⟨d, fun _ j hj => hd j hj⟩
+  · obtain ⟨s, δs, dm, h⟩ := exists_arqpStep_ofTaylor P hp hq hε (hL0 y) (hL y) hσ y
+      (D := ftaylorSeries ℝ f y)
+    exact ⟨s, δs, dm, h⟩
 
 end Existence
 

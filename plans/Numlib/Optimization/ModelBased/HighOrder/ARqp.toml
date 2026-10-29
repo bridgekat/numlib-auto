@@ -43,3 +43,11 @@ source = "Cartis–Gould–Toint, Lemma 12.2.9"
 [[node]]
 id = "exists_isARqpRun"
 source = "Cartis–Gould–Toint, Lemmas 12.2.9–12.2.10 (the conceptual ARqp algorithm is well defined)"
+
+[[node]]
+id = "exists_isARqpRun_of_forall"
+source = "Cartis–Gould–Toint, Algorithms 12.2.2 and 14.1.1 (well defined once the steps exist)"
+
+[[node]]
+id = "IsARqpRun.of_univ"
+source = "Cartis–Gould–Toint, §14.2 (unconstrained runs staying in X are -SC runs)"

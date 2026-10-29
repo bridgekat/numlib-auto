@@ -23,6 +23,7 @@ composite decrements of Chapter 14 share one interface.
 ## Main results
 
 * `Optimization.exists_isApproxMeasureStep`: existence in finite dimension (with refinements);
+* `Optimization.IsApproxMeasureStep.mono_set`: restriction to a smaller feasible set;
 * `Optimization.isEpsDeltaApprox_of_measureTestPasses`: passing the test certifies the bounds on
   the measures, `Optimization.MeasureTestPasses.isEpsDeltaApprox` for Taylor data;
 * `Optimization.exists_lt_of_not_measureTestPasses`: failing the test gives a
@@ -57,6 +58,14 @@ theorem IsApproxMeasureStep.norm_le (h : IsApproxMeasureStep Δ δ S ς d) : ‖
 
 /-- An approximate optimality displacement is feasible. -/
 theorem IsApproxMeasureStep.mem (h : IsApproxMeasureStep Δ δ S ς d) : d ∈ S := h.1.2
+
+/-- An approximate optimality displacement over a set `S'` of displacements (with decreases
+bounded above on `B_δ ∩ S'`) is one over every smaller set `S ⊆ S'` containing it. -/
+theorem IsApproxMeasureStep.mono_set {S' : Set E} (h : IsApproxMeasureStep Δ δ S' ς d)
+    (hς : 0 ≤ ς) (hbdd : BddAbove (Δ '' (closedBall 0 δ ∩ S'))) (hSS' : S ⊆ S') (hd : d ∈ S) :
+    IsApproxMeasureStep Δ δ S ς d :=
+  ⟨⟨h.1.1, hd⟩, (mul_le_mul_of_nonneg_left (decrementMeasure_mono_set ⟨d, h.1.1, hd⟩ hbdd hSS')
+    hς).trans h.2⟩
 
 /-- The decrease along an approximate optimality displacement is at most the measure. -/
 theorem IsApproxMeasureStep.le_decrementMeasure (h : IsApproxMeasureStep Δ δ S ς d)

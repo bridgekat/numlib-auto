@@ -18,6 +18,9 @@ Two stability facts behind the perturbation of a Householder reflector `x ↦ x 
   `NormedSpace.norm_normalize_le_one`, `‖x / ‖x‖‖ ≤ 1` also for `x = 0`);
 * `norm_inner_smul_sub_inner_smul_le`: the rank-one maps `x ↦ ⟪a, x⟫ a` and `x ↦ ⟪b, x⟫ b` of two
   vectors of length at most one differ by at most `2 ‖b - a‖` in operator norm.
+
+It also records the scaling identities of a unit vector `e`: `‖t • e‖ = |t|`
+(`norm_smul_of_norm_eq_one`) and `⟪e, t • e⟫ = t` (`inner_smul_self_of_norm_eq_one`).
 -/
 
 open scoped RealInnerProductSpace
@@ -73,3 +76,15 @@ theorem norm_inner_smul_sub_inner_smul_le {E : Type*} [NormedAddCommGroup E]
   refine (norm_add_le _ _).trans ?_
   rw [norm_smul, norm_smul, Real.norm_eq_abs, Real.norm_eq_abs]
   linarith
+
+/-! ### Unit vectors -/
+
+/-- `‖t • e‖ = |t|` for a unit vector `e`. -/
+theorem norm_smul_of_norm_eq_one {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {e : E}
+    (he : ‖e‖ = 1) (t : ℝ) : ‖t • e‖ = |t| := by
+  rw [norm_smul, he, mul_one, Real.norm_eq_abs]
+
+/-- `⟪e, t • e⟫ = t` for a unit vector `e`. -/
+theorem inner_smul_self_of_norm_eq_one {E : Type*} [NormedAddCommGroup E]
+    [InnerProductSpace ℝ E] {e : E} (he : ‖e‖ = 1) (t : ℝ) : ⟪e, t • e⟫ = t := by
+  rw [real_inner_smul_right, real_inner_self_eq_norm_sq, he, one_pow, mul_one]

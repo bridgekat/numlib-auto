@@ -171,3 +171,7 @@ source = "Cartis–Gould–Toint, §14.2.1 (remark after (14.2.10)), the part of
 [[node]]
 id = "lemma_12_2_10_le_two"
 source = "Cartis–Gould–Toint, Lemma 12.2.10 (no Step-2 termination for q ≤ 2)"
+
+[[node]]
+id = "assumptionD1pLAnchoredTop_iff"
+source = "Cartis–Gould–Toint, f.D1pLaB.X at the top order (bridge to LipschitzDerivsAnchored)"
