@@ -1,0 +1,33 @@
+namespace = "Optimization"
+
+[[node]]
+id = "ridge"
+source = "Cartis–Gould–Toint, footnote 10 (one-dimensional examples embed in ℝⁿ)"
+
+[[node]]
+id = "minCurvature_iteratedFDeriv_ridge"
+source = "Cartis–Gould–Toint, footnote 10"
+
+[[node]]
+id = "iteratedFDeriv_apply_const_eq_line"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, ARqpIDA-SC row with a feasible set): models restricted to a line"
+
+[[node]]
+id = "taylorDecrement_eq_of_line"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, ARqpIDA-SC row with a feasible set): models restricted to a line"
+
+[[node]]
+id = "gradient_ridge"
+source = "Cartis–Gould–Toint, footnote 10"
+
+[[node]]
+id = "hessianOperator_ridge"
+source = "Cartis–Gould–Toint, footnote 10"
+
+[[node]]
+id = "taylorPolynomial_ridge"
+source = "Cartis–Gould–Toint, footnote 10"
+
+[[node]]
+id = "hessianOperator_ridge_single"
+source = "Cartis–Gould–Toint, footnote 10"

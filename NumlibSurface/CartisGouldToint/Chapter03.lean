@@ -36,8 +36,8 @@ belong to the results above.
 * (3.3.30): the additive `+ 1` is false; the bound holds with `+ 2`.
 * Theorems 3.4.6 and 3.4.12: the counting arguments are wrong (a successful iteration without the
   required decrease is only followed by one with it); the bounds hold with a factor `2` on the
-  leading terms (`card_successSet_le_two_mul_add_one`). Theorems 3.4.11–3.4.12 get corrected
-  constants `κ^A = κ^S (M + 1)`, `κ^B = M + 2`, `κ^D = 2M + 3`.
+  leading terms (`Optimization.card_successSet_le_two_mul_add_one`). Theorems 3.4.11–3.4.12 get
+  corrected constants `κ^A = κ^S (M + 1)`, `κ^B = M + 2`, `κ^D = 2M + 3`.
 * Lemma 3.4.3 (misprinted quadratic and root), Lemma 3.4.4 (swapped case labels), Lemma 3.5.1
   (self-referential constant, read `κ_λ = 2√(κ̄_λ(1 + κ_rg))`) and the sign of (3.5.17) are
   repaired.

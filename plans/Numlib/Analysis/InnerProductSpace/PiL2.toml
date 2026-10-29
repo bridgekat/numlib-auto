@@ -1,0 +1,13 @@
+namespace = "EuclideanSpace"
+
+[[node]]
+id = "eq_inner_single_smul_of_forall_ne"
+
+[[node]]
+id = "norm_eq_abs_inner_single_of_forall_ne"
+
+[[node]]
+id = "eq_inner_single_smul"
+
+[[node]]
+id = "norm_eq_abs_inner_single"

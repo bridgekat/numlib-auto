@@ -1,6 +1,6 @@
 import Numlib.Analysis.Calculus.AnchoredLipschitz
 import Numlib.Optimization.Complexity.Existence
-import Numlib.Optimization.Complexity.SlowExampleHighOrder
+import Numlib.Optimization.Complexity.SlowExample.HighOrder
 import Numlib.Optimization.ModelBased.HighOrder.ARqp
 import Numlib.Optimization.ModelBased.HighOrder.TRq
 import Numlib.Optimization.ModelBased.HighOrderStep

@@ -9,14 +9,17 @@ import Numlib.Optimization.ModelBased.TaylorModel
 
 One-dimensional data for the sharpness ("slow convergence") results of [cartis2022evaluation]
 Chapter 12 (and Theorems 3.3.6, 3.3.10, 4.1.6), generalizing the data families of
-`Numlib/Optimization/Complexity/SlowExample` to arbitrary orders. In each family the jets at the
-iterates have a single nonzero derivative of positive order (`Optimization.spikeJet`); the Hermite
-consistency condition (A.32) then reduces to three scalar inequalities
+`Numlib.Optimization.Complexity.SlowExample.Basic` to arbitrary orders. In each family the jets
+at the iterates have a single nonzero derivative of positive order (`Optimization.spikeJet`); the
+Hermite consistency condition (A.32) then reduces to three scalar inequalities
 (`Optimization.hermite_consistency_spike`), and Theorem A.9.2
 (`Hermite.exists_contDiff_interpolating_jets_bounded`) gives an interpolant whose derivatives are
 bounded and whose top derivative is Lipschitz, with constants independent of `ε`.
 
-## Main results
+## Main definitions and results
+
+* `Optimization.IsSpikeJetOf p G q a α`: `G^{(q)}(a) = -α`, the other derivatives of orders
+  `1, …, p` vanish; `Optimization.IsSpikeJetOf.const_mul`, `Optimization.IsSpikeJetOf.mono`.
 
 * `Optimization.exists_slowTaylorOrder_interpolant` — the data of Theorem 12.2.15 with a free
   scale `c > 0` (steps `s_k = (c (ε + ω_k))^{1/(p-q+1)}`), also used for Theorems 3.3.6, 3.3.10 and
@@ -28,6 +31,10 @@ bounded and whose top derivative is Lipschitz, with constants independent of `ε
 * `Optimization.taylorMeasure_linearRegModel_eq_zero` — Example 12.1.3 in one variable: the
   Taylor measures of `-β t + σ |t|^{p+1}/(p+1)!` vanish at its minimizer for radii up to
   `3 t*/(p-1)`.
+* `Optimization.exists_slowGradSpike_interpolant` — the data of Theorem 12.2.17 with `r = p`
+  followed by a point where all derivatives vanish, and
+  `Optimization.exists_contDiff_isSpikeJetOf_one` — a bounded profile with a single gradient
+  spike (the two profiles of the slit example, `Numlib.Optimization.Complexity.SlowExample.Slit`).
 
 ## Implementation notes
 
@@ -129,6 +136,32 @@ theorem hermite_consistency_spike {n m : ℕ} (hm : 1 ≤ m) (hmn : m ≤ n) {f 
     exact h2
   · rw [spikeJet_of_ne f d hj0' hjm.ne', ite_eq_right (by omega), sub_zero, abs_zero]
     positivity
+
+/-- One-dimensional jets with a single nonzero derivative of order in `[1, p]`: the `q`-th
+derivative is `-α`, the other derivatives of orders `1, …, p` vanish. -/
+def IsSpikeJetOf (p : ℕ) (G : ℝ → ℝ) (q : ℕ) (a α : ℝ) : Prop :=
+  iteratedDeriv q G a = -α ∧ ∀ j, 1 ≤ j → j ≤ p → j ≠ q → iteratedDeriv j G a = 0
+
+/-- A spike jet of order `p` is a spike jet of every order `j ≤ p`. -/
+theorem IsSpikeJetOf.mono {p j q : ℕ} {G : ℝ → ℝ} {a α : ℝ} (hd : IsSpikeJetOf p G q a α)
+    (hj : j ≤ p) : IsSpikeJetOf j G q a α :=
+  ⟨hd.1, fun i hi1 hij hiq => hd.2 i hi1 (hij.trans hj) hiq⟩
+
+theorem IsSpikeJetOf.iteratedDeriv_eq {p q : ℕ} {G : ℝ → ℝ} {a α : ℝ}
+    (hd : IsSpikeJetOf p G q a α) : iteratedDeriv q G a = -α :=
+  hd.1
+
+theorem IsSpikeJetOf.iteratedDeriv_eq_zero {p q j : ℕ} {G : ℝ → ℝ} {a α : ℝ}
+    (hd : IsSpikeJetOf p G q a α) (hj1 : 1 ≤ j) (hjp : j ≤ p) (hjq : j ≠ q) :
+    iteratedDeriv j G a = 0 :=
+  hd.2 j hj1 hjp hjq
+
+/-- Scaling a function scales its spike jets. -/
+theorem IsSpikeJetOf.const_mul {p q : ℕ} {G : ℝ → ℝ} {a α : ℝ} (hd : IsSpikeJetOf p G q a α)
+    (c : ℝ) : IsSpikeJetOf p (fun t => c * G t) q a (c * α) := by
+  refine ⟨?_, fun j hj1 hjp hjq => ?_⟩
+  · rw [iteratedDeriv_const_mul_field, hd.1, mul_neg]
+  · rw [iteratedDeriv_const_mul_field, hd.2 j hj1 hjp hjq, mul_zero]
 
 /-! ### Counting facts -/
 
@@ -659,6 +692,201 @@ theorem exists_slowARqpSmooth_interpolant {p q r : ℕ} (hq : 1 ≤ q) (hqp : q 
     obtain ⟨h0, -, -⟩ := iteratedDeriv_eq_of_spikeJet one_ne_zero h1r hGj (k := k) hk.le
     obtain ⟨h0', -, -⟩ := iteratedDeriv_eq_of_spikeJet one_ne_zero h1r hGj (k := k + 1) hk
     rw [h0, h0', hfs, hgap k hk, hβ, hω]
+
+/-! ### Gradient spikes with a flat endpoint -/
+
+section GradSpike
+
+open scoped Nat
+
+/-- **The slow gradient interpolant with a flat endpoint** (the data of Theorem 12.2.17 of
+[cartis2022evaluation] with `r = p`, followed by one more point). For `1 ≤ q ≤ p` and `σ > 0`
+there are `L, B ≥ 0` depending only on `p, q, σ` such that: for every `ε ∈ (0, 1]`, with
+`k_ε = ⌈ε^{-q(p+1)/p}⌉₊`, `β_k = (ε^q + ε^q (k_ε - k)/k_ε)/q!` and points
+`ξ_{k+1} = ξ_k + (p! β_k/σ)^{1/p}` (`k ≤ k_ε`), there is a `C^p` function `G` with
+`L`-Lipschitz `p`-th derivative, `|G^{(j)}| ≤ B` (`j ≤ p`), gradient spikes `G'(ξ_k) = -β_k`
+(other derivatives of orders `2, …, p` zero) for `k ≤ k_ε`, all derivatives of orders `1, …, p`
+zero at `ξ_{k_ε+1}`, and `G(ξ_{k+1}) = G(ξ_k) - β_k (ξ_{k+1} - ξ_k)` for `k ≤ k_ε`. -/
+theorem exists_slowGradSpike_interpolant {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p) {σ : ℝ}
+    (hσ : 0 < σ) :
+    ∃ L B : ℝ, 0 ≤ L ∧ 0 ≤ B ∧ ∀ (ε : ℝ) (κ : ℕ) (ξ β : ℕ → ℝ), 0 < ε → ε ≤ 1 →
+      κ = ⌈ε ^ (-((q : ℝ) * (p + 1) / p))⌉₊ →
+      (∀ k, β k = (ε ^ q + ε ^ q * ((κ : ℝ) - k) / κ) / q !) →
+      (∀ k ≤ κ, ξ (k + 1) = ξ k + (p ! * β k / σ) ^ (1 / (p : ℝ))) →
+      ∃ G : ℝ → ℝ, ContDiff ℝ p G ∧
+        (∀ s t, |iteratedDeriv p G s - iteratedDeriv p G t| ≤ L * |s - t|) ∧
+        (∀ j ≤ p, ∀ t, |iteratedDeriv j G t| ≤ B) ∧
+        (∀ k ≤ κ, IsSpikeJetOf p G 1 (ξ k) (β k)) ∧ IsSpikeJetOf p G 1 (ξ (κ + 1)) 0 ∧
+        ∀ k ≤ κ, G (ξ (k + 1)) = G (ξ k) - β k * (ξ (k + 1) - ξ k) := by
+  have hp1 : 1 ≤ p := hq.trans hqp
+  have hp0 : p ≠ 0 := by omega
+  have hppos : (0 : ℝ) < p := by exact_mod_cast hp1
+  have hqf : (0 : ℝ) < q ! := by positivity
+  have hqf1 : (1 : ℝ) ≤ q ! := by exact_mod_cast Nat.factorial_pos q
+  have hpf : (0 : ℝ) < p ! := by positivity
+  set M : ℝ := 2 / q ! * (2 * p ! / (q ! * σ)) ^ (1 / (p : ℝ)) with hM
+  have hM0 : 0 ≤ M := by positivity
+  set κH : ℝ := max (3 * M) (max 2 (max ((2 * p ! / σ) ^ (1 / (p : ℝ))) (σ / p !))) with hκH
+  have hκM : 3 * M ≤ κH := le_max_left _ _
+  have hκ2 : 2 ≤ κH := (le_max_left _ _).trans (le_max_right _ _)
+  have hκs : (2 * p ! / σ) ^ (1 / (p : ℝ)) ≤ κH :=
+    (le_max_left _ _).trans ((le_max_right _ _).trans (le_max_right _ _))
+  have hκσ : σ / p ! ≤ κH :=
+    (le_max_right _ _).trans ((le_max_right _ _).trans (le_max_right _ _))
+  have hκ0 : 0 ≤ κH := by linarith
+  obtain ⟨L, B, hL, hB, hH⟩ := Hermite.exists_contDiff_interpolating_jets_bounded_of_forall_le p hκ0
+  refine ⟨L, B, hL, hB, fun ε κ ξ β hε hε1 hκdef hβ hξ => ?_⟩
+  set e : ℝ := (q : ℝ) * (p + 1) / p with he
+  have he0 : 0 ≤ e := by positivity
+  obtain ⟨hκ1, hκ2'⟩ := one_le_ceil_rpow_neg_and_mul_le hε hε1 he0
+  rw [← hκdef] at hκ1 hκ2'
+  have hκpos : (0 : ℝ) < κ := by exact_mod_cast hκ1
+  have hεq : 0 < ε ^ q := pow_pos hε q
+  have hεq1 : ε ^ q ≤ 1 := pow_le_one₀ hε.le hε1
+  have hεe1 : ε ^ e ≤ 1 := Real.rpow_le_one hε.le hε1 he0
+  have hqe : ε ^ q * (ε ^ q) ^ (1 / (p : ℝ)) = ε ^ e := by
+    rw [← Real.rpow_natCast, ← Real.rpow_mul hε.le, ← Real.rpow_add hε, he]
+    congr 1
+    field_simp
+  have hβb : ∀ k ≤ κ, ε ^ q / q ! ≤ β k ∧ β k ≤ 2 * ε ^ q / q ! := fun k hk => by
+    have hk' : (k : ℝ) ≤ κ := by exact_mod_cast hk
+    have h0 : 0 ≤ ε ^ q * ((κ : ℝ) - k) / κ := div_nonneg (mul_nonneg hεq.le (by linarith)) hκpos.le
+    have h1 : ε ^ q * ((κ : ℝ) - k) / κ ≤ ε ^ q := by
+      rw [div_le_iff₀ hκpos]; nlinarith [Nat.cast_nonneg (α := ℝ) k]
+    rw [hβ k]
+    constructor
+    · exact div_le_div_of_nonneg_right (by linarith) hqf.le
+    · exact div_le_div_of_nonneg_right (by linarith) hqf.le
+  have hβs : ∀ k, β k - β (k + 1) = ε ^ q / κ / q ! := fun k => by
+    rw [hβ, hβ]; push_cast; field_simp; ring
+  have hβpos : ∀ k ≤ κ, 0 < β k := fun k hk => lt_of_lt_of_le (by positivity) (hβb k hk).1
+  set β' : ℕ → ℝ := fun k => if k ≤ κ then β k else 0 with hβ'
+  set ts : ℕ → ℝ := fun k => (p ! * β k / σ) ^ (1 / (p : ℝ)) with hts
+  have hgap : ∀ k ≤ κ, ξ (k + 1) - ξ k = ts k := fun k hk => by rw [hξ k hk]; ring
+  have hspos : ∀ k ≤ κ, 0 < ts k := fun k hk => by
+    have := hβpos k hk
+    exact Real.rpow_pos_of_pos (by positivity) _
+  have htsp : ∀ k ≤ κ, ts k ^ p = p ! * β k / σ := fun k hk => by
+    have := hβpos k hk
+    simp only [hts]
+    rw [one_div, Real.rpow_inv_natCast_pow (by positivity) hp0]
+  have hsle : ∀ k ≤ κ, ts k ≤ (2 * p ! / σ) ^ (1 / (p : ℝ)) := fun k hk => by
+    have hb := (hβb k hk).2
+    have := hβpos k hk
+    refine Real.rpow_le_rpow (by positivity) ?_ (by positivity)
+    have : β k ≤ 2 := hb.trans (by rw [div_le_iff₀ hqf]; nlinarith)
+    exact div_le_div_of_nonneg_right (by nlinarith) hσ.le
+  set fv : ℕ → ℝ := fun k => -∑ i ∈ Finset.range k, β' i * ts i with hfv
+  set dv : ℕ → ℝ := fun k => -β' k with hdv
+  have hfs : ∀ k, fv (k + 1) = fv k - β' k * ts k := fun k => by
+    simp only [fv, Finset.sum_range_succ]; ring
+  have hdec : ∀ i < κ + 1, 0 ≤ β' i * ts i ∧ β' i * ts i ≤ M * ε ^ e := fun i hi => by
+    have hi' : i ≤ κ := by omega
+    obtain ⟨hb1, hb2⟩ := hβb i hi'
+    have hβ0 := hβpos i hi'
+    have hs0 := (hspos i hi').le
+    simp only [β', ite_eq_left hi']
+    refine ⟨by positivity, ?_⟩
+    have hsb : ts i ≤ (2 * p ! / (q ! * σ)) ^ (1 / (p : ℝ)) * (ε ^ q) ^ (1 / (p : ℝ)) := by
+      rw [← Real.mul_rpow (by positivity) hεq.le]
+      refine Real.rpow_le_rpow (by positivity) ?_ (by positivity)
+      calc p ! * β i / σ ≤ p ! * (2 * ε ^ q / q !) / σ := by gcongr
+        _ = 2 * p ! / (q ! * σ) * ε ^ q := by field_simp
+    calc β i * ts i ≤ 2 * ε ^ q / q ! *
+          ((2 * p ! / (q ! * σ)) ^ (1 / (p : ℝ)) * (ε ^ q) ^ (1 / (p : ℝ))) :=
+          mul_le_mul hb2 hsb hs0 (by positivity)
+      _ = M * (ε ^ q * (ε ^ q) ^ (1 / (p : ℝ))) := by rw [hM]; ring
+      _ = M * ε ^ e := by rw [hqe]
+  have hfb : ∀ k ≤ κ + 1, |fv k| ≤ 3 * M := fun k hk => by
+    simp only [fv, abs_neg]
+    refine abs_sum_range_le_of_le hdec ?_ hk
+    push_cast
+    nlinarith [mul_le_mul_of_nonneg_left hεe1 hM0, mul_le_mul_of_nonneg_left hκ2' hM0]
+  have hβ'2 : ∀ k, |β' k| ≤ 2 := fun k => by
+    simp only [β']
+    split_ifs with hk
+    · rw [abs_of_pos (hβpos k hk)]
+      exact (hβb k hk).2.trans (by rw [div_le_iff₀ hqf]; nlinarith)
+    · simp
+  obtain ⟨G, hGc, hGL, hGB, hGj, -, -⟩ := hH (κ + 1) ξ (spikeJet fv dv 1)
+    (fun k hk => by rw [← sub_pos, hgap k (by omega)]; exact hspos k (by omega))
+    (fun k hk => by rw [hgap k (by omega)]; exact (hsle k (by omega)).trans hκs)
+    (fun k hk j _ => by
+      unfold spikeJet
+      split_ifs
+      · exact (hfb k hk).trans hκM
+      · simp only [dv, abs_neg]; linarith [hβ'2 k]
+      · simpa using hκ0)
+    (fun k hk => by
+      have hk' : k ≤ κ := by omega
+      rw [hgap k hk']
+      have hs0 := (hspos k hk').le
+      refine hermite_consistency_spike le_rfl hp1 hs0 hκ0 ?_
+        (fun h => absurd h (lt_irrefl 1)) ?_
+      · rw [hfs]
+        simp only [dv]
+        have : fv k - β' k * ts k - (fv k + -β' k * ts k ^ 1 / (Nat.factorial 1 : ℝ)) = 0 := by
+          simp; ring
+        rw [this, abs_zero]
+        positivity
+      · rw [Nat.sub_add_cancel hp1, htsp k hk']
+        have hb : |dv (k + 1) - dv k| ≤ β k := by
+          simp only [dv, β', ite_eq_left hk']
+          rcases hk'.lt_or_eq with hlt | rfl
+          · rw [ite_eq_left (show k + 1 ≤ κ by omega),
+              show -β (k + 1) - -β k = β k - β (k + 1) by ring,
+              hβs, abs_of_nonneg (by positivity)]
+            calc ε ^ q / κ / q ! ≤ ε ^ q / q ! := by
+                  gcongr; exact div_le_self hεq.le (by exact_mod_cast hκ1)
+              _ ≤ β k := (hβb k hk').1
+          · rw [ite_eq_right (by omega), neg_zero, zero_sub, neg_neg, abs_of_pos (hβpos _ le_rfl)]
+        refine hb.trans ?_
+        have := hβpos k hk'
+        calc β k = σ / p ! * (p ! * β k / σ) := by field_simp
+          _ ≤ κH * (p ! * β k / σ) := mul_le_mul_of_nonneg_right hκσ (by positivity))
+  refine ⟨G, hGc, hGL, hGB, fun k hk => ⟨?_, fun j hj1 hjp hj => ?_⟩, ⟨?_, fun j hj1 hjp hj => ?_⟩,
+    fun k hk => ?_⟩
+  · obtain ⟨-, h1, -⟩ := iteratedDeriv_eq_of_spikeJet one_ne_zero hp1 hGj (k := k) (by omega)
+    rw [h1]; simp only [dv, β', ite_eq_left hk]
+  · obtain ⟨-, -, h2⟩ := iteratedDeriv_eq_of_spikeJet one_ne_zero hp1 hGj (k := k) (by omega)
+    exact h2 j hj1 hjp hj
+  · obtain ⟨-, h1, -⟩ := iteratedDeriv_eq_of_spikeJet one_ne_zero hp1 hGj (k := κ + 1) le_rfl
+    rw [h1]; simp only [dv, β', ite_eq_right (show ¬ κ + 1 ≤ κ by omega), neg_zero]
+  · obtain ⟨-, -, h2⟩ := iteratedDeriv_eq_of_spikeJet one_ne_zero hp1 hGj (k := κ + 1) le_rfl
+    exact h2 j hj1 hjp hj
+  · obtain ⟨h0, -, -⟩ := iteratedDeriv_eq_of_spikeJet one_ne_zero hp1 hGj (k := k) (by omega)
+    obtain ⟨h0', -, -⟩ := iteratedDeriv_eq_of_spikeJet one_ne_zero hp1 hGj (k := k + 1) (by omega)
+    rw [h0, h0', hfs, hgap k hk]
+    simp only [β', ite_eq_left hk]
+
+/-- **A bounded gradient spike**: a `C^p` function `H` with Lipschitz `p`-th derivative and
+bounded derivatives (constants depending only on `p`) with `H'(0) = -1` and `H^{(j)}(0) = 0` for
+`2 ≤ j ≤ p`. -/
+theorem exists_contDiff_isSpikeJetOf_one (p : ℕ) (hp : 1 ≤ p) :
+    ∃ L B : ℝ, 0 ≤ L ∧ 0 ≤ B ∧ ∃ H : ℝ → ℝ, ContDiff ℝ p H ∧
+      (∀ s t, |iteratedDeriv p H s - iteratedDeriv p H t| ≤ L * |s - t|) ∧
+      (∀ j ≤ p, ∀ t, |iteratedDeriv j H t| ≤ B) ∧ IsSpikeJetOf p H 1 0 1 := by
+  obtain ⟨L, B, hL, hB, hH⟩ :=
+    Hermite.exists_contDiff_interpolating_jets_bounded_of_forall_le p zero_le_one
+  set fv : ℕ → ℝ := fun k => -(k : ℝ)
+  set dv : ℕ → ℝ := fun k => if k = 0 then -1 else 0
+  obtain ⟨H, hHc, hHL, hHB, hHj, -, -⟩ := hH 1 (fun k => (k : ℝ)) (spikeJet fv dv 1)
+    (fun k hk => by push_cast; linarith) (fun k hk => by push_cast; linarith)
+    (fun k hk j _ => by
+      interval_cases k <;> (unfold spikeJet; split_ifs <;> simp [fv, dv]))
+    (fun k hk => by
+      obtain rfl : k = 0 := by omega
+      refine hermite_consistency_spike le_rfl hp (by norm_num) zero_le_one ?_
+        (fun h => absurd h (lt_irrefl 1)) ?_
+      · simp [fv, dv]
+      · simp [dv])
+  obtain ⟨-, h1, h2⟩ := iteratedDeriv_eq_of_spikeJet (x := fun k => (k : ℝ)) one_ne_zero hp hHj
+    (k := 0) (Nat.zero_le 1)
+  refine ⟨L, B, hL, hB, H, hHc, hHL, hHB, ?_, fun j hj1 hjp hj => ?_⟩
+  · simpa [dv] using h1
+  · simpa using h2 j hj1 hjp hj
+
+end GradSpike
 
 /-! ### The monomial model (12.2.69)–(12.2.70) -/
 

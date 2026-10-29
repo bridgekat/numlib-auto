@@ -1,5 +1,5 @@
 import Numlib.Optimization.Complexity.Basic
-import Numlib.Optimization.Complexity.SlowExample
+import Numlib.Optimization.Complexity.SlowExample.SeparatedJets
 import Numlib.Optimization.ModelBased.QuadraticModel
 import NumlibSurface.CartisGouldToint.Chapter01.Section01
 import NumlibSurface.CartisGouldToint.Chapter02.Section01

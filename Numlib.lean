@@ -1,5 +1,6 @@
 import Numlib.Algebra.Field.GeomSum
 import Numlib.Algebra.LinearRecurrence
+import Numlib.Algebra.Order.Archimedean
 import Numlib.Algebra.Order.BigOperators.Ring.Finset
 import Numlib.Algebra.Polynomial.AevalApply
 import Numlib.Algebra.Polynomial.Commute
@@ -214,6 +215,7 @@ import Numlib.Analysis.InnerProductSpace.NormPowIteratedFDeriv
 import Numlib.Analysis.InnerProductSpace.Normalize
 import Numlib.Analysis.InnerProductSpace.Orthonormal
 import Numlib.Analysis.InnerProductSpace.OrthonormalSeries
+import Numlib.Analysis.InnerProductSpace.PiL2
 import Numlib.Analysis.InnerProductSpace.PrincipalAngles
 import Numlib.Analysis.InnerProductSpace.Projection.Angle
 import Numlib.Analysis.InnerProductSpace.Projection.Compression
@@ -376,6 +378,7 @@ import Numlib.Analysis.SpecialFunctions.Log
 import Numlib.Analysis.SpecialFunctions.Log.Deriv
 import Numlib.Analysis.SpecialFunctions.PolynomialExp
 import Numlib.Analysis.SpecialFunctions.Pow.Deriv
+import Numlib.Analysis.SpecialFunctions.Pow.Real
 import Numlib.Analysis.SpecialFunctions.SineSum
 import Numlib.Analysis.SpecialFunctions.Sqrt
 import Numlib.Analysis.SpecialFunctions.SqrtBound
@@ -676,12 +679,15 @@ import Numlib.Optimization.Complexity.OracleMethod
 import Numlib.Optimization.Complexity.ParameterCount
 import Numlib.Optimization.Complexity.ResistingOracle
 import Numlib.Optimization.Complexity.ScaledRestart
-import Numlib.Optimization.Complexity.SlowExample
-import Numlib.Optimization.Complexity.SlowExampleARp
-import Numlib.Optimization.Complexity.SlowExampleHighOrder
+import Numlib.Optimization.Complexity.SlowExample.ARp
+import Numlib.Optimization.Complexity.SlowExample.Basic
+import Numlib.Optimization.Complexity.SlowExample.HighOrder
+import Numlib.Optimization.Complexity.SlowExample.Ridge
+import Numlib.Optimization.Complexity.SlowExample.SeparatedJets
+import Numlib.Optimization.Complexity.SlowExample.Slit
+import Numlib.Optimization.Complexity.SlowExample.ZigZag
 import Numlib.Optimization.Complexity.Telescoping
 import Numlib.Optimization.Complexity.ZeroChain
-import Numlib.Optimization.Complexity.ZigZagExample
 import Numlib.Optimization.Composite.RegularizedModel
 import Numlib.Optimization.Composite.TaylorModel
 import Numlib.Optimization.ConjugateGradient

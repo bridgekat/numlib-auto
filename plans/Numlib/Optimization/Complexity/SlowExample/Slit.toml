@@ -1,0 +1,24 @@
+namespace = "Optimization"
+
+[[node]]
+id = "slitSet"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness)"
+
+[[node]]
+id = "taylorDecrement_ridge_add_ridge"
+
+[[node]]
+id = "taylorDecrement_regularizedModel_ridge_add_ridge"
+
+[[node]]
+id = "taylorMeasure_slitSet_of_lt"
+
+[[node]]
+id = "le_taylorMeasure_slitSet"
+
+[[node]]
+id = "not_isEpsDeltaApprox_slitSet"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness)"
+
+[[node]]
+id = "isEpsDeltaApprox_slitSet"

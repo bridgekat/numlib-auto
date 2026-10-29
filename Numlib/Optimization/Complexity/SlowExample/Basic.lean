@@ -1,32 +1,40 @@
-import Mathlib.Analysis.Calculus.BumpFunction.InnerProduct
-import Mathlib.Analysis.Calculus.ContDiff.Bounds
-import Mathlib.Analysis.Calculus.Gradient.Basic
-import Mathlib.Analysis.InnerProductSpace.Calculus
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
-import Numlib.Analysis.Calculus.MultivariateTaylor.DerivBound
-import Numlib.Analysis.Calculus.MultivariateTaylor.Remainder
-import Numlib.Analysis.InnerProductSpace.MinCurvature
 import Numlib.Approximation.HermiteSpline
 
 /-!
-# Slow-convergence examples
+# Slow-convergence examples of first and second order
 
 The sharpness ("slow convergence") constructions of [cartis2022evaluation] Chapters 2 and 3:
 values and derivatives prescribed at an increasing sequence of points on the line are interpolated
 by a function whose derivatives are bounded and Lipschitz with constants **independent of the
 tolerance `ε`** (Hermite interpolation, `Hermite.exists_contDiff_interpolating_jets_bounded`), and
-then lifted to any real inner product space as a ridge function `x ↦ g ⟪e, x⟫`.
+then lifted to any real inner product space as a ridge function `x ↦ g ⟪e, x⟫`
+(`Numlib.Optimization.Complexity.SlowExample.Ridge`).
 
 Each data family is parametrized by a sequence of step factors `θ k ∈ [a, b]`, and its constants
 depend only on `a` and `b`. Thus a single lemma serves every method whose steps on the data are
 `θ_k` times a reference step, whatever factors the method picks.
 
+## The slow-example hierarchy
+
+The modules `Numlib.Optimization.Complexity.SlowExample.*` are organized by the
+structure they need:
+* `Ridge` — ridge functions `g ⟪e, ·⟫` and their derivatives, Hessians and Taylor data;
+* `Basic` (this file) — first- and second-order one-dimensional data (Chapters 2–3);
+* `SeparatedJets` — gluing quadratic jets at separated points of a finite-dimensional space
+  (Theorem 3.1.1);
+* `HighOrder` — data of arbitrary order with jets having one nonzero derivative (Chapter 12);
+* `ARp` — Taylor models of ridge functions at such jets and runs of the ARp method on them;
+* `Slit` — the constrained example on a hyperplane with a parallel half-space (§14.2);
+* `ZigZag` — the two-dimensional zig-zag example of Theorem 2.2.5.
+
+Each file states interpolation data as properties of a function of one variable (values,
+derivatives, Lipschitz constants independent of `ε`) together with the abscissae and steps of
+the run; the run predicates of the individual methods are checked against these data where the
+methods are defined.
+
 ## Main definitions and results
 
-* `Optimization.ridge g e x = g ⟪e, x⟫`, with its smoothness, derivatives, gradient, derivative
-  norms and Lipschitz constants (`Optimization.iteratedFDeriv_ridge_apply_diag`,
-  `Optimization.norm_iteratedFDeriv_ridge`, `Optimization.iteratedFDerivLipschitzOn_ridge`,
-  `Optimization.gradient_ridge`).
 * `Optimization.exists_slowFirstOrder_interpolant` — the data of Theorem 2.2.3 (steepest descent,
   and the first-order trust-region and regularization methods).
 * `Optimization.exists_slowNegCurvature_interpolant` — the data (3.2.24) of Theorem 3.2.7: slow
@@ -35,11 +43,9 @@ depend only on `a` and `b`. Thus a single lemma serves every method whose steps 
   (3.5.11)–(3.5.12) with their elementary bounds, and `Optimization.ceil_rpow_facts`.
 * `Optimization.exists_slowSecondOrder_interpolant` — the data (3.5.12) of Theorem 3.5.4: slow
   convergence to first-order criticality for second-order methods.
-* `Optimization.exists_contDiff_interpolating_separated_jets` — the multidimensional gluing behind
-  Theorem 3.1.1 ((3.1.7)): quadratic jets at points `r` apart are interpolated by a smooth
-  function whose derivatives of order `≤ 3` are bounded independently of the number of points
-  (sum of translated bumps times the quadratic Taylor polynomials; Taylor-data form
-  `Optimization.exists_contDiff_interpolating_separated_taylorData`).
+* `Optimization.secondOrderX`, `Optimization.exists_slowSecondOrder_run_data` — the same data at
+  the abscissae of given step factors, with the termination test `|G'(x_k)| ≤ ε` first holding at
+  `k_ε` (Corollary 3.5.5); `Optimization.contDiff_two_rescale_bounds` — rescaling `c G(u/c)`.
 
 ## Implementation notes
 
@@ -52,153 +58,6 @@ open Set
 open scoped RealInnerProductSpace
 
 namespace Optimization
-
-/-! ### Ridge functions -/
-
-section Ridge
-
-variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] {g : ℝ → ℝ} {e : E}
-
-/-- The **ridge function** `x ↦ g ⟪e, x⟫` lifting a function of one variable to an inner product
-space along the direction `e`. -/
-def ridge (g : ℝ → ℝ) (e : E) (x : E) : ℝ :=
-  g ⟪e, x⟫
-
-theorem ridge_apply (g : ℝ → ℝ) (e x : E) : ridge g e x = g ⟪e, x⟫ :=
-  rfl
-
-theorem ridge_eq_comp (g : ℝ → ℝ) (e : E) : ridge g e = g ∘ innerSL ℝ e :=
-  rfl
-
-theorem contDiff_ridge {n : WithTop ℕ∞} (hg : ContDiff ℝ n g) : ContDiff ℝ n (ridge g e) :=
-  hg.comp (innerSL ℝ e).contDiff
-
-/-- The derivatives of a ridge function: `D^j (g ∘ ⟪e, ·⟫)(x)[m] = g^{(j)}(⟪e,x⟫) ∏ ⟪e, m i⟫`. -/
-theorem iteratedFDeriv_ridge_apply {n : WithTop ℕ∞} (hg : ContDiff ℝ n g) {j : ℕ}
-    (hj : (j : WithTop ℕ∞) ≤ n) (x : E) (m : Fin j → E) :
-    iteratedFDeriv ℝ j (ridge g e) x m = (∏ i, ⟪e, m i⟫) * iteratedDeriv j g ⟪e, x⟫ := by
-  rw [ridge_eq_comp, (innerSL ℝ e).iteratedFDeriv_comp_right hg x hj,
-    ContinuousMultilinearMap.compContinuousLinearMap_apply,
-    iteratedFDeriv_apply_eq_iteratedDeriv_mul_prod, smul_eq_mul]
-  simp
-
-/-- The derivatives of a ridge function along a direction `d`. -/
-theorem iteratedFDeriv_ridge_apply_diag {n : WithTop ℕ∞} (hg : ContDiff ℝ n g) {j : ℕ}
-    (hj : (j : WithTop ℕ∞) ≤ n) (x d : E) :
-    iteratedFDeriv ℝ j (ridge g e) x (fun _ => d) = iteratedDeriv j g ⟪e, x⟫ * ⟪e, d⟫ ^ j := by
-  rw [iteratedFDeriv_ridge_apply hg hj, Finset.prod_const, Finset.card_univ, Fintype.card_fin,
-    mul_comm]
-
-theorem norm_iteratedFDeriv_ridge_le {n : WithTop ℕ∞} (hg : ContDiff ℝ n g) {j : ℕ}
-    (hj : (j : WithTop ℕ∞) ≤ n) (he : ‖e‖ ≤ 1) (x : E) :
-    ‖iteratedFDeriv ℝ j (ridge g e) x‖ ≤ |iteratedDeriv j g ⟪e, x⟫| := by
-  rw [ridge_eq_comp, (innerSL ℝ e).iteratedFDeriv_comp_right hg x hj]
-  refine (ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _).trans ?_
-  rw [norm_iteratedFDeriv_eq_norm_iteratedDeriv, Real.norm_eq_abs]
-  refine mul_le_of_le_one_right (abs_nonneg _) ?_
-  exact Finset.prod_le_one₀ (fun _ _ => norm_nonneg _) fun _ _ => by rwa [innerSL_apply_norm]
-
-/-- For a unit vector `e`, the norm of `D^j (ridge g e)(x)` is `|g^{(j)}(⟪e, x⟫)|`. -/
-theorem norm_iteratedFDeriv_ridge {n : WithTop ℕ∞} (hg : ContDiff ℝ n g) {j : ℕ}
-    (hj : (j : WithTop ℕ∞) ≤ n) (he : ‖e‖ = 1) (x : E) :
-    ‖iteratedFDeriv ℝ j (ridge g e) x‖ = |iteratedDeriv j g ⟪e, x⟫| := by
-  refine le_antisymm (norm_iteratedFDeriv_ridge_le hg hj he.le x) ?_
-  have h := (iteratedFDeriv ℝ j (ridge g e) x).le_opNorm fun _ => e
-  rw [iteratedFDeriv_ridge_apply_diag hg hj, real_inner_self_eq_norm_sq, he] at h
-  simpa [he] using h
-
-/-- Lipschitz constants of the derivatives transfer to ridge functions along `‖e‖ ≤ 1`. -/
-theorem iteratedFDerivLipschitzOn_ridge {n : WithTop ℕ∞} (hg : ContDiff ℝ n g) {j : ℕ}
-    (hj : (j : WithTop ℕ∞) ≤ n) (he : ‖e‖ ≤ 1) {L : ℝ} (hL0 : 0 ≤ L)
-    (hL : ∀ s t, |iteratedDeriv j g s - iteratedDeriv j g t| ≤ L * |s - t|) :
-    IteratedFDerivLipschitzOn (ridge g e) j L univ := by
-  rw [iteratedFDerivLipschitzOn_iff]
-  intro x _ y _
-  rw [ridge_eq_comp, (innerSL ℝ e).iteratedFDeriv_comp_right hg x hj,
-    (innerSL ℝ e).iteratedFDeriv_comp_right hg y hj]
-  have hsub : (iteratedFDeriv ℝ j g ⟪e, x⟫).compContinuousLinearMap (fun _ => innerSL ℝ e) -
-      (iteratedFDeriv ℝ j g ⟪e, y⟫).compContinuousLinearMap (fun _ => innerSL ℝ e) =
-      (iteratedFDeriv ℝ j g ⟪e, x⟫ - iteratedFDeriv ℝ j g ⟪e, y⟫).compContinuousLinearMap
-        (fun _ => innerSL ℝ e) := by
-    ext m
-    simp
-  rw [innerSL_apply_apply, innerSL_apply_apply, hsub]
-  refine (ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _).trans ?_
-  have hp : ∏ _i : Fin j, ‖innerSL ℝ e‖ ≤ 1 :=
-    Finset.prod_le_one₀ (fun _ _ => norm_nonneg _) fun _ _ => by rwa [innerSL_apply_norm]
-  have hd : ‖iteratedFDeriv ℝ j g ⟪e, x⟫ - iteratedFDeriv ℝ j g ⟪e, y⟫‖ =
-      |iteratedDeriv j g ⟪e, x⟫ - iteratedDeriv j g ⟪e, y⟫| := by
-    rw [iteratedFDeriv_eq_equiv_comp, Function.comp_apply,
-      Function.comp_apply, ← map_sub, LinearIsometryEquiv.norm_map, Real.norm_eq_abs]
-  have hxy : |⟪e, x⟫ - ⟪e, y⟫| ≤ ‖x - y‖ := by
-    rw [← inner_sub_right]
-    exact (abs_real_inner_le_norm _ _).trans (mul_le_of_le_one_left (norm_nonneg _) he)
-  calc ‖iteratedFDeriv ℝ j g ⟪e, x⟫ - iteratedFDeriv ℝ j g ⟪e, y⟫‖ * ∏ _i : Fin j, ‖innerSL ℝ e‖
-      ≤ ‖iteratedFDeriv ℝ j g ⟪e, x⟫ - iteratedFDeriv ℝ j g ⟪e, y⟫‖ :=
-        mul_le_of_le_one_right (norm_nonneg _) hp
-    _ ≤ L * ‖x - y‖ := by
-        rw [hd]
-        exact (hL _ _).trans (mul_le_mul_of_nonneg_left hxy hL0)
-
-/-- The smallest curvature of a ridge function along a unit vector `e`: it is at least
-`min 0 (g''(⟪e, x⟫))`, and at most `g''(⟪e, x⟫)` (direction `e`). -/
-theorem min_le_minCurvature_iteratedFDeriv_ridge (hg : ContDiff ℝ 2 g) (he : ‖e‖ = 1) (x : E) :
-    min 0 (iteratedDeriv 2 g ⟪e, x⟫) ≤ minCurvature (iteratedFDeriv ℝ 2 (ridge g e) x) ∧
-      minCurvature (iteratedFDeriv ℝ 2 (ridge g e) x) ≤ iteratedDeriv 2 g ⟪e, x⟫ := by
-  have hdiag : ∀ d : E, iteratedFDeriv ℝ 2 (ridge g e) x (fun _ => d) =
-      iteratedDeriv 2 g ⟪e, x⟫ * ⟪e, d⟫ ^ 2 := fun d =>
-    iteratedFDeriv_ridge_apply_diag hg (by norm_num) x d
-  have hE : Nontrivial E := ⟨⟨e, 0, fun h => by simp [h] at he⟩⟩
-  refine ⟨le_minCurvature_iff.2 fun d => ?_, ?_⟩
-  · rw [hdiag]
-    have h1 : ⟪e, d⟫ ^ 2 ≤ ‖d‖ ^ 2 := by
-      have := abs_real_inner_le_norm e d
-      rw [he, one_mul] at this
-      nlinarith [abs_nonneg ⟪e, d⟫, sq_abs ⟪e, d⟫]
-    rcases le_total 0 (iteratedDeriv 2 g ⟪e, x⟫) with h | h
-    · rw [min_eq_left h, zero_mul]
-      positivity
-    · rw [min_eq_right h]
-      nlinarith [sq_nonneg ⟪e, d⟫]
-  · have := minCurvature_le_apply (iteratedFDeriv ℝ 2 (ridge g e) x) he
-    rwa [hdiag, real_inner_self_eq_norm_sq, he, one_pow, one_pow, mul_one] at this
-
-/-- **Smallest curvature of a ridge function** when there is a unit direction orthogonal to `e`
-(e.g. `dim E ≥ 2`): `λ_min[∇² (ridge g e)(x)] = min 0 (g''(⟪e, x⟫))`. -/
-theorem minCurvature_iteratedFDeriv_ridge (hg : ContDiff ℝ 2 g) (he : ‖e‖ = 1)
-    (hperp : ∃ d : E, ‖d‖ = 1 ∧ ⟪e, d⟫ = 0) (x : E) :
-    minCurvature (iteratedFDeriv ℝ 2 (ridge g e) x) = min 0 (iteratedDeriv 2 g ⟪e, x⟫) := by
-  obtain ⟨h1, h2⟩ := min_le_minCurvature_iteratedFDeriv_ridge hg he x
-  obtain ⟨d, hd, hed⟩ := hperp
-  have h3 := minCurvature_le_apply (iteratedFDeriv ℝ 2 (ridge g e) x) hd
-  rw [iteratedFDeriv_ridge_apply_diag hg (by norm_num), hed] at h3
-  simp only [ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow, mul_zero] at h3
-  exact le_antisymm (le_min h3 h2) h1
-
-/-- In dimension one (every vector is a multiple of the unit vector `e`), the smallest curvature
-of a ridge function is `g''(⟪e, x⟫)`. -/
-theorem minCurvature_iteratedFDeriv_ridge_of_forall (hg : ContDiff ℝ 2 g) (he : ‖e‖ = 1)
-    (hspan : ∀ d : E, ⟪e, d⟫ ^ 2 = ‖d‖ ^ 2) (x : E) :
-    minCurvature (iteratedFDeriv ℝ 2 (ridge g e) x) = iteratedDeriv 2 g ⟪e, x⟫ := by
-  have hE : Nontrivial E := ⟨⟨e, 0, fun h => by simp [h] at he⟩⟩
-  refine le_antisymm (min_le_minCurvature_iteratedFDeriv_ridge hg he x).2
-    (le_minCurvature_iff.2 fun d => ?_)
-  rw [iteratedFDeriv_ridge_apply_diag hg (by norm_num), hspan]
-
-/-- The gradient of a ridge function: `∇ (ridge g e)(x) = g'(⟪e, x⟫) e`. -/
-theorem gradient_ridge [CompleteSpace E] (hg : Differentiable ℝ g) (x : E) :
-    gradient (ridge g e) x = deriv g ⟪e, x⟫ • e := by
-  have h : HasFDerivAt (ridge g e) (deriv g ⟪e, x⟫ • innerSL ℝ e) x := by
-    have := (hg ⟪e, x⟫).hasDerivAt.comp_hasFDerivAt x (innerSL ℝ e).hasFDerivAt
-    simpa [ridge_eq_comp] using this
-  have h' : HasGradientAt (ridge g e) (deriv g ⟪e, x⟫ • e) x := by
-    rw [hasGradientAt_iff_hasFDerivAt]
-    convert h using 1
-    ext v
-    simp [InnerProductSpace.toDual_apply_apply]
-  exact h'.gradient
-
-end Ridge
 
 /-! ### Small sums of the Hermite consistency condition -/
 
@@ -809,245 +668,106 @@ theorem exists_slowSecondOrder_interpolant {a b : ℝ} (ha : 0 < a) (hab : a ≤
     simp only [F, OfNat.ofNat_ne_zero, h21, ↓reduceIte] at this
     rw [this, hfdef]
 
-/-! ### Gluing separated quadratic jets -/
+/-! ### Runs along the data (3.5.12) -/
 
-section SeparatedJets
+/-- The abscissae `x_0 = 0`, `x_{k+1} = x_k + θ_k ε^{1/2}/(2 f_k)` (3.5.19) of the data (3.5.12)
+for step factors `θ`. -/
+noncomputable def secondOrderX (θ : ℕ → ℝ) (ε : ℝ) (k : ℕ) : ℝ :=
+  ∑ j ∈ Finset.range k, θ j * ε ^ (1 / 2 : ℝ) / (2 * secondOrderF ε j)
 
-open scoped ContDiff
+@[simp]
+theorem secondOrderX_zero (θ : ℕ → ℝ) (ε : ℝ) : secondOrderX θ ε 0 = 0 := by
+  simp [secondOrderX]
 
-variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+theorem secondOrderX_succ (θ : ℕ → ℝ) (ε : ℝ) (k : ℕ) :
+    secondOrderX θ ε (k + 1) =
+      secondOrderX θ ε k + θ k * ε ^ (1 / 2 : ℝ) / (2 * secondOrderF ε k) :=
+  Finset.sum_range_succ _ _
 
-/-- Gluing with separation `2r`; see `exists_contDiff_interpolating_separated_taylorData`. -/
-private theorem exists_contDiff_interpolating_separated_taylorData_aux [FiniteDimensional ℝ E]
-    {r κ : ℝ} (hr : 0 < r) (hκ : 0 ≤ κ) :
-    ∃ B : ℝ, 0 ≤ B ∧ ∀ (K : ℕ) (x : ℕ → E) (D : ℕ → FormalMultilinearSeries ℝ E ℝ),
-      (∀ i ≤ K, ∀ j ≤ K, i ≠ j → 2 * r ≤ ‖x i - x j‖) →
-      (∀ k ≤ K, (D k).IsSymm 2) → (∀ k ≤ K, ∀ i ≤ 2, ‖D k i‖ ≤ κ) →
-      ∃ F : E → ℝ, ContDiff ℝ ∞ F ∧
-        (∀ k ≤ K, ∀ j ≤ 2, iteratedFDeriv ℝ j F (x k) = D k j) ∧
-        ∀ j ≤ 3, ∀ y, ‖iteratedFDeriv ℝ j F y‖ ≤ B := by
-  let φ : ContDiffBump (0 : E) := ⟨r / 4, r / 2, by positivity, by linarith⟩
-  have hφc : ContDiff ℝ ∞ φ := φ.contDiff
-  -- a uniform bound on the derivatives of `φ`
-  obtain ⟨Cφ, hCφ0, hCφ⟩ : ∃ C, 0 ≤ C ∧ ∀ j ≤ 3, ∀ z, ‖iteratedFDeriv ℝ j φ z‖ ≤ C := by
-    have : ∀ j : ℕ, ∃ C, ∀ z, ‖iteratedFDeriv ℝ j φ z‖ ≤ C := fun j =>
-      (hφc.continuous_iteratedFDeriv (by exact_mod_cast le_top)).bounded_above_of_compact_support
-        (φ.hasCompactSupport.iteratedFDeriv j)
-    choose C hC using this
-    refine ⟨|C 0| + |C 1| + |C 2| + |C 3|, by positivity, fun j hj z => ?_⟩
-    have h0 := le_abs_self (C 0)
-    have h1 := le_abs_self (C 1)
-    have h2 := le_abs_self (C 2)
-    have h3 := le_abs_self (C 3)
-    have a0 := abs_nonneg (C 0)
-    have a1 := abs_nonneg (C 1)
-    have a2 := abs_nonneg (C 2)
-    have a3 := abs_nonneg (C 3)
-    interval_cases j
-    · linarith [hC 0 z]
-    · linarith [hC 1 z]
-    · linarith [hC 2 z]
-    · linarith [hC 3 z]
-  have hφ0 : ∀ z : E, r / 2 ≤ ‖z‖ → φ z = 0 := fun z hz => by
-    have : z ∉ Function.support φ := by
-      rw [φ.support_eq, Metric.mem_ball, dist_zero_right, not_lt]; exact hz
-    simpa using this
-  have hφD0 : ∀ j z, r / 2 < ‖z‖ → iteratedFDeriv ℝ j φ z = 0 := fun j z hz => by
-    have : z ∉ tsupport φ := by
-      rw [φ.tsupport_eq, Metric.mem_closedBall, dist_zero_right, not_le]; exact hz
-    exact Function.notMem_support.1 fun h => this (support_iteratedFDeriv_subset j h)
-  set Q := 3 * κ * (1 + r / 2) ^ 2 with hQ
-  have hQ0 : 0 ≤ Q := by positivity
-  refine ⟨8 * Cφ * Q, by positivity, fun K x D hsep hsymm hD => ?_⟩
-  set term : ℕ → E → ℝ := fun k y => φ (y - x k) * (D k).taylorSum 2 (y - x k) with hterm
-  have hterm_c : ∀ k, ContDiff ℝ ∞ (term k) := fun k =>
-    (hφc.comp (contDiff_id.sub contDiff_const)).mul
-      (((D k).contDiff_taylorSum 2).comp (contDiff_id.sub contDiff_const))
-  set F : E → ℝ := fun y => ∑ k ∈ Finset.range (K + 1), term k y with hF
-  have hFc : ContDiff ℝ ∞ F := ContDiff.sum fun k _ => hterm_c k
-  -- locality
-  have hloc : ∀ y, ∀ k ≤ K, (∀ l ≤ K, l ≠ k → r ≤ ‖y - x l‖) → F =ᶠ[nhds y] term k := by
-    intro y k hk hl
-    filter_upwards [Metric.ball_mem_nhds y (by positivity : 0 < r / 2)] with z hz
-    rw [Metric.mem_ball, dist_eq_norm] at hz
-    refine Finset.sum_eq_single_of_mem k (Finset.mem_range.2 (by omega)) fun l hl' hlk => ?_
-    have hlK : l ≤ K := by have := Finset.mem_range.1 hl'; omega
-    have : r / 2 ≤ ‖z - x l‖ := by
-      have h1 := hl l hlK hlk
-      have h2 : ‖y - x l‖ ≤ ‖z - x l‖ + ‖z - y‖ := by
-        calc ‖y - x l‖ = ‖(z - x l) - (z - y)‖ := by congr 1; abel
-          _ ≤ ‖z - x l‖ + ‖z - y‖ := norm_sub_le _ _
-      linarith
-    simp only [hterm, hφ0 _ this, zero_mul]
-  have hzero : ∀ y, (∀ l ≤ K, r ≤ ‖y - x l‖) → F =ᶠ[nhds y] fun _ => 0 := by
-    intro y hl
-    filter_upwards [Metric.ball_mem_nhds y (by positivity : 0 < r / 2)] with z hz
-    rw [Metric.mem_ball, dist_eq_norm] at hz
-    refine Finset.sum_eq_zero fun l hl' => ?_
-    have hlK : l ≤ K := by have := Finset.mem_range.1 hl'; omega
-    have : r / 2 ≤ ‖z - x l‖ := by
-      have h1 := hl l hlK
-      have h2 : ‖y - x l‖ ≤ ‖z - x l‖ + ‖z - y‖ := by
-        calc ‖y - x l‖ = ‖(z - x l) - (z - y)‖ := by congr 1; abel
-          _ ≤ ‖z - x l‖ + ‖z - y‖ := norm_sub_le _ _
-      linarith
-    simp only [hterm, hφ0 _ this, zero_mul]
-  -- the dichotomy: at most one node within distance `r`
-  have hdich : ∀ y, (∃ k ≤ K, ∀ l ≤ K, l ≠ k → r ≤ ‖y - x l‖) ∨ ∀ l ≤ K, r ≤ ‖y - x l‖ := by
-    intro y
-    by_cases h : ∃ k ≤ K, ‖y - x k‖ < r
-    · obtain ⟨k, hk, hyk⟩ := h
-      refine Or.inl ⟨k, hk, fun l hl hlk => ?_⟩
-      by_contra hcon
-      have := hsep l hl k hk hlk
-      have h2 : ‖x l - x k‖ ≤ ‖y - x l‖ + ‖y - x k‖ := by
-        calc ‖x l - x k‖ = ‖(y - x k) - (y - x l)‖ := by congr 1; abel
-          _ ≤ ‖y - x k‖ + ‖y - x l‖ := norm_sub_le _ _
-          _ = ‖y - x l‖ + ‖y - x k‖ := add_comm _ _
-      linarith
-    · push Not at h
-      exact Or.inr h
-  -- bound on the derivatives of one term
-  have hbound : ∀ k ≤ K, ∀ j ≤ 3, ∀ y, ‖iteratedFDeriv ℝ j (term k) y‖ ≤ 8 * Cφ * Q := by
-    intro k hk j hj y
-    have hf1 : ContDiff ℝ ∞ (fun y => φ (y - x k)) :=
-      hφc.comp (contDiff_id.sub (contDiff_const (c := x k)))
-    have hf2 : ContDiff ℝ ∞ (fun y => (D k).taylorSum 2 (y - x k)) :=
-      ((D k).contDiff_taylorSum 2).comp (contDiff_id.sub (contDiff_const (c := x k)))
-    have hmul := norm_iteratedFDeriv_mul_le hf1 hf2 y (n := j) (by exact_mod_cast le_top)
-    refine hmul.trans ?_
-    have hsummand : ∀ i ∈ Finset.range (j + 1),
-        (j.choose i : ℝ) * ‖iteratedFDeriv ℝ i (fun y => φ (y - x k)) y‖ *
-          ‖iteratedFDeriv ℝ (j - i) (fun y => (D k).taylorSum 2 (y - x k)) y‖ ≤
-        (j.choose i : ℝ) * (Cφ * Q) := by
-      intro i hi
-      have hi3 : i ≤ 3 := by have := Finset.mem_range.1 hi; omega
-      rw [iteratedFDeriv_comp_sub, iteratedFDeriv_comp_sub, mul_assoc]
-      refine mul_le_mul_of_nonneg_left ?_ (Nat.cast_nonneg _)
-      rcases le_or_gt ‖y - x k‖ (r / 2) with hy | hy
-      · exact mul_le_mul (hCφ i hi3 _)
-          ((D k).norm_iteratedFDeriv_taylorSum_two_le hκ (by positivity) (hD k hk) _ hy)
-          (norm_nonneg _) hCφ0
-      · rw [hφD0 i _ hy, norm_zero, zero_mul]
-        positivity
-    refine (Finset.sum_le_sum hsummand).trans ?_
-    rw [← Finset.sum_mul, ← Nat.cast_sum, Nat.sum_range_choose]
-    have : ((2 ^ j : ℕ) : ℝ) ≤ 8 := by
-      have : 2 ^ j ≤ 2 ^ 3 := Nat.pow_le_pow_right (by norm_num) hj
-      exact_mod_cast this
-    nlinarith [mul_nonneg hCφ0 hQ0]
-  refine ⟨F, hFc, fun k hk j hj => ?_, fun j hj y => ?_⟩
-  · -- interpolation at the nodes
-    have h1 : F =ᶠ[nhds (x k)] term k := hloc (x k) k hk fun l hl hlk => by
-      have := hsep k hk l hl (Ne.symm hlk)
-      linarith
-    have h2 : term k =ᶠ[nhds (x k)] fun y => (D k).taylorSum 2 (y - x k) := by
-      filter_upwards [Metric.closedBall_mem_nhds (x k) (by positivity : 0 < r / 4)] with z hz
-      rw [Metric.mem_closedBall, dist_eq_norm] at hz
-      have : φ (z - x k) = 1 :=
-        φ.one_of_mem_closedBall (by rw [Metric.mem_closedBall, dist_zero_right]; exact hz)
-      simp only [hterm, this, one_mul]
-    rw [((h1.trans h2).iteratedFDeriv ℝ j).eq_of_nhds, iteratedFDeriv_comp_sub, sub_self,
-      FormalMultilinearSeries.iteratedFDeriv_taylorSum_zero (hsymm k hk) hj]
-  · rcases hdich y with ⟨k, hk, hl⟩ | hl
-    · rw [((hloc y k hk hl).iteratedFDeriv ℝ j).eq_of_nhds]
-      exact hbound k hk j hj y
-    · rw [((hzero y hl).iteratedFDeriv ℝ j).eq_of_nhds, iteratedFDeriv_fun_zero, Pi.zero_apply,
-        norm_zero]
-      positivity
+theorem secondOrderF_succ (ε : ℝ) (k : ℕ) :
+    secondOrderF ε (k + 1) = secondOrderF ε k - ε ^ (3 / 2 : ℝ) / 2 := by
+  simp only [secondOrderF]; push_cast; ring
 
-/-- **Gluing separated quadratic jets** (Taylor-data form). Let `E` be a finite-dimensional real
-inner product space, `r > 0` and `κ ≥ 0`. There is `B ≥ 0` (depending only on `E`, `r` and `κ`)
-such that for any points `x_0, …, x_K` with `‖x_i - x_j‖ ≥ r` (`i ≠ j`) and symmetric Taylor data
-`D_k` with `‖D_{k,i}‖ ≤ κ` (`i ≤ 2`), there is a smooth `F : E → ℝ` whose derivatives of order
-`j ≤ 2` at `x_k` are `D_{k,j}` and whose derivatives of order `j ≤ 3` are bounded by `B`.
+/-- The termination test along the data (3.5.12): `|g_k| ≤ ε` holds (for `k ≤ k_ε`) exactly at
+`k = k_ε`. -/
+theorem abs_secondOrderG_le_iff {ε : ℝ} (hε : 0 < ε) (hε1 : ε < 1) {k : ℕ}
+    (hk : k ≤ secondOrderK ε) : |secondOrderG ε k| ≤ ε ↔ secondOrderK ε ≤ k := by
+  have hF0 := (secondOrderF_pos hε hε1 hk).le
+  rw [secondOrderG, show -2 * ε * secondOrderF ε k = -(2 * ε * secondOrderF ε k) by ring, abs_neg,
+    abs_of_nonneg (by positivity)]
+  constructor
+  · intro h
+    by_contra hlt
+    nlinarith [secondOrderF_gt_half hε (not_le.1 hlt)]
+  · intro h
+    rw [le_antisymm hk h]
+    nlinarith [secondOrderF_K_le_half hε]
 
-The function is `F(y) = ∑_k φ(y - x_k) T_{D_k,2}(y - x_k)` with a fixed bump `φ` equal to `1` on
-the ball of radius `r/8` and supported in the ball of radius `r/4`: near every point at most one
-term is nonzero. -/
-theorem exists_contDiff_interpolating_separated_taylorData [FiniteDimensional ℝ E] {r κ : ℝ}
-    (hr : 0 < r) (hκ : 0 ≤ κ) :
-    ∃ B : ℝ, 0 ≤ B ∧ ∀ (K : ℕ) (x : ℕ → E) (D : ℕ → FormalMultilinearSeries ℝ E ℝ),
-      (∀ i ≤ K, ∀ j ≤ K, i ≠ j → r ≤ ‖x i - x j‖) →
-      (∀ k ≤ K, (D k).IsSymm 2) → (∀ k ≤ K, ∀ i ≤ 2, ‖D k i‖ ≤ κ) →
-      ∃ F : E → ℝ, ContDiff ℝ ∞ F ∧
-        (∀ k ≤ K, ∀ j ≤ 2, iteratedFDeriv ℝ j F (x k) = D k j) ∧
-        ∀ j ≤ 3, ∀ y, ‖iteratedFDeriv ℝ j F y‖ ≤ B := by
-  obtain ⟨B, hB, hmain⟩ :=
-    exists_contDiff_interpolating_separated_taylorData_aux (E := E) (by positivity : 0 < r / 2) hκ
-  exact ⟨B, hB, fun K x D hsep => hmain K x D fun i hi j hj hij => by
-    linarith [hsep i hi j hj hij]⟩
+/-- **Second-order slow runs** ([cartis2022evaluation], (3.5.12), (3.5.19)): the interpolant of
+`Optimization.exists_slowSecondOrder_interpolant` at the abscissae `Optimization.secondOrderX`
+of the step factors `θ`, for `ε ∈ (0, 1)`, with the termination test `|G'(x_k)| ≤ ε` holding
+exactly at `k = k_ε`. A method whose step at `x_k` is `θ_k ε^{1/2}/(2 f_k)` runs along these
+points, whatever the factors `θ_k ∈ [a, b]` it picks. -/
+theorem exists_slowSecondOrder_run_data {a b : ℝ} (ha : 0 < a) (hab : a ≤ b) :
+    ∃ L B : ℝ, 0 ≤ L ∧ 0 ≤ B ∧ ∀ (ε : ℝ) (θ : ℕ → ℝ), 0 < ε → ε < 1 →
+      (∀ k < secondOrderK ε, θ k ∈ Icc a b) →
+      ∃ G : ℝ → ℝ, ContDiff ℝ 2 G ∧
+        (∀ s t, |iteratedDeriv 2 G s - iteratedDeriv 2 G t| ≤ L * |s - t|) ∧
+        (∀ j ≤ 2, ∀ t, |iteratedDeriv j G t| ≤ B) ∧
+        ∀ k ≤ secondOrderK ε, G (secondOrderX θ ε k) = secondOrderF ε k ∧
+          deriv G (secondOrderX θ ε k) = secondOrderG ε k ∧
+          iteratedDeriv 2 G (secondOrderX θ ε k) = secondOrderH ε k ∧
+          (|deriv G (secondOrderX θ ε k)| ≤ ε ↔ secondOrderK ε ≤ k) := by
+  obtain ⟨L, B, hL, hB, H⟩ := exists_slowSecondOrder_interpolant ha hab
+  refine ⟨L, B, hL, hB, fun ε θ hε hε1 hθ => ?_⟩
+  obtain ⟨G, hG, hGL, hGB, hGk⟩ := H ε θ (secondOrderX θ ε) hε hε1.le hθ
+    (fun k _ => secondOrderX_succ θ ε k)
+  refine ⟨G, hG, hGL, hGB, fun k hk => ?_⟩
+  obtain ⟨h1, h2, h3⟩ := hGk k hk
+  have h2' : deriv G (secondOrderX θ ε k) = secondOrderG ε k := h2
+  exact ⟨h1, h2', h3, by rw [h2']; exact abs_secondOrderG_le_iff hε hε1 hk⟩
 
-/-- The quadratic jet `(f, g, H)` (value, gradient, Hessian) as Taylor data:
-`D_0 = f`, `D_1 = ⟪g, ·⟫`, `D_2 = H`, `D_i = 0` for `i ≥ 3`. -/
-noncomputable def quadJet (f : ℝ) (g : E) (H : E [×2]→L[ℝ] ℝ) : FormalMultilinearSeries ℝ E ℝ
-  | 0 => ContinuousMultilinearMap.uncurry0 ℝ E f
-  | 1 => (continuousMultilinearCurryFin1 ℝ E ℝ).symm (innerSL ℝ g)
-  | 2 => H
-  | _ + 3 => 0
-
-theorem quadJet_isSymm {f : ℝ} {g : E} {H : E [×2]→L[ℝ] ℝ}
-    (hH : ∀ v w, H ![v, w] = H ![w, v]) : (quadJet f g H).IsSymm 2 := by
-  intro i hi σ v
-  interval_cases i
-  · exact congrArg _ (Subsingleton.elim _ _)
-  · have : σ = 1 := Subsingleton.elim _ _
-    subst this
-    rfl
-  · refine ContinuousMultilinearMap.apply_comp_perm_of_swap H (fun a b hab w => ?_) σ v
-    have hw : w = ![w 0, w 1] := by ext i; fin_cases i <;> rfl
-    have hab' : Equiv.swap a b = Equiv.swap 0 1 := by
-      fin_cases a <;> fin_cases b
-      · exact absurd rfl hab
-      · rfl
-      · exact Equiv.swap_comm _ _
-      · exact absurd rfl hab
-    have hs : w ∘ Equiv.swap a b = ![w 1, w 0] := by
-      rw [hab']; ext i; fin_cases i <;> simp
-    change H (w ∘ Equiv.swap a b) = H w
-    rw [hs, hw, hH]
-    rfl
-
-theorem norm_quadJet_le {f κ : ℝ} {g : E} {H : E [×2]→L[ℝ] ℝ} (hf : |f| ≤ κ) (hg : ‖g‖ ≤ κ)
-    (hH : ‖H‖ ≤ κ) : ∀ i ≤ 2, ‖quadJet f g H i‖ ≤ κ := by
-  intro i hi
-  interval_cases i
-  · simpa [quadJet, ContinuousMultilinearMap.uncurry0_norm] using hf
-  · simpa [quadJet, innerSL_apply_norm] using hg
-  · exact hH
-
-/-- **Gluing separated quadratic jets** ([cartis2022evaluation], proof of Theorem 3.1.1, (3.1.7),
-with a smooth bump in place of the book's piecewise-polynomial one). Let `E` be a
-finite-dimensional real inner product space, `r > 0` and `κ ≥ 0`. There is `B ≥ 0` (depending
-only on `E`, `r` and `κ`, not on the number of points) such that for any points
-`x_0, …, x_K` with `‖x_i - x_j‖ ≥ r` (`i ≠ j`) and jets `(f_k, g_k, H_k)` with `H_k` symmetric
-and `|f_k|, ‖g_k‖, ‖H_k‖ ≤ κ`, there is a smooth `F : E → ℝ` with `F(x_k) = f_k`,
-`∇F(x_k) = g_k`, `∇²F(x_k) = H_k`, `|F| ≤ B` and `‖∇^j F‖ ≤ B` for `j ≤ 3`. -/
-theorem exists_contDiff_interpolating_separated_jets [FiniteDimensional ℝ E] {r κ : ℝ}
-    (hr : 0 < r) (hκ : 0 ≤ κ) :
-    ∃ B : ℝ, 0 ≤ B ∧ ∀ (K : ℕ) (x : ℕ → E) (f : ℕ → ℝ) (g : ℕ → E) (H : ℕ → E [×2]→L[ℝ] ℝ),
-      (∀ i ≤ K, ∀ j ≤ K, i ≠ j → r ≤ ‖x i - x j‖) →
-      (∀ k ≤ K, ∀ v w, H k ![v, w] = H k ![w, v]) →
-      (∀ k ≤ K, |f k| ≤ κ ∧ ‖g k‖ ≤ κ ∧ ‖H k‖ ≤ κ) →
-      ∃ F : E → ℝ, ContDiff ℝ ∞ F ∧
-        (∀ k ≤ K, F (x k) = f k ∧ gradient F (x k) = g k ∧ iteratedFDeriv ℝ 2 F (x k) = H k) ∧
-        ∀ y, |F y| ≤ B ∧ ∀ j ≤ 3, ‖iteratedFDeriv ℝ j F y‖ ≤ B := by
-  obtain ⟨B, hB, hmain⟩ := exists_contDiff_interpolating_separated_taylorData (E := E) hr hκ
-  refine ⟨B, hB, fun K x f g H hsep hH hbd => ?_⟩
-  obtain ⟨F, hF, hjet, hFB⟩ := hmain K x (fun k => quadJet (f k) (g k) (H k)) hsep
-    (fun k hk => quadJet_isSymm (hH k hk))
-    (fun k hk => norm_quadJet_le (hbd k hk).1 (hbd k hk).2.1 (hbd k hk).2.2)
-  refine ⟨F, hF, fun k hk => ⟨?_, ?_, hjet k hk 2 le_rfl⟩, fun y => ⟨?_, fun j hj => hFB j hj y⟩⟩
-  · have := congrArg (fun A => A (fun _ => 0)) (hjet k hk 0 (Nat.zero_le _))
-    simpa [quadJet, iteratedFDeriv_zero_apply] using this
-  · have h1 : fderiv ℝ F (x k) = InnerProductSpace.toDual ℝ E (g k) := by
-      ext v
-      have := congrArg (fun A => A (fun _ => v)) (hjet k hk 1 (by norm_num))
-      simpa [quadJet, iteratedFDeriv_one_apply, InnerProductSpace.toDual_apply_apply] using this
-    rw [gradient, h1, LinearIsometryEquiv.symm_apply_apply]
-  · have := hFB 0 (Nat.zero_le _) y
-    rwa [norm_iteratedFDeriv_zero, Real.norm_eq_abs] at this
-
-end SeparatedJets
+/-- **Rescaling a second-order interpolant**: for `0 < c ≤ 1`, the function `c G₀(u/c)` of a
+`C²` function `G₀` with `L`-Lipschitz second derivative and `|G₀^{(j)}| ≤ B` (`j ≤ 2`) is `C²`
+with `j`-th derivative `c c^{-j} G₀^{(j)}(u/c)`, `L/c²`-Lipschitz second derivative and
+derivatives bounded by `B/c²`. -/
+theorem contDiff_two_rescale_bounds {G₀ : ℝ → ℝ} {c L B : ℝ} (hc0 : 0 < c) (hc1 : c ≤ 1)
+    (hG₀ : ContDiff ℝ 2 G₀)
+    (hGL : ∀ s t, |iteratedDeriv 2 G₀ s - iteratedDeriv 2 G₀ t| ≤ L * |s - t|)
+    (hGB : ∀ j ≤ 2, ∀ t, |iteratedDeriv j G₀ t| ≤ B) :
+    ContDiff ℝ 2 (fun u => c * G₀ (c⁻¹ * u)) ∧
+      (∀ j ≤ 2, ∀ u, iteratedDeriv j (fun u => c * G₀ (c⁻¹ * u)) u =
+        c * c⁻¹ ^ j * iteratedDeriv j G₀ (c⁻¹ * u)) ∧
+      (∀ u v, |iteratedDeriv 2 (fun u => c * G₀ (c⁻¹ * u)) u -
+        iteratedDeriv 2 (fun u => c * G₀ (c⁻¹ * u)) v| ≤ L / c ^ 2 * |u - v|) ∧
+      ∀ j ≤ 2, ∀ u, |iteratedDeriv j (fun u => c * G₀ (c⁻¹ * u)) u| ≤ B / c ^ 2 := by
+  set G : ℝ → ℝ := fun u => c * G₀ (c⁻¹ * u)
+  have hG : ContDiff ℝ 2 G := contDiff_const.mul (hG₀.comp (contDiff_const.mul contDiff_id))
+  have hid : ∀ j ≤ 2, ∀ u, iteratedDeriv j G u = c * c⁻¹ ^ j * iteratedDeriv j G₀ (c⁻¹ * u) := by
+    intro j hj u
+    have h1 : iteratedDeriv j G u = c * iteratedDeriv j (fun v => G₀ (c⁻¹ * v)) u :=
+      iteratedDeriv_const_mul_field c _
+    rw [h1, iteratedDeriv_comp_const_mul (hG₀.of_le (by exact_mod_cast hj)) c⁻¹]
+    ring
+  have hc2 : c * c⁻¹ ^ 2 = c⁻¹ := by field_simp
+  have hc1' : c * c⁻¹ ^ 1 = 1 := by field_simp
+  refine ⟨hG, hid, fun u v => ?_, fun j hj u => ?_⟩
+  · rw [hid 2 le_rfl, hid 2 le_rfl, hc2, ← mul_sub, abs_mul, abs_of_pos (inv_pos.2 hc0)]
+    have := hGL (c⁻¹ * u) (c⁻¹ * v)
+    rw [← mul_sub, abs_mul, abs_of_pos (inv_pos.2 hc0)] at this
+    calc c⁻¹ * |iteratedDeriv 2 G₀ (c⁻¹ * u) - iteratedDeriv 2 G₀ (c⁻¹ * v)|
+        ≤ c⁻¹ * (L * (c⁻¹ * |u - v|)) := mul_le_mul_of_nonneg_left this (by positivity)
+      _ = L / c ^ 2 * |u - v| := by field_simp
+  · rw [hid j hj, abs_mul, abs_of_pos (by positivity)]
+    have hpow : c * c⁻¹ ^ j ≤ 1 / c ^ 2 := by
+      interval_cases j
+      · rw [pow_zero, mul_one, le_div_iff₀ (by positivity)]
+        nlinarith [pow_le_one₀ hc0.le hc1 (n := 3)]
+      · rw [hc1', le_div_iff₀ (by positivity), one_mul]; exact pow_le_one₀ hc0.le hc1
+      · rw [hc2, one_div, inv_le_inv₀ hc0 (by positivity)]; nlinarith
+    have hB0 : 0 ≤ B := (abs_nonneg _).trans (hGB 0 (by norm_num) 0)
+    calc c * c⁻¹ ^ j * |iteratedDeriv j G₀ (c⁻¹ * u)| ≤ 1 / c ^ 2 * B :=
+          mul_le_mul hpow (hGB j hj _) (abs_nonneg _) (by positivity)
+      _ = B / c ^ 2 := by ring
 
 end Optimization

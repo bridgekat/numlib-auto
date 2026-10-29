@@ -209,13 +209,6 @@ theorem arpleCC_decrease (hC : AssumptionCNe C) (hΦ : AssumptionPhiDpLC r ℓ C
   exact rpow_inv_two_pow_sub_ge_min hp hℓ hι hβ0 hβ1 (kappa1CC_pos hΦ.nonneg) hε₀
     hε₁ haR hba hnot.1 hnot.2 (by linarith)
 
-/-- `R^a R^b ≤ R^{a+b}` for `R ≥ 0`, `a > 0` (equality if `R > 0`). -/
-private theorem rpow_mul_rpow_le {R a b : ℝ} (hR : 0 ≤ R) (ha : 0 < a) :
-    R ^ a * R ^ b ≤ R ^ (a + b) := by
-  rcases hR.lt_or_eq with hR | hR
-  · rw [Real.rpow_add hR]
-  · rw [← hR, Real.zero_rpow ha.ne', zero_mul]; exact Real.rpow_nonneg le_rfl _
-
 /-- `1/κ_{r1} = 2^i/β^{(ℓ-1)(p+1)/p} κ^S_{ARp1CC}` with `κ_{r1} = κ_{1,CC} β^{(ℓ-1)(p+1)/p}/2^i`,
 the book's form of the second entry of
 `κ^S_{ARpLE,1}`. -/
@@ -301,7 +294,7 @@ theorem theorem_6_3_1 {i : ℕ} (hp : 1 ≤ p) (hℓ : 2 ≤ ℓ)
                                positivity
   have hRM : R ^ α * max 1 (R ^ ι) ≤ max (R ^ α) (R ^ (1 - ((ℓ : ℝ) - 1) / p)) := by
     rw [mul_max_of_nonneg _ _ (Real.rpow_nonneg hR0 _), mul_one]
-    refine max_le_max le_rfl ((rpow_mul_rpow_le hR0 hα).trans_eq ?_)
+    refine max_le_max le_rfl ((Real.le_rpow_add hR0 _ _).trans_eq ?_)
     congr 1
     rw [hαdef, hιdef]; field_simp; ring
   have hratio : R ^ α / δ ≤ κS * max (R ^ α) (R ^ (1 - ((ℓ : ℝ) - 1) / p)) / μ := by

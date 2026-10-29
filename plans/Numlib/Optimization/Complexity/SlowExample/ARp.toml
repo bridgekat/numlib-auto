@@ -1,10 +1,6 @@
 namespace = "Optimization"
 
 [[node]]
-id = "IsSpikeJetOf"
-source = "Cartis–Gould–Toint, proof of Theorem 12.2.15, (12.2.67)–(12.2.68)"
-
-[[node]]
 id = "monomialMinimizer"
 source = "Cartis–Gould–Toint, (12.2.70) and the display after it"
 
@@ -37,9 +33,5 @@ id = "taylorDecrement_regularizedModel_ridge_spike"
 source = "Cartis–Gould–Toint, (12.2.69)–(12.2.70) along a ridge; Theorem 14.2.4 (sharpness)"
 
 [[node]]
-id = "iteratedFDeriv_apply_const_eq_line"
-source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, ARqpIDA-SC row with a feasible set): models restricted to a line"
-
-[[node]]
-id = "taylorDecrement_eq_of_line"
-source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, ARqpIDA-SC row with a feasible set): models restricted to a line"
+id = "taylorMeasure_eq_mul_pow_of_inner_pow"
+source = "Cartis–Gould–Toint, proof of Theorem 12.2.6; Theorem 14.2.4 (sharpness)"

@@ -1,6 +1,13 @@
 namespace = "Optimization"
 
 [[node]]
+id = "IsSpikeJetOf"
+source = "Cartis–Gould–Toint, proof of Theorem 12.2.15, (12.2.67)–(12.2.68)"
+
+[[node]]
+id = "IsSpikeJetOf.const_mul"
+
+[[node]]
 id = "taylorMeasure_linearRegModel_eq_zero"
 source = "Cartis–Gould–Toint, Example 12.1.3"
 
@@ -27,3 +34,11 @@ source = "Cartis–Gould–Toint, proof of Theorem 12.2.6 (Lipschitz derivatives
 [[node]]
 id = "taylorMeasure_topMonomialRegModel_eq_zero"
 source = "Cartis–Gould–Toint, (12.2.69)–(12.2.70) with q = p; Theorem 14.2.4 (sharpness)"
+
+[[node]]
+id = "exists_slowGradSpike_interpolant"
+source = "Cartis–Gould–Toint, proof of Theorem 12.2.17 (r = p); Theorem 14.2.4 (sharpness)"
+
+[[node]]
+id = "exists_contDiff_isSpikeJetOf_one"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness)"

@@ -1,4 +1,4 @@
-import Numlib.Optimization.Complexity.SlowExampleHighOrder
+import Numlib.Optimization.Complexity.SlowExample.ARp
 import NumlibSurface.CartisGouldToint.Chapter02.Section04
 import NumlibSurface.CartisGouldToint.Chapter03.Section02
 
@@ -706,47 +706,17 @@ theorem ar2Model_ridge {G : ℝ → ℝ} (hG : ContDiff ℝ 2 G) (x s : Euclidea
       iteratedDeriv 2 G ⟪e₀, x⟫ * ⟪e₀, s⟫ ^ 2 / 2 + σ / 6 * |⟪e₀, s⟫| ^ 3 := by
   rw [ar2Model_apply, taylorPolynomial_two_ridge hG, norm_eq_abs_inner_e₀]
 
-/-- The one-dimensional jets of the sharpness examples: the `q`-th derivative is `-α` and the
-other derivatives of order `1, 2` vanish. -/
-def IsSpikeJet (G : ℝ → ℝ) (q : ℕ) (a α : ℝ) : Prop :=
-  iteratedDeriv q G a = -α ∧ ∀ j, 1 ≤ j → j ≤ 2 → j ≠ q → iteratedDeriv j G a = 0
-
 section Spike
 
 variable {G : ℝ → ℝ} {q : ℕ} {x : EuclideanSpace ℝ (Fin 1)} {α : ℝ}
 
-/-- At a spike jet, `T_{f,2}(x, s) = G(a) - α t^q/q!`. -/
-theorem taylorPolynomial_two_ridge_spike (hG : ContDiff ℝ 2 G) (hq : 1 ≤ q) (hq2 : q ≤ 2)
-    (hd : IsSpikeJet G q ⟪e₀, x⟫ α) (s : EuclideanSpace ℝ (Fin 1)) :
-    taylorPolynomial (ridge G e₀) 2 x s = G ⟪e₀, x⟫ - α * ⟪e₀, s⟫ ^ q / q.factorial := by
-  rw [taylorPolynomial_two_ridge hG]
-  obtain ⟨h1, h2⟩ := hd
-  interval_cases q
-  · have hd2 := h2 2 (by norm_num) le_rfl (by norm_num)
-    rw [iteratedDeriv_one] at h1
-    rw [h1, hd2]; norm_num
-    ring
-  · have hd1 := h2 1 le_rfl (by norm_num) (by norm_num)
-    rw [iteratedDeriv_one] at hd1
-    rw [hd1, h1]; norm_num [Nat.factorial]
-    ring
-
 /-- At a spike jet the AR2 model is `G(a) + negMonomialRegModel 2 q σ α t`. -/
 theorem ar2Model_ridge_spike (hG : ContDiff ℝ 2 G) (hq : 1 ≤ q) (hq2 : q ≤ 2)
-    (hd : IsSpikeJet G q ⟪e₀, x⟫ α) (σ : ℝ) (s : EuclideanSpace ℝ (Fin 1)) :
+    (hd : IsSpikeJetOf 2 G q ⟪e₀, x⟫ α) (σ : ℝ) (s : EuclideanSpace ℝ (Fin 1)) :
     ar2Model (ridge G e₀) x σ s = G ⟪e₀, x⟫ + negMonomialRegModel 2 q σ α ⟪e₀, s⟫ := by
-  rw [ar2Model_apply, taylorPolynomial_two_ridge_spike hG hq hq2 hd, norm_eq_abs_inner_e₀,
+  rw [ar2Model_apply, taylorPolynomial_ridge_spike hG hq hq2 hd, norm_eq_abs_inner_e₀,
     negMonomialRegModel]
   norm_num [Nat.factorial]
-  ring
-
-theorem taylorDecrement_ridge_spike (hG : ContDiff ℝ 2 G) (hq : 1 ≤ q) (hq2 : q ≤ 2)
-    (hd : IsSpikeJet G q ⟪e₀, x⟫ α) (s : EuclideanSpace ℝ (Fin 1)) :
-    (ftaylorSeries ℝ (ridge G e₀) x).taylorDecrement 2 s = α * ⟪e₀, s⟫ ^ q / q.factorial := by
-  rw [FormalMultilinearSeries.taylorDecrement, ← taylorPolynomial_eq_taylorSum,
-    taylorPolynomial_two_ridge_spike hG hq hq2 hd, taylorPolynomial_two_ridge_spike hG hq hq2 hd]
-  simp only [inner_zero_right]
-  rw [zero_pow (by omega)]
   ring
 
 end Spike
@@ -762,7 +732,7 @@ holds at `x_k e₀` (`k ≤ K`) exactly when `k = K`, then the points `x_k e₀`
 theorem exists_ar2_ridge_run (P : AR2Params) {ε₁ : ℝ} (hε₁ : 0 < ε₁) (hε₁1 : ε₁ ≤ 1)
     {ε₂ : Option ℝ} (hε₂ : ∀ e ∈ ε₂, 0 < e) {q : ℕ} (hq : 1 ≤ q) (hq2 : q ≤ 2) {G : ℝ → ℝ}
     (hG : ContDiff ℝ 2 G) {xr α : ℕ → ℝ} {K : ℕ} (hα : ∀ k < K, 0 < α k)
-    (hd : ∀ k < K, IsSpikeJet G q (xr k) (α k))
+    (hd : ∀ k < K, IsSpikeJetOf 2 G q (xr k) (α k))
     (hx : ∀ k < K, xr (k + 1) = xr k + (α k / (P.σ₀ * (q - 1).factorial / (2 : ℕ).factorial)) ^
       (1 / ((2 - q + 1 : ℕ) : ℝ)))
     (hval : ∀ k < K, G (xr (k + 1)) = G (xr k) - α k * (xr (k + 1) - xr k) ^ q / q.factorial)
@@ -777,7 +747,7 @@ theorem exists_ar2_ridge_run (P : AR2Params) {ε₁ : ℝ} (hε₁ : 0 < ε₁) 
   set s : ℕ → EuclideanSpace ℝ (Fin 1) := fun k => (xr (k + 1) - xr k) • e₀
   have hσ₀ := P.σ₀_pos
   have hxs : ∀ k, x k + s k = x (k + 1) := fun k => by simp only [x, s, ← add_smul]; ring_nf
-  have hdx : ∀ k < K, IsSpikeJet G q ⟪e₀, x k⟫ (α k) := fun k hk => by
+  have hdx : ∀ k < K, IsSpikeJetOf 2 G q ⟪e₀, x k⟫ (α k) := fun k hk => by
     rw [inner_e₀_smul]; exact hd k hk
   -- the step is the global minimizer
   have ht : ∀ k < K, ⟪e₀, s k⟫ = (α k / (P.σ₀ * (q - 1).factorial / (2 : ℕ).factorial)) ^
@@ -887,7 +857,7 @@ theorem exists_ar2_slow_data (P : AR2Params) {q : ℕ} (hq : 1 ≤ q) (hq2 : q �
       ∃ (G : ℝ → ℝ) (xr : ℕ → ℝ), ContDiff ℝ 2 G ∧
         Chapter02.AssumptionBb (ridge G e₀) (-B) ∧ Chapter02.AssumptionGL (ridge G e₀) L₁ ∧
         AssumptionHL (ridge G e₀) L₂ ∧ (∀ y, |ridge G e₀ y| ≤ B) ∧ xr 0 = 0 ∧
-        (∀ k ≤ ar2SlowK q ε, IsSpikeJet G q (xr k) (ar2SlowAlpha ε (ar2SlowK q ε) k)) ∧
+        (∀ k ≤ ar2SlowK q ε, IsSpikeJetOf 2 G q (xr k) (ar2SlowAlpha ε (ar2SlowK q ε) k)) ∧
         (∀ k < ar2SlowK q ε, xr (k + 1) = xr k + (ar2SlowAlpha ε (ar2SlowK q ε) k /
           (P.σ₀ * (q - 1).factorial / (2 : ℕ).factorial)) ^ (1 / ((2 - q + 1 : ℕ) : ℝ))) ∧
         ∀ k < ar2SlowK q ε, G (xr (k + 1)) = G (xr k) -

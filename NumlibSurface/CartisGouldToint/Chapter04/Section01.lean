@@ -1,4 +1,5 @@
-import Numlib.Optimization.Complexity.SlowExampleARp
+import Numlib.Analysis.SpecialFunctions.Pow.Real
+import Numlib.Optimization.Complexity.SlowExample.ARp
 import Numlib.Optimization.ModelBased.ARpRun
 import NumlibSurface.CartisGouldToint.Chapter03.Section03
 
@@ -56,7 +57,8 @@ finite tolerances (`arpOrder`).
   for other constants the sets `𝓜_{k+1}` of the third-order example may be empty, and the run then
   stops early (vacuous reading) or never (literal reading). In part (iii) the termination index
   is also the first iterate satisfying the true criterion (4.1.3)–(4.1.4). The run mechanism on
-  spike data is the backbone's `Optimization.arp_ridge_run` (`Complexity/SlowExampleARp`).
+  spike data is the backbone's `Optimization.arp_ridge_run`
+  (`Numlib.Optimization.Complexity.SlowExample.ARp`).
 * §4.1.3 ("A TRp algorithm?") contains no numbered statement and defines no algorithm.
 -/
 
@@ -669,15 +671,6 @@ private theorem div_le_mul_of_one_le {t E κS κ : ℝ} (hκS : 0 < κS) (h1 : 1
   rw [div_le_iff₀ hκS]
   nlinarith
 
-/-- `a^{n/m} ≤ t^n` from `a ≤ t^m` (for `a, t ≥ 0`, `m > 0`). -/
-private theorem rpow_div_le_pow_of_le_pow {a t : ℝ} {m n : ℕ} (ha : 0 ≤ a) (ht : 0 ≤ t)
-    (hm : 0 < m) (h : a ≤ t ^ m) : a ^ ((n : ℝ) / m) ≤ t ^ n := by
-  have hm' : (m : ℝ) ≠ 0 := by exact_mod_cast hm.ne'
-  calc a ^ ((n : ℝ) / m) ≤ (t ^ m) ^ ((n : ℝ) / m) := by gcongr
-    _ = t ^ n := by
-        rw [← Real.rpow_natCast t m, ← Real.rpow_mul ht, mul_div_cancel₀ _ hm',
-          Real.rpow_natCast]
-
 section Complexity
 
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {p : ℕ} {P : ARpParams} {ε₁ L flow : ℝ}
@@ -898,7 +891,7 @@ theorem theorem_4_1_5_iii (hb : Chapter02.AssumptionBb f flow) (hf : AssumptionD
         simp only [b]; rw [Nat.cast_sub (by omega)]; push_cast; ring
       have hpow : (kappaS2ARp P p L * e₂) ^ b ≤ ‖s k‖ ^ (p + 1) := by
         rw [hcm]
-        exact rpow_div_le_pow_of_le_pow (by positivity) (norm_nonneg _) (by omega) hstep
+        exact Real.rpow_div_le_pow_of_le_pow (by positivity) (norm_nonneg _) (by omega) hstep
       have hD : kappaARp₂ P p L * e₂ ^ b ≤ f (x k) - f (x (k + 1)) := by
         rw [kappaARp₂_eq, mul_assoc, ← Real.mul_rpow hs2.le he₂.le]
         have := P.η₁_pos; have := P.σmin_pos
@@ -1046,7 +1039,7 @@ theorem not_exists_algorithm_4_1_1_third_order (P : ARpParams) {ε₁ e₂ e₃ 
     set t := ⟪e₀, s 0⟫
     have hT : taylorPolynomial (ridge (arpQuartic e₂ e₃) e₀) 3 (x 0) (s 0) =
         arpQuartic e₂ e₃ 0 + e₂ * t ^ 2 / 2 + e₃ * t ^ 3 / 3 := by
-      rw [Chapter03.taylorPolynomial_ridge hG3, hx0, inner_zero_right]
+      rw [Optimization.taylorPolynomial_ridge hG3, hx0, inner_zero_right]
       simp only [Finset.sum_range_succ, Finset.sum_range_zero, iteratedDeriv_zero,
         iteratedDeriv_one_arpQuartic, iteratedDeriv_two_arpQuartic, iteratedDeriv_three_arpQuartic]
       norm_num [Nat.factorial]
