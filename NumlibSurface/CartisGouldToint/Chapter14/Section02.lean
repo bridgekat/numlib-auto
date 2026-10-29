@@ -60,8 +60,8 @@ subproblems. It therefore has no declaration of its own.
   (14.2.10): `lemma_14_2_2_trq_anchored`, `lemma_14_2_3_trq_anchored`,
   `theorem_14_2_4_trq_anchored`,
   `lemma_14_2_2_arqp_anchored`, `lemma_14_2_3_anchored`, `theorem_14_2_4_arqp_anchored` (from the
-  anchored Chapter 12 analysis, `AssumptionD1qLaBX.toAnchored`); the ARqpC-SC row under anchored
-  bounds is `lemma_14_2_2_arqpc_anchored`, `lemma_14_2_3_arqpc_anchored`,
+  anchored Chapter 12 analysis, `AssumptionD1qLaBX.toLipschitzDerivsAnchored`); the ARqpC-SC row
+  under anchored bounds is `lemma_14_2_2_arqpc_anchored`, `lemma_14_2_3_arqpc_anchored`,
   `theorem_14_2_4_arqpc_anchored`;
 * under the anchored assumptions f.D0qLaB.X (TRqIDA-SC, TRqEDA-SC) and f.D0pLaB.X (ARqpIDA-SC,
   ARqpEDA-SC), the remark of Lemmas 14.2.2–14.2.3 and Theorem 14.2.4:
@@ -74,7 +74,7 @@ subproblems. It therefore has no declaration of its own.
   also for the EDA methods with inexact values, since (13.3.5)/(13.3.13) `κ_s ≤ η₁/4` and
   `h_{k,0} ≤ κ_s \overline{ΔT}_k` give a true decrease of at least `η₁/2 \overline{ΔT}_k > 0` on
   successful iterations;
-* bridges: `AssumptionD1qLaBX.of_lipschitzOn`, `AssumptionD1qLaBX.assumptionD1pLOn`,
+* bridges: `AssumptionD1qLaBX.of_lipschitzOn`, `AssumptionD1qLaBX.lipschitzDerivsAnchored_self`,
   `assumptionBbX_iff_assumptionWBb`.
 
 ## Deviations from the book
@@ -120,8 +120,8 @@ subproblems. It therefore has no declaration of its own.
 
 * Runs satisfying the radius policy of the ARqp-SC rows under the anchored assumptions exist on
   `X = ℝⁿ` (`Optimization.exists_isARqpRun_of_anchored`); for a general closed `X` they are the
-  ARqpC-SC runs with `c = 0`, `h = 0` of `Chapter14.Section03` (`exists_isARqpCRun_of_hLip`,
-  `algorithm_14_1_1.zero_algorithm_12_2_2_feasible`), whose radii satisfy (12.2.51) by
+  ARqpC-SC runs with `c = 0`, `h = 0` of `Chapter14.Section03` (`exists_algorithm_14_1_1_of_hLip`,
+  `Optimization.IsARqpCRun.isARqpRun_zero`), whose radii satisfy (12.2.51) by
   `algorithm_14_1_1.kappaDeltaMin_mul_le_radius_anchored`; the `¬ u` radius hypothesis of
   `theorem_14_2_4_arqp_anchored` is not discharged for them in this module.
 -/
@@ -230,17 +230,14 @@ theorem AssumptionD1qLaBX.of_lipschitzOn {f : ℝⁿ → ℝ} {X X₀ : Set ℝ�
   lipschitzAnchored j hj := (hlip j hj).anchored (sublevel_subset.trans hX)
   norm_le j hj x hx := hbd j hj x (hX hx.1)
 
-/-- The anchored assumption gives f.D1pL on the open convex set `X₀` in the sense of
-`Chapter12.AssumptionD1pLOn` when, moreover, the anchor is all of `X₀` (`X₀ ⊆ 𝓛_f(x₀)`). -/
-theorem AssumptionD1qLaBX.assumptionD1pLOn {f : ℝⁿ → ℝ} {X X₀ : Set ℝⁿ} {x₀ : ℝⁿ} {q : ℕ}
-    {L B : ℕ → ℝ} (h : AssumptionD1qLaBX f X X₀ x₀ 1 q L B) (hsub : X₀ ⊆ sublevel f X x₀) :
-    Chapter12.AssumptionD1pLOn f X₀ q L where
-  isOpen := h.isOpen
-  convex := h.convex
-  contDiffAt _ hy := h.contDiffOn.contDiffAt (h.isOpen.mem_nhds hy)
-  one_le := h.one_le_lip
-  lipschitz j hj := iteratedFDerivLipschitzOn_iff.2 fun x hx y hy =>
-    h.lipschitzAnchored j hj x (hsub hx) y hy
+/-- The anchored assumption gives Lipschitz derivatives on the open convex set `X₀`
+(`LipschitzDerivsAnchored` with all of `X₀` as anchors) when, moreover, the anchor is all of `X₀`
+(`X₀ ⊆ 𝓛_f(x₀)`). -/
+theorem AssumptionD1qLaBX.lipschitzDerivsAnchored_self {f : ℝⁿ → ℝ} {X X₀ : Set ℝⁿ} {x₀ : ℝⁿ}
+    {q : ℕ} {L B : ℕ → ℝ} (h : AssumptionD1qLaBX f X X₀ x₀ 1 q L B)
+    (hsub : X₀ ⊆ sublevel f X x₀) : LipschitzDerivsAnchored f X₀ X₀ 1 q L :=
+  ⟨h.isOpen, h.convex, subset_rfl, fun _ hy => h.contDiffOn.contDiffAt (h.isOpen.mem_nhds hy),
+    fun j hj x hx y hy => h.lipschitzAnchored j hj x (hsub hx) y hy⟩
 
 /-! ### Theorem 14.2.1 -/
 
@@ -315,9 +312,10 @@ end Sparse
 
 The rows of Lemmas 14.2.2–14.2.3 and Theorem 14.2.4 for ARqpC-SC, TRq-SC and ARqp-SC are stated
 here under smoothness on all of `ℝⁿ` (f.D1pL and c.D1pL of §14.1 for ARqpC-SC) or on an open
-convex `C ⊇ X` (`Chapter12.AssumptionD1pLOn`, for TRq-SC and ARqp-SC); the TRq-SC and ARqp-SC rows
-under the anchored f.D1qLaB.X / f.D1pLaB.X follow in the section on anchored assumptions; the
-ARqpC-SC row is also stated under anchored bounds (`lemma_14_2_2_arqpc_anchored`, …). -/
+convex `C ⊇ X` (`LipschitzDerivsAnchored f C C 1 p L`, for TRq-SC and ARqp-SC); the TRq-SC and
+ARqp-SC rows under the anchored f.D1qLaB.X / f.D1pLaB.X follow in the section on anchored
+assumptions; the ARqpC-SC row is also stated under anchored bounds
+(`lemma_14_2_2_arqpc_anchored`, …). -/
 
 section ARqpCSC
 
@@ -473,11 +471,12 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] {f : E →
 
 /-- **Lemma 14.2.2** of [cartis2022evaluation], TRq-SC row: for a TRq-SC run
 (`Chapter12.algorithm_12_2_1_feasible`, feasible set `X ⊆ C`, `x₀ ∈ X`) under f.D1qL on an open
-convex `C`, every iteration `k` before termination has a Taylor decrease at least
+convex `C` (`LipschitzDerivsAnchored f C C 1 q L`; the normalization `L_j ≥ 1` is not needed),
+every iteration `k` before termination has a Taylor decrease at least
 `(ς κ_δ)^{q+1}/q! ε_min^{q+1}`, and successful iterations decrease `f` by `η₁` times this
 (Lemma 12.2.4 with a feasible set; `π_j = q + 1`). -/
 theorem lemma_14_2_2_trq (h : Chapter12.algorithm_12_2_1_feasible f X P q ε ϑ x s Δ jk d)
-    (hf : Chapter12.AssumptionD1pLOn f C q L) (hXC : X ⊆ C) (hx0 : x 0 ∈ X)
+    (hf : LipschitzDerivsAnchored f C C 1 q L) (hXC : X ⊆ C) (hx0 : x 0 ∈ X)
     (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hϑ : Optimization.finMin 1 ε q ≤ ϑ) (hϑ1 : ϑ ≤ 1)
     {k : ℕ} (hk : ∀ i ≤ k, ¬ Chapter12.trqStop f P q ε ϑ x Δ d i) :
     (P.ς * Optimization.trqKappaDelta f P q L ϑ (x 0)) ^ (q + 1) / q ! *
@@ -486,14 +485,15 @@ theorem lemma_14_2_2_trq (h : Chapter12.algorithm_12_2_1_feasible f X P q ε ϑ 
       (P.η₁ ≤ Chapter12.trqRho f x s jk k →
         P.η₁ * ((P.ς * Optimization.trqKappaDelta f P q L ϑ (x 0)) ^ (q + 1) / q ! *
           Optimization.finMin 1 ε q ^ (q + 1)) ≤ f (x k) - f (x (k + 1))) :=
-  Optimization.IsTRqRun.taylorDecrement_ge_of_anchored h (hf.toLipschitzDerivsAnchored hXC) hXC
+  Optimization.IsTRqRun.taylorDecrement_ge_of_anchored h (hf.mono_left hXC) hXC
     (fun _ hy _ => hy) hx0 hε hϑ hϑ1 hk
 
 /-- **Theorem 14.2.4** of [cartis2022evaluation], TRq-SC row: every TRq-SC run terminates at some
 `k_ε` with `x_{k_ε} ∈ X` and the constrained `(ε, δ)`-certificate over `{d | x_{k_ε} + d ∈ X}`,
-within the bounds of Theorem 12.2.5 (`O(max_j ε_j^{-(q+1)})`). -/
+within the bounds of Theorem 12.2.5 (`O(max_j ε_j^{-(q+1)})`), under f.D1qL on an open convex
+`C ⊇ X` without the normalization `L_j ≥ 1`. -/
 theorem theorem_14_2_4_trq {flow : ℝ} (hb : ∀ y ∈ X, flow ≤ f y)
-    (hf : Chapter12.AssumptionD1pLOn f C q L) (hXC : X ⊆ C) (hx0 : x 0 ∈ X)
+    (hf : LipschitzDerivsAnchored f C C 1 q L) (hXC : X ⊆ C) (hx0 : x 0 ∈ X)
     (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hϑ : Optimization.finMin 1 ε q ≤ ϑ) (hϑ1 : ϑ ≤ 1)
     (h : Chapter12.algorithm_12_2_1_feasible f X P q ε ϑ x s Δ jk d) :
     ∃ kε, Optimization.IsFirstHit (Chapter12.trqStop f P q ε ϑ x Δ d) kε ∧ x kε ∈ X ∧
@@ -508,17 +508,18 @@ theorem theorem_14_2_4_trq {flow : ℝ} (hb : ∀ y ∈ X, flow ≤ f y)
       (Optimization.derivEvalCount (fun k => P.η₁ ≤ Chapter12.trqRho f x s jk k) kε : ℝ) ≤
         Optimization.kappaSTRq f P q L ϑ (x 0) * (f (x 0) - flow) /
           Optimization.finMin 1 ε q ^ (q + 1) + 1 :=
-  Optimization.IsTRqRun.complexity hb (hf.toLipschitzDerivsAnchored hXC) hXC
+  Optimization.IsTRqRun.complexity hb (hf.mono_left hXC) hXC
     (fun _ hy _ => hy) hx0 hε hϑ hϑ1 h
 
 /-- **Lemma 14.2.3** of [cartis2022evaluation], TRq-SC row (Lemma 2.3.1 with the radius lower
 bound of Lemma 12.2.3 with a feasible set, `Optimization.IsTRqRun.radius_ge_of_anchored`): for a
-TRq-SC run under f.D1qL on an open convex `C ⊇ X`, `x₀ ∈ X`, `ε ∈ (0, 1]^q` and `ϑ ∈ [ε_min, 1]`,
-every iteration `k` reached (up to and including termination) satisfies `k ≤ κ_uns |𝒮_k| + κ_unc`
+TRq-SC run under f.D1qL on an open convex `C ⊇ X` (without the normalization `L_j ≥ 1`), `x₀ ∈ X`,
+`ε ∈ (0, 1]^q` and `ϑ ∈ [ε_min, 1]`, every iteration `k` reached (up to and including termination)
+satisfies `k ≤ κ_uns |𝒮_k| + κ_unc`
 (14.2.13) with `κ_uns = 1 + log γ₃/|log γ₂|` and
 `κ_unc = |log(min(γ₁ ϑ, κ_Δ ς ε_min)/Δ₀)|/|log γ₂|` (`κ_Δ` of (12.2.14)). -/
 theorem lemma_14_2_3_trq (h : Chapter12.algorithm_12_2_1_feasible f X P q ε ϑ x s Δ jk d)
-    (hf : Chapter12.AssumptionD1pLOn f C q L) (hXC : X ⊆ C) (hx0 : x 0 ∈ X)
+    (hf : LipschitzDerivsAnchored f C C 1 q L) (hXC : X ⊆ C) (hx0 : x 0 ∈ X)
     (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hϑ : Optimization.finMin 1 ε q ≤ ϑ) (hϑ1 : ϑ ≤ 1)
     {k : ℕ} (hk : ∀ i < k, ¬ Chapter12.trqStop f P q ε ϑ x Δ d i) :
     (k : ℝ) ≤
@@ -526,7 +527,7 @@ theorem lemma_14_2_3_trq (h : Chapter12.algorithm_12_2_1_feasible f X P q ε ϑ 
           (1 + Real.log P.γ₃ / |Real.log P.γ₂|) +
         |Real.log (min (P.γ₁ * ϑ) (Optimization.trqKappaDelta f P q L ϑ (x 0) *
           (P.ς * Optimization.finMin 1 ε q)) / P.Δ₀)| / |Real.log P.γ₂| :=
-  Optimization.IsTRqRun.le_succ_count_of_anchored h (hf.toLipschitzDerivsAnchored hXC) hXC
+  Optimization.IsTRqRun.le_succ_count_of_anchored h (hf.mono_left hXC) hXC
     (fun _ hy _ => hy) hx0 hε hϑ hϑ1 hk
 
 end TRqSC
@@ -547,8 +548,9 @@ order (`¬ u`, `π_j = j(p+1)/p`), with `π_j = Optimization.arqpPiOf u p j` and
 `j(p+1)/p` of the table for every `q` and `X`; the unit-radii entries need `δ_{k,2} = 1` (the
 table's `X = ℝⁿ`, `q = 2`) and `δ_{k,1} = 1` (convex `X`), which here is the hypothesis `u` on the
 radii. The book's split is the mode `u = (q ≤ 2)` (`Chapter12.arqpPi`, `Chapter12.arqpKappaDm`). -/
-theorem lemma_14_2_2_arqp (hf : Chapter12.AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (hq : 1 ≤ q)
-    (hqp : q ≤ p) (hθς : P.θ < P.ς) (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1)
+theorem lemma_14_2_2_arqp (hf : LipschitzDerivsAnchored f C C 1 p L)
+    (hL : ∀ j ∈ Finset.Icc 1 p, 1 ≤ L j) (hXC : X ⊆ C) (hq : 1 ≤ q) (hqp : q ≤ p)
+    (hθς : P.θ < P.ς) (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1)
     (h : Chapter12.algorithm_12_2_2_feasible f X P p q ε δ₀ x s σ δ δs d dm) {k : ℕ}
     (hk : ∀ i ≤ k, ¬ Optimization.arqpStop f P p q ε x s σ δ d i)
     (hs : P.η₁ ≤ Optimization.arqpRho f p x s σ k)
@@ -563,25 +565,24 @@ theorem lemma_14_2_2_arqp (hf : Chapter12.AssumptionD1pLOn f C p L) (hXC : X ⊆
       P.η₁ * (Optimization.arqpKappaDmOf u P L p q *
         Optimization.finMin 1 (fun j => ε j ^ Optimization.arqpPiOf u p j) q) ≤
         f (x k) - f (x (k + 1)) :=
-  have hT := hf.anchoredTop hXC (hq.trans hqp)
-  Optimization.IsARqpRun.decrease hT.toLipschitzDerivsAnchored hT.one_le hXC
-    (fun _ hy _ => hy) hq
-    hqp hθς hε h hk hs hk1 hrad
+  Optimization.IsARqpRun.decrease ((hf.mono_left hXC).mono (hq.trans hqp) le_rfl)
+    (hL p (Finset.mem_Icc.2 ⟨hq.trans hqp, le_rfl⟩)) hXC (fun _ hy _ => hy) hq hqp hθς hε h hk hs
+    hk1 hrad
 
 /-- **Lemma 14.2.3** of [cartis2022evaluation], ARqp-SC row (Lemma 2.4.1 with the bound
 `σ_max = max(σ₀, γ₃ L_{f,p}/(1 - η₂))` of Lemma 12.2.13's analysis): for every iteration `k`
-reached, `k ≤ κ_uns |𝒮_k| + κ_unc` (14.2.13) with `κ_uns = 1 + |log γ₁|/log γ₂` and
+reached (under f.D1pL on an open convex `C ⊇ X`, without the normalization `L_j ≥ 1`),
+`k ≤ κ_uns |𝒮_k| + κ_unc` (14.2.13) with `κ_uns = 1 + |log γ₁|/log γ₂` and
 `κ_unc = log(σ_max/σ₀)/log γ₂`. The other rows are `lemma_14_2_3_arqpc`, `lemma_14_2_3_trq`,
 `lemma_14_2_3_trqida`, `lemma_14_2_3_trqeda`, `lemma_14_2_3_arqpida` and `lemma_14_2_3_arqpeda`. -/
-theorem lemma_14_2_3 (hf : Chapter12.AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (hp : 1 ≤ p)
+theorem lemma_14_2_3 (hf : LipschitzDerivsAnchored f C C 1 p L) (hXC : X ⊆ C) (hp : 1 ≤ p)
     (h : Chapter12.algorithm_12_2_2_feasible f X P p q ε δ₀ x s σ δ δs d dm) {k : ℕ}
     (hk : ∀ i < k, ¬ Optimization.arqpStop f P p q ε x s σ δ d i) :
     (k : ℝ) ≤ (Optimization.successSet (fun j => P.η₁ ≤ Optimization.arqpRho f p x s σ j) k).card *
         (1 + |Real.log P.γ₁| / Real.log P.γ₂) +
       Real.log (Optimization.arSigmaMax P.toARParams (L p) / P.σ₀) / Real.log P.γ₂ :=
-  have hT := hf.anchoredTop hXC hp
   h.toIsARRun.le_succ_count hk
-    (Optimization.IsARqpRun.sigma_le_of_anchored hT.toLipschitzDerivsAnchored
+    (Optimization.IsARqpRun.sigma_le_of_anchored ((hf.mono_left hXC).mono hp le_rfl)
     hXC (fun _ hy _ => hy) h k hk).2
 
 /-- **Theorem 14.2.4** of [cartis2022evaluation], ARqp-SC row (Theorem 12.2.14 with a feasible
@@ -593,7 +594,8 @@ certificate over `{d | x_{k_ε} + d ∈ X}`, within the bounds of Theorem 12.2.1
 "otherwise" order `j(p+1)/p` of the table for every `q` and `X`; the book's split is the mode
 `u = (q ≤ 2)` (`Chapter12.arqpPi`). -/
 theorem theorem_14_2_4_arqp {flow : ℝ} (hb : ∀ y ∈ X, flow ≤ f y)
-    (hf : Chapter12.AssumptionD1pLOn f C p L) (hXC : X ⊆ C) (hq : 1 ≤ q) (hqp : q ≤ p)
+    (hf : LipschitzDerivsAnchored f C C 1 p L) (hL : ∀ j ∈ Finset.Icc 1 p, 1 ≤ L j)
+    (hXC : X ⊆ C) (hq : 1 ≤ q) (hqp : q ≤ p)
     (hσmin : 0 < P.σmin) (hθς : P.θ < P.ς) (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1)
     (hδ₀ : ∀ j ∈ Finset.Icc 1 q, 0 < δ₀ j ∧ δ₀ j ≤ 1)
     (h : Chapter12.algorithm_12_2_2_feasible f X P p q ε δ₀ x s σ δ δs d dm)
@@ -613,10 +615,10 @@ theorem theorem_14_2_4_arqp {flow : ℝ} (hb : ∀ y ∈ X, flow ≤ f y)
       (Optimization.derivEvalCount (fun k => P.η₁ ≤ Optimization.arqpRho f p x s σ k) kε : ℝ) ≤
         Optimization.kappaSARqpOf u P L p q * (f (x 0) - flow) /
           Optimization.finMin 1 (fun j => ε j ^ Optimization.arqpPiOf u p j) q + 2 :=
-  have hT := hf.anchoredTop hXC (hq.trans hqp)
-  Optimization.IsARqpRun.complexity hb hT.toLipschitzDerivsAnchored hT.one_le hT.jet hXC
-    (fun _ hy _ => hy)
-    hq hqp hσmin hθς hε hδ₀ h hrad
+  Optimization.IsARqpRun.complexity hb ((hf.mono_left hXC).mono (hq.trans hqp) le_rfl)
+    (hL p (Finset.mem_Icc.2 ⟨hq.trans hqp, le_rfl⟩))
+    ((hf.mono_left hXC).norm_iteratedFDeriv_le_finMax fun j hj => zero_le_one.trans (hL j hj))
+    hXC (fun _ hy _ => hy) hq hqp hσmin hθς hε hδ₀ h hrad
 
 end ARqpSC
 
@@ -628,23 +630,12 @@ the starting point `x₀ = x 0`. The iterates lie in the sublevel set `𝓛_f(x�
 not increase along the runs), the models are built at iterates, and the trial points (in
 `X ⊆ X₀`) are related to them by Taylor's theorem anchored at the iterate. The bound (14.2.10) is
 not used: the jet bounds at the anchors follow from (14.2.9) at the interior points of `X₀`
-(`Chapter12.AssumptionD1pLAnchored.norm_iteratedFDeriv_le`), and the constants are those of the
+(`LipschitzDerivsAnchored.norm_iteratedFDeriv_le_finMax`), and the constants are those of the
 rows above with the anchored Lipschitz constants `L_{f,j}`. -/
 
 section Anchored
 
 variable {f : ℝⁿ → ℝ} {X X₀ : Set ℝⁿ} {L B : ℕ → ℝ}
-
-/-- f.D1qLaB.X (orders `[1:q]`) with anchor point `x₀` gives the anchored assumption of Chapter 12
-on `X₀` with the anchor set `𝓛_f(x₀)` (`Chapter12.AssumptionD1pLAnchored`). -/
-theorem AssumptionD1qLaBX.toAnchored {x₀ : ℝⁿ} {q : ℕ} (h : AssumptionD1qLaBX f X X₀ x₀ 1 q L B) :
-    Chapter12.AssumptionD1pLAnchored f X₀ (sublevel f X x₀) q L where
-  isOpen := h.isOpen
-  convex := h.convex
-  subset := sublevel_subset.trans h.subset
-  contDiffAt _ hy := h.contDiffOn.contDiffAt (h.isOpen.mem_nhds hy)
-  one_le := h.one_le_lip
-  lipschitzAnchored := h.lipschitzAnchored
 
 /-- **Assumption f.D0qLaB.X** of [cartis2022evaluation], §14.2.1 (and f.D0pLaB.X with `p` in
 place of `q`): f.D1qLaB.X (the anchored Lipschitz condition (14.2.9) and the bound (14.2.10) for
@@ -784,8 +775,8 @@ theorem lemma_14_2_2_arqp_anchored (hf : AssumptionD1qLaBX f X X₀ (x 0) 1 p L 
       P.η₁ * (Optimization.arqpKappaDmOf u P L p q *
         Optimization.finMin 1 (fun j => ε j ^ Optimization.arqpPiOf u p j) q) ≤
         f (x k) - f (x (k + 1)) :=
-  have hT := hf.toAnchored.toTop (hq.trans hqp)
-  Optimization.IsARqpRun.decrease hT.toLipschitzDerivsAnchored hT.one_le hf.subset
+  Optimization.IsARqpRun.decrease (hf.toLipschitzDerivsAnchored.mono (hq.trans hqp) le_rfl)
+    (hf.one_le_lip p (Finset.mem_Icc.2 ⟨hq.trans hqp, le_rfl⟩)) hf.subset
     (fun _ hy hfy => ⟨hy, hfy⟩) hq hqp hθς hε h hk hs hk1 hrad
 
 /-- **Lemma 14.2.3** of [cartis2022evaluation], ARqp-SC row under f.D1pLaB.X (with the anchor
@@ -796,9 +787,8 @@ theorem lemma_14_2_3_anchored (hf : AssumptionD1qLaBX f X X₀ (x 0) 1 p L B) (h
     (k : ℝ) ≤ (Optimization.successSet (fun j => P.η₁ ≤ Optimization.arqpRho f p x s σ j) k).card *
         (1 + |Real.log P.γ₁| / Real.log P.γ₂) +
       Real.log (Optimization.arSigmaMax P.toARParams (L p) / P.σ₀) / Real.log P.γ₂ :=
-  have hT := hf.toAnchored.toTop hp
   h.toIsARRun.le_succ_count hk
-    (Optimization.IsARqpRun.sigma_le_of_anchored hT.toLipschitzDerivsAnchored
+    (Optimization.IsARqpRun.sigma_le_of_anchored (hf.toLipschitzDerivsAnchored.mono hp le_rfl)
     hf.subset (fun _ hy hfy => ⟨hy, hfy⟩) h k hk).2
 
 /-- **Theorem 14.2.4** of [cartis2022evaluation], ARqp-SC row under f.bB.X and f.D1pLaB.X (with
@@ -825,9 +815,10 @@ theorem theorem_14_2_4_arqp_anchored {flow : ℝ} (hb : AssumptionBbX f X flow)
       (Optimization.derivEvalCount (fun k => P.η₁ ≤ Optimization.arqpRho f p x s σ k) kε : ℝ) ≤
         Optimization.kappaSARqpOf u P L p q * (f (x 0) - flow) /
           Optimization.finMin 1 (fun j => ε j ^ Optimization.arqpPiOf u p j) q + 2 :=
-  have hT := hf.toAnchored.toTop (hq.trans hqp)
-  Optimization.IsARqpRun.complexity hb hT.toLipschitzDerivsAnchored hT.one_le
-    hT.jet hf.subset
+  Optimization.IsARqpRun.complexity hb (hf.toLipschitzDerivsAnchored.mono (hq.trans hqp) le_rfl)
+    (hf.one_le_lip p (Finset.mem_Icc.2 ⟨hq.trans hqp, le_rfl⟩))
+    (hf.toLipschitzDerivsAnchored.norm_iteratedFDeriv_le_finMax fun j hj =>
+      zero_le_one.trans (hf.one_le_lip j hj)) hf.subset
     (fun _ hy hfy => ⟨hy, hfy⟩) hq hqp hσmin hθς hε hδ₀ h hrad
 
 end ARqp
@@ -840,7 +831,8 @@ The TRqIDA-SC, TRqEDA-SC, ARqpIDA-SC and ARqpEDA-SC rows of Lemmas 14.2.2–14.2
 Theorem 14.2.4 are instances of the library's analysis of the runs with a feasible set
 (`Optimization.IsTRqIDARun`, …, `Optimization.IsARqpEDARun`; `X = univ` gives the algorithms of
 Chapter 13) under `LipschitzDerivsAnchored`. Each row `N` is stated twice: `N` under f.D0qL
-(f.D0pL) on an open convex `C ⊇ X` (`Chapter13.AssumptionD0qLOn`, anchors `A = C`), and
+(f.D0pL) on an open convex `C ⊇ X` (`LipschitzDerivsAnchored f C C 0 q L` with `L_j ≥ 1`,
+anchors `A = C`), and
 `N_anchored` under the book's f.D0qLaB.X (f.D0pLaB.X) with the starting point as anchor
 (`AssumptionD0qLaBX`, anchors `𝓛_f(x₀)`).
 For the IDA algorithms, which have no termination rule, "before termination" reads
@@ -865,13 +857,14 @@ for a TRqIDA-SC run (`Optimization.IsTRqIDARun`) under f.D0qL on an open convex
 `C ⊇ X` and an admissible `κ_Δ` (`Optimization.IsTRKappaDelta`, `κ_δ = κ_Δ/2`), every successful
 iteration `k` (`k ∈ 𝒯`, `ρ_k ≥ η₁`) decreases `f` by at least
 `η₁ (ς κ_δ)^{q+1}/(2 q!) ε_min^{q+1}` (`π_j = q + 1`, as for TRq-SC). -/
-theorem lemma_14_2_2_trqida (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C)
+theorem lemma_14_2_2_trqida (hf : LipschitzDerivsAnchored f C C 0 P.q L)
+    (hL : ∀ j ≤ P.q, 1 ≤ L j) (hXC : X ⊆ C)
     (hrun : IsTRqIDARun f X κg P ε x₀ x Δ h D dd jk s acc)
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) (ordMax P.q κg) κΔ) {k : ℕ} (hk : ¬ acc k)
     (hρ : P.η₁ ≤ trqRatio f D x s jk k) :
     P.η₁ * (P.ς * (κΔ / 2)) ^ (P.q + 1) / (2 * P.q !) * epsMin P.q ε ^ (P.q + 1) ≤
       f (x k) - f (x (k + 1)) :=
-  (IsTRqIDARun.decrease_ge hf.toLipschitzDerivsAnchored hf.one_le hXC (fun _ hy _ => hXC hy) hrun
+  (IsTRqIDARun.decrease_ge hf hL hXC (fun _ hy _ => hXC hy) hrun
     hκΔ hk).2 hρ
 
 /-- **Lemma 14.2.2** of [cartis2022evaluation], TRqIDA-SC row under f.D0qLaB.X (with the anchor
@@ -895,7 +888,8 @@ up to the first iterate that is approximately optimal on `X` satisfies
 `κ_uns = 1 + log γ₃/|log γ₂|` and `κ_unc = |log(ς κ_δ ε_min/Δ₀)|/|log γ₂| + N_𝒜`, where
 `N_𝒜 = q(q+1)/|log γ_h| |log ε_min| + |log(κ_acc/κ_h)|/|log γ_h| + 1` bounds the number of
 accuracy-improving iterations. -/
-theorem lemma_14_2_3_trqida (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C)
+theorem lemma_14_2_3_trqida (hf : LipschitzDerivsAnchored f C C 0 P.q L)
+    (hL : ∀ j ≤ P.q, 1 ≤ L j) (hXC : X ⊆ C)
     (hrun : IsTRqIDARun f X κg P ε x₀ x Δ h D dd jk s acc)
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) (ordMax P.q κg) κΔ) {k : ℕ}
     (hk : ∀ j < k, ¬ trqIDATest f X P ε x Δ j) :
@@ -905,7 +899,7 @@ theorem lemma_14_2_3_trqida (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C)
         (P.q * (P.q + 1) / |Real.log P.γh| * |Real.log (epsMin P.q ε)| +
           |Real.log (trKappaAcc P κΔ (lipMax L P.q + ordMax P.q κg * P.κh) (ordMax P.q κg) /
             P.κh)| / |Real.log P.γh| + 1)) :=
-  IsTRqIDARun.le_card_succ hf.toLipschitzDerivsAnchored hf.one_le hXC (fun _ hy _ => hXC hy) hrun
+  IsTRqIDARun.le_card_succ hf hL hXC (fun _ hy _ => hXC hy) hrun
       hκΔ hk
 
 /-- **Lemma 14.2.3** of [cartis2022evaluation], TRqIDA-SC row under f.D0qLaB.X (with the anchor
@@ -931,7 +925,8 @@ TRqIDA-SC run has a first iterate `x_{k_ε} ∈ X` that is an `(ε, δ_ε)`-appr
 minimizer on `X` (`Optimization.trqIDATest`, `δ_ε = min(Δ_{k_ε}, ϑ) ∈ (0, 1]`), before which at
 most the numbers of function and derivative evaluations of Theorem 13.1.8 are made
 (`O(max_j ε_j^{-(q+1)})`). -/
-theorem theorem_14_2_4_trqida (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C) {flow : ℝ}
+theorem theorem_14_2_4_trqida (hf : LipschitzDerivsAnchored f C C 0 P.q L)
+    (hL : ∀ j ≤ P.q, 1 ≤ L j) (hXC : X ⊆ C) {flow : ℝ}
     (hb : ∀ y ∈ X, flow ≤ f y)
     (hrun : IsTRqIDARun f X κg P ε x₀ x Δ h D dd jk s acc)
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) (ordMax P.q κg) κΔ) :
@@ -948,8 +943,8 @@ theorem theorem_14_2_4_trqida (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C) 
           P.q * (P.q + 1) / |Real.log P.γh| * |Real.log (epsMin P.q ε)| +
           |Real.log (trKappaAcc P κΔ (lipMax L P.q + ordMax P.q κg * P.κh) (ordMax P.q κg) /
             P.κh)| / |Real.log P.γh| + 2 := by
-  obtain ⟨kε, h1, h2, h3, h4, h5⟩ := IsTRqIDARun.complexity hf.toLipschitzDerivsAnchored
-      hf.one_le hXC (fun _ hy _ => hXC hy) hb hrun hκΔ
+  obtain ⟨kε, h1, h2, h3, h4, h5⟩ := IsTRqIDARun.complexity hf
+      hL hXC (fun _ hy _ => hXC hy) hb hrun hκΔ
   exact ⟨kε, h1, hrun.mem kε, h2, h3, h4, h5⟩
 
 /-- **Theorem 14.2.4** of [cartis2022evaluation], TRqIDA-SC row under f.D0qLaB.X (with the anchor
@@ -992,14 +987,15 @@ variable {f : ℝⁿ → ℝ} {X C A X₀ : Set ℝⁿ} {P : TRqIDAParams} {ε :
 for a TRqEDA-SC run (`Optimization.IsTRqEDARun`) under f.D0qL on an open convex
 `C ⊇ X` and an admissible `κ_Δ` (`κ_{∇,max} = 1`, `κ_δ = κ_Δ/2`), every successful iteration `k`
 before termination decreases `f` by at least `η₁ (ς κ_δ)^{q+1}/(2 q!) ε_min^{q+1}`. -/
-theorem lemma_14_2_2_trqeda (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C)
+theorem lemma_14_2_2_trqeda (hf : LipschitzDerivsAnchored f C C 0 P.q L)
+    (hL : ∀ j ≤ P.q, 1 ≤ L j) (hXC : X ⊆ C)
     (hrun : IsTRqEDARun f X P ε x₀ x Δ h D dd jk s acc fx fxs h₀ R)
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) 1 κΔ) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ edaStopTR P ε D Δ h dd j) (ha : ¬ acc k)
     (hρ : P.η₁ ≤ edaRatio fx fxs (fun i => (D i).taylorDecrement (jk i) (s i)) k) :
     P.η₁ * (P.ς * (κΔ / 2)) ^ (P.q + 1) / (2 * P.q !) * epsMin P.q ε ^ (P.q + 1) ≤
       f (x k) - f (x (k + 1)) :=
-  (IsTRqEDARun.decrease_ge hf.toLipschitzDerivsAnchored hf.one_le hXC (fun _ hy _ => hXC hy) hrun
+  (IsTRqEDARun.decrease_ge hf hL hXC (fun _ hy _ => hXC hy) hrun
     hκΔ hk ha).2 hρ
 
 /-- **Lemma 14.2.2** of [cartis2022evaluation], TRqEDA-SC row under f.D0qLaB.X (with the anchor
@@ -1023,7 +1019,8 @@ a TRqEDA-SC run under f.D0qL on an open convex `C ⊇ X` and an admissible `κ_�
 `k ≤ κ_uns |𝒮_k| + κ_unc` (14.2.13) with `κ_uns = 1 + log γ₃/|log γ₂|` and
 `κ_unc = |log(ς κ_δ ε_min/Δ₀)|/|log γ₂| + N_𝒜`,
 `N_𝒜 = q(q+1)/|log γ_h| |log ε_min| + |log(κ_acc/κ_h)|/|log γ_h| + 1`. -/
-theorem lemma_14_2_3_trqeda (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C)
+theorem lemma_14_2_3_trqeda (hf : LipschitzDerivsAnchored f C C 0 P.q L)
+    (hL : ∀ j ≤ P.q, 1 ≤ L j) (hXC : X ⊆ C)
     (hrun : IsTRqEDARun f X P ε x₀ x Δ h D dd jk s acc fx fxs h₀ R)
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) 1 κΔ) {k : ℕ}
     (hk : ∀ j < k, ¬ edaStopTR P ε D Δ h dd j) :
@@ -1033,7 +1030,7 @@ theorem lemma_14_2_3_trqeda (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C)
       (|Real.log (P.ς * (κΔ / 2) * epsMin P.q ε / P.Δ₀)| / |Real.log P.γ₂| +
         (P.q * (P.q + 1) / |Real.log P.γh| * |Real.log (epsMin P.q ε)| +
           |Real.log (trKappaAcc P κΔ (lipMax L P.q + P.κh) 1 / P.κh)| / |Real.log P.γh| + 1)) :=
-  IsTRqEDARun.le_card_succ hf.toLipschitzDerivsAnchored hf.one_le hXC (fun _ hy _ => hXC hy) hrun
+  IsTRqEDARun.le_card_succ hf hL hXC (fun _ hy _ => hXC hy) hrun
       hκΔ hk
 
 /-- **Lemma 14.2.3** of [cartis2022evaluation], TRqEDA-SC row under f.D0qLaB.X (with the anchor
@@ -1058,7 +1055,8 @@ set): under f.bB.X, f.D0qL on an open convex `C ⊇ X` and for an admissible `κ
 (`κ_{∇,max} = 1`), every TRqEDA-SC run terminates at some `k_ε` with `x_{k_ε} ∈ X` an
 `(ε, δ_ε)`-approximate `q`-th order minimizer on `X`, `δ_ε = min(Δ_{k_ε}, ϑ) ∈ (0, 1]`, within
 the evaluation bounds of Theorem 13.3.4 (`O(max_j ε_j^{-(q+1)})`). -/
-theorem theorem_14_2_4_trqeda (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C) {flow : ℝ}
+theorem theorem_14_2_4_trqeda (hf : LipschitzDerivsAnchored f C C 0 P.q L)
+    (hL : ∀ j ≤ P.q, 1 ≤ L j) (hXC : X ⊆ C) {flow : ℝ}
     (hb : ∀ y ∈ X, flow ≤ f y)
     (hrun : IsTRqEDARun f X P ε x₀ x Δ h D dd jk s acc fx fxs h₀ R)
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) 1 κΔ) :
@@ -1078,8 +1076,8 @@ theorem theorem_14_2_4_trqeda (hf : AssumptionD0qLOn f C P.q L) (hXC : X ⊆ C) 
           P.q * (P.q + 1) / |Real.log P.γh| * |Real.log (epsMin P.q ε)| +
           |Real.log (trKappaAcc P κΔ (lipMax L P.q + P.κh) 1 / P.κh)| /
             |Real.log P.γh| + 2 := by
-  obtain ⟨kε, h1, h2, h3, h4, h5, h6⟩ := IsTRqEDARun.complexity hf.toLipschitzDerivsAnchored
-      hf.one_le hXC (fun _ hy _ => hXC hy) hb hrun hκΔ
+  obtain ⟨kε, h1, h2, h3, h4, h5, h6⟩ := IsTRqEDARun.complexity hf
+      hL hXC (fun _ hy _ => hXC hy) hb hrun hκΔ
   exact ⟨kε, h1, hrun.mem fun j hj => h1.2 j hj, h2, h3, h4, h5, h6⟩
 
 /-- **Theorem 14.2.4** of [cartis2022evaluation], TRqEDA-SC row under f.D0qLaB.X (with the anchor
@@ -1131,7 +1129,8 @@ approximately optimal on `X` decreases `f` by at least `½ η₁ κ_{Δm} min_j 
 (12.2.51)-type lower bounds at every order (`¬ u`), available for every `q` and `X`, with
 `π_j = j(p+1)/p` (`π_j = Optimization.arPiOf u p j`; the radii control of Theorem 13.1.19,
 `Optimization.RadiiControl`, is the mode `u = (q ≤ 2)`). -/
-theorem lemma_14_2_2_arqpida (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
+theorem lemma_14_2_2_arqpida (hf : LipschitzDerivsAnchored f C C 0 P.p L)
+    (hL : ∀ j ≤ P.p, 1 ≤ L j) (hXC : X ⊆ C)
     (hrun : IsARqpIDARun f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc) {k : ℕ}
     [Decidable u]
     (hrc : ARqpDARadiiControl u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc k)
@@ -1141,7 +1140,7 @@ theorem lemma_14_2_2_arqpida (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
         (arConstA P L (ordMax P.p κg)) (arKappaDelta1 P (lipMax L P.p + ordMax P.p κg * P.κh)
           (arqpIDASigmaMax P (L P.p) (ordMax P.p κg)))) / 2 *
         epsMin P.q (fun j => ε j ^ arPiOf u P.p j) ≤ f (x k) - f (x (k + 1)) :=
-  (IsARqpIDARun.decrease_ge hf.toLipschitzDerivsAnchored hf.one_le hXC (fun _ hy _ => hXC hy)
+  (IsARqpIDARun.decrease_ge hf hL hXC (fun _ hy _ => hXC hy)
     hrun hrc hk hρ hnot).2
 
 /-- **Lemma 14.2.2** of [cartis2022evaluation], ARqpIDA-SC row under f.D0pLaB.X (with the anchor
@@ -1169,7 +1168,8 @@ to the first iterate that is approximately optimal on `X` satisfies `k ≤ κ_un
 p(q+1)/|log γ_h| |log ε_min| + |log(κ_acc/κ_h)|/|log γ_h| + 1`. The radii control
 (`Optimization.ARqpDARadiiControl u`) may be in either mode (unit radii, or the (12.2.51)-type lower
 bounds at every order). -/
-theorem lemma_14_2_3_arqpida (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
+theorem lemma_14_2_3_arqpida (hf : LipschitzDerivsAnchored f C C 0 P.p L)
+    (hL : ∀ j ≤ P.p, 1 ≤ L j) (hXC : X ⊆ C)
     (hrun : IsARqpIDARun f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
     (hrc : ∀ i, ARqpDARadiiControl u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i) {k : ℕ}
     (hk : ∀ j < k, ¬ arqpIDATest f X P ε x j) :
@@ -1181,7 +1181,7 @@ theorem lemma_14_2_3_arqpida (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
               (arqpIDASigmaMax P (L P.p) (ordMax P.p κg))) (lipMax L P.p + ordMax P.p κg * P.κh)
               (arqpIDASigmaMax P (L P.p) (ordMax P.p κg)) (ordMax P.p κg) / P.κh)| /
             |Real.log P.γh| + 1)) :=
-  IsARqpIDARun.le_card_succ hf.toLipschitzDerivsAnchored hf.one_le hXC (fun _ hy _ => hXC hy)
+  IsARqpIDARun.le_card_succ hf hL hXC (fun _ hy _ => hXC hy)
       hrun hrc hk
 
 /-- **Lemma 14.2.3** of [cartis2022evaluation], ARqpIDA-SC row under f.D0pLaB.X (with the anchor
@@ -1215,7 +1215,8 @@ Step 2 guarantees for `X = ℝⁿ` with `q ≤ 2` or for `q = 1` with `X` convex
 `π_j = (p+1)/(p-j+1)`, or the (12.2.51)-type lower bounds at every order (`¬ u`), available for
 every `q` and `X`, with `π_j = j(p+1)/p` (`π_j = Optimization.arPiOf u p j`; the radii control of
 Theorem 13.1.19, `Optimization.RadiiControl`, is the mode `u = (q ≤ 2)`). -/
-theorem theorem_14_2_4_arqpida (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C) {flow : ℝ}
+theorem theorem_14_2_4_arqpida (hf : LipschitzDerivsAnchored f C C 0 P.p L)
+    (hL : ∀ j ≤ P.p, 1 ≤ L j) (hXC : X ⊆ C) {flow : ℝ}
     (hb : ∀ y ∈ X, flow ≤ f y)
     (hrun : IsARqpIDARun f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
     [Decidable u]
@@ -1240,7 +1241,7 @@ theorem theorem_14_2_4_arqpida (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
               (arqpIDASigmaMax P (L P.p) (ordMax P.p κg))) (lipMax L P.p + ordMax P.p κg * P.κh)
               (arqpIDASigmaMax P (L P.p) (ordMax P.p κg)) (ordMax P.p κg) / P.κh)| /
             |Real.log P.γh| + 3 :=
-  IsARqpIDARun.complexity_of_radiiControl hf.toLipschitzDerivsAnchored hf.one_le hXC
+  IsARqpIDARun.complexity_of_radiiControl hf hL hXC
       (fun _ hy _ => hXC hy) hb hrun hrc
 
 /-- **Theorem 14.2.4** of [cartis2022evaluation], ARqpIDA-SC row under f.D0pLaB.X (with the anchor
@@ -1286,7 +1287,8 @@ unit radii, and for `q ≤ 2` the bound (13.1.57) on the model transfers to unit
 (`Optimization.IsARqpIDARun.decrease_ge_unit`). Hence
 the mode-`False` bound of `theorem_14_2_4_arqpida`, of order `ε^{-2(p+1)/p}`, is not sharp for
 `q = 2 < p` on `ℝⁿ` (it exceeds `ε^{-(p+1)/(p-1)}`). -/
-theorem theorem_14_2_4_arqpida_le_two (hf : AssumptionD0pLOn f univ P.p L) {flow : ℝ}
+theorem theorem_14_2_4_arqpida_le_two (hf : LipschitzDerivsAnchored f univ univ 0 P.p L)
+    (hL : ∀ j ≤ P.p, 1 ≤ L j) {flow : ℝ}
     (hb : ∀ y, flow ≤ f y) (hq2 : P.q ≤ 2)
     (hrun : IsARqpIDARun f univ κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
     (hrc : ∀ i, ARqpDARadiiControl u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i) :
@@ -1310,8 +1312,8 @@ theorem theorem_14_2_4_arqpida_le_two (hf : AssumptionD0pLOn f univ P.p L) {flow
               (arqpIDASigmaMax P (L P.p) (ordMax P.p κg))) (lipMax L P.p + ordMax P.p κg * P.κh)
               (arqpIDASigmaMax P (L P.p) (ordMax P.p κg)) (ordMax P.p κg) / P.κh)| /
             |Real.log P.γh| + 3 := by
-  have hLb := hrun.one_le_Lbar hf.one_le
-  have hA := one_le_arConstA (hf.one_le _ le_rfl) hrun.kappaMax_nonneg (P := P) (L := L)
+  have hLb := hrun.one_le_Lbar hL
+  have hA := one_le_arConstA (hL _ le_rfl) hrun.kappaMax_nonneg (P := P) (L := L)
   have hC := arStepConstOf_pos (u := True) (q := P.q) (p := P.p) (sub_pos.2 P.θ_lt_one)
     (zero_lt_one.trans_le hA) (arKappaDelta1_pos (Lb := lipMax L P.p + ordMax P.p κg * P.κh)
       (σ := arqpIDASigmaMax P (L P.p) (ordMax P.p κg)) (P := P) (by linarith))
@@ -1322,10 +1324,10 @@ theorem theorem_14_2_4_arqpida_le_two (hf : AssumptionD0pLOn f univ P.p L) {flow
         (arqpIDASigmaMax P (L P.p) (ordMax P.p κg)))) / 2 *
       epsMin P.q (fun j => ε j ^ arPiOf True P.p j) := by
     have := P.η₁_pos; have := P.σmin_pos; positivity
-  obtain ⟨kε, hk, h1, h2⟩ := IsARqpIDARun.complexity hf.toLipschitzDerivsAnchored hf.one_le
+  obtain ⟨kε, hk, h1, h2⟩ := IsARqpIDARun.complexity hf hL
       subset_rfl
     (fun _ hy _ => hy) (fun y _ => hb y) hrun hrc hc fun k hk hρ hnot =>
-      IsARqpIDARun.decrease_ge_unit hf.toLipschitzDerivsAnchored hf.one_le hq2 hrun hk hρ hnot
+      IsARqpIDARun.decrease_ge_unit hf hL hq2 hrun hk hρ hnot
   exact ⟨kε, hk, h1, h2⟩
 
 end ARqpIDASC
@@ -1350,7 +1352,8 @@ Step 2 guarantees for `X = ℝⁿ` with `q ≤ 2` or for `q = 1` with `X` convex
 `π_j = (p+1)/(p-j+1)`, or the (12.2.51)-type lower bounds at every order (`¬ u`), available for
 every `q` and `X`, with `π_j = j(p+1)/p` (`π_j = Optimization.arPiOf u p j`; the radii control of
 Theorem 13.1.19, `Optimization.RadiiControl`, is the mode `u = (q ≤ 2)`). -/
-theorem lemma_14_2_2_arqpeda (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
+theorem lemma_14_2_2_arqpeda (hf : LipschitzDerivsAnchored f C C 0 P.p L)
+    (hL : ∀ j ≤ P.p, 1 ≤ L j) (hXC : X ⊆ C)
     (hrun : IsARqpEDARun f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
     {k : ℕ} [Decidable u] (hrc : ARqpDARadiiControl u P ε (lipMax L P.p + P.κh) σ δs s acc k)
     (hθ : P.θ < P.ς / 2)
@@ -1360,7 +1363,7 @@ theorem lemma_14_2_2_arqpeda (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
     P.η₁ * (P.σmin / ((P.p + 1)! : ℝ) * arStepConstOf u P.q P.p (P.ς / 2 - P.θ)
         (arEDAConstA P L) (arKappaDelta1 P (lipMax L P.p + P.κh) (arqpIDASigmaMax P (L P.p) 1))) /
         2 * epsMin P.q (fun j => ε j ^ arPiOf u P.p j) ≤ f (x k) - f (x (k + 1)) :=
-  (IsARqpEDARun.decrease_ge hf.toLipschitzDerivsAnchored hf.one_le hXC (fun _ hy _ => hXC hy)
+  (IsARqpEDARun.decrease_ge hf hL hXC (fun _ hy _ => hXC hy)
     hrun hrc hθ hk ha hρ hgood).2
 
 /-- **Lemma 14.2.2** of [cartis2022evaluation], ARqpEDA-SC row under f.D0pLaB.X (with the anchor
@@ -1387,7 +1390,8 @@ reached (up to and including termination) satisfies `k ≤ κ_uns |𝒮_k| + κ_
 = 1 + |log γ₁|/log γ₂` and `κ_unc = log(σ_max/σ₀)/log γ₂ + N_𝒜`, `N_𝒜 = p(q+1)/|log γ_h| |log ε_min|
 + |log(κ_acc/κ_h)|/|log γ_h| + 1`. The radii control (`Optimization.ARqpDARadiiControl u`) may be in
 either mode (unit radii, or the (12.2.51)-type lower bounds at every order). -/
-theorem lemma_14_2_3_arqpeda (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
+theorem lemma_14_2_3_arqpeda (hf : LipschitzDerivsAnchored f C C 0 P.p L)
+    (hL : ∀ j ≤ P.p, 1 ≤ L j) (hXC : X ⊆ C)
     (hrun : IsARqpEDARun f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
     (hrc : ∀ i, ARqpDARadiiControl u P ε (lipMax L P.p + P.κh) σ δs s acc i) {k : ℕ}
     (hk : ∀ j < k, ¬ edaStopAR P ε D δ₁ h dd j) :
@@ -1399,7 +1403,7 @@ theorem lemma_14_2_3_arqpeda (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
           |Real.log (arKappaAcc P (arKappaDelta1 P (lipMax L P.p + P.κh)
             (arqpIDASigmaMax P (L P.p) 1)) (lipMax L P.p + P.κh) (arqpIDASigmaMax P (L P.p) 1) 1 /
             P.κh)| / |Real.log P.γh| + 1)) :=
-  IsARqpEDARun.le_card_succ hf.toLipschitzDerivsAnchored hf.one_le hXC (fun _ hy _ => hXC hy)
+  IsARqpEDARun.le_card_succ hf hL hXC (fun _ hy _ => hXC hy)
       hrun hrc hk
 
 /-- **Lemma 14.2.3** of [cartis2022evaluation], ARqpEDA-SC row under f.D0pLaB.X (with the anchor
@@ -1434,7 +1438,8 @@ decrease of Lemma 14.2.2, `M = p(q+1)/|log γ_h| |log ε_min| + |log(κ_acc/κ_h
 (12.2.51)-type lower bounds at every order (`¬ u`), available for every `q` and `X`, with
 `π_j = j(p+1)/p` (`π_j = Optimization.arPiOf u p j`; the radii control of Theorem 13.1.19,
 `Optimization.RadiiControl`, is the mode `u = (q ≤ 2)`). -/
-theorem theorem_14_2_4_arqpeda (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C) {flow : ℝ}
+theorem theorem_14_2_4_arqpeda (hf : LipschitzDerivsAnchored f C C 0 P.p L)
+    (hL : ∀ j ≤ P.p, 1 ≤ L j) (hXC : X ⊆ C) {flow : ℝ}
     (hb : ∀ y ∈ X, flow ≤ f y)
     (hrun : IsARqpEDARun f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
     [Decidable u] (hrc : ∀ i, ARqpDARadiiControl u P ε (lipMax L P.p + P.κh) σ δs s acc i)
@@ -1464,7 +1469,7 @@ theorem theorem_14_2_4_arqpeda (hf : AssumptionD0pLOn f C P.p L) (hXC : X ⊆ C)
             |Real.log (arKappaAcc P (arKappaDelta1 P (lipMax L P.p + P.κh)
               (arqpIDASigmaMax P (L P.p) 1)) (lipMax L P.p + P.κh) (arqpIDASigmaMax P (L P.p) 1) 1 /
               P.κh)| / |Real.log P.γh| + 1) + 2 :=
-  IsARqpEDARun.complexity_of_radiiControl hf.toLipschitzDerivsAnchored hf.one_le hXC
+  IsARqpEDARun.complexity_of_radiiControl hf hL hXC
       (fun _ hy _ => hXC hy) hb hrun hrc hθ
 
 /-- **Theorem 14.2.4** of [cartis2022evaluation], ARqpEDA-SC row under f.D0pLaB.X (with the anchor

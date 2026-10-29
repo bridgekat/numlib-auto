@@ -50,3 +50,12 @@ theorem iteratedFDerivLipschitzOn_iff_norm_le (hCo : IsOpen C) (hC : Convex ℝ 
     IteratedFDerivLipschitzOn f p L C ↔ ∀ x ∈ C, ‖iteratedFDeriv ℝ (p + 1) f x‖ ≤ L :=
   ⟨fun hL _ hx => norm_iteratedFDeriv_succ_le_of_lipschitzOn hCo hL0 hL hx,
     iteratedFDerivLipschitzOn_of_norm_le hC hf⟩
+
+/-- For a function of one real variable, a Lipschitz `j`-th Fréchet derivative is a Lipschitz
+`j`-th derivative: `|g^{(j)}(s) - g^{(j)}(t)| ≤ L |s - t|` on `C`. -/
+theorem IteratedFDerivLipschitzOn.abs_iteratedDeriv_sub_le {g : ℝ → ℝ} {j : ℕ} {L : ℝ}
+    {C : Set ℝ} (h : IteratedFDerivLipschitzOn g j L C) {s t : ℝ} (hs : s ∈ C) (ht : t ∈ C) :
+    |iteratedDeriv j g s - iteratedDeriv j g t| ≤ L * |s - t| := by
+  have := (iteratedFDerivLipschitzOn_iff.1 h) s hs t ht
+  rwa [iteratedFDeriv_eq_equiv_comp, Function.comp_apply, Function.comp_apply, ← map_sub,
+    LinearIsometryEquiv.norm_map, Real.norm_eq_abs, Real.norm_eq_abs] at this

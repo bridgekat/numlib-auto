@@ -1,0 +1,26 @@
+namespace = "Constrained"
+
+[[node]]
+id = "halfSqNorm"
+source = "Cartis–Gould–Toint, (14.3.16)"
+
+[[node]]
+id = "halfSqNorm_le_halfSqNorm_iff"
+
+[[node]]
+id = "taylorMeasure_one_targetMerit_of_eq"
+source = "Cartis–Gould–Toint, Lemma 14.3.5 (proof)"
+
+[[node]]
+id = "taylorDecrement_two_targetMerit_of_eq"
+
+[[node]]
+id = "taylorDecrement_three_targetMerit_of_eq"
+
+[[node]]
+id = "taylorMeasure_halfSqNorm_two_le_of_eq"
+source = "Cartis–Gould–Toint, Lemma 14.3.5 (proof)"
+
+[[node]]
+id = "taylorMeasure_halfSqNorm_three_le_of_eq"
+source = "Cartis–Gould–Toint, Lemma 14.3.5 (proof)"

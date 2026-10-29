@@ -77,6 +77,29 @@ abbrev arqpStop (f : E → ℝ) (P : ARqpParams) (p q : ℕ) (ε : ℕ → ℝ) 
 noncomputable abbrev arqpRho (f : E → ℝ) (p : ℕ) (x s : ℕ → E) (σ : ℕ → ℝ) (k : ℕ) : ℝ :=
   arqpRatio f (arqpData f p x σ) x s k
 
+@[simp] theorem arqpData_dec (f : E → ℝ) (p : ℕ) (x : ℕ → E) (σ : ℕ → ℝ) (k : ℕ) :
+    (arqpData f p x σ k).dec = fun j => (ftaylorSeries ℝ f (x k)).taylorDecrement j :=
+  rfl
+
+@[simp] theorem arqpData_model (f : E → ℝ) (p : ℕ) (x : ℕ → E) (σ : ℕ → ℝ) (k : ℕ) :
+    (arqpData f p x σ k).model = regularizedModel (ftaylorSeries ℝ f (x k)) p (σ k) :=
+  rfl
+
+@[simp] theorem arqpData_modelDec (f : E → ℝ) (p : ℕ) (x : ℕ → E) (σ : ℕ → ℝ) (k : ℕ) :
+    (arqpData f p x σ k).modelDec = fun j t =>
+      (ftaylorSeries ℝ (regularizedModel (ftaylorSeries ℝ f (x k)) p (σ k)) t).taylorDecrement j :=
+  rfl
+
+@[simp] theorem arqpData_pred (f : E → ℝ) (p : ℕ) (x : ℕ → E) (σ : ℕ → ℝ) (k : ℕ) :
+    (arqpData f p x σ k).pred = (ftaylorSeries ℝ f (x k)).taylorDecrement p :=
+  rfl
+
+/-- The ratio of ARqp: `ρ_k = (f(x_k) - f(x_k + s_k))/ΔT_{f,p}(x_k, s_k)`. -/
+theorem arqpRho_eq (f : E → ℝ) (p : ℕ) (x s : ℕ → E) (σ : ℕ → ℝ) (k : ℕ) :
+    arqpRho f p x s σ k = (f (x k) - f (x k + s k)) /
+      (ftaylorSeries ℝ f (x k)).taylorDecrement p (s k) :=
+  rfl
+
 /-- The radius constant `κ_δ(σ) = ς θ/(8 (3 L_f + σ))` of Lemma 12.2.9 ([cartis2022evaluation],
 (12.2.45)); `κ_{δ,min} = κ_δ(σ_max)` ((12.2.51)). -/
 noncomputable def arqpKappaDelta (P : ARqpParams) (Lf σ : ℝ) : ℝ :=
@@ -206,6 +229,48 @@ theorem four_thirds_le_arqpPiOf_one (unit : Prop) [Decidable unit] {p : ℕ} (hp
   rw [le_div_iff₀ (by linarith)]
   linarith
 
+/-- The exponents of the lower-bound radii mode: `1 < j(p+1)/p ≤ q(p+1)/p` for `j ∈ [1, q]`. -/
+theorem arqpPiOf_false_mem {p q j : ℕ} (hp : 1 ≤ p) (hj : j ∈ Finset.Icc 1 q) :
+    1 < arqpPiOf False p j ∧ arqpPiOf False p j ≤ arqpPiOf False p q := by
+  rw [arqpPiOf_of_neg not_false, arqpPiOf_of_neg not_false]
+  have hp0 : (0 : ℝ) < p := by exact_mod_cast hp
+  have hj1 : (1 : ℝ) ≤ j := by exact_mod_cast (Finset.mem_Icc.1 hj).1
+  have hjq : (j : ℝ) ≤ q := by exact_mod_cast (Finset.mem_Icc.1 hj).2
+  refine ⟨by rw [lt_div_iff₀ hp0]; nlinarith, by gcongr⟩
+
+/-- The exponent of order `p` of the lower-bound radii mode is `p(p+1)/p = p + 1`. -/
+theorem arqpPiOf_false_self {p : ℕ} (hp : 1 ≤ p) : arqpPiOf False p p = (p : ℝ) + 1 := by
+  rw [arqpPiOf_of_neg not_false]
+  exact mul_div_cancel_left₀ _ (Nat.cast_ne_zero.2 (by omega))
+
+/-- The unit-radius exponents: `1 < (p+1)/(p-j+1) ≤ (p+1)/(p-q+1)` for `j ∈ [1, q]`, `q ≤ p`. -/
+theorem arqpPiOf_true_mem_Icc {p q j : ℕ} (hqp : q ≤ p) (hj : j ∈ Finset.Icc 1 q) :
+    1 < arqpPiOf True p j ∧ arqpPiOf True p j ≤ arqpPiOf True p q := by
+  rw [arqpPiOf_of_pos trivial, arqpPiOf_of_pos trivial]
+  obtain ⟨hj1, hjq⟩ := Finset.mem_Icc.1 hj
+  have h0 : (0 : ℝ) < ((p - j + 1 : ℕ) : ℝ) := by positivity
+  have h0' : (0 : ℝ) < ((p - q + 1 : ℕ) : ℝ) := by positivity
+  have h1 : ((p - j + 1 : ℕ) : ℝ) < ((p + 1 : ℕ) : ℝ) := by exact_mod_cast (by omega)
+  have h2 : ((p - q + 1 : ℕ) : ℝ) ≤ ((p - j + 1 : ℕ) : ℝ) := by exact_mod_cast (by omega)
+  exact ⟨(one_lt_div h0).2 h1, div_le_div_of_nonneg_left (by positivity) h0' h2⟩
+
+/-- For `q = p ≤ 2` the unit-radius exponents `(p+1)/(p-j+1)` are those of the lower-bound mode,
+`j(p+1)/p`. -/
+theorem arqpPiOf_true_eq_false {q j : ℕ} (hq2 : q ≤ 2) (hj : j ∈ Finset.Icc 1 q) :
+    arqpPiOf True q j = arqpPiOf False q j := by
+  rw [arqpPiOf_of_pos trivial, arqpPiOf_of_neg not_false]
+  obtain ⟨hj1, hjq⟩ := Finset.mem_Icc.1 hj
+  interval_cases q <;> interval_cases j <;> norm_num
+
+/-- The natural powers `ε_j^{j+1}` as real powers. -/
+theorem finMin_pow_succ_eq_rpow (ε : ℕ → ℝ) (q : ℕ) :
+    finMin 1 (fun j => ε j ^ (j + 1)) q = finMin 1 (fun j => ε j ^ ((j : ℝ) + 1)) q := by
+  congr 1
+  funext j
+  rw [← Real.rpow_natCast]
+  push_cast
+  rfl
+
 theorem arqpPiOf_nonneg (u : Prop) [Decidable u] (p j : ℕ) : 0 ≤ arqpPiOf u p j := by
   unfold arqpPiOf
   split_ifs <;> positivity
@@ -228,29 +293,71 @@ theorem arqpKappaDmOf_nonneg {P : ARqpParams} {L : ℕ → ℝ} {p q : ℕ} (u :
   unfold arqpKappaDmOf
   split_ifs <;> positivity
 
+/-- The constant `κ_uns = 1 + |log γ₁|/log γ₂` of [cartis2022evaluation], Lemmas 2.4.1 and
+14.2.3: the number of iterations of an adaptive-regularization run is at most `κ_uns` times the
+number of successful ones plus a term in `log(σ_max/σ₀)`. -/
+noncomputable def arqpKappaUns (P : ARqpParams) : ℝ :=
+  1 + |Real.log P.γ₁| / Real.log P.γ₂
+
+theorem arqpKappaUns_eq (P : ARqpParams) :
+    arqpKappaUns P = 1 + |Real.log P.γ₁| / Real.log P.γ₂ := rfl
+
+theorem one_le_arqpKappaUns {P : ARqpParams} : 1 ≤ arqpKappaUns P := by
+  rw [arqpKappaUns_eq]
+  have := P.log_γ₂_pos
+  have : 0 ≤ |Real.log P.γ₁| / Real.log P.γ₂ := by positivity
+  linarith
+
+theorem arqpKappaUns_nonneg {P : ARqpParams} : 0 ≤ arqpKappaUns P :=
+  zero_le_one.trans one_le_arqpKappaUns
+
 /-- The constant `κ^s = 1/(η₁ κ_{Δm})` of Theorem 12.2.14 in radii mode `u`
 (`κ_{Δm} = arqpKappaDmOf u`; `kappaSARqp` is the mode `u = (q ≤ 2)`). -/
 noncomputable def kappaSARqpOf (u : Prop) [Decidable u] (P : ARqpParams) (L : ℕ → ℝ)
     (p q : ℕ) : ℝ :=
   1 / (P.η₁ * arqpKappaDmOf u P L p q)
 
-/-- The constant `κ^a = κ^s (1 + |log γ₁|/log γ₂)` of Theorem 12.2.14 in radii mode `u`
+/-- The constant `κ^a = κ^s κ_uns` of Theorem 12.2.14 in radii mode `u`
 (`kappaAARqp` is the mode `u = (q ≤ 2)`). -/
 noncomputable def kappaAARqpOf (u : Prop) [Decidable u] (P : ARqpParams) (L : ℕ → ℝ)
     (p q : ℕ) : ℝ :=
-  kappaSARqpOf u P L p q * (1 + |Real.log P.γ₁| / Real.log P.γ₂)
+  kappaSARqpOf u P L p q * arqpKappaUns P
 
 /-- The constant `κ^c_{ARqp} = (|log γ₁| + log(σ_max/σ₀))/log γ₂ + 2` of Theorem 12.2.14. -/
 noncomputable def kappaCARqp (P : ARqpParams) (L : ℕ → ℝ) (p : ℕ) : ℝ :=
   (|Real.log P.γ₁| + Real.log (arSigmaMax P.toARParams (L p) / P.σ₀)) / Real.log P.γ₂ + 2
 
+theorem kappaSARqpOf_def (u : Prop) [Decidable u] (P : ARqpParams) (L : ℕ → ℝ) (p q : ℕ) :
+    kappaSARqpOf u P L p q = 1 / (P.η₁ * arqpKappaDmOf u P L p q) := rfl
+
 theorem kappaAARqpOf_def (u : Prop) [Decidable u] (P : ARqpParams) (L : ℕ → ℝ) (p q : ℕ) :
-    kappaAARqpOf u P L p q = kappaSARqpOf u P L p q * (1 + |Real.log P.γ₁| / Real.log P.γ₂) := rfl
+    kappaAARqpOf u P L p q = kappaSARqpOf u P L p q * arqpKappaUns P := rfl
 
 theorem kappaCARqp_def (P : ARqpParams) (L : ℕ → ℝ) (p : ℕ) :
     kappaCARqp P L p =
       (|Real.log P.γ₁| + Real.log (arSigmaMax P.toARParams (L p) / P.σ₀)) / Real.log P.γ₂ + 2 :=
   rfl
+
+/-- The jet bounds of the ARqp analysis from anchored Lipschitz derivatives of orders `[1, p]`:
+`‖∇^j f(x)‖ ≤ max(1, L_1, …, L_p)` for `j ∈ [2, p]` at the anchors, if the constants are
+nonnegative. -/
+theorem _root_.LipschitzDerivsAnchored.norm_iteratedFDeriv_le_finMax {f : E → ℝ} {C A : Set E}
+    {p : ℕ} {L : ℕ → ℝ} (h : LipschitzDerivsAnchored f C A 1 p L)
+    (hL : ∀ j ∈ Finset.Icc 1 p, 0 ≤ L j) :
+    ∀ j ∈ Finset.Icc 2 p, ∀ x ∈ A, ‖iteratedFDeriv ℝ j f x‖ ≤ finMax 1 L p := by
+  intro j hj x hx
+  have hj' : j - 1 ∈ Finset.Icc 1 p := Finset.mem_Icc.2
+    ⟨by have := (Finset.mem_Icc.1 hj).1; omega, by have := (Finset.mem_Icc.1 hj).2; omega⟩
+  have := h.norm_iteratedFDeriv_le hj' (hL _ hj') hx
+  rw [Nat.sub_add_cancel (by have := (Finset.mem_Icc.1 hj).1; omega)] at this
+  exact this.trans (le_finMax hj')
+
+theorem kappaCARqp_nonneg (P : ARqpParams) (L : ℕ → ℝ) (p : ℕ) : 0 ≤ kappaCARqp P L p := by
+  rw [kappaCARqp_def]
+  have := P.log_γ₂_pos
+  have : 0 ≤ Real.log (arSigmaMax P.toARParams (L p) / P.σ₀) :=
+    Real.log_nonneg ((one_le_div P.σ₀_pos).2 (σ₀_le_arSigmaMax _ _))
+  positivity
 
 theorem arqpKappaDmOf_pos {P : ARqpParams} {L : ℕ → ℝ} {p q : ℕ} (u : Prop) [Decidable u]
     (hσmin : 0 < P.σmin) (hθς : P.θ < P.ς) (hL : 1 ≤ L p) : 0 < arqpKappaDmOf u P L p q := by
@@ -703,6 +810,45 @@ theorem IsARqpRun.decrease (hf : LipschitzDerivsAnchored f C A p p L) (hL : 1 �
     (pred := fun k => (ftaylorSeries ℝ f (x k)).taylorDecrement p (s k)) hk rfl hpos hs).2
   exact (mul_le_mul_of_nonneg_left hdec P.η₁_pos.le).trans this
 
+/-- **No Step-2 termination for `q ≤ 2`** ([cartis2022evaluation], Lemma 12.2.10, first part):
+at the first termination index `k` of an unconstrained ARqp run with exact data, `q ≤ 2`, `q ≤ p`,
+`ε ∈ (0, 1]^q`, `δ₀ ∈ (0, 1]^q` and `f` of class `C^p` at `x_k`, the Step-1 test holds. Otherwise
+`0` minimizes the model, so its measures of orders `j ≤ 2` vanish at `0`, contradicting the failed
+test. -/
+theorem IsARqpRun.arqpStop₁_of_isFirstHit_of_le_two
+    (h : IsARqpRun f univ P q ε δ₀ (arqpData f p x σ) x s σ δ δs d dm) {k : ℕ}
+    (hfk : ContDiffAt ℝ p f (x k)) (hqp : q ≤ p) (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1)
+    (hδ₀ : ∀ j ∈ Finset.Icc 1 q, 0 < δ₀ j ∧ δ₀ j ≤ 1)
+    (hk : IsFirstHit (arqpStop f P p q ε x s σ δ d) k) (hq2 : q ≤ 2) :
+    arqpStop₁ P q ε (arqpData f p x σ) δ d k := by
+  by_contra h1
+  have hstep := h.step hk.2 h1
+  have h2 : arqpStop₂ (arqpData f p x σ) s k := hk.1.resolve_left h1
+  have hU : ∀ y : E, {e : E | y + e ∈ (univ : Set E)} = univ := fun y => by ext; simp
+  have hmin := hstep.isMinOn_of_eq h2
+  rw [hU] at hmin
+  set m := regularizedModel (ftaylorSeries ℝ f (x k)) p (σ k)
+  obtain ⟨j, hj, hlt, -⟩ := exists_lt_of_not_measureTestPasses h1
+  have hjp : j ≤ p := (Finset.mem_Icc.1 hj).2.trans hqp
+  have hw := h.witness k hk.2 j hj
+  rw [hU] at hw
+  have hδk := h.delta_mem hδ₀ k hk.2 j hj
+  have hcd : ContDiffAt ℝ j m 0 :=
+    (contDiff_regularizedModel (D := ftaylorSeries ℝ f (x k))).contDiffAt.of_le
+      (by exact_mod_cast hjp)
+  have hφ := taylorMeasure_eq_zero_of_isLocalMin hcd (hmin.isLocalMin univ_mem)
+    (Finset.mem_Icc.2 ⟨(Finset.mem_Icc.1 hj).1, (Finset.mem_Icc.1 hj).2.trans hq2⟩)
+    hδk.1.le
+  rw [taylorMeasure_regularizedModel_zero hfk (σ k) hjp] at hφ
+  have := taylorDecrement_le_taylorMeasure (ftaylorSeries ℝ f (x k)) j hw.1
+  rw [hφ] at this
+  have := P.ς_pos
+  have := (hε j hj).1
+  have : 0 ≤ P.ς * ε j * δ k j ^ j / j ! := by have := hδk.1; positivity
+  change P.ς * ε j * δ k j ^ j / j ! <
+    (ftaylorSeries ℝ f (x k)).taylorDecrement j (d k j) at hlt
+  linarith
+
 /-- The radii of an ARqp run stay equal to `1` at the orders `j ∈ [1:q]` if they start at `1`
 and every step returns radii `1` there (as Lemma 12.2.9 allows for `q ≤ 2`). -/
 theorem IsARqpRun.delta_eq_one (h : IsARqpRun f X P q ε δ₀ (arqpData f p x σ) x s σ δ δs d dm)
@@ -761,7 +907,7 @@ theorem IsARqpRun.exists_isFirstHit_of_anchored {flow : ℝ} (hb : ∀ y ∈ X, 
       (fun h1 => hk (k + 1) le_rfl (Or.inl h1)) (hrad k hk hs)).2)
   have hlog := P.toARParams.log_γ₂_pos
   refine ⟨kε, hk, hF.trans_eq ?_, hD.trans_eq ?_⟩
-  · rw [kappaAARqpOf, kappaSARqpOf, kappaCARqp]
+  · rw [kappaAARqpOf, kappaSARqpOf, kappaCARqp, arqpKappaUns]
     field_simp
   · rw [kappaSARqpOf]
     field_simp

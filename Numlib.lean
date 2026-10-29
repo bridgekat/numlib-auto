@@ -699,6 +699,7 @@ import Numlib.Optimization.Composite.TaylorModel
 import Numlib.Optimization.ConjugateGradient
 import Numlib.Optimization.Constrained
 import Numlib.Optimization.Constrained.SecondOrder
+import Numlib.Optimization.Constrained.TargetMeritTaylor
 import Numlib.Optimization.Constrained.TargetResidual
 import Numlib.Optimization.Constrained.TwoPhase
 import Numlib.Optimization.Constrained.TwoPhase.Basic
@@ -714,6 +715,7 @@ import Numlib.Optimization.ModelBased.ARpRun
 import Numlib.Optimization.ModelBased.ConvexConstrained
 import Numlib.Optimization.ModelBased.HighOrder.ARqp
 import Numlib.Optimization.ModelBased.HighOrder.ARqpC
+import Numlib.Optimization.ModelBased.HighOrder.ARqpCCall
 import Numlib.Optimization.ModelBased.HighOrder.ARqpCComplexity
 import Numlib.Optimization.ModelBased.HighOrder.ARqpComplexity
 import Numlib.Optimization.ModelBased.HighOrder.ARqpDetailedStep

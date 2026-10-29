@@ -127,11 +127,3 @@ source = "Cartis–Gould–Toint, Chapter 13"
 [[node]]
 id = "exists_algorithm_13_1_2_exact"
 source = "Cartis–Gould–Toint, Chapter 13"
-
-[[node]]
-id = "AssumptionD0qLOn"
-source = "Cartis–Gould–Toint, Assumption f.D0qL on a set containing X (§14.2, f.D0qLaB.X)"
-
-[[node]]
-id = "AssumptionD0pLOn"
-source = "Cartis–Gould–Toint, Assumption f.D0pL on a set containing X (§14.2, f.D0pLaB.X)"

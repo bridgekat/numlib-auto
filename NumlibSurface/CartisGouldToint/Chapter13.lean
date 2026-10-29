@@ -15,7 +15,7 @@ complexity of TRq and ARqp. This module imports the section modules and adds not
 
 * §13.1, `Chapter13.Section01`: TRqIDA (Algorithm 13.1.1, `algorithm_13_1_1`), ARqpIDA
   (Algorithm 13.1.2, `algorithm_13_1_2`); assumptions f.D0qL, f.D0pL (`AssumptionD0qL`,
-  `AssumptionD0pL`) and f.D0qL on an open convex set (`AssumptionD0qLOn`, used by §14.2);
+  `AssumptionD0pL`);
   Lemmas 13.1.1–13.1.7, Theorem 13.1.8, Lemmas 13.1.9–13.1.18, Theorem 13.1.19
   (`theorem_13_1_19_i`, `theorem_13_1_19_ii`); existence of runs (`exists_algorithm_13_1_1`,
   `exists_algorithm_13_1_2`)

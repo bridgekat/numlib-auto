@@ -53,7 +53,10 @@ radius constant `arqpKappaDelta` and the run existence `Optimization.exists_isAR
 * `Optimization.IsARqpRun.exists_isEpsDeltaApproxComposite_of_stop₂` (Lemma 14.1.4 (ii)),
   `IsARqpRun.compositeModel_lt_of_convex` (Lemma 14.1.4 (i));
 * `Optimization.IsARqpRun.complexity_composite` (Theorem 14.1.10, part 2) and
-  `IsARqpRun.complexity_composite_unit` (Theorem 14.1.10, part 1).
+  `IsARqpRun.complexity_composite_unit` (Theorem 14.1.10, part 1);
+* `Optimization.IsARqpCRun.arqpKappaDelta_mul_le_radius`, `IsARqpCRun.complexity`,
+  `IsARqpCRun.complexity_unit`: the radius policy and Theorem 14.1.10 for every ARqpC run
+  (`IsARqpCRun`).
 -/
 
 open Set Metric Filter
@@ -106,6 +109,11 @@ noncomputable def arqpcKappaDm : ℝ :=
       (((p : ℝ) + 1) / ((p : ℝ) - q + 1))
 
 variable {P Lw Kw p q}
+
+theorem arqpcKappaDm_def : arqpcKappaDm P Lw Kw p q =
+    P.σmin / ((p + 1)! : ℝ) * ((P.ς - P.θ) / ((q ! : ℝ) * (Lw + arSigmaMax P.toARParams Lw)) *
+      arqpKappaDelta P Kw (arSigmaMax P.toARParams Lw) ^ q / 3) ^
+        (((p : ℝ) + 1) / ((p : ℝ) - q + 1)) := rfl
 
 /-- The size facts on the constants used by Lemmas 14.1.8–14.1.9 and Theorem 14.1.10, for
 `p ≥ 1`, `L_w ≥ L_{f,p} + L_h L_{c,p}`, `L_{f,p} ≥ 1`, `L_{c,p}, L_h ≥ 0`, `K_w ≥ 1`, `θ < ς`:
@@ -977,5 +985,87 @@ theorem complexity_composite_unit (hf : LipschitzDerivsAnchored f C A p p Lf)
   simpa using happ
 
 end IsARqpRun
+
+/-! ### ARqpC runs -/
+
+namespace IsARqpCRun
+
+variable {J : Set ℕ}
+
+/-- **The radius policy (14.1.28) holds for every ARqpC run** ([cartis2022evaluation],
+Lemma 14.1.3 for every output of Algorithm 14.1.2): under the hypotheses of
+`IsARqpRun.arqpKappaDelta_mul_le_radius_composite`, at every iteration reaching Step 2,
+`δ_{s_k,j} ≥ κ_{δ,min} ε_j` for `j ∈ [1, q]`. -/
+theorem arqpKappaDelta_mul_le_radius (hr : IsARqpCRun f c h X p q P J ε δ₀ x s σ δ δs d dm)
+    (hf : LipschitzDerivsAnchored f C A p p Lf) (hc : LipschitzDerivsAnchored c C A p p Lc)
+    (hLh : HasLipschitzConst h Lh) (hS : IsSubadditive h) (h0 : h 0 = 0)
+    (hLw : Lf p + Lh * Lc p ≤ Lw) {Kf Kc : ℝ} (hKf : 0 ≤ Kf) (hKc : 0 ≤ Kc)
+    (hKw : Kf + Lh * Kc ≤ Kw) (hKw1 : 1 ≤ Kw)
+    (hjf : ∀ i ∈ Finset.Icc 2 p, ∀ y ∈ A, ‖iteratedFDeriv ℝ i f y‖ ≤ Kf)
+    (hjc : ∀ i ∈ Finset.Icc 2 p, ∀ y ∈ A, ‖iteratedFDeriv ℝ i c y‖ ≤ Kc) (hXC : X ⊆ C)
+    (hA : ∀ y ∈ X, f y + h (c y) ≤ f (x 0) + h (c (x 0)) → y ∈ A) {k : ℕ}
+    (hk : ∀ i < k, ¬ arqpcStop f c h P p q ε x s σ δ d i)
+    (h1 : ¬ arqpStop₁ P q ε (arqpcData f c h p x σ) δ d k) :
+    ∀ j ∈ Finset.Icc 1 q, arqpKappaDelta P Kw (arSigmaMax P.toARParams Lw) * ε j ≤ δs k j :=
+  hr.run.arqpKappaDelta_mul_le_radius_composite hf hc hLh hS h0 hLw hKf hKc hKw hKw1 hjf hjc hXC
+    hA hr.one_le_q hr.q_le_p hr.ε_mem hk (hr.detailed k hk h1)
+
+/-- **Theorem 14.1.10, part 2** of [cartis2022evaluation] for every ARqpC run: the conclusion of
+`IsARqpRun.complexity_composite`, under its hypotheses on the data. -/
+theorem complexity (hr : IsARqpCRun f c h X p q P J ε δ₀ x s σ δ δs d dm)
+    (hf : LipschitzDerivsAnchored f C A p p Lf)
+    (hc : LipschitzDerivsAnchored c C A p p Lc) (hLh : HasLipschitzConst h Lh)
+    (hS : IsSubadditive h) (h0 : h 0 = 0) (hLf : 1 ≤ Lf p) (hLc : 0 ≤ Lc p)
+    (hLw : Lf p + Lh * Lc p ≤ Lw) {Kf Kc : ℝ} (hKf : 0 ≤ Kf) (hKc : 0 ≤ Kc)
+    (hKw : Kf + Lh * Kc ≤ Kw) (hKw1 : 1 ≤ Kw)
+    (hjf : ∀ i ∈ Finset.Icc 2 p, ∀ y ∈ A, ‖iteratedFDeriv ℝ i f y‖ ≤ Kf)
+    (hjc : ∀ i ∈ Finset.Icc 2 p, ∀ y ∈ A, ‖iteratedFDeriv ℝ i c y‖ ≤ Kc) (hXC : X ⊆ C)
+    (hA : ∀ y ∈ X, f y + h (c y) ≤ f (x 0) + h (c (x 0)) → y ∈ A) (hθς : P.θ < P.ς)
+    (hσmin : 0 < P.σmin) {wlow : ℝ} (hb : ∀ y ∈ X, wlow ≤ f y + h (c y)) {mε : ℝ}
+    (hmε0 : 0 < mε) (hmε : ∀ j ∈ Finset.Icc 1 q, mε ≤ ε j ^ (j + 1)) :
+    ∃ kε, IsFirstHit (arqpcStop f c h P p q ε x s σ δ d) kε ∧
+      (∃ δε : ℕ → ℝ, (∀ j ∈ Finset.Icc 1 q, 0 < δε j ∧ δε j ≤ 1) ∧
+        IsEpsDeltaApproxComposite (ftaylorSeries ℝ f (x kε)) (ftaylorSeries ℝ c (x kε)) h
+          {e | x kε + e ∈ X} q ε δε) ∧
+      (funEvalCount kε : ℝ) ≤
+        arqpKappaUns P *
+          ((f (x 0) + h (c (x 0)) - wlow) / (P.η₁ * (arqpcKappaDm P Lw Kw p q * mε))) +
+        ((|Real.log P.γ₁| + Real.log (arSigmaMax P.toARParams Lw / P.σ₀)) /
+          Real.log P.γ₂ + 2) ∧
+      (derivEvalCount (fun k => P.η₁ ≤ arqpRatio (fun y => f y + h (c y))
+          (arqpcData f c h p x σ) x s k) kε : ℝ) ≤
+        (f (x 0) + h (c (x 0)) - wlow) / (P.η₁ * (arqpcKappaDm P Lw Kw p q * mε)) + 2 :=
+  hr.run.complexity_composite hf hc hLh hS h0 hLf hLc hLw hKf hKc hKw hKw1 hjf hjc hXC hA
+    hr.one_le_q hr.q_le_p hθς hσmin hr.ε_mem hr.δ₀_mem hr.detailed hb hmε0 hmε
+
+/-- **Theorem 14.1.10, part 1** of [cartis2022evaluation] for every ARqpC run with `q = 1`,
+convex `h` and `X`, `δ_{0,1} = 1` and a halving set not containing `1` (as the book's halving set
+`compositeHalvingSet h X`): the conclusion of `IsARqpRun.complexity_composite_unit`, under its
+hypotheses on the data. -/
+theorem complexity_unit (hr : IsARqpCRun f c h X p q P J ε δ₀ x s σ δ δs d dm)
+    (hf : LipschitzDerivsAnchored f C A p p Lf)
+    (hc : LipschitzDerivsAnchored c C A p p Lc) (hLh : HasLipschitzConst h Lh)
+    (hconv : ConvexOn ℝ univ h) (hXc : Convex ℝ X) (hLf : 1 ≤ Lf p) (hLc : 0 ≤ Lc p)
+    (hLw : Lf p + Lh * Lc p ≤ Lw) (hXC : X ⊆ C)
+    (hA : ∀ y ∈ X, f y + h (c y) ≤ f (x 0) + h (c (x 0)) → y ∈ A) (hq : q = 1)
+    (hθς : P.θ < P.ς) (hσmin : 0 < P.σmin) (hδ₀1 : δ₀ 1 = 1) (h1J : 1 ∉ J) {wlow : ℝ}
+    (hb : ∀ y ∈ X, wlow ≤ f y + h (c y)) :
+    ∃ kε, IsFirstHit (arqpcStop f c h P p q ε x s σ δ d) kε ∧
+      compositeTaylorMeasure (ftaylorSeries ℝ f (x kε)) (ftaylorSeries ℝ c (x kε)) h 1 1
+        {e | x kε + e ∈ X} ≤ ε 1 ∧
+      (funEvalCount kε : ℝ) ≤
+        arqpKappaUns P *
+          ((f (x 0) + h (c (x 0)) - wlow) /
+            (P.η₁ * (arqpcKappaDmUnit P Lw p * ε 1 ^ (((p : ℝ) + 1) / p)))) +
+        ((|Real.log P.γ₁| + Real.log (arSigmaMax P.toARParams Lw / P.σ₀)) /
+          Real.log P.γ₂ + 2) ∧
+      (derivEvalCount (fun k => P.η₁ ≤ arqpRatio (fun y => f y + h (c y))
+          (arqpcData f c h p x σ) x s k) kε : ℝ) ≤
+        (f (x 0) + h (c (x 0)) - wlow) /
+          (P.η₁ * (arqpcKappaDmUnit P Lw p * ε 1 ^ (((p : ℝ) + 1) / p))) + 2 :=
+  hr.run.complexity_composite_unit hf hc hLh hconv hXc hLf hLc hLw hXC hA hq hr.q_le_p hθς hσmin
+    hr.ε_mem hr.δ₀_mem hδ₀1 (fun _ hk h1 => hr.radius_eq_one hk h1 h1J) hb
+
+end IsARqpCRun
 
 end Optimization

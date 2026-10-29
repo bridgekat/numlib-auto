@@ -33,8 +33,9 @@ product space, on a feasible set `X` and under the anchored smoothness hypothesi
   `algorithm_13_1_2` are `Optimization.IsTRqIDARun`, `Optimization.IsARqpIDARun` with `X = univ`:
   they add the exact-value ratio (13.1.16), (13.1.58) and the oracle bounds.
 * f.D0qL (`AssumptionD0qL`) is the smoothness hypothesis `LipschitzDerivsAnchored f univ univ 0 q L`
-  with normalized constants `L_j ≥ 1` (`assumptionD0qL_iff_lipschitzDerivsAnchored`);
-  `AssumptionD0qLOn` is its form on an open convex set, used for the feasible sets of §14.2.
+  with normalized constants `L_j ≥ 1` (`assumptionD0qL_iff_lipschitzDerivsAnchored`); its form
+  on an open convex set `C`, used for the feasible sets of §14.2, is
+  `LipschitzDerivsAnchored f C C 0 q L` with `L_j ≥ 1`.
 * An iteration is accuracy-improving (`𝒜`) when the Prop `acc k` holds, and a trial iteration
   (`𝒯 = 𝒮 ∪ 𝒰`) otherwise. After an unsuccessful iteration the jet is reused (`D (k+1) = D k`).
   Function evaluations up to iteration `k` are counted by `derivEvalCount (¬ acc ·) k` (the
@@ -54,8 +55,7 @@ product space, on a feasible set `X` and under the anchored smoothness hypothesi
 
 ## Main definitions
 
-* `AssumptionD0qL`, `AssumptionD0pL` (f.D0qL, f.D0pL); `AssumptionD0qLOn`, `AssumptionD0pLOn`
-  (on an open convex set);
+* `AssumptionD0qL`, `AssumptionD0pL` (f.D0qL, f.D0pL);
 * `algorithm_13_1_1` (TRqIDA), `trTest`, `phiHat`;
 * `algorithm_13_1_2` (ARqpIDA), `arTest`.
 
@@ -212,30 +212,6 @@ theorem AssumptionD0qL.norm_le_of_jetApprox (hf : AssumptionD0qL f q L)
 
 end Assumption
 
-/-- **f.D0qL on an open convex set** `C` (the form of f.D0qL used with a feasible set `X ⊆ C`,
-[cartis2022evaluation] §14.2, for the TRqIDA-SC, TRqEDA-SC, ARqpIDA-SC and ARqpEDA-SC
-algorithms): `C` is open and convex, `f` is `C^q` near every point of `C` and, for every
-`j ∈ [0, q]`, the `j`-th derivative is `L_{f,j}`-Lipschitz on `C` with `L_{f,j} ≥ 1`; that is,
-`LipschitzDerivsAnchored f C C 0 q L` with normalized constants. With `C = univ` this is
-`AssumptionD0qL` (`assumptionD0qLOn_univ_iff`). -/
-structure AssumptionD0qLOn (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (q : ℕ) (L : ℕ → ℝ) : Prop
-    extends LipschitzDerivsAnchored f C C 0 q L where
-  /-- The constants are at least `1`. -/
-  one_le : ∀ j ≤ q, 1 ≤ L j
-
-/-- **f.D0pL on an open convex set** `C`: `AssumptionD0qLOn` with order `p`. -/
-abbrev AssumptionD0pLOn (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (p : ℕ) (L : ℕ → ℝ) : Prop :=
-  AssumptionD0qLOn f C p L
-
-/-- f.D0qL is f.D0qL on `univ`. -/
-theorem AssumptionD0qL.on_univ {f : ℝⁿ → ℝ} {q : ℕ} {L : ℕ → ℝ} (hf : AssumptionD0qL f q L) :
-    AssumptionD0qLOn f univ q L :=
-  ⟨hf.lipschitzDerivsAnchored, hf.normalized⟩
-
-theorem assumptionD0qLOn_univ_iff {f : ℝⁿ → ℝ} {q : ℕ} {L : ℕ → ℝ} :
-    AssumptionD0qLOn f univ q L ↔ AssumptionD0qL f q L :=
-  ⟨fun h => assumptionD0qL_iff_lipschitzDerivsAnchored.2 ⟨h.toLipschitzDerivsAnchored, h.one_le⟩,
-    AssumptionD0qL.on_univ⟩
 
 
 /-! ### TRqIDA -/

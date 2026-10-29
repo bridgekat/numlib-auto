@@ -166,6 +166,21 @@ abbrev arqpStop₂ (M : ℕ → ARqpData E) (s : ℕ → E) (k : ℕ) : Prop :=
 noncomputable abbrev arqpRatio (w : E → ℝ) (M : ℕ → ARqpData E) (x s : ℕ → E) (k : ℕ) : ℝ :=
   reductionRatio w (x k) (s k) ((M k).pred (s k))
 
+omit [NormedAddCommGroup E] in
+theorem arqpStop₁_iff {P : ARqpParams} {q : ℕ} {ε : ℕ → ℝ} {M : ℕ → ARqpData E}
+    {δ : ℕ → ℕ → ℝ} {d : ℕ → ℕ → E} {k : ℕ} :
+    arqpStop₁ P q ε M δ d k ↔
+      ∀ j ∈ Finset.Icc 1 q, (M k).dec j (d k j) ≤ P.ς * ε j * δ k j ^ j / j ! :=
+  Iff.rfl
+
+theorem arqpStop₂_iff {M : ℕ → ARqpData E} {s : ℕ → E} {k : ℕ} :
+    arqpStop₂ M s k ↔ (M k).model (s k) = (M k).model 0 :=
+  Iff.rfl
+
+theorem arqpRatio_eq (w : E → ℝ) (M : ℕ → ARqpData E) (x s : ℕ → E) (k : ℕ) :
+    arqpRatio w M x s k = reductionRatio w (x k) (s k) ((M k).pred (s k)) :=
+  rfl
+
 /-- **A run of ARqp** ([cartis2022evaluation], Algorithm 12.2.2; with composite data Algorithm
 14.1.1; with a general feasible set the -SC variants of §14.2) for the objective `w`, the closed
 feasible set `X`, constants `P`, criticality order `q`, accuracies `ε`, initial radii `δ₀`, and
