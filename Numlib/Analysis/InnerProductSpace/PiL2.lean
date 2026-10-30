@@ -11,14 +11,16 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 
 Facts about the coordinate directions `EuclideanSpace.single i 1` of `EuclideanSpace ℝ ι`:
 
-* `EuclideanSpace.inner_single_smul_single_of_ne`, `EuclideanSpace.norm_smul_single`: inner
-  products and norms of multiples of coordinate directions;
+* `EuclideanSpace.inner_single_smul_single_of_ne`, `EuclideanSpace.inner_single_smul_self`,
+  `EuclideanSpace.norm_single_one`, `EuclideanSpace.norm_smul_single`: inner products and norms of
+  multiples of coordinate directions;
 * `EuclideanSpace.eq_inner_single_smul_of_forall_ne`,
   `EuclideanSpace.norm_eq_abs_inner_single_of_forall_ne`: a vector orthogonal to all coordinate
   directions but one is a multiple of that direction, and its norm is the absolute value of the
   corresponding coordinate;
 * `EuclideanSpace.eq_inner_single_smul`, `EuclideanSpace.norm_eq_abs_inner_single`: the case of
-  `ℝ¹`, where every vector is a multiple of the coordinate direction.
+  `ℝ¹`, where every vector is a multiple of the coordinate direction;
+* `EuclideanSpace.norm_sq_eq_fin_two`: the squared norm of `ℝ²`.
 -/
 
 open scoped RealInnerProductSpace
@@ -37,6 +39,12 @@ theorem inner_single_single_of_ne {i j : ι} (h : i ≠ j) :
 
 theorem norm_smul_single (i : ι) (c : ℝ) : ‖c • single i (1 : ℝ)‖ = |c| := by
   rw [norm_smul, PiLp.norm_single, norm_one, mul_one, Real.norm_eq_abs]
+
+theorem norm_single_one (i : ι) : ‖single i (1 : ℝ)‖ = 1 := by
+  rw [PiLp.norm_single, norm_one]
+
+theorem inner_single_smul_self (i : ι) (c : ℝ) : ⟪single i (1 : ℝ), c • single i (1 : ℝ)⟫ = c := by
+  simp [inner_single_left]
 
 /-- A vector orthogonal to every coordinate direction other than the `i`-th is a multiple of the
 `i`-th coordinate direction. -/
@@ -70,5 +78,9 @@ theorem norm_eq_abs_inner_single (v : EuclideanSpace ℝ (Fin 1)) :
 theorem inner_single_sq (v : EuclideanSpace ℝ (Fin 1)) :
     ⟪single 0 (1 : ℝ), v⟫ ^ 2 = ‖v‖ ^ 2 := by
   rw [norm_eq_abs_inner_single, sq_abs]
+
+/-- The squared norm of `ℝ²` is the sum of the squared coordinates. -/
+theorem norm_sq_eq_fin_two (s : EuclideanSpace ℝ (Fin 2)) : ‖s‖ ^ 2 = (s 0) ^ 2 + (s 1) ^ 2 := by
+  rw [EuclideanSpace.real_norm_sq_eq, Fin.sum_univ_two]
 
 end EuclideanSpace

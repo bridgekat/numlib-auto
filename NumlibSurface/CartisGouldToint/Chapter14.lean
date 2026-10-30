@@ -1,6 +1,5 @@
 import NumlibSurface.CartisGouldToint.Chapter14.Section01
 import NumlibSurface.CartisGouldToint.Chapter14.Section02
-import NumlibSurface.CartisGouldToint.Chapter14.Section02Sharp
 import NumlibSurface.CartisGouldToint.Chapter14.Section03
 
 /-!
@@ -40,8 +39,8 @@ module imports the section modules and adds nothing of its own.
   `theorem_14_2_4_arqp_anchored`, from the anchored Chapter 12 analysis), and the
   dynamic-accuracy rows also under the anchored f.D0qLaB.X / f.D0pLaB.X
   (`lemma_14_2_2_trqida_anchored`, …, `theorem_14_2_4_arqpeda_anchored`, from the anchored
-  Chapter 13 analysis; the iterates of all four methods stay in the sublevel set `𝓛_f(x₀)`)
-* §14.2, `Chapter14.Section02Sharp`: sharpness of the TRq-SC, ARqp-SC, ARqpC-SC (`q = 1`, convex
+  Chapter 13 analysis; the iterates of all four methods stay in the sublevel set `𝓛_f(x₀)`);
+  sharpness of the TRq-SC, ARqp-SC, ARqpC-SC (`q = 1`, convex
   `h`), TRqIDA-SC and TRqEDA-SC orders, of the ARqp-SC order of the lower-bound mode for every `q`
   on a closed nonconvex `X ⊂ ℝ` (the "otherwise" entries for `q ≤ 2`), of the ARqpIDA-SC and
   ARqpEDA-SC orders of the unit-radii mode (`q ≤ 2`), of the ARqpEDA-SC order of the lower-bound
@@ -51,7 +50,10 @@ module imports the section modules and adds nothing of its own.
   `theorem_14_2_4_sharp_trqida`, `theorem_14_2_4_sharp_trqeda`,
   `theorem_14_2_4_sharp_arqpida`, `theorem_14_2_4_sharp_arqpeda`,
   `theorem_14_2_4_sharp_arqpeda_otherwise`, `theorem_14_2_4_sharp_arqpida_otherwise`,
-  `theorem_14_2_4_sharp_arqpida_otherwise_constrained`)
+  `theorem_14_2_4_sharp_arqpida_otherwise_constrained`; the slow runs of the dynamic-accuracy
+  methods are the backbone `Numlib.Optimization.Complexity.SlowExample.TRqDARun`,
+  `Numlib.Optimization.Complexity.SlowExample.ARqpDARun` and
+  `Numlib.Optimization.Complexity.SlowExample.ARqpDASlitRun`)
 * §14.3, `Chapter14.Section03`: the problem (14.3.1), X.CQ (`AssumptionXCQ`), Theorems
   14.3.1–14.3.2, Example 14.3.1; LENq-SC (`algorithm_14_3_1`), Theorems 14.3.3–14.3.4; TPqp-GC
   (`algorithm_14_3_2`), Lemmas 14.3.5–14.3.8 and Theorem 14.3.9 for an abstract INNER satisfying

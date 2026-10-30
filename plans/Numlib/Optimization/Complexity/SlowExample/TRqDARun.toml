@@ -1,0 +1,9 @@
+namespace = "Optimization"
+
+[[node]]
+id = "exists_isTRqIDARun_slow"
+source = "Cartis–Gould–Toint, Theorem 12.2.6 (slow example) as a run of Algorithm 13.1.1"
+
+[[node]]
+id = "exists_isTRqEDARun_slow"
+source = "Cartis–Gould–Toint, Theorem 12.2.6 (slow example) as a run of Algorithm 13.3.1"

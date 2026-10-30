@@ -1,6 +1,7 @@
 import Numlib.Optimization.Complexity.DynamicAccuracy
 import Numlib.Optimization.Complexity.Existence
 import Numlib.Optimization.Complexity.Telescoping
+import Numlib.Data.Nat.SeqAppend
 import Numlib.Optimization.ModelBased.HighOrder.DynamicAccuracy.Basic
 import Numlib.Optimization.ModelBased.HighOrder.TRq
 import Numlib.Optimization.ModelBased.InexactRatio
@@ -237,6 +238,37 @@ theorem congr {x' : ℕ → E} {Δ' : ℕ → ℝ} {h' : ℕ → ℕ → ℝ}
   · rw [hh1, hh]; exact hha (hacc.1 ha)
 
 end TRqDAStep
+
+section Splice
+
+variable {f : E → ℝ} {κ : ℕ} {x' : ℕ → E} {Δ' : ℕ → ℝ} {h' : ℕ → ℕ → ℝ} {dd' : ℕ → ℕ → E}
+  {jk' : ℕ → ℕ} {s' : ℕ → E} {acc' : ℕ → Prop}
+
+/-- **Splicing TRqIDA iterations with exact Taylor data**: if the first `κ` iterations of some
+sequences are TRqIDA steps (with `D_k` the Taylor jet of `f` at `x_k` and the ratio (13.1.16)),
+and other sequences starting at their state at `κ` are TRqIDA steps at every iteration, then the
+sequences following the first ones before `κ` and the second ones (shifted by `κ`) from `κ` on
+are TRqIDA steps at every iteration. -/
+theorem TRqDAStep.seqAppend
+    (hpre : ∀ k < κ, TRqDAStep X P ε x Δ h (fun i => ftaylorSeries ℝ f (x i)) dd jk s acc
+      (trqRatio f (fun i => ftaylorSeries ℝ f (x i)) x s jk) k)
+    (hpost : ∀ k, TRqDAStep X P ε x' Δ' h' (fun i => ftaylorSeries ℝ f (x' i)) dd' jk' s' acc'
+      (trqRatio f (fun i => ftaylorSeries ℝ f (x' i)) x' s' jk') k)
+    (hx : x' 0 = x κ) (hΔ : Δ' 0 = Δ κ) (hh : h' 0 = h κ) (k : ℕ) :
+    TRqDAStep X P ε (Nat.seqAppend κ x x') (Nat.seqAppend κ Δ Δ') (Nat.seqAppend κ h h')
+      (fun i => ftaylorSeries ℝ f (Nat.seqAppend κ x x' i)) (Nat.seqAppend κ dd dd')
+      (Nat.seqAppend κ jk jk') (Nat.seqAppend κ s s') (Nat.seqAppend κ acc acc')
+      (trqRatio f (fun i => ftaylorSeries ℝ f (Nat.seqAppend κ x x' i)) (Nat.seqAppend κ x x')
+        (Nat.seqAppend κ s s') (Nat.seqAppend κ jk jk')) k := by
+  rcases lt_or_ge k κ with hk | hk
+  · have hk1 : k + 1 ≤ κ := hk
+    refine (hpre k hk).congr ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ <;>
+      simp only [trqRatio_eq, Nat.seqAppend_of_lt hk, Nat.seqAppend_eq_of_le hx hk1,
+        Nat.seqAppend_eq_of_le hΔ hk1, Nat.seqAppend_eq_of_le hh hk1]
+  · refine (hpost (k - κ)).congr ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ <;>
+      simp only [trqRatio_eq, Nat.seqAppend_of_le hk, Nat.seqAppend_succ_of_le hk]
+
+end Splice
 
 /-- The iterates of TRqIDA/TRqEDA sequences starting in `X` stay in `X`. -/
 theorem trqDA_mem (hstep : ∀ i < k, TRqDAStep X P ε x Δ h D dd jk s acc ρ i) (hx0 : x 0 ∈ X) :

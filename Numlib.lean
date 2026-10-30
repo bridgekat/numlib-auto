@@ -684,6 +684,8 @@ import Numlib.Optimization.Complexity.ParameterCount
 import Numlib.Optimization.Complexity.ResistingOracle
 import Numlib.Optimization.Complexity.ScaledRestart
 import Numlib.Optimization.Complexity.SlowExample.ARp
+import Numlib.Optimization.Complexity.SlowExample.ARqpDARun
+import Numlib.Optimization.Complexity.SlowExample.ARqpDASlitRun
 import Numlib.Optimization.Complexity.SlowExample.Basic
 import Numlib.Optimization.Complexity.SlowExample.DynamicAccuracy
 import Numlib.Optimization.Complexity.SlowExample.HighOrder
@@ -691,6 +693,8 @@ import Numlib.Optimization.Complexity.SlowExample.Ridge
 import Numlib.Optimization.Complexity.SlowExample.SeparatedJets
 import Numlib.Optimization.Complexity.SlowExample.Slit
 import Numlib.Optimization.Complexity.SlowExample.TRq
+import Numlib.Optimization.Complexity.SlowExample.TRqDARun
+import Numlib.Optimization.Complexity.SlowExample.TRqSaddle
 import Numlib.Optimization.Complexity.SlowExample.ZigZag
 import Numlib.Optimization.Complexity.Telescoping
 import Numlib.Optimization.Complexity.ZeroChain

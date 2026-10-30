@@ -39,3 +39,12 @@ source = "Cartis–Gould–Toint, proof of Theorem 3.5.4 and Corollary 3.5.5"
 [[node]]
 id = "contDiff_two_rescale_bounds"
 source = "Cartis–Gould–Toint, Corollary 3.5.5 (iRN example)"
+
+[[node]]
+id = "slowGap_nonneg"
+
+[[node]]
+id = "slowGap_pos"
+
+[[node]]
+id = "slowGap_le"

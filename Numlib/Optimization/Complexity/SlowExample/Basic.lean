@@ -776,4 +776,31 @@ theorem contDiff_two_rescale_bounds {G₀ : ℝ → ℝ} {c L B : ℝ} (hc0 : 0 
           mul_le_mul hpow (hGB j hj _) (abs_nonneg _) (by positivity)
       _ = B / c ^ 2 := by ring
 
+/-! ### The linearly decreasing excess of the slow examples
+
+The levels of the slow examples exceed their final value by `c (κ - k)/κ`, which decreases
+linearly from `c` at `k = 0` to `0` at `k = κ`. -/
+
+/-- The excess `c (κ - k)/κ` is nonnegative up to `κ`. -/
+theorem slowGap_nonneg {c : ℝ} (hc : 0 ≤ c) {κ k : ℕ} (hk : k ≤ κ) :
+    0 ≤ c * ((κ : ℝ) - k) / κ := by
+  have : (k : ℝ) ≤ κ := by exact_mod_cast hk
+  have : 0 ≤ (κ : ℝ) - k := by linarith
+  positivity
+
+/-- The excess `c (κ - k)/κ` is positive before `κ`. -/
+theorem slowGap_pos {c : ℝ} (hc : 0 < c) {κ k : ℕ} (hk : k < κ) : 0 < c * ((κ : ℝ) - k) / κ := by
+  have : (k : ℝ) < κ := by exact_mod_cast hk
+  have : 0 < (κ : ℝ) - k := by linarith
+  have : (0 : ℝ) < κ := by linarith [(k.cast_nonneg : (0 : ℝ) ≤ k)]
+  positivity
+
+/-- The excess `c (κ - k)/κ` is at most `c`. -/
+theorem slowGap_le {c : ℝ} (hc : 0 ≤ c) (κ k : ℕ) : c * ((κ : ℝ) - k) / κ ≤ c := by
+  rcases Nat.eq_zero_or_pos κ with rfl | hκ
+  · simpa using hc
+  have hκ' : (0 : ℝ) < κ := by exact_mod_cast hκ
+  rw [div_le_iff₀ hκ']
+  nlinarith [(k.cast_nonneg : (0 : ℝ) ≤ k)]
+
 end Optimization

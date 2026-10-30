@@ -11,3 +11,6 @@ id = "eq_inner_single_smul"
 
 [[node]]
 id = "norm_eq_abs_inner_single"
+
+[[node]]
+id = "norm_sq_eq_fin_two"
