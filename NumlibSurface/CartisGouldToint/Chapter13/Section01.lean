@@ -33,7 +33,7 @@ product space, on a feasible set `X` and under the anchored smoothness hypothesi
   `algorithm_13_1_2` are `Optimization.IsTRqIDARun`, `Optimization.IsARqpIDARun` with `X = univ`:
   they add the exact-value ratio (13.1.16), (13.1.58) and the oracle bounds.
 * f.D0qL (`AssumptionD0qL`) is the smoothness hypothesis `LipschitzDerivsAnchored f univ univ 0 q L`
-  with normalized constants `L_j ≥ 1` (`assumptionD0qL_iff_lipschitzDerivsAnchored`); its form
+  with normalized constants `L_j ≥ 1` (the book's form is `assumptionD0qL_iff`); its form
   on an open convex set `C`, used for the feasible sets of §14.2, is
   `LipschitzDerivsAnchored f C C 0 q L` with `L_j ≥ 1`.
 * An iteration is accuracy-improving (`𝒜`) when the Prop `acc k` holds, and a trial iteration
@@ -142,9 +142,12 @@ The extrema `epsMin`, `ordMax`, `lipMax` over the orders are those of the librar
 
 /-- **Assumption f.D0qL** of [cartis2022evaluation], §13.1.3.2: `f` is `q` times continuously
 differentiable and, for every `j ∈ [0, q]` (including `j = 0`, the function itself), the `j`-th
-derivative is Lipschitz continuous with a constant `L_{f,j} ≥ 1`. -/
-def AssumptionD0qL (f : ℝⁿ → ℝ) (q : ℕ) (L : ℕ → ℝ) : Prop :=
-  ContDiff ℝ q f ∧ ∀ j ≤ q, 1 ≤ L j ∧ IteratedFDerivLipschitzOn f j (L j) univ
+derivative is Lipschitz continuous with a constant `L_{f,j} ≥ 1`. It is stated as the anchored
+smoothness assumption of orders `[0, q]` on the whole space (`C = A = ℝⁿ`) together with
+`L_{f,j} ≥ 1`; the book's form is `assumptionD0qL_iff` and
+`AssumptionD0qL.of_iteratedFDerivLipschitzOn`. -/
+abbrev AssumptionD0qL (f : ℝⁿ → ℝ) (q : ℕ) (L : ℕ → ℝ) : Prop :=
+  LipschitzDerivsAnchored f univ univ 0 q L ∧ ∀ j ≤ q, 1 ≤ L j
 
 /-- **Assumption f.D0pL** of [cartis2022evaluation], §13.1.4.1: f.D0qL with order `p`. -/
 abbrev AssumptionD0pL (f : ℝⁿ → ℝ) (p : ℕ) (L : ℕ → ℝ) : Prop :=
@@ -154,39 +157,53 @@ section Assumption
 
 variable {f : ℝⁿ → ℝ} {q : ℕ} {L : ℕ → ℝ}
 
-theorem assumptionD0qL_iff : AssumptionD0qL f q L ↔
-    ContDiff ℝ q f ∧ ∀ j ≤ q, 1 ≤ L j ∧ IteratedFDerivLipschitzOn f j (L j) univ := Iff.rfl
+/-- f.D0qL is the smoothness hypothesis `LipschitzDerivsAnchored` of the library on the whole
+space, with the orders `0, …, q` (anchored at every point). -/
+theorem AssumptionD0qL.lipschitzDerivsAnchored (hf : AssumptionD0qL f q L) :
+    LipschitzDerivsAnchored f univ univ 0 q L :=
+  hf.1
+
+/-- f.D0qL gives normalized constants `L_j ≥ 1` for `j ≤ q`. -/
+theorem AssumptionD0qL.normalized (hf : AssumptionD0qL f q L) : ∀ j ≤ q, 1 ≤ L j :=
+  hf.2
 
 theorem AssumptionD0qL.one_le (hf : AssumptionD0qL f q L) {j : ℕ} (hj : j ≤ q) : 1 ≤ L j :=
-  (hf.2 j hj).1
+  hf.2 j hj
+
+theorem AssumptionD0qL.contDiff (hf : AssumptionD0qL f q L) : ContDiff ℝ q f :=
+  hf.1.contDiff
 
 theorem AssumptionD0qL.lipschitz (hf : AssumptionD0qL f q L) {j : ℕ} (hj : j ≤ q) :
     IteratedFDerivLipschitzOn f j (L j) univ :=
-  (hf.2 j hj).2
+  hf.1.lipschitzOn_of_le hj
+
+/-- f.D0qL in the book's form: `f` is `C^q` and, for `j ∈ [0, q]`, `∇^j f` is `L_{f,j}`-Lipschitz
+with `L_{f,j} ≥ 1`. -/
+theorem assumptionD0qL_iff : AssumptionD0qL f q L ↔
+    ContDiff ℝ q f ∧ ∀ j ≤ q, 1 ≤ L j ∧ IteratedFDerivLipschitzOn f j (L j) univ :=
+  ⟨fun hf => ⟨hf.contDiff, fun _ hj => ⟨hf.one_le hj, hf.lipschitz hj⟩⟩, fun ⟨hf, hL⟩ =>
+    ⟨.of_contDiff hf (fun j hj => (hL j (Finset.mem_Icc.1 hj).2).2) univ,
+      fun j hj => (hL j hj).1⟩⟩
+
+/-- f.D0qL from a `C^q` function whose derivatives of orders `j ∈ [0, q]` are
+`L_{f,j}`-Lipschitz, `L_{f,j} ≥ 1`. -/
+theorem AssumptionD0qL.of_iteratedFDerivLipschitzOn (hf : ContDiff ℝ q f)
+    (hL : ∀ j ≤ q, 1 ≤ L j ∧ IteratedFDerivLipschitzOn f j (L j) univ) : AssumptionD0qL f q L :=
+  assumptionD0qL_iff.2 ⟨hf, hL⟩
+
+/-- f.D0qL with a single constant `L ≥ 1` from the library's smoothness hypothesis on the whole
+space. -/
+theorem AssumptionD0qL.of_lipschitzDerivsAnchored {L : ℝ}
+    (hf : LipschitzDerivsAnchored f univ univ 0 q (fun _ => L)) (hL : 1 ≤ L) :
+    AssumptionD0qL f q (fun _ => L) :=
+  ⟨hf, fun _ _ => hL⟩
 
 theorem AssumptionD0qL.one_le_lipMax (hf : AssumptionD0qL f q L) : 1 ≤ lipMax L q :=
   (hf.one_le (Nat.zero_le q)).trans (le_lipMax (Nat.zero_le q))
 
 theorem AssumptionD0qL.contDiffAt (hf : AssumptionD0qL f q L) {j : ℕ} (hj : j ≤ q) (y : ℝⁿ) :
     ContDiffAt ℝ j f y :=
-  (hf.1.of_le (by exact_mod_cast hj)).contDiffAt
-
-/-- f.D0qL gives normalized constants `L_j ≥ 1` for `j ≤ q`. -/
-theorem AssumptionD0qL.normalized (hf : AssumptionD0qL f q L) : ∀ j ≤ q, 1 ≤ L j :=
-  fun _ hj => hf.one_le hj
-
-/-- f.D0qL is the smoothness hypothesis `LipschitzDerivsAnchored` of the library on the whole
-space, with the orders `0, …, q` (anchored at every point). -/
-theorem AssumptionD0qL.lipschitzDerivsAnchored (hf : AssumptionD0qL f q L) :
-    LipschitzDerivsAnchored f univ univ 0 q L :=
-  .of_contDiff hf.1 (fun _ hj => hf.lipschitz (Finset.mem_Icc.1 hj).2) univ
-
-/-- f.D0qL is `LipschitzDerivsAnchored f univ univ 0 q L` with normalized constants. -/
-theorem assumptionD0qL_iff_lipschitzDerivsAnchored :
-    AssumptionD0qL f q L ↔ LipschitzDerivsAnchored f univ univ 0 q L ∧ ∀ j ≤ q, 1 ≤ L j :=
-  ⟨fun hf => ⟨hf.lipschitzDerivsAnchored, hf.normalized⟩, fun ⟨hf, hL⟩ =>
-    ⟨contDiff_iff_contDiffAt.2 fun y => hf.contDiffAt y (mem_univ y),
-      fun j hj => ⟨hL j hj, hf.lipschitzOn_of_le hj⟩⟩⟩
+  hf.1.contDiffAt_of_le hj (mem_univ y)
 
 /-- **(A.19) under f.D0qL**: `|f(x + s) - T_{f,j}(x, s)| ≤ L_{f,j}/(j+1)! ‖s‖^{j+1}`, in the form
 `|f(x + s) - (f(x) - ΔT_{f,j}(x, s))|`. -/

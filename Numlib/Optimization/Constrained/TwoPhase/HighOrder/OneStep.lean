@@ -56,8 +56,6 @@ variable (x : ℕ → E) (t : ℕ → ℝ)
 theorem funEvals_oneStep (k : ℕ) : (oneStep x t).funEvals k = k + 1 := by
   simp [funEvals_eq_sum, add_comm]
 
-variable [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F]
-
 /-- Every inner call makes one successful iteration. -/
 @[simp] theorem succCount_oneStep (k : ℕ) : (oneStep x t).succCount k = 1 := by
   classical
@@ -68,6 +66,8 @@ variable [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F]
 /-- `k + 1` evaluations of the derivatives up to outer iteration `k`. -/
 theorem derivEvals_oneStep (k : ℕ) : (oneStep x t).derivEvals k = k + 1 := by
   simp [derivEvals_eq_sum, add_comm]
+
+variable [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F]
 
 variable {f : E → ℝ} {c : E → F} {X : Set E} {q : ℕ} {θ β : ℝ} {ε : ℕ → ℝ} {x t}
 

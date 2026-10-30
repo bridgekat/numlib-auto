@@ -197,10 +197,6 @@ id = "AssumptionD1qLaBX.toD0qLaBX"
 source = "Cartis–Gould–Toint, §14.2.1: (14.2.9)–(14.2.10) for j ∈ [0:q] imply f.D0qLaB.X"
 
 [[node]]
-id = "assumptionD1qLaBX_iff"
-source = "Cartis–Gould–Toint, f.D1qLaB.X (bridge to LipschitzDerivsAnchored)"
-
-[[node]]
 id = "assumptionD0qLaBX_iff"
 source = "Cartis–Gould–Toint, f.D0qLaB.X"
 

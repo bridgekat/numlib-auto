@@ -529,7 +529,7 @@ theorem kbCount_le_of_certified_margin (h : IsHighOrderTargetRun f c X q θ β �
   have := h.card_kb_innerTest_le (fun k hk1 hk hb _ => hcert.radius_ge k hk1 hk hb) hρ hf hc
     hBf hτ0 hτ hB hK1 hK
   refine le_trans (le_of_eq ?_) this
-  unfold HighOrderTargetSeq.kbCount
+  rw [HighOrderTargetSeq.kbCount_eq_card_filter]
   have e : (Finset.Ico 1 K).filter (D.IsKb f c θ ε) = (Finset.Ico 1 K).filter
       (fun k => D.IsKb f c θ ε k ∧ D.InnerTest f c X q β ε k) := by
     refine Finset.filter_congr fun k hk => ⟨fun hb => ⟨hb, ?_⟩, fun h' => h'.1⟩

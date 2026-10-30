@@ -161,6 +161,14 @@ theorem succCount_eq_card_filter (k : ℕ) [DecidablePred (succ k)] :
     S.succCount succ k = ((range (S.e k)).filter (succ k)).card := by
   unfold succCount; congr
 
+theorem kaCount_eq_card_filter (K : ℕ) [DecidablePred S.Ka] :
+    S.kaCount K = ((Ico 1 K).filter S.Ka).card := by
+  unfold kaCount; congr
+
+theorem kbCount_eq_card_filter (K : ℕ) [DecidablePred S.Kb] :
+    S.kbCount K = ((Ico 1 K).filter S.Kb).card := by
+  unfold kbCount; congr
+
 theorem derivEvals_eq (k : ℕ) :
     (S.derivEvals succ k : ℝ) = 1 + ∑ j ∈ Icc 1 k, (S.succCount succ j : ℝ) := by
   unfold derivEvals

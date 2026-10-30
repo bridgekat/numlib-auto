@@ -218,6 +218,9 @@ give the details. The false statements and proof gaps, all of them, are:
   corrected with terms `(‖∇f‖δ)²/(f(x_ε) - t_ε)` (`Chapter14.lemma_14_3_5`).
 * Lemma 14.3.8: **gap**, its decreases do not bound the bad outer iterations
   (`Chapter14.lemma_14_3_8_proof_gap_counterexample`).
+* Lemma 14.3.8, proof after (B.14.21): **gap** (for `π_l > 1`), `‖r‖^{π_l-1}` is bounded below
+  by `ε₀^{π_l-1}` where only `(θε₀)^{π_l-1}` is available; the constant of (14.3.71) still holds
+  (`Chapter14.lemma_14_3_8`).
 * Theorem 14.3.9, by INNER class:
   * nonspecific INNER: **false** under the per-call reading of the INNER hypotheses
     (`Chapter14.theorem_14_3_9_false`), vacuous for `π₁ < 2` under the uniform reading

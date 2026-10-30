@@ -102,11 +102,8 @@ theorem isEnd_one (hg0 : g 0 = 0) (hε0 : 0 < ε 0) :
 
 /-- The output target of the stationary run is `-ε₀`. -/
 theorem targetOut_one (hg0 : g 0 = 0) (hε0 : 0 < ε 0) :
-    (seq (ε 0)).targetOut g con (1 / 2) ε 1 = -ε 0 := by
-  classical
-  simp only [HighOrderTargetSeq.targetOut, not_isKa hg0 hε0 1, not_isKb hg0 hε0 1, or_self,
-    ite_false]
-  rfl
+    (seq (ε 0)).targetOut g con (1 / 2) ε 1 = -ε 0 :=
+  (HighOrderTargetSeq.targetOut_of_not (not_isKa hg0 hε0 1) (not_isKb hg0 hε0 1)).trans rfl
 
 /-- The calls of the stationary run make no iteration, so the end-criticality contract holds with
 `κ_uns = κ_unc = 1` and every `κ_decr`, `π`. -/
