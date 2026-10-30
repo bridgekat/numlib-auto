@@ -21,7 +21,8 @@ norm is defined directly.
 * `Constrained.targetResidual f c t x`: the residual norm `‖r(x,t)‖`;
 * `Constrained.targetMerit f c t x`: the merit function `μ₂(x,t) = ½ ‖r(x,t)‖²`;
 * `Constrained.targetMultiplier f c t x`: the multiplier estimate `y = -c(x)/(f(x) - t)` of
-  (7.2.22) and (14.3.53).
+  (7.2.22) and (14.3.53);
+* `Constrained.targetSublevel f c X t`: the set `{x ∈ X | ‖r(x, t)‖ ≤ 1}`.
 
 ## Main results
 
@@ -190,6 +191,14 @@ theorem targetMerit_lt_targetMerit_iff :
 theorem targetMerit_eq_sub : targetMerit f c t x = targetMerit f c 0 x - t * f x + t ^ 2 / 2 := by
   simp only [targetMerit_def]
   ring
+
+/-- The set `{x ∈ X | ‖r(x, t)‖ ≤ 1}` on which the merit function `μ(·, t)` is controlled
+(Lemma 14.3.6 (ii) of [cartis2022evaluation]). -/
+def targetSublevel (f : E → ℝ) (c : E → F) (X : Set E) (t : ℝ) : Set E :=
+  {x ∈ X | targetResidual f c t x ≤ 1}
+
+theorem mem_targetSublevel {X : Set E} :
+    x ∈ targetSublevel f c X t ↔ x ∈ X ∧ targetResidual f c t x ≤ 1 := Iff.rfl
 
 end Defs
 

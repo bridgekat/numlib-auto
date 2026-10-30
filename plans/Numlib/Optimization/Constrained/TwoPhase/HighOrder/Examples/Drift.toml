@@ -1,0 +1,34 @@
+namespace = "Constrained.TwoPhaseExample.Drift"
+
+[[node]]
+id = "strip"
+
+[[node]]
+id = "obj"
+
+[[node]]
+id = "con"
+
+[[node]]
+id = "iter"
+
+[[node]]
+id = "seq"
+
+[[node]]
+id = "isHighOrderTargetRun"
+
+[[node]]
+id = "not_stop"
+
+[[node]]
+id = "before"
+
+[[node]]
+id = "isEndCritContract"
+
+[[node]]
+id = "not_isInnerTestContract"
+
+[[node]]
+id = "badCount_eq"

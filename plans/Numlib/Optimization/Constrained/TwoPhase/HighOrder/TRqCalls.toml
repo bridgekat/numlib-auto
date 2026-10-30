@@ -1,0 +1,31 @@
+namespace = "Constrained"
+
+[[node]]
+id = "trqCallKappaUnc0"
+
+[[node]]
+id = "tolLogTerm"
+
+[[node]]
+id = "HighOrderTargetSeq.IsTRqCalls"
+source = "Cartis–Gould–Toint, Algorithm 14.3.2, Step 1 (INNER of trust-region type)"
+
+[[node]]
+id = "IsHighOrderTargetRun.call_tol"
+
+[[node]]
+id = "IsHighOrderTargetRun.isInnerTestContract_of_isTRqCalls"
+source = "Cartis–Gould–Toint, Lemmas 14.2.2–14.2.3 (trust-region rows) applied to μ(·, t_k)"
+
+[[node]]
+id = "exists_innerCall_isTRqCallOut"
+
+[[node]]
+id = "exists_isHighOrderTargetRun_isTRqCalls"
+
+[[node]]
+id = "IsTRqOutputCost.cost_le_halfSqNorm"
+source = "Cartis–Gould–Toint, (14.3.20)–(14.3.21) for TRq-SC calls on ν"
+
+[[node]]
+id = "IsHighOrderTargetRun.le_targetResidual"

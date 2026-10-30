@@ -1,0 +1,52 @@
+namespace = "Constrained.TwoPhaseExample.Rectangle"
+
+[[node]]
+id = "obj"
+
+[[node]]
+id = "con"
+
+[[node]]
+id = "rect"
+
+[[node]]
+id = "start"
+
+[[node]]
+id = "tol"
+
+[[node]]
+id = "targetMerit_eq"
+
+[[node]]
+id = "taylorMeasure_ge"
+
+[[node]]
+id = "not_targetCrit"
+
+[[node]]
+id = "taylorMeasure_gt"
+
+[[node]]
+id = "trqCall_eq_start"
+
+[[node]]
+id = "target_ge"
+
+[[node]]
+id = "not_stop"
+
+[[node]]
+id = "lt_e_of_trqCalls"
+
+[[node]]
+id = "funEvals_ge"
+
+[[node]]
+id = "isClosed_rect"
+
+[[node]]
+id = "start_mem"
+
+[[node]]
+id = "rect_subset_ball"

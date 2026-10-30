@@ -1,0 +1,40 @@
+namespace = "Constrained.TwoPhaseExample.BoxBadIter"
+
+[[node]]
+id = "tol"
+
+[[node]]
+id = "target"
+
+[[node]]
+id = "iter"
+
+[[node]]
+id = "seq"
+
+[[node]]
+id = "isHighOrderTargetRun"
+
+[[node]]
+id = "isEnd"
+
+[[node]]
+id = "innerTest"
+
+[[node]]
+id = "isInnerTestContract"
+
+[[node]]
+id = "lt_taylorMeasure_start"
+
+[[node]]
+id = "two_le_costBound"
+
+[[node]]
+id = "exists_params"
+
+[[node]]
+id = "exists_seq"
+
+[[node]]
+id = "exists_tol_start_lt_taylorMeasure"

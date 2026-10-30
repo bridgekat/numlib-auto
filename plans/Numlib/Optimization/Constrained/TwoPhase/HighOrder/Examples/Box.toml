@@ -1,0 +1,22 @@
+namespace = "Constrained.TwoPhaseExample.Box"
+
+[[node]]
+id = "square"
+
+[[node]]
+id = "obj"
+
+[[node]]
+id = "con"
+
+[[node]]
+id = "taylorDecrement_one"
+
+[[node]]
+id = "taylorMeasure_le"
+
+[[node]]
+id = "le_taylorMeasure"
+
+[[node]]
+id = "obj_mem_Icc"

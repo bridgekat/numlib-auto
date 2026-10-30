@@ -1,0 +1,46 @@
+namespace = "Constrained.TwoPhaseExample"
+
+[[node]]
+id = "stepIter"
+
+[[node]]
+id = "isARqpCallOut_one_step"
+
+[[node]]
+id = "BoxARqp.taylorSum_targetMerit"
+
+[[node]]
+id = "BoxARqp.params"
+
+[[node]]
+id = "BoxARqp.isARqpCallOut_step"
+
+[[node]]
+id = "BoxARqp.tol"
+
+[[node]]
+id = "BoxARqp.target"
+
+[[node]]
+id = "BoxARqp.iter"
+
+[[node]]
+id = "BoxARqp.seq"
+
+[[node]]
+id = "BoxARqp.isARqpCallOut_run"
+
+[[node]]
+id = "BoxARqp.isEnd_iff"
+
+[[node]]
+id = "BoxARqp.isHighOrderTargetRun"
+
+[[node]]
+id = "BoxARqp.isARqpCallOut_calls"
+
+[[node]]
+id = "BoxARqp.order_le_pow"
+
+[[node]]
+id = "BoxARqp.exists_params"

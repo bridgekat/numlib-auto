@@ -1,0 +1,82 @@
+namespace = "Constrained.TwoPhaseExample.SlowDecay"
+
+[[node]]
+id = "quarterPow"
+
+[[node]]
+id = "eighthPow"
+
+[[node]]
+id = "con"
+
+[[node]]
+id = "nu"
+
+[[node]]
+id = "halfSqNorm_con_eq"
+
+[[node]]
+id = "slope"
+
+[[node]]
+id = "curv"
+
+[[node]]
+id = "taylorDecrement_one"
+
+[[node]]
+id = "taylorDecrement_two"
+
+[[node]]
+id = "slope_mul_le_sub"
+
+[[node]]
+id = "params"
+
+[[node]]
+id = "halfPlane"
+
+[[node]]
+id = "openHalfPlane"
+
+[[node]]
+id = "isTRqStep_axis_one"
+
+[[node]]
+id = "isTRqStep_axis_two"
+
+[[node]]
+id = "isTRqStep_shrink"
+
+[[node]]
+id = "exists_run_axis"
+
+[[node]]
+id = "exists_run_shrink"
+
+[[node]]
+id = "exists_run_travel"
+
+[[node]]
+id = "exists_long_run"
+
+[[node]]
+id = "derivBound"
+
+[[node]]
+id = "abs_iteratedDeriv_eighthPow_le"
+
+[[node]]
+id = "phaseOneConst"
+
+[[node]]
+id = "con₂"
+
+[[node]]
+id = "taylorDecrement_targetMerit_con₂"
+
+[[node]]
+id = "tol"
+
+[[node]]
+id = "mul_two_pow_lt"

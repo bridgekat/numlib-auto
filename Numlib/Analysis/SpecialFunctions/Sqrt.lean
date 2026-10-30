@@ -12,6 +12,8 @@ import Mathlib.Analysis.Real.Sqrt
 
 `Real.sqrt_add_sqrt_le_sqrt_two_mul`: `√p + √q ≤ √2 √(p + q)` for `p, q ≥ 0`, the case of two terms
 of `(∑ √aᵢ)² ≤ n ∑ aᵢ`.
+
+`Real.le_and_le_add_of_sq_eq_add_sq`: `A ≤ R ≤ A + F` when `R² = A² + F²`, `R, A, F ≥ 0`.
 -/
 
 namespace Real
@@ -24,5 +26,10 @@ theorem sqrt_add_sqrt_le_sqrt_two_mul {p q : ℝ} (hp : 0 ≤ p) (hq : 0 ≤ q) 
       Real.sq_sqrt hp, Real.sq_sqrt hq]
     nlinarith [sq_nonneg (√p - √q), Real.sq_sqrt hp, Real.sq_sqrt hq]
   exact (pow_le_pow_iff_left₀ (by positivity) (by positivity) two_ne_zero).1 hsq
+
+/-- `A ≤ R ≤ A + F` for `R = √(A² + F²)` with `A, F ≥ 0`. -/
+theorem le_and_le_add_of_sq_eq_add_sq {R A F : ℝ} (hR : 0 ≤ R) (hsq : R ^ 2 = A ^ 2 + F ^ 2)
+    (hA : 0 ≤ A) (hF : 0 ≤ F) : A ≤ R ∧ R ≤ A + F := by
+  constructor <;> nlinarith [sq_nonneg (R - A), sq_nonneg (R - A - F), mul_nonneg hA hF]
 
 end Real

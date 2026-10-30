@@ -2099,34 +2099,6 @@ open Optimization
 set_option hygiene false in
 local notation "ℝ²" => EuclideanSpace ℝ (Fin 2)
 
-/-! ### Coordinates of `ℝ²` and the half square, as used in §14.3 -/
-
-/-- `‖s‖² = s₁² + s₂²` on `ℝ²`. -/
-theorem trqLog_norm_sq (s : ℝ²) : ‖s‖ ^ 2 = (s 0) ^ 2 + (s 1) ^ 2 :=
-  EuclideanSpace.norm_sq_eq_fin_two s
-
-/-- The coordinates are continuous. -/
-theorem trqLog_continuous_coord (i : Fin 2) : Continuous (fun v : ℝ² => v i) :=
-  (EuclideanSpace.proj i : ℝ² →L[ℝ] ℝ).continuous
-
-/-- `t ↦ t²/2` (`Optimization.halfSq`). -/
-noncomputable def trqSadSq : ℝ → ℝ := fun t => t ^ 2 / 2
-
-/-- `(t²/2)' = t`. -/
-theorem iteratedDeriv_trqSadSq_one (t : ℝ) : iteratedDeriv 1 trqSadSq t = t :=
-  iteratedDeriv_halfSq_one t
-
-/-- `(t²/2)'' = 1`. -/
-theorem iteratedDeriv_trqSadSq_two (t : ℝ) : iteratedDeriv 2 trqSadSq t = 1 :=
-  iteratedDeriv_halfSq_two t
-
-/-- `t ↦ t²/2` is smooth. -/
-theorem contDiff_trqSadSq : ContDiff ℝ ∞ trqSadSq := contDiff_halfSq
-
-/-- `w ↦ w_i²/2` is smooth. -/
-theorem trqSad_contDiff_coordSq (i : Fin 2) : ContDiff ℝ ∞ (fun w : ℝ² => trqSadSq (w i)) :=
-  contDiff_halfSq_comp_apply i
-
 /-! ### The TRq-SC row `j + 1` of (14.2.12) fails per iteration with uniform constants (`q = 2`)
 
 The example is the backbone `Numlib.Optimization.Complexity.SlowExample.TRqSaddle`. -/

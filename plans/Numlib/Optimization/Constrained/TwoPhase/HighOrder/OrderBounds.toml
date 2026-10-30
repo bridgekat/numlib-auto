@@ -1,0 +1,25 @@
+namespace = "Constrained"
+
+[[node]]
+id = "inv_mul_pow_le_rpow_succ"
+
+[[node]]
+id = "inv_mul_mul_pow_le_rpow_succ"
+
+[[node]]
+id = "inv_mul_pow_le_add_arqpPiOf"
+
+[[node]]
+id = "mul_sum_le_mul_sum_abs_mul"
+
+[[node]]
+id = "exists_tol_mul_finMax_lt"
+
+[[node]]
+id = "exists_tol_mul_finMax_lt_arqpPiOf"
+
+[[node]]
+id = "exists_tol_mul_finMax_lt_arqpPiOf_true"
+
+[[node]]
+id = "exists_mul_sq_div_two_mul_rpow_neg_lt_one"
