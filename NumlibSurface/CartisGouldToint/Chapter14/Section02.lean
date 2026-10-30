@@ -244,39 +244,70 @@ times continuously differentiable on an open convex set `X₀ ⊇ X`, and for ev
 the sublevel set `𝓛_f(x₀)` (14.2.8) and `y ∈ X₀`. With `j₀ = 1` this is f.D1qLaB.X (and
 f.D1pLaB.X with `p` in place of `q`). With `j₀ = 0` it is f.D0qLaB.X (`AssumptionD0qLaBX`, where
 (14.2.9) runs over `[0:q]`) strengthened by `|f| ≤ B_{f,0}` on `𝓛_f(x₀)`
-(`AssumptionD1qLaBX.toD0qLaBX`). -/
-structure AssumptionD1qLaBX (f : ℝⁿ → ℝ) (X X₀ : Set ℝⁿ) (x₀ : ℝⁿ) (j₀ q : ℕ)
-    (L B : ℕ → ℝ) : Prop where
-  isOpen : IsOpen X₀
-  convex : Convex ℝ X₀
-  subset : X ⊆ X₀
-  contDiffOn : ContDiffOn ℝ q f X₀
-  one_le_lip : ∀ j ∈ Finset.Icc j₀ q, 1 ≤ L j
-  one_le_bound : ∀ j ∈ Finset.Icc j₀ q, 1 ≤ B j
-  /-- The anchored Lipschitz condition (14.2.9). -/
-  lipschitzAnchored : ∀ j ∈ Finset.Icc j₀ q,
-    IteratedFDerivLipschitzAnchored f j (L j) (sublevel f X x₀) X₀
-  /-- The derivative bound (14.2.10). -/
-  norm_le : ∀ j ∈ Finset.Icc j₀ q, ∀ x ∈ sublevel f X x₀, ‖iteratedFDeriv ℝ j f x‖ ≤ B j
+(`AssumptionD1qLaBX.toD0qLaBX`).
+
+It is stated as the anchored smoothness assumption `LipschitzDerivsAnchored` on `X₀` with the
+orders `[j₀ : q]` and the anchor set `𝓛_f(x₀)`, together with `X ⊆ X₀`, the normalizations
+`L_j, B_j ≥ 1` and the bound (14.2.10); the book's form is `AssumptionD1qLaBX.of_contDiffOn`. -/
+abbrev AssumptionD1qLaBX (f : ℝⁿ → ℝ) (X X₀ : Set ℝⁿ) (x₀ : ℝⁿ) (j₀ q : ℕ)
+    (L B : ℕ → ℝ) : Prop :=
+  LipschitzDerivsAnchored f X₀ (sublevel f X x₀) j₀ q L ∧ X ⊆ X₀ ∧
+    (∀ j ∈ Finset.Icc j₀ q, 1 ≤ L j) ∧ (∀ j ∈ Finset.Icc j₀ q, 1 ≤ B j) ∧
+    ∀ j ∈ Finset.Icc j₀ q, ∀ x ∈ sublevel f X x₀, ‖iteratedFDeriv ℝ j f x‖ ≤ B j
+
+namespace AssumptionD1qLaBX
+
+variable {f : ℝⁿ → ℝ} {X X₀ : Set ℝⁿ} {x₀ : ℝⁿ} {j₀ q : ℕ} {L B : ℕ → ℝ}
 
 /-- f.D1qLaB.X gives the backbone smoothness hypothesis `LipschitzDerivsAnchored` on `X₀` with
 the orders `[j₀ : q]` and the anchor set `𝓛_f(x₀)` (the bound (14.2.10) is not used). -/
-theorem AssumptionD1qLaBX.toLipschitzDerivsAnchored {f : ℝⁿ → ℝ} {X X₀ : Set ℝⁿ} {x₀ : ℝⁿ}
-    {j₀ q : ℕ} {L B : ℕ → ℝ} (h : AssumptionD1qLaBX f X X₀ x₀ j₀ q L B) :
+theorem toLipschitzDerivsAnchored (h : AssumptionD1qLaBX f X X₀ x₀ j₀ q L B) :
     LipschitzDerivsAnchored f X₀ (sublevel f X x₀) j₀ q L :=
-  ⟨h.isOpen, h.convex, sublevel_subset.trans h.subset,
-    fun _ hy => h.contDiffOn.contDiffAt (h.isOpen.mem_nhds hy), h.lipschitzAnchored⟩
+  h.1
 
-/-- f.D1qLaB.X is the backbone assumption `LipschitzDerivsAnchored` (orders `[j₀ : q]`, anchor
-set `𝓛_f(x₀)`) with `X ⊆ X₀`, normalized constants `L_j, B_j ≥ 1` and the bound (14.2.10). -/
-theorem assumptionD1qLaBX_iff {f : ℝⁿ → ℝ} {X X₀ : Set ℝⁿ} {x₀ : ℝⁿ} {j₀ q : ℕ}
-    {L B : ℕ → ℝ} : AssumptionD1qLaBX f X X₀ x₀ j₀ q L B ↔
-      LipschitzDerivsAnchored f X₀ (sublevel f X x₀) j₀ q L ∧ X ⊆ X₀ ∧
-        (∀ j ∈ Finset.Icc j₀ q, 1 ≤ L j) ∧ (∀ j ∈ Finset.Icc j₀ q, 1 ≤ B j) ∧
-        ∀ j ∈ Finset.Icc j₀ q, ∀ x ∈ sublevel f X x₀, ‖iteratedFDeriv ℝ j f x‖ ≤ B j :=
-  ⟨fun h => ⟨h.toLipschitzDerivsAnchored, h.subset, h.one_le_lip, h.one_le_bound, h.norm_le⟩,
-    fun ⟨h, hX, hL, hB, hn⟩ => ⟨h.isOpen, h.convex, hX,
-      fun y hy => (h.contDiffAt y hy).contDiffWithinAt, hL, hB, h.lipschitzAnchored, hn⟩⟩
+theorem isOpen (h : AssumptionD1qLaBX f X X₀ x₀ j₀ q L B) : IsOpen X₀ :=
+  h.1.isOpen
+
+theorem convex (h : AssumptionD1qLaBX f X X₀ x₀ j₀ q L B) : Convex ℝ X₀ :=
+  h.1.convex
+
+theorem subset (h : AssumptionD1qLaBX f X X₀ x₀ j₀ q L B) : X ⊆ X₀ :=
+  h.2.1
+
+theorem contDiffOn (h : AssumptionD1qLaBX f X X₀ x₀ j₀ q L B) : ContDiffOn ℝ q f X₀ :=
+  fun y hy => (h.1.contDiffAt y hy).contDiffWithinAt
+
+theorem one_le_lip (h : AssumptionD1qLaBX f X X₀ x₀ j₀ q L B) :
+    ∀ j ∈ Finset.Icc j₀ q, 1 ≤ L j :=
+  h.2.2.1
+
+theorem one_le_bound (h : AssumptionD1qLaBX f X X₀ x₀ j₀ q L B) :
+    ∀ j ∈ Finset.Icc j₀ q, 1 ≤ B j :=
+  h.2.2.2.1
+
+/-- The anchored Lipschitz condition (14.2.9). -/
+theorem lipschitzAnchored (h : AssumptionD1qLaBX f X X₀ x₀ j₀ q L B) :
+    ∀ j ∈ Finset.Icc j₀ q, IteratedFDerivLipschitzAnchored f j (L j) (sublevel f X x₀) X₀ :=
+  h.1.lipschitzAnchored
+
+/-- The derivative bound (14.2.10). -/
+theorem norm_le (h : AssumptionD1qLaBX f X X₀ x₀ j₀ q L B) :
+    ∀ j ∈ Finset.Icc j₀ q, ∀ x ∈ sublevel f X x₀, ‖iteratedFDeriv ℝ j f x‖ ≤ B j :=
+  h.2.2.2.2
+
+/-- f.D1qLaB.X in the book's form: `f` is `C^q` on an open convex `X₀ ⊇ X`, with (14.2.9) and
+(14.2.10) at the points of `𝓛_f(x₀)` and constants `L_j, B_j ≥ 1`. -/
+theorem of_contDiffOn (hX₀ : IsOpen X₀) (hconv : Convex ℝ X₀) (hX : X ⊆ X₀)
+    (hf : ContDiffOn ℝ q f X₀) (hL1 : ∀ j ∈ Finset.Icc j₀ q, 1 ≤ L j)
+    (hB1 : ∀ j ∈ Finset.Icc j₀ q, 1 ≤ B j)
+    (hlip : ∀ j ∈ Finset.Icc j₀ q,
+      IteratedFDerivLipschitzAnchored f j (L j) (sublevel f X x₀) X₀)
+    (hbd : ∀ j ∈ Finset.Icc j₀ q, ∀ x ∈ sublevel f X x₀, ‖iteratedFDeriv ℝ j f x‖ ≤ B j) :
+    AssumptionD1qLaBX f X X₀ x₀ j₀ q L B :=
+  ⟨⟨hX₀, hconv, sublevel_subset.trans hX, fun _ hy => hf.contDiffAt (hX₀.mem_nhds hy), hlip⟩,
+    hX, hL1, hB1, hbd⟩
+
+end AssumptionD1qLaBX
 
 /-- **Assumption f.bB.X** of [cartis2022evaluation], §14.2.1: `f` is bounded below on `X` by
 `flow`. -/
@@ -304,15 +335,10 @@ theorem AssumptionD1qLaBX.of_lipschitzOn {f : ℝⁿ → ℝ} {X X₀ : Set ℝ�
     (hB1 : ∀ j ∈ Finset.Icc j₀ q, 1 ≤ B j)
     (hlip : ∀ j ∈ Finset.Icc j₀ q, IteratedFDerivLipschitzOn f j (L j) X₀)
     (hbd : ∀ j ∈ Finset.Icc j₀ q, ∀ x ∈ X₀, ‖iteratedFDeriv ℝ j f x‖ ≤ B j) :
-    AssumptionD1qLaBX f X X₀ x₀ j₀ q L B where
-  isOpen := hX₀
-  convex := hconv
-  subset := hX
-  contDiffOn := hf
-  one_le_lip := hL1
-  one_le_bound := hB1
-  lipschitzAnchored j hj := (hlip j hj).anchored (sublevel_subset.trans hX)
-  norm_le j hj x hx := hbd j hj x (hX hx.1)
+    AssumptionD1qLaBX f X X₀ x₀ j₀ q L B :=
+  .of_contDiffOn hX₀ hconv hX hf hL1 hB1
+    (fun j hj => (hlip j hj).anchored (sublevel_subset.trans hX))
+    fun j hj x hx => hbd j hj x (hX hx.1)
 
 /-- The anchored assumption gives Lipschitz derivatives on the open convex set `X₀`
 (`LipschitzDerivsAnchored` with all of `X₀` as anchors) when, moreover, the anchor is all of `X₀`
@@ -320,7 +346,7 @@ theorem AssumptionD1qLaBX.of_lipschitzOn {f : ℝⁿ → ℝ} {X X₀ : Set ℝ�
 theorem AssumptionD1qLaBX.lipschitzDerivsAnchored_self {f : ℝⁿ → ℝ} {X X₀ : Set ℝⁿ} {x₀ : ℝⁿ}
     {q : ℕ} {L B : ℕ → ℝ} (h : AssumptionD1qLaBX f X X₀ x₀ 1 q L B)
     (hsub : X₀ ⊆ sublevel f X x₀) : LipschitzDerivsAnchored f X₀ X₀ 1 q L :=
-  ⟨h.isOpen, h.convex, subset_rfl, fun _ hy => h.contDiffOn.contDiffAt (h.isOpen.mem_nhds hy),
+  ⟨h.isOpen, h.convex, subset_rfl, h.1.contDiffAt,
     fun j hj x hx y hy => h.lipschitzAnchored j hj x (hsub hx) y hy⟩
 
 /-! ### Theorem 14.2.1 -/
@@ -722,61 +748,72 @@ section Anchored
 variable {f : ℝⁿ → ℝ} {X X₀ : Set ℝⁿ} {L B : ℕ → ℝ}
 
 /-- **Assumption f.D0qLaB.X** of [cartis2022evaluation], §14.2.1 (and f.D0pLaB.X with `p` in
-place of `q`): f.D1qLaB.X (the anchored Lipschitz condition (14.2.9) and the bound (14.2.10) for
-`j ∈ [1:q]`), together with (14.2.9) for `j = 0`, `|f(x) - f(y)| ≤ L_{f,0} ‖x - y‖` for
-`x ∈ 𝓛_f(x₀)` and `y ∈ X₀`, with `L_{f,0} ≥ 1`. The book extends only the indices of (14.2.9) to
-`[0:q]`; `AssumptionD1qLaBX` with `j₀ = 0`, which also bounds `|f|` on `𝓛_f(x₀)`, implies it
-(`AssumptionD1qLaBX.toD0qLaBX`). -/
-structure AssumptionD0qLaBX (f : ℝⁿ → ℝ) (X X₀ : Set ℝⁿ) (x₀ : ℝⁿ) (q : ℕ) (L B : ℕ → ℝ) : Prop
-    extends AssumptionD1qLaBX f X X₀ x₀ 1 q L B where
-  /-- `L_{f,0} ≥ 1`. -/
-  one_le_lip_zero : 1 ≤ L 0
-  /-- (14.2.9) for `j = 0`. -/
-  lipschitzAnchored_zero : IteratedFDerivLipschitzAnchored f 0 (L 0) (sublevel f X x₀) X₀
+place of `q`): f.D1qLaB.X with the indices of the anchored Lipschitz condition (14.2.9) extended
+to `j ∈ [0:q]`: `f` is `C^q` on an open convex `X₀ ⊇ X`,
+`‖∇^j f(x) - ∇^j f(y)‖ ≤ L_{f,j} ‖x - y‖` for `j ∈ [0:q]` (for `j = 0`,
+`|f(x) - f(y)| ≤ L_{f,0} ‖x - y‖`) and `‖∇^j f(x)‖ ≤ B_{f,j}` (14.2.10) for `j ∈ [1:q]`, for
+`x ∈ 𝓛_f(x₀)` and `y ∈ X₀`, with `L_{f,j} ≥ 1` (`j ∈ [0:q]`) and `B_{f,j} ≥ 1` (`j ∈ [1:q]`). It is
+stated as `LipschitzDerivsAnchored` on `X₀` with the orders `[0:q]` and the anchor set
+`𝓛_f(x₀)`, together with `X ⊆ X₀`, the normalizations and the bound (14.2.10). The book extends
+only the indices of (14.2.9) to `[0:q]`; `AssumptionD1qLaBX` with `j₀ = 0`, which also bounds `|f|`
+on `𝓛_f(x₀)`, implies it (`AssumptionD1qLaBX.toD0qLaBX`). -/
+abbrev AssumptionD0qLaBX (f : ℝⁿ → ℝ) (X X₀ : Set ℝⁿ) (x₀ : ℝⁿ) (q : ℕ) (L B : ℕ → ℝ) :
+    Prop :=
+  LipschitzDerivsAnchored f X₀ (sublevel f X x₀) 0 q L ∧ X ⊆ X₀ ∧
+    (∀ j ∈ Finset.Icc 0 q, 1 ≤ L j) ∧ (∀ j ∈ Finset.Icc 1 q, 1 ≤ B j) ∧
+    ∀ j ∈ Finset.Icc 1 q, ∀ x ∈ sublevel f X x₀, ‖iteratedFDeriv ℝ j f x‖ ≤ B j
 
-/-- `AssumptionD1qLaBX` with `j₀ = 0` (which also asks `|f| ≤ B_{f,0}` on `𝓛_f(x₀)`) gives
-f.D0qLaB.X. -/
-theorem AssumptionD1qLaBX.toD0qLaBX {x₀ : ℝⁿ} {q : ℕ} (h : AssumptionD1qLaBX f X X₀ x₀ 0 q L B) :
-    AssumptionD0qLaBX f X X₀ x₀ q L B where
-  isOpen := h.isOpen
-  convex := h.convex
-  subset := h.subset
-  contDiffOn := h.contDiffOn
-  one_le_lip j hj := h.one_le_lip j (Finset.Icc_subset_Icc_left (Nat.zero_le 1) hj)
-  one_le_bound j hj := h.one_le_bound j (Finset.Icc_subset_Icc_left (Nat.zero_le 1) hj)
-  lipschitzAnchored j hj := h.lipschitzAnchored j (Finset.Icc_subset_Icc_left (Nat.zero_le 1) hj)
-  norm_le j hj := h.norm_le j (Finset.Icc_subset_Icc_left (Nat.zero_le 1) hj)
-  one_le_lip_zero := h.one_le_lip 0 (Finset.mem_Icc.2 ⟨le_rfl, Nat.zero_le q⟩)
-  lipschitzAnchored_zero := h.lipschitzAnchored 0 (Finset.mem_Icc.2 ⟨le_rfl, Nat.zero_le q⟩)
+namespace AssumptionD0qLaBX
+
+variable {x₀ : ℝⁿ} {q : ℕ}
 
 /-- f.D0qLaB.X with anchor point `x₀` gives the smoothness hypothesis `LipschitzDerivsAnchored`
 of the library on `X₀` with the orders `[0:q]` and the anchor set `𝓛_f(x₀)`; the bound (14.2.10)
 is not used. -/
-theorem AssumptionD0qLaBX.lipschitzDerivsAnchored {x₀ : ℝⁿ} {q : ℕ}
-    (h : AssumptionD0qLaBX f X X₀ x₀ q L B) :
-    LipschitzDerivsAnchored f X₀ (sublevel f X x₀) 0 q L where
-  isOpen := h.isOpen
-  convex := h.convex
-  subset := sublevel_subset.trans h.subset
-  contDiffAt _ hy := h.contDiffOn.contDiffAt (h.isOpen.mem_nhds hy)
-  lipschitzAnchored j hj := by
-    rcases Nat.eq_zero_or_pos j with rfl | hj0
-    · exact h.lipschitzAnchored_zero
-    · exact h.lipschitzAnchored j (Finset.mem_Icc.2 ⟨hj0, (Finset.mem_Icc.1 hj).2⟩)
+theorem lipschitzDerivsAnchored (h : AssumptionD0qLaBX f X X₀ x₀ q L B) :
+    LipschitzDerivsAnchored f X₀ (sublevel f X x₀) 0 q L :=
+  h.1
+
+theorem subset (h : AssumptionD0qLaBX f X X₀ x₀ q L B) : X ⊆ X₀ :=
+  h.2.1
 
 /-- The constants of f.D0qLaB.X are normalized: `L_{f,j} ≥ 1` for `j ∈ [0:q]`. -/
-theorem AssumptionD0qLaBX.normalized {x₀ : ℝⁿ} {q : ℕ} (h : AssumptionD0qLaBX f X X₀ x₀ q L B) :
-    ∀ j ≤ q, 1 ≤ L j := fun j hj => by
-  rcases Nat.eq_zero_or_pos j with rfl | hj0
-  · exact h.one_le_lip_zero
-  · exact h.one_le_lip j (Finset.mem_Icc.2 ⟨hj0, hj⟩)
+theorem normalized (h : AssumptionD0qLaBX f X X₀ x₀ q L B) : ∀ j ≤ q, 1 ≤ L j :=
+  fun j hj => h.2.2.1 j (Finset.mem_Icc.2 ⟨Nat.zero_le j, hj⟩)
+
+/-- f.D0qLaB.X implies f.D1qLaB.X. -/
+theorem toAssumptionD1qLaBX (h : AssumptionD0qLaBX f X X₀ x₀ q L B) :
+    AssumptionD1qLaBX f X X₀ x₀ 1 q L B :=
+  ⟨h.1.mono zero_le_one le_rfl, h.2.1,
+    fun j hj => h.2.2.1 j (Finset.Icc_subset_Icc_left (Nat.zero_le 1) hj), h.2.2.2⟩
+
+/-- (14.2.9) for `j = 0`: `|f(x) - f(y)| ≤ L_{f,0} ‖x - y‖` for `x ∈ 𝓛_f(x₀)`, `y ∈ X₀`. -/
+theorem lipschitzAnchored_zero (h : AssumptionD0qLaBX f X X₀ x₀ q L B) :
+    IteratedFDerivLipschitzAnchored f 0 (L 0) (sublevel f X x₀) X₀ :=
+  h.1.lipschitzAnchored 0 (Finset.mem_Icc.2 ⟨le_rfl, Nat.zero_le q⟩)
+
+end AssumptionD0qLaBX
+
+/-- `AssumptionD1qLaBX` with `j₀ = 0` (which also asks `|f| ≤ B_{f,0}` on `𝓛_f(x₀)`) gives
+f.D0qLaB.X. -/
+theorem AssumptionD1qLaBX.toD0qLaBX {x₀ : ℝⁿ} {q : ℕ} (h : AssumptionD1qLaBX f X X₀ x₀ 0 q L B) :
+    AssumptionD0qLaBX f X X₀ x₀ q L B :=
+  ⟨h.1, h.2.1, h.2.2.1, fun j hj => h.2.2.2.1 j (Finset.Icc_subset_Icc_left (Nat.zero_le 1) hj),
+    fun j hj => h.2.2.2.2 j (Finset.Icc_subset_Icc_left (Nat.zero_le 1) hj)⟩
 
 /-- f.D0qLaB.X is f.D1qLaB.X together with (14.2.9) for `j = 0`, with `L_{f,0} ≥ 1`. -/
 theorem assumptionD0qLaBX_iff {x₀ : ℝⁿ} {q : ℕ} : AssumptionD0qLaBX f X X₀ x₀ q L B ↔
     AssumptionD1qLaBX f X X₀ x₀ 1 q L B ∧ 1 ≤ L 0 ∧
-      IteratedFDerivLipschitzAnchored f 0 (L 0) (sublevel f X x₀) X₀ :=
-  ⟨fun h => ⟨h.toAssumptionD1qLaBX, h.one_le_lip_zero, h.lipschitzAnchored_zero⟩,
-    fun ⟨h, h1, h0⟩ => ⟨h, h1, h0⟩⟩
+      IteratedFDerivLipschitzAnchored f 0 (L 0) (sublevel f X x₀) X₀ := by
+  refine ⟨fun h => ⟨h.toAssumptionD1qLaBX, h.normalized 0 (Nat.zero_le q),
+    h.lipschitzAnchored_zero⟩, fun ⟨h, h1, h0⟩ => ⟨⟨h.isOpen, h.convex, h.1.subset, h.1.contDiffAt,
+      fun j hj => ?_⟩, h.subset, fun j hj => ?_, h.one_le_bound, h.norm_le⟩⟩
+  · rcases Nat.eq_zero_or_pos j with rfl | hj0
+    · exact h0
+    · exact h.lipschitzAnchored j (Finset.mem_Icc.2 ⟨hj0, (Finset.mem_Icc.1 hj).2⟩)
+  · rcases Nat.eq_zero_or_pos j with rfl | hj0
+    · exact h1
+    · exact h.one_le_lip j (Finset.mem_Icc.2 ⟨hj0, (Finset.mem_Icc.1 hj).2⟩)
 
 section TRq
 
@@ -1605,14 +1642,6 @@ section Sharp
 
 open Chapter13 Optimization
 
-/-- f.D0qL with a single constant `L ≥ 1` is the library's smoothness hypothesis on the whole
-space. -/
-private theorem assumptionD0qL_of_lipschitzDerivsAnchored {m q : ℕ}
-    {f : EuclideanSpace ℝ (Fin m) → ℝ} {L : ℝ}
-    (hf : LipschitzDerivsAnchored f univ univ 0 q (fun _ => L)) (hL : 1 ≤ L) :
-    AssumptionD0qL f q (fun _ => L) :=
-  assumptionD0qL_iff_lipschitzDerivsAnchored.2 ⟨hf, fun _ _ => hL⟩
-
 /-- **Theorem 14.2.4** of [cartis2022evaluation], sharpness: the orders of the TRq-SC row
 (`ε^{-(q+1)}`), of the ARqp-SC row for `q ≤ 2` (`ε^{-(p+1)/(p-q+1)}`) and of the ARqpC-SC row
 for `q = 1` and convex `h` (`ε^{-(p+1)/p}`) are attained, by the slow examples of
@@ -1809,7 +1838,7 @@ theorem theorem_14_2_4_sharp_trqida {q : ℕ} (hq : 1 ≤ q) :
   obtain ⟨flow, L, hL, H⟩ := exists_isTRqIDARun_slow hq
   refine ⟨flow, L, hL, fun ε hε hεq P hPq hΔ₀ hϑ hh₀ => ?_⟩
   obtain ⟨f, hb, hf, H⟩ := H ε hε hεq P hPq hΔ₀ hϑ hh₀
-  exact ⟨f, hb, assumptionD0qL_of_lipschitzDerivsAnchored hf hL, H⟩
+  exact ⟨f, hb, AssumptionD0qL.of_lipschitzDerivsAnchored hf hL, H⟩
 
 /-- **Theorem 14.2.4** of [cartis2022evaluation], sharpness of the TRqEDA-SC row: the order
 `ε^{-(q+1)}` is attained with the (simple) feasible set `X = ℝ¹` (`univ`) and exact function and
@@ -1847,7 +1876,7 @@ theorem theorem_14_2_4_sharp_trqeda {q : ℕ} (hq : 1 ≤ q) :
   obtain ⟨flow, L, hL, H⟩ := exists_isTRqEDARun_slow hq
   refine ⟨flow, L, hL, fun ε hε hεq P hPq hΔ₀ hϑ hκs hh₀ hsum => ?_⟩
   obtain ⟨f, hb, hf, H⟩ := H ε hε hεq P hPq hΔ₀ hϑ hκs hh₀ hsum
-  exact ⟨f, hb, assumptionD0qL_of_lipschitzDerivsAnchored hf hL, H⟩
+  exact ⟨f, hb, AssumptionD0qL.of_lipschitzDerivsAnchored hf hL, H⟩
 
 /-- **Theorem 14.2.4** of [cartis2022evaluation], sharpness of the ARqpIDA-SC row for `q ∈ {1, 2}`:
 the order `ε^{-(p+1)/(p-q+1)}` of the unit-radii mode is attained with the (simple) feasible set
@@ -1891,7 +1920,7 @@ theorem theorem_14_2_4_sharp_arqpida {p q : ℕ} (hq : 1 ≤ q) (hq2 : q ≤ 2) 
   obtain ⟨flow, L, ε₀, hL, hε₀, H⟩ := exists_isARqpIDARun_slow hq hq2 hqp
   refine ⟨flow, L, ε₀, hL, hε₀, fun ε hε hεε P hPp hPq hσ hδ₀ hh₀ => ?_⟩
   obtain ⟨f, hb, hf, H⟩ := H ε hε hεε P hPp hPq hσ hδ₀ hh₀
-  exact ⟨f, hb, assumptionD0qL_of_lipschitzDerivsAnchored hf hL, H⟩
+  exact ⟨f, hb, AssumptionD0qL.of_lipschitzDerivsAnchored hf hL, H⟩
 
 /-- **Theorem 14.2.4** of [cartis2022evaluation], sharpness of the ARqpEDA-SC row for `q ∈ {1, 2}`:
 the order `ε^{-(p+1)/(p-q+1)}` of the unit-radii mode is attained with the (simple) feasible set
@@ -1939,7 +1968,7 @@ theorem theorem_14_2_4_sharp_arqpeda {p q : ℕ} (hq : 1 ≤ q) (hq2 : q ≤ 2) 
   obtain ⟨flow, L, ε₀, hL, hε₀, H⟩ := exists_isARqpEDARun_slow hq hq2 hqp
   refine ⟨flow, L, ε₀, hL, hε₀, fun ε hε hεε P hPp hPq hσ hδ₀ hκs hh₀ hsum => ?_⟩
   obtain ⟨f, hb, hf, H⟩ := H ε hε hεε P hPp hPq hσ hδ₀ hκs hh₀ hsum
-  exact ⟨f, hb, assumptionD0qL_of_lipschitzDerivsAnchored hf hL, H⟩
+  exact ⟨f, hb, AssumptionD0qL.of_lipschitzDerivsAnchored hf hL, H⟩
 
 /-- **Theorem 14.2.4** of [cartis2022evaluation], sharpness of the ARqpEDA-SC row in the
 lower-bound mode of the radii control (the "otherwise" order `ε^{-q(p+1)/p}`), for every
@@ -1988,7 +2017,7 @@ theorem theorem_14_2_4_sharp_arqpeda_otherwise {p q : ℕ} (hq : 1 ≤ q) (hqp :
   obtain ⟨flow, L, ε₀, hL, hε₀, H⟩ := exists_isARqpEDARun_slowGrad hq hqp
   refine ⟨flow, L, ε₀, hL, hε₀, fun ε hε hεε P hPp hPq hσ hδ₀ hκs hh₀ hsum => ?_⟩
   obtain ⟨f, hb, hf, H⟩ := H ε hε hεε P hPp hPq hσ hδ₀ hκs hh₀ hsum
-  exact ⟨f, hb, assumptionD0qL_of_lipschitzDerivsAnchored hf hL, H⟩
+  exact ⟨f, hb, AssumptionD0qL.of_lipschitzDerivsAnchored hf hL, H⟩
 
 /-- **Theorem 14.2.4** of [cartis2022evaluation], sharpness of the ARqpIDA-SC row in the
 lower-bound mode of the radii control for `q = p ≥ 3` (the "otherwise" order `ε^{-q(p+1)/p}`,
@@ -2029,7 +2058,7 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise {p : ℕ} (hp : 3 ≤ p) :
   obtain ⟨flow, L, ε₀, hL, hε₀, H⟩ := exists_isARqpIDARun_slowTop hp
   refine ⟨flow, L, ε₀, hL, hε₀, fun ε hε hεε P hPp hPq hσ hδ₀ hh₀ => ?_⟩
   obtain ⟨f, hb, hf, H⟩ := H ε hε hεε P hPp hPq hσ hδ₀ hh₀
-  exact ⟨f, hb, assumptionD0qL_of_lipschitzDerivsAnchored hf hL, H⟩
+  exact ⟨f, hb, AssumptionD0qL.of_lipschitzDerivsAnchored hf hL, H⟩
 
 /-- **Theorem 14.2.4** of [cartis2022evaluation], sharpness of the ARqpIDA-SC row in the
 lower-bound mode of the radii control (the "otherwise" order `ε^{-q(p+1)/p}`) for every
@@ -2087,7 +2116,7 @@ theorem theorem_14_2_4_sharp_arqpida_otherwise_constrained {p q : ℕ} (hq : 1 �
   obtain ⟨flow, L, ε₀, hL, hε₀, H⟩ := exists_isARqpIDARun_slit hq hqp
   refine ⟨flow, L, ε₀, hL, hε₀, fun ε hε hεε P hPp hPq hσ hδ₀ hh₀ => ?_⟩
   obtain ⟨ρ, X, f, hρ, hρ2, hX, hXc, hb, hf, H⟩ := H ε hε hεε P hPp hPq hσ hδ₀ hh₀
-  exact ⟨ρ, X, f, hρ, hρ2, hX, hXc, hb, assumptionD0qL_of_lipschitzDerivsAnchored hf hL, H⟩
+  exact ⟨ρ, X, f, hρ, hρ2, hX, hXc, hb, AssumptionD0qL.of_lipschitzDerivsAnchored hf hL, H⟩
 
 end Sharp
 

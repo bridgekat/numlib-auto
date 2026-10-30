@@ -42,3 +42,6 @@ id = "HighOrderTargetSeq.exists_run_of_oracle"
 [[node]]
 id = "HighOrderTargetSeq.kbCount"
 source = "Cartis–Gould–Toint, (14.3.36), the number of case-(b) outer iterations"
+
+[[node]]
+id = "HighOrderTargetSeq.toCountSeq"

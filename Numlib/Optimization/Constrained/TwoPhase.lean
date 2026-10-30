@@ -3,6 +3,10 @@ import Numlib.Optimization.Constrained.TwoPhase.Run
 import Numlib.Optimization.Constrained.TwoPhase.Complexity
 import Numlib.Optimization.Constrained.TwoPhase.HighOrder.Basic
 import Numlib.Optimization.Constrained.TwoPhase.HighOrder.Complexity
+import Numlib.Optimization.Constrained.TwoPhase.HighOrder.ARqpCalls
+import Numlib.Optimization.Constrained.TwoPhase.HighOrder.TRqCalls
+import Numlib.Optimization.Constrained.TwoPhase.HighOrder.OneStep
+import Numlib.Optimization.Constrained.TwoPhase.HighOrder.OrderBounds
 
 /-!
 # Two-phase target-following methods
@@ -23,4 +27,15 @@ Umbrella module for the analysis of the two-phase target-following methods of
 * `Numlib.Optimization.Constrained.TwoPhase.HighOrder.Complexity`: the merit-decrease contracts of
   the inner method and the evaluation complexity of the high-order run (Lemma 14.3.8 and
   Theorem 14.3.9).
+* `Numlib.Optimization.Constrained.TwoPhase.HighOrder.ARqpCalls`,
+  `Numlib.Optimization.Constrained.TwoPhase.HighOrder.TRqCalls`: high-order runs whose inner calls
+  are runs of the regularization method ARqp or of the trust-region method TRq, and the contracts
+  these calls satisfy;
+* `Numlib.Optimization.Constrained.TwoPhase.HighOrder.OneStep`: Phase-2 data whose inner calls make
+  one successful iteration each;
+* `Numlib.Optimization.Constrained.TwoPhase.HighOrder.OrderBounds`: elementary inequalities between
+  the complexity orders of the high-order runs.
+
+The examples of runs (`Numlib.Optimization.Constrained.TwoPhase.HighOrder.Examples.*`) are not
+imported here.
 -/

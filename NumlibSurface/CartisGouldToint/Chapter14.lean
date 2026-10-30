@@ -96,6 +96,8 @@ Kinds (**false**, **gap**, **typo**, **reading**) as in the book index `CartisGo
   for `L_{w,p}`, `w` and holds at successful iterations not followed by termination, and `3j!`
   reads `3q!`; the radius policies are proved for every run, part 1 needing `δ_{0,1} = 1`
   (`lemma_14_1_7`, `theorem_14_1_10_i`, `theorem_14_1_10_ii`).
+* (B.14.6): **typo**, inside the sum over `ℓ` the printed `(p - j + 1)!` and `‖s_k‖^{p-j+1}` read
+  `(p - ℓ + 1)!` and `‖s_k‖^{p-ℓ+1}`, as in (B.14.2), (B.14.4) and (14.1.30) (`lemma_14_1_7`).
 * Theorem 14.2.1: **typo**, the Lipschitz condition is on the closed ball of radius `δ_j`, and
   `δ^j` of (14.2.6) is `δ_j^j`; (14.2.18)–(14.2.19) print `max ℓ(d)` for the minimum
   (`theorem_14_2_1`).
@@ -124,6 +126,11 @@ Kinds (**false**, **gap**, **typo**, **reading**) as in the book index `CartisGo
   `∇^j μ`.
 * Lemma 14.3.8: **gap**, its decreases do not bound the bad outer iterations
   (`lemma_14_3_8_proof_gap_counterexample`).
+* Lemma 14.3.8, proof after (B.14.21): **gap** (for `π_l > 1`), the proof bounds
+  `‖r(x_{j,s}, t_j)‖^{π_l-1}` below by `ε₀^{π_l-1}`, while (B.14.20) only gives `(θε₀)^{π_l-1}`;
+  the constant `κ^S = κ_decr⁻¹ (βθ)^{-π_max}` of (14.3.71) still holds, since the INNER
+  tolerance `β ‖r(x_{j,0}, t_j)‖ ε_l` of (B.14.21) is at least `βθε₀ε_l`
+  (`Constrained.IsHighOrderTargetRun.residual_drop`, `lemma_14_3_8`).
 * Theorem 14.3.9, by INNER class:
   * nonspecific INNER: **false** under the per-call reading of its INNER hypotheses
     (`theorem_14_3_9_false`), vacuous for `π₁ < 2` under the uniform reading

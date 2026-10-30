@@ -105,6 +105,11 @@ refute printed statements are backbone examples
   ending right after its only successful step); the decreases it uses allow Phase-2 sequences that
   never terminate (`lemma_14_3_8_proof_gap_counterexample`). `lemma_14_3_8` counts them
   separately.
+* Proof of Lemma 14.3.8, after (B.14.21): the book bounds `‖r(x_{j,s}, t_j)‖^{π_l-1}` below by
+  `ε₀^{π_l-1}`, while (B.14.20) only gives `(θε₀)^{π_l-1}`. The constant
+  `κ^S = κ_decr⁻¹ (βθ)^{-π_max}` of (14.3.71) is still right: the INNER tolerance
+  `β ‖r(x_{j,0}, t_j)‖ ε_l` of (B.14.21) is at least `βθε₀ε_l`, and the residuals are at most `ε₀`
+  (`Constrained.IsHighOrderTargetRun.residual_drop`, `lemma_14_3_8`).
 * **Theorem 14.3.9** is stated for INNER satisfying Lemma 14.2.2 as stated (decrease unless
   INNER's own test (14.3.19) holds) with radii `ρ` bounded below; Phase 2 then terminates, with an
   extra term `O(ε₀^{-1} + max_j (ε₀ ε_j ρ_j^{j-1})^{-1})`; the Phase-1 cost contract is additive;
@@ -625,19 +630,56 @@ theorem theorem_14_3_4_add {r : ℝⁿ → ℝᵐ} {X : Set ℝⁿ} {q : ℕ} {�
 /-- **Assumption f.D1pLB.X** of [cartis2022evaluation], §14.3.2.2 (and f.D1qLB.X with `q` in
 place of `p`): `g` is `p` times continuously differentiable on an open convex set `X₀ ⊇ X`, and
 for `j ∈ [1 : p]` its derivative tensors `∇^j g` are Lipschitz continuous (constants `L j`) and
-bounded (constants `B j`) on `X₀`. -/
-structure AssumptionD1pLBX (g : ℝⁿ → ℝ) (X X₀ : Set ℝⁿ) (p : ℕ) (L B : ℕ → ℝ) : Prop where
-  isOpen : IsOpen X₀
-  convex : Convex ℝ X₀
-  subset : X ⊆ X₀
-  contDiffOn : ContDiffOn ℝ p g X₀
-  lipschitz : ∀ j ∈ Finset.Icc 1 p, IteratedFDerivLipschitzOn g j (L j) X₀
-  norm_le : ∀ j ∈ Finset.Icc 1 p, ∀ x ∈ X₀, ‖iteratedFDeriv ℝ j g x‖ ≤ B j
+bounded (constants `B j`) on `X₀`. It is stated as the anchored smoothness assumption
+`LipschitzDerivsAnchored` on `X₀` with all of `X₀` as anchors (Lipschitz continuity on `X₀`) and
+the orders `[1 : p]`, together with `X ⊆ X₀` and the bounds; the book's form is
+`AssumptionD1pLBX.of_lipschitzOn`. -/
+abbrev AssumptionD1pLBX (g : ℝⁿ → ℝ) (X X₀ : Set ℝⁿ) (p : ℕ) (L B : ℕ → ℝ) : Prop :=
+  LipschitzDerivsAnchored g X₀ X₀ 1 p L ∧ X ⊆ X₀ ∧
+    ∀ j ∈ Finset.Icc 1 p, ∀ x ∈ X₀, ‖iteratedFDeriv ℝ j g x‖ ≤ B j
+
+namespace AssumptionD1pLBX
+
+variable {g : ℝⁿ → ℝ} {X X₀ : Set ℝⁿ} {p : ℕ} {L B : ℕ → ℝ}
+
+theorem isOpen (hg : AssumptionD1pLBX g X X₀ p L B) : IsOpen X₀ :=
+  hg.1.isOpen
+
+theorem convex (hg : AssumptionD1pLBX g X X₀ p L B) : Convex ℝ X₀ :=
+  hg.1.convex
+
+theorem subset (hg : AssumptionD1pLBX g X X₀ p L B) : X ⊆ X₀ :=
+  hg.2.1
+
+theorem contDiffOn (hg : AssumptionD1pLBX g X X₀ p L B) : ContDiffOn ℝ p g X₀ :=
+  fun y hy => (hg.1.contDiffAt y hy).contDiffWithinAt
+
+/-- The derivatives of orders `j ∈ [1 : p]` are `L_j`-Lipschitz on `X₀`. -/
+theorem lipschitz (hg : AssumptionD1pLBX g X X₀ p L B) :
+    ∀ j ∈ Finset.Icc 1 p, IteratedFDerivLipschitzOn g j (L j) X₀ :=
+  fun _ hj => hg.1.lipschitzOn hj
+
+/-- The derivatives of orders `j ∈ [1 : p]` are bounded by `B_j` on `X₀`. -/
+theorem norm_le (hg : AssumptionD1pLBX g X X₀ p L B) :
+    ∀ j ∈ Finset.Icc 1 p, ∀ x ∈ X₀, ‖iteratedFDeriv ℝ j g x‖ ≤ B j :=
+  hg.2.2
+
+/-- f.D1pLB.X in the book's form: `g` is `C^p` on an open convex `X₀ ⊇ X`, with derivatives of
+orders `j ∈ [1 : p]` that are `L_j`-Lipschitz and bounded by `B_j` on `X₀`. -/
+theorem of_lipschitzOn (hX₀ : IsOpen X₀) (hconv : Convex ℝ X₀) (hX : X ⊆ X₀)
+    (hg : ContDiffOn ℝ p g X₀) (hL : ∀ j ∈ Finset.Icc 1 p, IteratedFDerivLipschitzOn g j (L j) X₀)
+    (hB : ∀ j ∈ Finset.Icc 1 p, ∀ x ∈ X₀, ‖iteratedFDeriv ℝ j g x‖ ≤ B j) :
+    AssumptionD1pLBX g X X₀ p L B :=
+  ⟨.of_lipschitzOn hX₀ hconv subset_rfl (fun _ hy => hg.contDiffAt (hX₀.mem_nhds hy)) hL, hX, hB⟩
+
+end AssumptionD1pLBX
 
 /-- **Assumption c.D1pLB.X** of [cartis2022evaluation], §14.3.2.2: the components `c_i` are `p`
 times continuously differentiable on an open convex set `X₀ ⊇ X`, with Lipschitz and bounded
 derivative tensors of orders `1, …, p` on `X₀` (with constants common to all components, which is
-no loss of generality for finitely many components). -/
+no loss of generality for finitely many components). It is f.D1pLB.X (`AssumptionD1pLBX`) for
+every component on a common set `X₀`, whose properties are recorded separately since they are part
+of the assumption also when there are no components (`m = 0`). -/
 structure AssumptionCD1pLBX (c : ℝⁿ → ℝᵐ) (X X₀ : Set ℝⁿ) (p : ℕ) (L B : ℕ → ℝ) : Prop where
   isOpen : IsOpen X₀
   convex : Convex ℝ X₀
@@ -665,8 +707,9 @@ theorem exists_assumptionD1pLBX_ball {g : ℝⁿ → ℝ} (hg : ContDiff ℝ ∞
       hj.continuous.continuousOn
     exact ⟨K, M, fun x hx y hy => by simpa [dist_eq_norm] using hK.dist_le_mul x hx y hy, hM⟩
   choose L B hL hB using hK
-  refine ⟨L, B, isOpen_ball, convex_ball 0 R, hX, (hg.of_le (by exact_mod_cast le_top)).contDiffOn,
-    fun j _ x hx y hy => ?_, fun j _ x hx => hB j x (ball_subset_closedBall hx)⟩
+  refine ⟨L, B, .of_lipschitzOn isOpen_ball (convex_ball 0 R) hX
+    (hg.of_le (by exact_mod_cast le_top)).contDiffOn (fun j _ x hx y hy => ?_)
+    fun j _ x hx => hB j x (ball_subset_closedBall hx)⟩
   simpa [Real.rpow_one] using hL j x (ball_subset_closedBall hx) y (ball_subset_closedBall hy)
 
 /-- The sublevel set `𝓛_ν(x₀) = {x ∈ X | ‖c(x)‖ ≤ ‖c(x₀)‖}` of Lemma 14.3.6(i) of
@@ -1813,10 +1856,8 @@ abbrev zeroCon (n : ℕ) : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fi
 abbrev zeroOuter : EuclideanSpace ℝ (Fin 0) → ℝ := 0
 
 /-- The zero constraint map satisfies c.D1pL with constants `0`. -/
-theorem assumptionCD1pL_zeroCon (p : ℕ) : AssumptionCD1pL (zeroCon n) p (fun _ => 0) where
-  contDiff := contDiff_const
-  nonneg _ _ := le_rfl
-  lipschitz_component i := i.elim0
+theorem assumptionCD1pL_zeroCon (p : ℕ) : AssumptionCD1pL (zeroCon n) p (fun _ => 0) :=
+  ⟨fun i => i.elim0, fun _ _ => le_rfl⟩
 
 /-- `(y, δ)` is the output of a call `INNER(F, X, q, x^S, ε)` realized by ARqp-SC: `y` is the
 first termination iterate of an ARqpC-SC run (`algorithm_14_1_1`) with `c = 0`, `h = 0` and
@@ -2359,8 +2400,8 @@ theorem exists_algorithm_14_3_1_cost_contract_counterexample {p : ℕ} (hp : 2 �
   have hΦ : Chapter12.AssumptionD1pL (phi2 r) p (fun _ => 1) := by
     have e : phi2 r = fun _ => R ^ 2 / 2 := funext fun y => by rw [phi2_apply, hr y]
     rw [e]
-    refine ⟨contDiff_const, fun _ _ => le_rfl, fun j hj => (iteratedFDerivLipschitzOn_iff).2
-      fun a _ b _ => ?_⟩
+    refine .of_iteratedFDerivLipschitzOn contDiff_const (fun _ _ => le_rfl) fun j hj =>
+      iteratedFDerivLipschitzOn_iff.2 fun a _ b _ => ?_
     have hj0 : j ≠ 0 := by have := (Finset.mem_Icc.1 hj).1; omega
     simp [iteratedFDeriv_const_of_ne hj0]
   set ε : ℕ → ℝ := fun j => if j = 0 then R / 2 else 1
@@ -4832,10 +4873,10 @@ theorem assumptionD1pLBX_comp_coord {n : ℕ} {g : ℝ → ℝ} {U : Set ℝ} (h
   have hcd : ∀ (m : ℕ), ∀ v ∈ X₀, ContDiffAt ℝ m (fun v : EuclideanSpace ℝ (Fin n) => g (v i))
       v := fun m v hv =>
     ((hg.contDiffAt (hU.mem_nhds (hmem v hv))).of_le (by exact_mod_cast le_top)).comp_coord i
-  refine ⟨hX₀, hcv, hXX, fun v hv => (hcd p v hv).contDiffWithinAt, fun j hj => ?_,
+  refine .of_lipschitzOn hX₀ hcv hXX (fun v hv => (hcd p v hv).contDiffWithinAt) (fun j hj => ?_)
     fun j hj v hv => (((hg.contDiffAt (hU.mem_nhds (hmem v hv))).of_le
       (by exact_mod_cast le_top)).norm_iteratedFDeriv_comp_coord_le (k := j) i).trans
-      (hC j (Finset.mem_Icc.1 hj).1 v hv)⟩
+      (hC j (Finset.mem_Icc.1 hj).1 v hv)
   exact iteratedFDerivLipschitzOn_of_norm_le hcv (fun y hy => hcd (j + 1) y hy) fun v hv =>
     (((hg.contDiffAt (hU.mem_nhds (hmem v hv))).of_le
       (by exact_mod_cast le_top)).norm_iteratedFDeriv_comp_coord_le (k := j + 1) i).trans

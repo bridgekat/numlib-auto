@@ -90,7 +90,10 @@ maxima `L_f`, `L_c` of (14.1.3) are `Optimization.finMax 1 Lf p` and `Optimizati
 * Lemma 14.1.7: with `ς < 1` the printed factor `(1 - θ)` is wrong; Step 1 only certifies
   `φ_{w,j} > ς ε_j δ^j/j!` and the factor is `(ς - θ)` (assuming `θ < ς`). The `‖s_k‖^{p+1}`
   term carries a factor `2`. The inequality is strict, and h.S0 is not needed.
-* Lemmas 14.1.4 and 14.1.6: only the smoothness and Lipschitz properties actually used (`f`, `c`
+* Proof of Lemma 14.1.7, (B.14.6): inside the sum over `ℓ` the printed `(p - j + 1)!` and
+  `‖s_k‖^{p-j+1}` are typos for `(p - ℓ + 1)!` and `‖s_k‖^{p-ℓ+1}`, as in (B.14.2), (B.14.4) and
+  (14.1.30); the proof of `lemma_14_1_7` uses the corrected bound.
+* Lemmas 14.1.4 and 14.1.6: only the smoothness and Lipschitz properties the proofs use (`f`, `c`
   of class `C^p`; f.DpL, c.DpL, h.L) are assumed.
 * Lemma 14.1.9 and Theorem 14.1.10, part 2: the minimum `min_j ε_j^{j+1}` may be replaced by any
   positive lower bound `m_ε`; the decrease is stated for the order `j` produced by Lemma 14.1.8.
@@ -127,12 +130,40 @@ local notation "ℝᵐ" => EuclideanSpace ℝ (Fin m)
 
 /-- **Assumption c.D1pL** of [cartis2022evaluation], §14.1.1: `c` is `p` times continuously
 differentiable and, for `j ∈ [1 : p]`, the `j`-th derivative of each component `c_i` is Lipschitz
-continuous with constant `L_{c,j} ≥ 0`. -/
-structure AssumptionCD1pL (c : ℝⁿ → ℝᵐ) (p : ℕ) (Lc : ℕ → ℝ) : Prop where
-  contDiff : ContDiff ℝ p c
-  nonneg : ∀ j ∈ Finset.Icc 1 p, 0 ≤ Lc j
-  lipschitz_component : ∀ i, ∀ j ∈ Finset.Icc 1 p,
-    IteratedFDerivLipschitzOn (fun x => c x i) j (Lc j) univ
+continuous with constant `L_{c,j} ≥ 0`. It is stated as the anchored smoothness assumption of
+orders `[1 : p]` on the whole space (`C = A = ℝⁿ`) for every component `c_i`, together with
+`L_{c,j} ≥ 0`; the book's form is `AssumptionCD1pL.contDiff`,
+`AssumptionCD1pL.lipschitz_component` and `AssumptionCD1pL.of_lipschitz_component`. -/
+abbrev AssumptionCD1pL (c : ℝⁿ → ℝᵐ) (p : ℕ) (Lc : ℕ → ℝ) : Prop :=
+  (∀ i, LipschitzDerivsAnchored (fun x => c x i) univ univ 1 p Lc) ∧
+    ∀ j ∈ Finset.Icc 1 p, 0 ≤ Lc j
+
+namespace AssumptionCD1pL
+
+variable {c : ℝⁿ → ℝᵐ} {p : ℕ} {Lc : ℕ → ℝ}
+
+/-- Under c.D1pL, `c` is `C^p`. -/
+theorem contDiff (hc : AssumptionCD1pL c p Lc) : ContDiff ℝ p c :=
+  contDiff_piLp' 2 fun i => (hc.1 i).contDiff
+
+/-- The constants of c.D1pL are nonnegative. -/
+theorem nonneg (hc : AssumptionCD1pL c p Lc) : ∀ j ∈ Finset.Icc 1 p, 0 ≤ Lc j :=
+  hc.2
+
+/-- Under c.D1pL, `∇^j c_i` is `L_{c,j}`-Lipschitz for every component `i` and `j ∈ [1 : p]`. -/
+theorem lipschitz_component (hc : AssumptionCD1pL c p Lc) :
+    ∀ i, ∀ j ∈ Finset.Icc 1 p, IteratedFDerivLipschitzOn (fun x => c x i) j (Lc j) univ :=
+  fun i _ hj => (hc.1 i).lipschitzOn hj
+
+/-- c.D1pL from a `C^p` map whose components have `L_{c,j}`-Lipschitz derivatives of orders
+`j ∈ [1 : p]`, with `L_{c,j} ≥ 0`. -/
+theorem of_lipschitz_component (hc : ContDiff ℝ p c) (h0 : ∀ j ∈ Finset.Icc 1 p, 0 ≤ Lc j)
+    (hL : ∀ i, ∀ j ∈ Finset.Icc 1 p,
+      IteratedFDerivLipschitzOn (fun x => c x i) j (Lc j) univ) :
+    AssumptionCD1pL c p Lc :=
+  ⟨fun i => .of_contDiff ((contDiff_piLp 2).1 hc i) (hL i) univ, h0⟩
+
+end AssumptionCD1pL
 
 /-- **Assumption h.L** of [cartis2022evaluation], §14.1.1: `h` is Lipschitz continuous with
 constant `L_{h,0} ≥ 0`: the backbone `Optimization.HasLipschitzConst`. -/
@@ -1482,8 +1513,8 @@ theorem corollary_14_1_11 {p : ℕ} (hp : 1 ≤ p) (P : ARqpCParams) :
             (fun v => ‖v‖) 1 1 univ := by
   have hf0 : Chapter12.AssumptionD1pL (fun _ : EuclideanSpace ℝ (Fin 1) => (0 : ℝ)) p
       (fun _ => 1) :=
-    ⟨contDiff_const, fun _ _ => le_rfl, fun j _ => (iteratedFDerivLipschitzOn_iff).2
-      fun a _ b _ => by simp⟩
+    .of_iteratedFDerivLipschitzOn contDiff_const (fun _ _ => le_rfl) fun j _ =>
+      iteratedFDerivLipschitzOn_iff.2 fun a _ b _ => by simp
   refine ⟨hf0, assumptionHLip_norm, ⟨Optimization.isSubadditive_norm, norm_zero⟩,
     convexOn_norm convex_univ, ?_⟩
   have hσ₀ := P.σ₀_pos
@@ -1565,8 +1596,8 @@ theorem corollary_14_1_11 {p : ℕ} (hp : 1 ≤ p) (P : ARqpCParams) :
   -- the problem
   set c : EuclideanSpace ℝ (Fin 1) → EuclideanSpace ℝ (Fin 1) := liftC g with hcdef
   have hcD : AssumptionCD1pL c p (fun _ => L) := by
-    refine ⟨(Optimization.contDiff_ridge hg).smul contDiff_const, fun _ _ =>
-      zero_le_one.trans (le_max_left _ _), fun i j hj => ?_⟩
+    refine .of_lipschitz_component ((Optimization.contDiff_ridge hg).smul contDiff_const)
+      (fun _ _ => zero_le_one.trans (le_max_left _ _)) fun i j hj => ?_
     have hci : (fun y => c y i) = Optimization.ridge g e₀ := funext fun y => smul_e₀_apply _ i
     rw [hci]
     exact Optimization.iteratedFDerivLipschitzOn_ridge hg

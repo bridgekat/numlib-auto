@@ -43,9 +43,9 @@ instances with `X = C = A = univ`.
 
 ## Main definitions
 
-* `AssumptionD1pL f p L` — f.D1qL, f.D1pL, f.D1rL (bridged to `LipschitzDerivsAnchored` by
-  `assumptionD1pL_iff`, `AssumptionD1pL.toLipschitzDerivsAnchored`; the forms on an open convex
-  set or anchored at a set used with feasible sets in §14.2 are `LipschitzDerivsAnchored` itself);
+* `AssumptionD1pL f p L` — f.D1qL, f.D1pL, f.D1rL (`LipschitzDerivsAnchored` on `C = A = E`
+  with constants at least `1`; the forms on an open convex set or anchored at a set used with
+  feasible sets in §14.2 are `LipschitzDerivsAnchored` itself);
 * `algorithm_12_2_1` (TRq), with its test `trqStop`; `algorithm_12_2_1_feasible` (TRq-SC);
 * `algorithm_12_2_2` (ARqp), with its test `arqpStop`; `algorithm_12_2_2_feasible` (ARqp-SC);
   `algorithm_12_2_3`;
@@ -91,7 +91,7 @@ instances with `X = C = A = univ`.
   `κ̂ = min(κ_{δ,min}, τ_q/2)` (`arqpKappaHat`), also in Lemma 12.2.13 and Theorem 12.2.14 (2).
 * **Lemma 12.2.13.** It needs f.D1pL (printed: f.D1qL), and holds at successful iterations
   followed by a non-terminating one (printed: every iteration before termination). In (12.2.56)
-  `‖s_k‖^{p-j+1}` is a typo for `‖s_k‖^{p-ℓ+1}`.
+  `(p-j+1)!` and `‖s_k‖^{p-j+1}` are typos for `(p-ℓ+1)!` and `‖s_k‖^{p-ℓ+1}`.
 * **Theorem 12.2.14.** The hypotheses `θ < ς` (Lemma 12.2.11) and `σ_min > 0` (the book's Step 0;
   `Optimization.ARqpParams` only asks `σ_min ≥ 0`) are explicit. In (1) the radii equal to `1` are
   required of `δ₀` and of every returned step (the book's "the algorithm ensures `δ_{k+1,j} = 1`");
@@ -128,23 +128,40 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 /-- **Assumptions f.D1qL / f.D1pL / f.D1rL** of [cartis2022evaluation] (§12.2.1.2, §12.2.2.1,
 §12.2.2.4; the same condition for the orders `q`, `p`, `r`): `f` is `p` times continuously
 differentiable and, for every `j ∈ [1:p]`, its `j`-th derivative is Lipschitz continuous with
-constant `L_{f,j} = L j ≥ 1`. -/
-structure AssumptionD1pL (f : E → ℝ) (p : ℕ) (L : ℕ → ℝ) : Prop where
-  /-- `f` is `C^p`. -/
-  contDiff : ContDiff ℝ p f
-  /-- The constants are at least `1`. -/
-  one_le : ∀ j ∈ Finset.Icc 1 p, 1 ≤ L j
-  /-- The `j`-th derivative is `L_{f,j}`-Lipschitz. -/
-  lipschitz : ∀ j ∈ Finset.Icc 1 p, IteratedFDerivLipschitzOn f j (L j) univ
+constant `L_{f,j} = L j ≥ 1`. It is stated as the anchored smoothness assumption of orders
+`[1:p]` on the whole space (`C = A = E`) together with `L_{f,j} ≥ 1`; the book's form is
+`AssumptionD1pL.contDiff`, `AssumptionD1pL.lipschitz` and
+`AssumptionD1pL.of_iteratedFDerivLipschitzOn`. -/
+abbrev AssumptionD1pL (f : E → ℝ) (p : ℕ) (L : ℕ → ℝ) : Prop :=
+  LipschitzDerivsAnchored f univ univ 1 p L ∧ ∀ j ∈ Finset.Icc 1 p, 1 ≤ L j
 
 variable {f : E → ℝ} {p : ℕ} {L : ℕ → ℝ}
 
 namespace AssumptionD1pL
 
+/-- Under f.D1pL, `f` is `C^p`. -/
+theorem contDiff (h : AssumptionD1pL f p L) : ContDiff ℝ p f :=
+  h.1.contDiff
+
+/-- The constants of f.D1pL are at least `1`. -/
+theorem one_le (h : AssumptionD1pL f p L) : ∀ j ∈ Finset.Icc 1 p, 1 ≤ L j :=
+  h.2
+
+/-- Under f.D1pL, the `j`-th derivative is `L_{f,j}`-Lipschitz for `j ∈ [1:p]`. -/
+theorem lipschitz (h : AssumptionD1pL f p L) : ∀ j ∈ Finset.Icc 1 p,
+    IteratedFDerivLipschitzOn f j (L j) univ :=
+  fun _ hj => h.1.lipschitzOn hj
+
+/-- f.D1pL from a `C^p` function whose derivatives of orders `j ∈ [1:p]` are `L_{f,j}`-Lipschitz
+on the whole space, with `L_{f,j} ≥ 1`. -/
+theorem of_iteratedFDerivLipschitzOn (hf : ContDiff ℝ p f) (h1 : ∀ j ∈ Finset.Icc 1 p, 1 ≤ L j)
+    (hL : ∀ j ∈ Finset.Icc 1 p, IteratedFDerivLipschitzOn f j (L j) univ) :
+    AssumptionD1pL f p L :=
+  ⟨.of_contDiff hf hL univ, h1⟩
+
 /-- The assumption of order `p` implies the assumption of every lower order. -/
 theorem mono (h : AssumptionD1pL f p L) {q : ℕ} (hq : q ≤ p) : AssumptionD1pL f q L :=
-  ⟨h.contDiff.of_le (by exact_mod_cast hq), fun j hj => h.one_le j (Finset.Icc_subset_Icc_right
-    hq hj), fun j hj => h.lipschitz j (Finset.Icc_subset_Icc_right hq hj)⟩
+  ⟨h.1.mono le_rfl hq, fun j hj => h.one_le j (Finset.Icc_subset_Icc_right hq hj)⟩
 
 /-- Every derivative of order `j ∈ [1:p]` is `L_f`-Lipschitz. -/
 theorem lipschitz_finMax (h : AssumptionD1pL f p L) {j : ℕ} (hj : j ∈ Finset.Icc 1 p) :
@@ -159,8 +176,7 @@ theorem norm_iteratedFDeriv_le (h : AssumptionD1pL f p L) {j : ℕ} (hj : j ∈ 
   obtain ⟨i, rfl⟩ : ∃ i, j = i + 1 := ⟨j - 1, by omega⟩
   have hi : i ∈ Finset.Icc 1 p := Finset.mem_Icc.2 ⟨by omega, by omega⟩
   rw [Nat.add_sub_cancel]
-  exact norm_iteratedFDeriv_succ_le_of_lipschitzOn isOpen_univ
-    (zero_le_one.trans (h.one_le i hi)) (h.lipschitz i hi) (mem_univ x)
+  exact h.1.norm_iteratedFDeriv_le hi (zero_le_one.trans (h.one_le i hi)) (mem_univ x)
 
 /-- `‖∇^j f(x)‖ ≤ L_f` for `j ∈ [2:p]`. -/
 theorem norm_iteratedFDeriv_le_finMax (h : AssumptionD1pL f p L) {j : ℕ}
@@ -172,7 +188,7 @@ theorem norm_iteratedFDeriv_le_finMax (h : AssumptionD1pL f p L) {j : ℕ}
 /-- f.D1pL gives the anchored assumption on the whole space, for every anchor set. -/
 theorem toLipschitzDerivsAnchored (h : AssumptionD1pL f p L) (A : Set E) :
     LipschitzDerivsAnchored f univ A 1 p L :=
-  .of_contDiff h.contDiff h.lipschitz A
+  h.1.mono_left (subset_univ A)
 
 /-- f.D1pL at the top order `p` only, the form of the hypotheses of the ARqp analysis. -/
 theorem toLipschitzDerivsAnchored_top (h : AssumptionD1pL f p L) (hp : 1 ≤ p) (A : Set E) :
@@ -184,14 +200,6 @@ theorem one_le_top (h : AssumptionD1pL f p L) (hp : 1 ≤ p) : 1 ≤ L p :=
   h.one_le p (Finset.mem_Icc.2 ⟨hp, le_rfl⟩)
 
 end AssumptionD1pL
-
-/-- f.D1pL is the backbone assumption `LipschitzDerivsAnchored` on `C = A = univ` with constants
-at least `1`. -/
-theorem assumptionD1pL_iff : AssumptionD1pL f p L ↔
-    LipschitzDerivsAnchored f univ univ 1 p L ∧ ∀ j ∈ Finset.Icc 1 p, 1 ≤ L j :=
-  ⟨fun h => ⟨h.toLipschitzDerivsAnchored univ, h.one_le⟩, fun ⟨h, h1⟩ =>
-    ⟨contDiff_iff_contDiffAt.2 fun y => h.contDiffAt y (mem_univ y), h1,
-      fun _ hj => h.lipschitzOn hj⟩⟩
 
 end Assumption
 
@@ -360,7 +368,7 @@ theorem assumptionD1pL_real {G : ℝ → ℝ} {r : ℕ} {L B : ℝ} (hG : ContDi
     (hL : ∀ s t, |iteratedDeriv r G s - iteratedDeriv r G t| ≤ L * |s - t|)
     (hB : ∀ j ≤ r, ∀ t, |iteratedDeriv j G t| ≤ B) :
     AssumptionD1pL G r (fun _ => max 1 (max L B)) := by
-  refine ⟨hG, fun _ _ => le_max_left _ _, fun j hj => ?_⟩
+  refine .of_iteratedFDerivLipschitzOn hG (fun _ _ => le_max_left _ _) fun j hj => ?_
   obtain ⟨hj1, hjr⟩ := Finset.mem_Icc.1 hj
   rcases hjr.lt_or_eq with hjr | rfl
   · have hB0 : 0 ≤ B := (abs_nonneg _).trans (hB 0 (Nat.zero_le r) 0)

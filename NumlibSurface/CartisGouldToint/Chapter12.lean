@@ -53,7 +53,8 @@ Kinds (**false**, **gap**, **typo**, **reading**) as in the book index `CartisGo
 * Lemma 12.2.11: **gap**, `1 - θ` must be `ς - θ`, with `θ < ς` (`lemma_12_2_11`). Lemma 12.2.12
   (`q > 2`): **gap**, `κ_{δ,min}` must be `κ̂ = min(κ_{δ,min}, τ_q/2)` (`lemma_12_2_12`).
   Lemma 12.2.13: **gap**, needs f.D1pL and holds at successful iterations followed by a
-  non-terminating one (`lemma_12_2_13`); (12.2.56): **typo**, `‖s_k‖^{p-j+1}` for `‖s_k‖^{p-ℓ+1}`.
+  non-terminating one (`lemma_12_2_13`); (12.2.56): **typo**, `(p-j+1)!` and `‖s_k‖^{p-j+1}`
+  for `(p-ℓ+1)!` and `‖s_k‖^{p-ℓ+1}`.
 * Theorem 12.2.15, `q ≥ 3`: **false** hypothesis "`δ_{s_k,j} = 1` is possible" for its own example
   (`theorem_12_2_15_counterexample`); stated for the global-step scenario `IsARqpGlobalStepRun`
   (`theorem_12_2_15`), an ARqp run for `q ≤ 2` (`corollary_12_2_16`).

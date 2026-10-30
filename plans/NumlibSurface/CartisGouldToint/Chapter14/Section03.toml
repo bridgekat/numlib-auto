@@ -311,7 +311,7 @@ source = "Cartis–Gould–Toint, Algorithm 14.3.2 on ℝⁿ with INNER = ARqp w
 
 [[node]]
 id = "theorem_14_3_9_arqp_counterexample"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with INNER = ARqp-SC, q ∈ {1, 2}, p ≥ q + 3 (genuine runs exceeding the printed order)"
+source = "Cartis–Gould–Toint, Theorem 14.3.9 with INNER = ARqp-SC, q ∈ {1, 2}, p ≥ q + 3 (runs exceeding the printed order)"
 
 [[node]]
 id = "theorem_14_3_9_arqp_printed_false"

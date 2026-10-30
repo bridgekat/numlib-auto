@@ -26,7 +26,9 @@ constructs runs from an inner oracle.
 * `Constrained.HighOrderTargetSeq.InnerTest`: the termination test (14.3.19) of the inner method
   called with tolerances `β ‖r(x_k, t_k)‖ ε_j`;
 * `Constrained.HighOrderTargetSeq.succCount`, `kaCount`, `kbCount`, `funEvals`, `derivEvals`,
-  `goodCount`, `badCount`: the counts of Phase 2;
+  `targetOut`, `goodCount`, `badCount`: the counts and the output target of Phase 2, those of the
+  generic outer loop on `toCountSeq` (the data with only the tests a count uses) or on
+  `toTargetFollowingSeq`;
 * `Constrained.IsHighOrderTargetRun f c X q θ β ε x₁ D`: `D` is a run of Phase 2 from `x₁`;
 * `Constrained.InnerCall E`: the data of one inner call.
 
@@ -170,11 +172,22 @@ abbrev Before (k : ℕ) : Prop := (D.toTargetFollowingSeq f c X q θ ε).Before 
 /-- Phase 2 terminates at outer iteration `kε ≥ 1`. -/
 abbrev IsEnd (kε : ℕ) : Prop := (D.toTargetFollowingSeq f c X q θ ε).IsEnd kε
 
-open Classical in
+/-- The data of Phase 2 as data of the generic outer loop with the tests `Ka`, `Kb` and no
+criticality test, on which the counts that involve only some of the tests are taken (the counts
+of the outer loop do not involve the criticality test). -/
+def toCountSeq (Ka Kb : ℕ → Prop) : TargetFollowingSeq E where
+  x := D.x
+  t := D.t
+  xi := D.xi
+  e := D.e
+  Ka := Ka
+  Kb := Kb
+  crit _ _ := False
+
 /-- The output target `t_ε` of Phase 2 terminating at outer iteration `k`: `t_{k+1}` in cases
 (a)/(b) and `t_k` in case (c) (the output point is `x_ε = x_{k+1}`). -/
-noncomputable def targetOut (k : ℕ) : ℝ :=
-  if D.IsKa f c θ ε k ∨ D.IsKb f c θ ε k then D.t (k + 1) else D.t k
+noncomputable abbrev targetOut (k : ℕ) : ℝ :=
+  (D.toCountSeq (D.IsKa f c θ ε) (D.IsKb f c θ ε)).targetOut k
 
 theorem targetOut_eq (k : ℕ) :
     D.targetOut f c θ ε k = (D.toTargetFollowingSeq f c X q θ ε).targetOut k := rfl
@@ -193,25 +206,27 @@ def InnerTest (k : ℕ) : Prop :=
 
 /-! ### Counts -/
 
-open Classical in
 /-- The number of successful iterations of the `k`-th inner call. -/
-noncomputable def succCount (k : ℕ) : ℕ := ((Finset.range (D.e k)).filter (D.succ k)).card
+noncomputable abbrev succCount (k : ℕ) : ℕ :=
+  (D.toCountSeq (fun _ => False) fun _ => False).succCount D.succ k
 
-open Classical in
 /-- The number of outer iterations of `𝒦_a` among `[1, K)`. -/
-noncomputable def kaCount (K : ℕ) : ℕ := ((Finset.Ico 1 K).filter (D.IsKa f c θ ε)).card
+noncomputable abbrev kaCount (K : ℕ) : ℕ :=
+  (D.toCountSeq (D.IsKa f c θ ε) fun _ => False).kaCount K
 
-open Classical in
 /-- The number of outer iterations of `𝒦_b` among `[1, K)`. -/
-noncomputable def kbCount (K : ℕ) : ℕ := ((Finset.Ico 1 K).filter (D.IsKb f c θ ε)).card
+noncomputable abbrev kbCount (K : ℕ) : ℕ :=
+  (D.toCountSeq (fun _ => False) (D.IsKb f c θ ε)).kbCount K
 
 /-- The number of evaluations of `(f, c)` in Phase 2 up to outer iteration `k`:
 `1 + ∑_{j ∈ [1, k]} e_j` (one at `x₁` and one per inner iteration). -/
-noncomputable def funEvals (k : ℕ) : ℕ := 1 + ∑ j ∈ Finset.Icc 1 k, D.e j
+noncomputable abbrev funEvals (k : ℕ) : ℕ :=
+  (D.toCountSeq (fun _ => False) fun _ => False).funEvals k
 
 /-- The number of evaluations of the derivatives of `(f, c)` in Phase 2 up to outer iteration
 `k`: one at `x₁` and one per successful inner iteration. -/
-noncomputable def derivEvals (k : ℕ) : ℕ := 1 + ∑ j ∈ Finset.Icc 1 k, D.succCount j
+noncomputable abbrev derivEvals (k : ℕ) : ℕ :=
+  (D.toCountSeq (fun _ => False) fun _ => False).derivEvals D.succ k
 
 /-- A *good* inner iteration `(k, i)` for the exemption by (14.3.34) at the old target
 ([cartis2022evaluation], proof of Lemma 14.3.8): it is successful, it is not the last iteration
@@ -248,6 +263,10 @@ theorem funEvals_eq (k : ℕ) :
 theorem derivEvals_eq (k : ℕ) :
     D.derivEvals k = (D.toTargetFollowingSeq f c X q θ ε).derivEvals D.succ k := rfl
 
+section Tests
+
+omit [NormedAddCommGroup E] [NormedSpace ℝ E]
+
 theorem isKa_iff {k : ℕ} :
     D.IsKa f c θ ε k ↔ targetResidual f c (D.t k) (D.x (k + 1)) < θ * ε 0 := Iff.rfl
 
@@ -256,13 +275,33 @@ theorem isKb_iff {k : ℕ} :
       θ * ε 0 ≤ targetResidual f c (D.t k) (D.x (k + 1)) ∧ f (D.x (k + 1)) < D.t k := Iff.rfl
 
 theorem succCount_eq_card_filter (k : ℕ) [DecidablePred (D.succ k)] :
-    D.succCount k = ((Finset.range (D.e k)).filter (D.succ k)).card := by
-  unfold succCount; congr 1; exact Finset.filter_congr_decidable _ _ _
+    D.succCount k = ((Finset.range (D.e k)).filter (D.succ k)).card :=
+  TargetFollowingSeq.succCount_eq_card_filter k
+
+theorem targetOut_of_ka_or_kb {k : ℕ} (h : D.IsKa f c θ ε k ∨ D.IsKb f c θ ε k) :
+    D.targetOut f c θ ε k = D.t (k + 1) :=
+  TargetFollowingSeq.targetOut_of_ka_or_kb h
+
+theorem targetOut_of_not {k : ℕ} (ha : ¬ D.IsKa f c θ ε k) (hb : ¬ D.IsKb f c θ ε k) :
+    D.targetOut f c θ ε k = D.t k :=
+  TargetFollowingSeq.targetOut_of_not ha hb
+
+theorem kaCount_eq_card_filter (K : ℕ) [DecidablePred (D.IsKa f c θ ε)] :
+    D.kaCount f c θ ε K = ((Finset.Ico 1 K).filter (D.IsKa f c θ ε)).card :=
+  letI : DecidablePred (D.toCountSeq (D.IsKa f c θ ε) fun _ => False).Ka := ‹_›
+  TargetFollowingSeq.kaCount_eq_card_filter K
+
+theorem kbCount_eq_card_filter (K : ℕ) [DecidablePred (D.IsKb f c θ ε)] :
+    D.kbCount f c θ ε K = ((Finset.Ico 1 K).filter (D.IsKb f c θ ε)).card :=
+  letI : DecidablePred (D.toCountSeq (fun _ => False) (D.IsKb f c θ ε)).Kb := ‹_›
+  TargetFollowingSeq.kbCount_eq_card_filter K
 
 theorem funEvals_eq_sum (k : ℕ) : D.funEvals k = 1 + ∑ j ∈ Finset.Icc 1 k, D.e j := rfl
 
 theorem derivEvals_eq_sum (k : ℕ) :
     D.derivEvals k = 1 + ∑ j ∈ Finset.Icc 1 k, D.succCount j := rfl
+
+end Tests
 
 theorem innerTest_iff {β : ℝ} {k : ℕ} :
     D.InnerTest f c X q β ε k ↔ ∀ j ∈ Finset.Icc 1 q,

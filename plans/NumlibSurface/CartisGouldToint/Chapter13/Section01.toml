@@ -127,3 +127,7 @@ source = "Cartis–Gould–Toint, Chapter 13"
 [[node]]
 id = "exists_algorithm_13_1_2_exact"
 source = "Cartis–Gould–Toint, Chapter 13"
+
+[[node]]
+id = "AssumptionD0qL.of_lipschitzDerivsAnchored"
+source = "Cartis–Gould–Toint, Assumption f.D0qL with a single constant L ≥ 1"
