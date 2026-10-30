@@ -44,11 +44,16 @@ Kinds (**false**, **gap**, **typo**, **reading**) as in the book index `CartisGo
   Step 2 may terminate only at a global model minimizer `0`, as Algorithm 12.2.3 guarantees
   (`algorithm_12_2_2`).
 * Theorem 12.2.6: **false** slow data of Appendix B (Taylor decrease vs. function decrease,
-  `ε^{q+1} k_ε ≤ 1`); corrected data `Optimization.exists_slowTRq_interpolant` (`theorem_12_2_6`).
+  `ε^{q+1} k_ε ≤ 1`, the factor `q!/(q-j)!` of the residuals); corrected data
+  `Optimization.exists_slowTRq_interpolant` (`theorem_12_2_6`).
+* (12.2.28): **typo**, the long-step branch is `‖s_k‖ ≥ 1`, as in Algorithm 12.2.3
+  (`algorithm_12_2_2`).
+* Theorem 12.2.17, (12.2.78): **typo**, the `q`-th order residual is `ε / k_ε`, not `0`
+  (`theorem_12_2_17`).
 * Lemma 12.2.11: **gap**, `1 - θ` must be `ς - θ`, with `θ < ς` (`lemma_12_2_11`). Lemma 12.2.12
   (`q > 2`): **gap**, `κ_{δ,min}` must be `κ̂ = min(κ_{δ,min}, τ_q/2)` (`lemma_12_2_12`).
   Lemma 12.2.13: **gap**, needs f.D1pL and holds at successful iterations followed by a
-  non-terminating one (`lemma_12_2_13`).
+  non-terminating one (`lemma_12_2_13`); (12.2.56): **typo**, `‖s_k‖^{p-j+1}` for `‖s_k‖^{p-ℓ+1}`.
 * Theorem 12.2.15, `q ≥ 3`: **false** hypothesis "`δ_{s_k,j} = 1` is possible" for its own example
   (`theorem_12_2_15_counterexample`); stated for the global-step scenario `IsARqpGlobalStepRun`
   (`theorem_12_2_15`), an ARqp run for `q ≤ 2` (`corollary_12_2_16`).
@@ -59,6 +64,7 @@ Kinds (**false**, **gap**, **typo**, **reading**) as in the book index `CartisGo
 ## Not formalized
 
 The weak approximate minimizers (12.1.40), the relaxation (12.1.24), the `O(ε₂)` remark after
-Theorem 12.1.6, the discussion of §12.1.6; the `O(·)` restatements and Table 12.2.1; the
+Theorem 12.1.6, the discussion of §12.1.6; the `O(·)` restatements and Table 12.2.1; the claim
+that every execution of Algorithm 12.2.3 terminates (the execution started with `μ = 1` does); the
 qualitative discussion of §12.3.
 -/

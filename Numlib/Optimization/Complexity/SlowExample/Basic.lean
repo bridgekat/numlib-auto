@@ -52,8 +52,9 @@ methods are defined.
 ## Implementation notes
 
 The integrality assumption of Theorem 2.2.3 (`ε⁻²` is an integer) is a hypothesis
-`k_ε ε² = 1`. In (3.2.25) the book prints `x_k = (k - 1) ε`, a typo for `x_k = k ε` (with
-`θ ≡ 1`), and the claim `f_{k_ε} ≥ 0` needs `ε⁻³` integral; only boundedness of `f` is used here.
+`k_ε ε² = 1`. In the negative-curvature example (3.2.23)–(3.2.27) the abscissae are
+`x_k = k ε` (with `θ ≡ 1`); only boundedness of `f` is used, which avoids requiring `ε⁻³` to be an
+integer.
 -/
 
 open Set
@@ -234,8 +235,8 @@ theorem exists_slowFirstOrder_interpolant {a b : ℝ} (ha : 0 < a) (hab : a ≤ 
 `H_k = -ε c_k`, steps `s_k = θ_k ε` (`θ k ∈ [a, b]`), `x_{k+1} = x_k + s_k`, `f_0 = 1`,
 `f_{k+1} = f_k + H_k s_k²/2`, there is a `C²` function `G : ℝ → ℝ` with `L`-Lipschitz second
 derivative, `|G^{(j)}| ≤ B` (`j ≤ 2`), and `G (x k) = f_k`, `G' (x k) = 0`, `G'' (x k) = H_k` for
-`k ≤ k_ε`. TR2 uses `θ ≡ 1` (the book's (3.2.25) `x_k = (k - 1) ε` is a typo for `x_k = k ε`). The
-recurrences and the bounds on `θ` are only required for `k < k_ε`, and `x 0` is arbitrary. -/
+`k ≤ k_ε`. TR2 uses `θ ≡ 1`, so that `x_k = k ε` in (3.2.25). The recurrences and the bounds on `θ`
+are only required for `k < k_ε`, and `x 0` is arbitrary. -/
 theorem exists_slowNegCurvature_interpolant {a b : ℝ} (ha : 0 < a) (hab : a ≤ b) :
     ∃ L B : ℝ, 0 ≤ L ∧ 0 ≤ B ∧ ∀ (ε : ℝ) (θ x f : ℕ → ℝ), 0 < ε → ε ≤ 1 →
       (∀ k < ⌈(ε ^ 3)⁻¹⌉₊, θ k ∈ Icc a b) →

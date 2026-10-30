@@ -14,7 +14,8 @@ Algorithms for Nonconvex Optimization* [cartis2022evaluation], §3.1, on
 ## Main definitions
 
 * `AssumptionC2 f` — f.C2: `f` is twice continuously differentiable.
-* `AssumptionHL f L` — f.HL: `f` is `C²` with `L`-Lipschitz Hessian (3.1.3), `L = L_{f,2} ≥ 1`.
+* `AssumptionHL f L` — f.HL: `f` is `C²` with `L`-Lipschitz Hessian (3.1.3), `L = L_{f,2} ≥ 1`;
+  the anchored smoothness assumption `LipschitzDerivsAnchored` of order `2` on the whole space.
 * `IsNewtonStep f x s` — the Newton equation (3.1.1) `∇²f(x) s = -∇f(x)`.
 * `algorithm_3_1_1 f ε x s` — Algorithm 3.1.1 (Newton's method) as a run predicate.
 
@@ -54,18 +55,45 @@ theorem assumptionC2_iff {f : EuclideanSpace ℝ (Fin n) → ℝ} : AssumptionC2
 
 /-- **Assumption f.HL** of [cartis2022evaluation] (§3.1): `f` is twice continuously
 differentiable and its Hessian is Lipschitz continuous with constant `L = L_{f,2} ≥ 1`,
-`‖∇²f(x) - ∇²f(y)‖ ≤ L ‖x - y‖` for all `x, y` (3.1.3) (operator norm of bilinear forms). -/
-structure AssumptionHL (f : EuclideanSpace ℝ (Fin n) → ℝ) (L : ℝ) : Prop where
-  /-- `f` is twice continuously differentiable. -/
-  contDiff : ContDiff ℝ 2 f
-  /-- The Lipschitz constant satisfies `L_{f,2} ≥ 1`. -/
-  one_le : 1 ≤ L
-  /-- The Hessian is `L`-Lipschitz (3.1.3). -/
-  lipschitz : ∀ x y, ‖iteratedFDeriv ℝ 2 f x - iteratedFDeriv ℝ 2 f y‖ ≤ L * ‖x - y‖
+`‖∇²f(x) - ∇²f(y)‖ ≤ L ‖x - y‖` for all `x, y` (3.1.3) (operator norm of bilinear forms). It is
+stated as the anchored smoothness assumption of order `2` on the whole space (`C = A = ℝⁿ`)
+together with `L ≥ 1`; the form (3.1.3) is `AssumptionHL.lipschitz` and
+`AssumptionHL.of_lipschitz`. -/
+abbrev AssumptionHL (f : EuclideanSpace ℝ (Fin n) → ℝ) (L : ℝ) : Prop :=
+  LipschitzDerivsAnchored f univ univ 2 2 (fun _ => L) ∧ 1 ≤ L
 
 namespace AssumptionHL
 
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {L : ℝ}
+
+/-- Under f.HL, `f` is twice continuously differentiable. -/
+theorem contDiff (h : AssumptionHL f L) : ContDiff ℝ 2 f :=
+  h.1.contDiff
+
+/-- The Lipschitz constant of f.HL satisfies `L_{f,2} ≥ 1`. -/
+theorem one_le (h : AssumptionHL f L) : 1 ≤ L :=
+  h.2
+
+/-- **Bridge to the backbone**: under f.HL, `IteratedFDerivLipschitzOn f 2 L univ`. -/
+theorem iteratedFDerivLipschitzOn (h : AssumptionHL f L) :
+    IteratedFDerivLipschitzOn f 2 L univ :=
+  (lipschitzDerivsAnchored_univ_top_iff.1 h.1).2
+
+/-- The Hessian is `L`-Lipschitz (3.1.3). -/
+theorem lipschitz (h : AssumptionHL f L) (x y : EuclideanSpace ℝ (Fin n)) :
+    ‖iteratedFDeriv ℝ 2 f x - iteratedFDeriv ℝ 2 f y‖ ≤ L * ‖x - y‖ :=
+  iteratedFDerivLipschitzOn_iff.1 h.iteratedFDerivLipschitzOn x (mem_univ _) y (mem_univ _)
+
+/-- f.HL from a `C²` function whose Hessian is `L`-Lipschitz on `ℝⁿ`, `L ≥ 1`. -/
+theorem of_iteratedFDerivLipschitzOn (hf : ContDiff ℝ 2 f) (hL1 : 1 ≤ L)
+    (hL : IteratedFDerivLipschitzOn f 2 L univ) : AssumptionHL f L :=
+  ⟨lipschitzDerivsAnchored_univ_top_iff.2 ⟨hf, hL⟩, hL1⟩
+
+/-- f.HL in the form (3.1.3): a `C²` function with `L`-Lipschitz Hessian, `L ≥ 1`. -/
+theorem of_lipschitz (hf : ContDiff ℝ 2 f) (hL1 : 1 ≤ L)
+    (hL : ∀ x y, ‖iteratedFDeriv ℝ 2 f x - iteratedFDeriv ℝ 2 f y‖ ≤ L * ‖x - y‖) :
+    AssumptionHL f L :=
+  of_iteratedFDerivLipschitzOn hf hL1 (iteratedFDerivLipschitzOn_iff.2 fun x _ y _ => hL x y)
 
 /-- f.HL implies f.C2. -/
 theorem assumptionC2 (h : AssumptionHL f L) : AssumptionC2 f :=
@@ -77,51 +105,37 @@ theorem nonneg (h : AssumptionHL f L) : 0 ≤ L :=
 theorem pos (h : AssumptionHL f L) : 0 < L :=
   zero_lt_one.trans_le h.one_le
 
-/-- **Bridge to the backbone**: under f.HL, `IteratedFDerivLipschitzOn f 2 L univ`. -/
-theorem iteratedFDerivLipschitzOn (h : AssumptionHL f L) :
-    IteratedFDerivLipschitzOn f 2 L univ :=
-  iteratedFDerivLipschitzOn_iff.2 fun x _ y _ => h.lipschitz x y
-
 theorem contDiffAt (h : AssumptionHL f L) (x : EuclideanSpace ℝ (Fin n)) :
     ContDiffAt ℝ 2 f x :=
   h.contDiff.contDiffAt
 
 /-- A larger constant is also a Lipschitz constant. -/
 theorem mono (h : AssumptionHL f L) {L' : ℝ} (hL : L ≤ L') : AssumptionHL f L' :=
-  ⟨h.contDiff, h.one_le.trans hL, fun x y =>
-    (h.lipschitz x y).trans (mul_le_mul_of_nonneg_right hL (norm_nonneg _))⟩
+  ⟨h.1.mono_const fun _ _ => hL, h.2.trans hL⟩
 
 end AssumptionHL
-
-theorem assumptionHL_iff {f : EuclideanSpace ℝ (Fin n) → ℝ} {L : ℝ} :
-    AssumptionHL f L ↔ ContDiff ℝ 2 f ∧ 1 ≤ L ∧ IteratedFDerivLipschitzOn f 2 L univ :=
-  ⟨fun h => ⟨h.contDiff, h.one_le, h.iteratedFDerivLipschitzOn⟩, fun ⟨h1, h2, h3⟩ =>
-    ⟨h1, h2, fun x y => iteratedFDerivLipschitzOn_iff.1 h3 x (mem_univ _) y (mem_univ _)⟩⟩
 
 /-- f.HL holds if `f ∈ C³` has bounded third derivatives ([cartis2022evaluation], remark after
 (3.1.3)). -/
 theorem AssumptionHL.of_norm_iteratedFDeriv_three_le {f : EuclideanSpace ℝ (Fin n) → ℝ} {L : ℝ}
     (hf : ContDiff ℝ 3 f) (hL : 1 ≤ L) (hb : ∀ x, ‖iteratedFDeriv ℝ 3 f x‖ ≤ L) :
     AssumptionHL f L :=
-  assumptionHL_iff.2 ⟨hf.of_le (by norm_num), hL,
-    iteratedFDerivLipschitzOn_of_norm_le convex_univ (fun y _ => hf.contDiffAt)
-      fun x _ => hb x⟩
+  .of_iteratedFDerivLipschitzOn (hf.of_le (by norm_num)) hL
+    (iteratedFDerivLipschitzOn_of_norm_le convex_univ (fun y _ => hf.contDiffAt) fun x _ => hb x)
 
 /-- A smooth function whose values and derivatives of order `≤ 3` are bounded by `B` satisfies
 f.Bb (with `f_low = -B`), f.gL and f.HL (with constant `max B 1`). -/
 theorem assumptions_of_bounded {f : EuclideanSpace ℝ (Fin n) → ℝ} {B : ℝ}
     (hf : ContDiff ℝ 3 f) (hb : ∀ y, |f y| ≤ B ∧ ∀ j ≤ 3, ‖iteratedFDeriv ℝ j f y‖ ≤ B) :
     Chapter02.AssumptionBb f (-B) ∧ Chapter02.AssumptionGL f (max B 1) ∧
-      AssumptionHL f (max B 1) := by
-  refine ⟨fun y => by linarith [neg_abs_le (f y), (hb y).1], ⟨hf.of_le (by norm_num),
-    le_max_right _ _, fun x y => ?_⟩, AssumptionHL.of_norm_iteratedFDeriv_three_le hf
-      (le_max_right _ _) fun x => ((hb x).2 3 le_rfl).trans (le_max_left _ _)⟩
-  have hL : IteratedFDerivLipschitzOn f 1 (max B 1) univ :=
-    iteratedFDerivLipschitzOn_of_norm_le convex_univ
-      (fun y _ => (hf.of_le (by norm_num)).contDiffAt)
-      fun x _ => ((hb x).2 2 (by norm_num)).trans (le_max_left _ _)
-  have := iteratedFDerivLipschitzOn_iff.1 hL x (mem_univ _) y (mem_univ _)
-  rwa [Chapter02.norm_iteratedFDeriv_one_sub, Chapter02.norm_fderiv_sub_fderiv] at this
+      AssumptionHL f (max B 1) :=
+  ⟨fun y => by linarith [neg_abs_le (f y), (hb y).1],
+    .of_iteratedFDerivLipschitzOn (hf.of_le (by norm_num)) (le_max_right _ _)
+      (iteratedFDerivLipschitzOn_of_norm_le convex_univ
+        (fun y _ => (hf.of_le (by norm_num)).contDiffAt)
+        fun x _ => ((hb x).2 2 (by norm_num)).trans (le_max_left _ _)),
+    AssumptionHL.of_norm_iteratedFDeriv_three_le hf (le_max_right _ _)
+      fun x => ((hb x).2 3 le_rfl).trans (le_max_left _ _)⟩
 
 /-! ### Newton's method -/
 

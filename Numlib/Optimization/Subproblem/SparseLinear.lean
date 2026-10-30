@@ -11,10 +11,10 @@ regularization methods. The space is `Fin n → ℝ` with Mathlib's sup norm, so
 `Metric.closedBall 0 δ` is the book's `ℓ∞` ball and `Optimization.taylorMeasure` on this space is
 the measure (14.2.17).
 
-The book states (14.2.18)–(14.2.19) as `max ℓ(d)`, while the measure needs `min ℓ(d)`
-(`φ = f(x) - min T_{f,1}(x, ·) = -min ℓ`) and its solution (14.2.20) is a minimizer; we follow the
-minimization. Lemma 14.2.5 is stated for any optimal selection `τ` of the 0-1 knapsack (14.2.21);
-such a selection exists since there are finitely many.
+The subproblem (14.2.18)–(14.2.19) is the minimization of `ℓ(d)`, as the measure requires
+(`φ = f(x) - min T_{f,1}(x, ·) = -min ℓ`); its solution (14.2.20) is a minimizer. Lemma 14.2.5 is
+stated for any optimal selection `τ` of the 0-1 knapsack (14.2.21); such a selection exists since
+there are finitely many.
 
 ## Main definitions
 
@@ -213,7 +213,7 @@ theorem activeSet_subset_nzSet (hδ : 0 ≤ δ) : activeSet x δ ⊆ nzSet x := 
     rw [h0, abs_zero] at this
     linarith
 
-/-- **Lemma 14.2.5 of [cartis2022evaluation]** (corrected to minimization). Let `δ ≥ 0` and let
+/-- **Lemma 14.2.5 of [cartis2022evaluation]** (as a minimization). Let `δ ≥ 0` and let
 `τ` solve the knapsack problem (14.2.21): it is feasible and has maximal value
 among feasible selections. Then `d⋆ = sparseLinearStep x g δ τ` satisfies `‖d⋆‖∞ ≤ δ`, `x + d⋆` is
 sparse, and `d⋆` minimizes `ℓ(d) = ∑ g_i d_i` over `{d | ‖d‖∞ ≤ δ, ‖x + d‖₀ ≤ nnz}`; its value is

@@ -411,7 +411,7 @@ theorem trustRegionValue_le_smul {Δ : ℝ} (hΔ : 0 ≤ Δ) (v : E) :
       div_mul_cancel₀ _ (norm_ne_zero_iff.mpr hv)]
 
 /-- Bounds from a larger radius ([cartis2022evaluation] (9.4.6)): if `0 ≤ Δ ≤ Δ⁺` and
-`‖s⁺‖ = Δ⁺` (in the book, `s⁺` is a minimizer for the radius `Δ⁺`, which is not needed), then
+`‖s⁺‖ = Δ⁺` (`s⁺` need not be a minimizer for the radius `Δ⁺`), then
 `m_{Δ⁺} ≤ m_Δ ≤ m((Δ / Δ⁺) s⁺)`. -/
 theorem trustRegionValue_mem_Icc {Δ Δp : ℝ} (hΔ : 0 ≤ Δ) (h : Δ ≤ Δp) {sp : E}
     (hsp : ‖sp‖ = Δp) :

@@ -41,11 +41,11 @@ Lemma 12.2.11.
   globally minimizes the model, the composite measures are small for small radii);
 * `Optimization.compositeTaylorDecrement_le_of_step`,
   `Optimization.compositeTaylorMeasure_le_of_step`: the one-step comparison of measures behind
-  Lemma 14.1.7, with the corrected factor `2` on the `‖s‖^{p+1}` term;
+  Lemma 14.1.7, with the factor `2` on the `‖s‖^{p+1}` term;
   `Optimization.taylorDecrement_le_add_of_regularizedModel` is its smooth part.
 
 Constants: `Lf`, `Lc` bound the operator norms `‖Df_i‖`, `‖Dc_i‖` (`i = 2, …, p`), and `Lc` is the
-Lipschitz constant of `∇^p c` in operator norm; the book's componentwise constants for
+Lipschitz constant of `∇^p c` in operator norm; componentwise constants for
 `c : ℝⁿ → ℝᵐ` give `Lc = √m L_{c,p}` (see
 `ContinuousMultilinearMap.norm_le_sqrt_card_mul_of_euclidean`), whence its `√m` factors.
 -/
@@ -650,16 +650,15 @@ theorem compositeTaylorDecrement_le_of_step_anchored (hC : Convex ℝ C)
   linarith
 
 /-- **One-step comparison of composite decrements** (the content of Lemma 14.1.7 of
-[cartis2022evaluation], Appendix B (B.14.1)–(B.14.6), in corrected form). Let `f`, `c` be `C^p` on
+[cartis2022evaluation], Appendix B (B.14.1)–(B.14.6)). Let `f`, `c` be `C^p` on
 a convex `C ∋ x, x + s`, with `Lf`-Lipschitz `∇^p f` and `Lc`-Lipschitz `∇^p c` on `C`, `h` with
 Lipschitz constant `Lh`, `σ ≥ 0`, `j ≤ p`. Then the generalized Taylor decrement of `w = f + h ∘ c`
 at `x + s` is at most the decrement of the composite model `m̂` built at `x` (evaluated at the
 trial step `s`) plus
 `(Lf + Lh Lc + σ) ∑_{ℓ=1}^j ‖d‖^ℓ/ℓ! ‖s‖^{p-ℓ+1}/(p-ℓ+1)! + 2 Lh Lc/(p+1)! ‖s‖^{p+1}`.
 
-The book's (14.1.30) has the factor `1` on the last term: (B.14.3) and the `ℓ = 0` term of
-(B.14.4) each contribute `Lh Lc ‖s‖^{p+1}/(p+1)!`. The book's exponent `p - j + 1` in (B.14.6)
-should read `p - ℓ + 1`. -/
+The factor `2` on the last term comes from (B.14.3) and the `ℓ = 0` term of (B.14.4), which
+each contribute `Lh Lc ‖s‖^{p+1}/(p+1)!`; the exponent in (B.14.6) is `p - ℓ + 1`. -/
 theorem compositeTaylorDecrement_le_of_step (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hc : ∀ y ∈ C, ContDiffAt ℝ p c y)
     (hLf : IteratedFDerivLipschitzOn f p Lf C) (hLc : IteratedFDerivLipschitzOn c p Lc C)
@@ -701,7 +700,7 @@ theorem compositeTaylorMeasure_le_of_step_anchored (hC : Convex ℝ C)
   gcongr
 
 /-- **One-step comparison of composite measures** (Lemma 14.1.7 of [cartis2022evaluation],
-corrected, before using the Step-2 condition (14.1.13)): under the hypotheses of
+before using the Step-2 condition (14.1.13)): under the hypotheses of
 `compositeTaylorDecrement_le_of_step`, with `Lf, Lc ≥ 0`, feasible displacements `S ∋ 0` and
 `δ ≥ 0`,
 `φ^δ_{w,j}(x + s) ≤ φ^δ_{m̂,j}(s) + (Lf + Lh Lc + σ) ∑_{ℓ=1}^j δ^ℓ/ℓ! ‖s‖^{p-ℓ+1}/(p-ℓ+1)! +

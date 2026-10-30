@@ -20,9 +20,8 @@ On `ℝ^T` (coordinates `x_0, …, x_{T-1}`):
 `Ψ y = 0` for `y ≤ 1/2`, `Ψ y = exp(1 - (2y-1)^{-2})` otherwise, and
 `Φ y = e^{1/2} ∫_{-∞}^y exp(-t²/2) dt`.
 
-**Source error.** The book's (4.2.6) has first term `-Ψ([x]_1) Φ([x]_1)`; Carmon et al. have
-`-Ψ(1) Φ([x]_1)` (and `Ψ(1) = 1`). With the printed term the gradient vanishes at `x = 0`,
-contradicting Lemma 4.2.5 (ii); `chain` uses `-Ψ(1) Φ(x_0)`.
+The first term `-Ψ(1) Φ(x_0)` (with `Ψ(1) = 1`) is that of Carmon et al.; it makes the gradient
+nonzero at `x = 0`, as Lemma 4.2.5 (ii) requires.
 
 ## Main results
 
@@ -580,8 +579,8 @@ theorem sum_prod_norm_pairMap_le {q : ℕ} (hq : 2 ≤ q) (v : Fin q → Euclide
 
 /-! ### The chain -/
 
-/-- The hard zero chain of [cartis2022evaluation], (4.2.6) (with first term corrected to
-`-Ψ(1) Φ(x_0)`), on `ℝ^T` with `coord T i x = x_i`:
+/-- The hard zero chain of [cartis2022evaluation], (4.2.6) (with first term
+`-Ψ(1) Φ(x_0)`, as in Carmon et al.), on `ℝ^T` with `coord T i x = x_i`:
 `chain T x = -Ψ(1) Φ(x_0) + ∑_{l=1}^{T-1} [Ψ(-x_{l-1}) Φ(-x_l) - Ψ(x_{l-1}) Φ(x_l)]`.
 (For `T = 0` it is the constant `-Φ(0)`.) -/
 noncomputable def chain (T : ℕ) (x : EuclideanSpace ℝ (Fin T)) : ℝ :=
@@ -965,8 +964,8 @@ theorem norm_fderiv_scaledChain (hc : 0 ≤ c) (hμ : 0 < μ) (x : EuclideanSpac
 `x ↦ μ^{p+1} (L / L^D_p) chain k̄ (x / μ)` with `μ = (L^D_p ε / L)^{1/p}` ((4.2.8)); for `𝓜(p)` its
 rotated copies on `ℝ^{2 k̄}` are used. The second bound holds for every class of methods `𝓜`
 (in particular `𝓜(p)`, see `le_classComplexity_smoothClass_methodClass`). Both classes are
-nonempty (`zeroRespectingClass_nonempty`, `methodClass_nonempty`), so the bounds are not vacuous.
-(The book's proof concludes `≥ 2 k̄` for `𝓜(p)`; only `≥ k̄` follows.) -/
+nonempty (`zeroRespectingClass_nonempty`, `methodClass_nonempty`), so the bounds are not
+vacuous. -/
 theorem le_classComplexity_smoothClass (hp : 1 ≤ p) {Δ L ε : ℝ} (hΔ : 0 < Δ) (hL : 0 < L)
     (hε : 0 < ε) (𝓜 : Set (JetMethod p)) :
     ((⌊Δ / 12 * (L / lipschitzConst p) ^ (1 / p : ℝ) * ε ^ (-((p + 1 : ℝ) / p))⌋₊ : ℕ) : ℕ∞) ≤

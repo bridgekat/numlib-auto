@@ -28,15 +28,15 @@ Superlinear convergence is `ConvergesSuperlinearly` of `Numlib/Nonlinear/Order`.
 * `Newton.monotone_secant_iterate_of_convexOn`: Lemma B.8.1(ii), and its concave mirror
   `Newton.monotone_secant_iterate_of_concaveOn`.
 
-## Corrections to the source
+## Hypotheses
 
 * The root must satisfy `θ'(r) ≠ 0`: `θ(x) = (1 - x)²` on `[0, 1]` is convex, strictly decreasing
-  and `C¹`, but Newton from `0` converges only linearly with factor `1/2`, and the book's factor
+  and `C¹`, but Newton from `0` converges only linearly with factor `1/2`, and the factor
   `1 - θ'(r)/θ'(x₀)` is `1`.
-* In the concave increasing case the start must satisfy `θ x₀ < 0` (not `> 0`).
-* The tangent inequality (B.8.3) of the source is printed with the inequality reversed; the proof
-  uses `θ(x) ≥ θ'(r) (x - r)`.
-* Iterates that reach the root stay there, so they increase monotonically (not strictly).
+* In the concave increasing case the start must satisfy `θ x₀ < 0`.
+* The convex case rests on the tangent inequality at the root, `θ(x) ≥ θ'(r) (x - r)`.
+* Iterates that reach the root stay there, so they increase monotonically, not necessarily
+  strictly.
 -/
 
 open Filter Topology Set
@@ -151,7 +151,7 @@ theorem deriv_root_neg {x : ℝ} (hx : x ∈ S) (hxr : x < r) : θ' r < 0 := by
     (h.strictAntiOn.antitoneOn.mono hsub)
 
 /-- The tangent inequality at the root, `θ'(r) (x - r) ≤ θ x` for `x ∈ S`, `x < r`
-(the corrected (B.8.3)). -/
+((B.8.3)). -/
 theorem deriv_root_mul_le {x : ℝ} (hx : x ∈ S) (hxr : x < r) : θ' r * (x - r) ≤ θ x := by
   have hs := h.convexOn.slope_le_of_hasDerivWithinAt hx h.mem hxr (h.hasDerivWithinAt r h.mem)
   rw [slope_def_field, h.apply_eq_zero, zero_sub, div_le_iff₀ (sub_pos.2 hxr)] at hs
@@ -324,7 +324,7 @@ theorem convergesWithOrder_two_scalarStep_iterate (hx₀ : x₀ ∈ S) (hθx₀ 
 
 end IsConvexAntiRoot
 
-/-- **Cartis–Gould–Toint Lemma B.8.1(i)**, convex decreasing case (corrected: `θ'(r) ≠ 0`).
+/-- **Cartis–Gould–Toint Lemma B.8.1(i)**, convex decreasing case (with `θ'(r) ≠ 0`).
 Let `θ` be convex and strictly decreasing on a convex set `S ⊆ ℝ` (an interval), with derivative
 `θ' x` within `S` at every `x ∈ S`, and let `r ∈ S` be a root with `θ'(r) ≠ 0`. From `x₀ ∈ S`
 with `θ x₀ > 0`, the Newton iterates `x_k = (scalarStep θ θ')^[k] x₀` (B.8.1) lie in `[x₀, r]`,
@@ -369,7 +369,7 @@ theorem isConvexAntiRoot_neg (hc : ConcaveOn ℝ S θ) (hm : StrictMonoOn θ S)
   apply_eq_zero := by simp [hθr]
   deriv_ne_zero := neg_ne_zero.2 hθ'r
 
-/-- **Cartis–Gould–Toint Lemma B.8.1(i)**, concave increasing case (corrected: `θ'(r) ≠ 0` and
+/-- **Cartis–Gould–Toint Lemma B.8.1(i)**, concave increasing case (with `θ'(r) ≠ 0` and
 the start has `θ x₀ < 0`): the conclusions of `Newton.monotone_scalarStep_iterate_of_convexOn`
 for a concave strictly increasing `θ`, by applying it to `-θ`. -/
 theorem monotone_scalarStep_iterate_of_concaveOn (hc : ConcaveOn ℝ S θ) (hm : StrictMonoOn θ S)
@@ -473,7 +473,7 @@ theorem secant_pair_invariant {x₁ : ℝ} (hx₀ : x₀ ∈ S) (hx₁ : x₁ �
 
 end IsConvexAntiRoot
 
-/-- **Cartis–Gould–Toint Lemma B.8.1(ii)**, convex decreasing case (corrected: `θ'(r) ≠ 0`).
+/-- **Cartis–Gould–Toint Lemma B.8.1(ii)**, convex decreasing case (with `θ'(r) ≠ 0`).
 Under the hypotheses of `Newton.monotone_scalarStep_iterate_of_convexOn`, let `x₀ < x₁` be points
 of `S` with `θ x₀ > 0` and `θ x₁ > 0`. The secant iterates `x_{k+1}`, `k ≥ 0`, of (B.8.2)
 (`Secant.iterate θ x₀ x₁ k`, with `Secant.iterate θ x₀ x₁ 0 = x₁`) lie in `[x₀, r]`, increase
@@ -546,7 +546,7 @@ theorem secant_step_neg (θ : ℝ → ℝ) : Secant.step (fun x => -θ x) = Seca
   congr 1
   rw [← neg_sub', div_neg, neg_mul_neg]
 
-/-- **Cartis–Gould–Toint Lemma B.8.1(ii)**, concave increasing case (corrected: `θ'(r) ≠ 0`
+/-- **Cartis–Gould–Toint Lemma B.8.1(ii)**, concave increasing case (with `θ'(r) ≠ 0`
 and the starts have `θ x₀ < 0`, `θ x₁ < 0`): the conclusions of
 `Newton.monotone_secant_iterate_of_convexOn` for a concave strictly increasing `θ`, by applying it
 to `-θ`. -/

@@ -717,12 +717,14 @@ import Numlib.Optimization.LineSearch.Backtracking
 import Numlib.Optimization.ModelBased.ARRun
 import Numlib.Optimization.ModelBased.ARpRun
 import Numlib.Optimization.ModelBased.ConvexConstrained
+import Numlib.Optimization.ModelBased.HighOrder
 import Numlib.Optimization.ModelBased.HighOrder.ARqp
 import Numlib.Optimization.ModelBased.HighOrder.ARqpC
 import Numlib.Optimization.ModelBased.HighOrder.ARqpCCall
 import Numlib.Optimization.ModelBased.HighOrder.ARqpCComplexity
 import Numlib.Optimization.ModelBased.HighOrder.ARqpComplexity
 import Numlib.Optimization.ModelBased.HighOrder.ARqpDetailedStep
+import Numlib.Optimization.ModelBased.HighOrder.DynamicAccuracy
 import Numlib.Optimization.ModelBased.HighOrder.DynamicAccuracy.ARqpDAStep
 import Numlib.Optimization.ModelBased.HighOrder.DynamicAccuracy.ARqpEDA
 import Numlib.Optimization.ModelBased.HighOrder.DynamicAccuracy.ARqpIDA

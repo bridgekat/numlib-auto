@@ -52,8 +52,8 @@ open scoped Nat
 namespace Optimization
 
 /-- The constants of the ARp method ([cartis2022evaluation], Algorithm 4.1.1, Step 0): those of
-an AR method and the step-termination constants `θ₁, θ₂, θ₃ ∈ (0, 1]`. The book requires
-`σ_min > 0`; it is not a field here (the inherited `σ_min ≥ 0` suffices for every result), and
+an AR method and the step-termination constants `θ₁, θ₂, θ₃ ∈ (0, 1]`. `σ_min > 0` is
+not a field here (the inherited `σ_min ≥ 0` suffices for every result), and
 with `σ_min = 0` the decrease bounds of `Optimization.IsARpRun.decrease_ge` are trivial. -/
 structure ARpParams extends ARParams where
   /-- The first-order step-termination constant of (4.1.11). -/

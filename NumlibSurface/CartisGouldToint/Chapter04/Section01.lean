@@ -89,18 +89,24 @@ def ARpParams.toAR1Params (P : ARpParams) : Chapter02.ARParams where
 
 /-- **Assumption f.DpL** of [cartis2022evaluation] (4.1.17): `f` is `p` times continuously
 differentiable on `ℝⁿ` and its `p`-th derivative tensor is Lipschitz continuous (in the tensor
-norm, which is Mathlib's operator norm) with a constant `L_{f,p} ≥ 1`. -/
-structure AssumptionDpL (f : EuclideanSpace ℝ (Fin n) → ℝ) (p : ℕ) (L : ℝ) : Prop where
-  /-- `f` is `p` times continuously differentiable. -/
-  contDiff : ContDiff ℝ p f
-  /-- The Lipschitz constant satisfies `L_{f,p} ≥ 1`. -/
-  one_le : 1 ≤ L
-  /-- `∇^p f` is `L`-Lipschitz (4.1.17). -/
-  lipschitz : ∀ x y, ‖iteratedFDeriv ℝ p f x - iteratedFDeriv ℝ p f y‖ ≤ L * ‖x - y‖
+norm, which is Mathlib's operator norm) with a constant `L_{f,p} ≥ 1`. It is stated as the
+anchored smoothness assumption of order `p` on the whole space (`C = A = ℝⁿ`) together with
+`L ≥ 1`; the form (4.1.17) is `AssumptionDpL.lipschitz` and `AssumptionDpL.of_lipschitz`. For
+`p = 1` it is f.gL and for `p = 2` f.HL, by definition. -/
+abbrev AssumptionDpL (f : EuclideanSpace ℝ (Fin n) → ℝ) (p : ℕ) (L : ℝ) : Prop :=
+  LipschitzDerivsAnchored f univ univ p p (fun _ => L) ∧ 1 ≤ L
 
 namespace AssumptionDpL
 
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {p : ℕ} {L : ℝ}
+
+/-- Under f.DpL, `f` is `p` times continuously differentiable. -/
+theorem contDiff (h : AssumptionDpL f p L) : ContDiff ℝ p f :=
+  h.1.contDiff
+
+/-- The Lipschitz constant of f.DpL satisfies `L_{f,p} ≥ 1`. -/
+theorem one_le (h : AssumptionDpL f p L) : 1 ≤ L :=
+  h.2
 
 theorem nonneg (h : AssumptionDpL f p L) : 0 ≤ L :=
   zero_le_one.trans h.one_le
@@ -108,38 +114,40 @@ theorem nonneg (h : AssumptionDpL f p L) : 0 ≤ L :=
 /-- **Bridge to the backbone**: under f.DpL, `IteratedFDerivLipschitzOn f p L univ`. -/
 theorem iteratedFDerivLipschitzOn (h : AssumptionDpL f p L) :
     IteratedFDerivLipschitzOn f p L univ :=
-  iteratedFDerivLipschitzOn_iff.2 fun x _ y _ => h.lipschitz x y
+  (lipschitzDerivsAnchored_univ_top_iff.1 h.1).2
+
+/-- `∇^p f` is `L`-Lipschitz (4.1.17). -/
+theorem lipschitz (h : AssumptionDpL f p L) (x y : EuclideanSpace ℝ (Fin n)) :
+    ‖iteratedFDeriv ℝ p f x - iteratedFDeriv ℝ p f y‖ ≤ L * ‖x - y‖ :=
+  iteratedFDerivLipschitzOn_iff.1 h.iteratedFDerivLipschitzOn x (mem_univ _) y (mem_univ _)
+
+/-- f.DpL from a `C^p` function whose `p`-th derivative is `L`-Lipschitz on `ℝⁿ`, `L ≥ 1`. -/
+theorem of_iteratedFDerivLipschitzOn (hf : ContDiff ℝ p f) (hL1 : 1 ≤ L)
+    (hL : IteratedFDerivLipschitzOn f p L univ) : AssumptionDpL f p L :=
+  ⟨lipschitzDerivsAnchored_univ_top_iff.2 ⟨hf, hL⟩, hL1⟩
+
+/-- f.DpL in the form (4.1.17): a `C^p` function whose `p`-th derivative is `L`-Lipschitz,
+`L ≥ 1`. -/
+theorem of_lipschitz (hf : ContDiff ℝ p f) (hL1 : 1 ≤ L)
+    (hL : ∀ x y, ‖iteratedFDeriv ℝ p f x - iteratedFDeriv ℝ p f y‖ ≤ L * ‖x - y‖) :
+    AssumptionDpL f p L :=
+  of_iteratedFDerivLipschitzOn hf hL1 (iteratedFDerivLipschitzOn_iff.2 fun x _ y _ => hL x y)
 
 /-- f.DpL with a larger constant. -/
 theorem mono (h : AssumptionDpL f p L) {L' : ℝ} (hL : L ≤ L') : AssumptionDpL f p L' :=
-  ⟨h.contDiff, h.one_le.trans hL, fun x y =>
-    (h.lipschitz x y).trans (mul_le_mul_of_nonneg_right hL (norm_nonneg _))⟩
+  ⟨h.1.mono_const fun _ _ => hL, h.2.trans hL⟩
 
 end AssumptionDpL
-
-/-- f.DpL from a `C^p` function whose `p`-th derivative is `L`-Lipschitz, `L ≥ 1`. -/
-theorem assumptionDpL_iff {f : EuclideanSpace ℝ (Fin n) → ℝ} {p : ℕ} {L : ℝ} :
-    AssumptionDpL f p L ↔ ContDiff ℝ p f ∧ 1 ≤ L ∧ IteratedFDerivLipschitzOn f p L univ :=
-  ⟨fun h => ⟨h.contDiff, h.one_le, h.iteratedFDerivLipschitzOn⟩, fun ⟨h1, h2, h3⟩ =>
-    ⟨h1, h2, fun x y => iteratedFDerivLipschitzOn_iff.1 h3 x (mem_univ _) y (mem_univ _)⟩⟩
 
 /-- For `p = 2`, f.DpL is f.HL. -/
 theorem assumptionDpL_two_iff {f : EuclideanSpace ℝ (Fin n) → ℝ} {L : ℝ} :
     AssumptionDpL f 2 L ↔ Chapter03.AssumptionHL f L :=
-  ⟨fun h => ⟨h.contDiff, h.one_le, h.lipschitz⟩, fun h => ⟨h.contDiff, h.one_le, h.lipschitz⟩⟩
+  Iff.rfl
 
 /-- For `p = 1`, f.DpL is f.gL. -/
 theorem assumptionDpL_one_iff {f : EuclideanSpace ℝ (Fin n) → ℝ} {L : ℝ} :
-    AssumptionDpL f 1 L ↔ Chapter02.AssumptionGL f L := by
-  have hg : ∀ x y, ‖gradient f x - gradient f y‖ = ‖iteratedFDeriv ℝ 1 f x -
-      iteratedFDeriv ℝ 1 f y‖ := fun x y => by
-    rw [norm_iteratedFDeriv_one_sub, gradient_eq_toDualReal_symm, ← map_sub,
-      LinearIsometryEquiv.norm_map]
-  constructor
-  · intro h
-    exact ⟨h.contDiff, h.one_le, fun x y => (hg x y).trans_le (h.lipschitz x y)⟩
-  · intro h
-    exact ⟨h.contDiff, h.one_le, fun x y => (hg x y).symm.trans_le (h.lipschitz x y)⟩
+    AssumptionDpL f 1 L ↔ Chapter02.AssumptionGL f L :=
+  Iff.rfl
 
 /-- The set `𝒵_ε` of (4.1.4): the unit directions of curvature at most `ε₂` in absolute value,
 `{d | ‖d‖ = 1 ∧ |∇²f(x)[d]²| ≤ ε₂}` (also the set `𝓜₀` of Step 0). -/
@@ -1001,7 +1009,7 @@ theorem not_exists_algorithm_4_1_1_third_order (P : ARpParams) {ε₁ e₂ e₃ 
     nlinarith [sq_nonneg (t ^ 2 + e₃ * t / 6), sq_nonneg (e₃ ^ 2 - 0), sq_nonneg t,
       sq_nonneg (e₃ * t), sq_nonneg (t + e₃), mul_pos he₂ he₂, sq_nonneg (e₂ * t),
       sq_nonneg (t ^ 2 - e₃ ^ 2), sq_nonneg (e₃ * t + 2 * e₃ ^ 2)]
-  · refine assumptionDpL_iff.2 ⟨contDiff_ridge hG3, by norm_num, ?_⟩
+  · refine .of_iteratedFDerivLipschitzOn (contDiff_ridge hG3) (by norm_num) ?_
     refine iteratedFDerivLipschitzOn_ridge hG3 le_rfl norm_e₀.le (by norm_num) fun s t => ?_
     rw [iteratedDeriv_three_arpQuartic]
     simp only
@@ -1127,10 +1135,10 @@ theorem exists_arp_slow_data (P : ARpParams) {p q : ℕ} (hq : 1 ≤ q) (hqp : q
     have := hGB 0 (by omega) ⟪e₀, y⟫
     rw [iteratedDeriv_zero] at this
     rw [ridge_apply]; linarith [neg_abs_le (G ⟪e₀, y⟫)]
-  have hDpL : AssumptionDpL (ridge G e₀) p (max L 1) := assumptionDpL_iff.2
-    ⟨contDiff_ridge hG, le_max_right _ _, iteratedFDerivLipschitzOn_ridge hG le_rfl norm_e₀.le
-      (by positivity) fun s t => (hGL s t).trans
-        (mul_le_mul_of_nonneg_right (le_max_left _ _) (abs_nonneg _))⟩
+  have hDpL : AssumptionDpL (ridge G e₀) p (max L 1) :=
+    .of_iteratedFDerivLipschitzOn (contDiff_ridge hG) (le_max_right _ _)
+      (iteratedFDerivLipschitzOn_ridge hG le_rfl norm_e₀.le (by positivity) fun s t =>
+        (hGL s t).trans (mul_le_mul_of_nonneg_right (le_max_left _ _) (abs_nonneg _)))
   refine ⟨G, xr, hG, hb, hDpL, by simp [xr], fun k hk => hGk k hk, fun k _ => ?_,
     fun k hk => hGv k hk⟩
   simp only [xr, sum_range_succ, Chapter03.ar2SlowAlpha, monomialMinimizer, hcα]

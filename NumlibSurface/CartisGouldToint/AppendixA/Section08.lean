@@ -35,6 +35,10 @@ tensor norm (A.7) is the operator norm of multilinear maps, `T_{f,p}(x, s)` of (
 * Theorem A.8.2 gives `ξ` strictly between `t` and `t + h` (`uIoo`), for either sign of `h`;
   this needs `h ≠ 0` (the open interval is empty when `h = 0`, where the identity holds with
   `ξ = t`).
+* Theorem A.8.3: the proof of (A.15) displays the constant `(p-j+1)!/(p-j+β)!`; the stated
+  `1/(p-j+β)!` is what is proved. The backbone form also covers `j = 0` and every `β ≥ 0`.
+* (A.12) is stated for `f` merely `n` times differentiable at `x`; the library proves it for `f`
+  of class `C^n` at `x` (`Numlib.Analysis.Calculus.MultivariateTaylor.Peano`).
 -/
 
 open Set

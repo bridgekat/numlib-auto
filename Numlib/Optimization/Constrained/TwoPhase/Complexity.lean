@@ -6,7 +6,7 @@ import Numlib.Optimization.Constrained.TwoPhase.Run
 For a run of Phase 2 of a two-phase target-following method (`Constrained.IsTargetFollowingRun`)
 whose inner calls satisfy a contract (`Constrained.TargetFollowingSeq.IsInnerContract`), this file
 bounds the number of outer iterations and the evaluation counts ([cartis2022evaluation],
-Lemmas 7.2.6 and 14.3.8, Theorems 7.2.7 and 14.3.9, corrected).
+Lemmas 7.2.6 and 14.3.8, Theorems 7.2.7 and 14.3.9).
 
 The argument: an inner iteration is *good* if it is successful, its new residual is at least
 `θε₀`, and it is not the last iteration of a call that ends at a point passing the *exemption
@@ -17,7 +17,7 @@ outer iterations between consecutive case-(a) iterations bounds their total numb
 good, every case-(b) iteration whose call does not end at an exempt point contains a good
 iteration, and `|𝒦_a| ≤ N_a = (f_up - f_low + 1)/((1 - θ)ε₀)` (Lemma 7.2.4). The remaining
 *bad* outer iterations (case (b), no good iteration; their calls end at exempt points) are not
-bounded by the book's argument; their number is a parameter of the complexity theorem. A
+bounded by this argument; their number is a parameter of the complexity theorem. A
 margin argument bounds them when the exemption test at the old target is incompatible with the
 failure of the criticality test at the new one unless the target drops by a fixed amount
 (`IsTargetFollowingRun.card_kb_le_of_margin`).
@@ -36,8 +36,8 @@ failure of the criticality test at the new one unless the target drops by a fixe
 * `Constrained.TargetFollowingSeq.IsInnerContract.sum_goodCount_le`: the good inner iterations of
   `[1, K]` number at most `(1 - θ)ε₀/δ · (|𝒦_a ∩ [1, K)| + 1)` ((7.2.39), (14.3.71));
 * `Constrained.TargetFollowingSeq.le_counts`: `K ≤ |𝒦_a| + ∑_k |good_k| + n_bad + 1`;
-* `Constrained.TargetFollowingSeq.IsInnerContract.complexity`: the corrected Theorems 7.2.7 and
-  14.3.9 (Phase 2) with the number of bad iterations as a parameter;
+* `Constrained.TargetFollowingSeq.IsInnerContract.complexity`: Theorems 7.2.7 and 14.3.9
+  (Phase 2) with the number of bad iterations as a parameter;
 * `Constrained.TargetFollowingSeq.IsInnerContract.complexity_of_badCount_le`: termination and
   evaluation bounds given a bound on the bad iterations;
 * `Constrained.IsTargetFollowingRun.exempt_of_isBad`: if unsuccessful inner iterations do not
@@ -156,6 +156,10 @@ theorem goodCount_eq_zero_iff {k : ℕ} :
 theorem badCount_eq_card_filter (K : ℕ) [DecidablePred (S.IsBad f c θ ε₀ succ exempt)] :
     S.badCount f c θ ε₀ succ exempt K = ((Ico 1 K).filter (S.IsBad f c θ ε₀ succ exempt)).card := by
   unfold badCount; congr
+
+theorem succCount_eq_card_filter (k : ℕ) [DecidablePred (succ k)] :
+    S.succCount succ k = ((range (S.e k)).filter (succ k)).card := by
+  unfold succCount; congr
 
 theorem derivEvals_eq (k : ℕ) :
     (S.derivEvals succ k : ℝ) = 1 + ∑ j ∈ Icc 1 k, (S.succCount succ j : ℝ) := by
@@ -452,7 +456,7 @@ theorem goodCount_mul_le (hc : S.IsInnerContract f c θ ε₀ succ exempt δ κu
   unfold goodCount
   exact this
 
-/-- **The good inner iterations of Phase 2** (the corrected (7.2.39) and (14.3.71) of
+/-- **The good inner iterations of Phase 2** ((7.2.39) and (14.3.71) of
 [cartis2022evaluation], summed over the blocks of outer iterations between consecutive case-(a)
 iterations): for every outer iteration `K ≥ 1` reached, the good inner iterations of `[1, K]`
 number at most `(1 - θ)ε₀/δ · (|𝒦_a ∩ [1, K)| + 1)`. -/
@@ -487,7 +491,7 @@ theorem funEvals_le (hc : S.IsInnerContract f c θ ε₀ succ exempt δ κuns κ
   linarith
 
 /-- **Evaluation complexity of Phase 2** ([cartis2022evaluation], Theorems 7.2.7 and 14.3.9 for
-Phase 2, corrected). Let `S` be a run whose inner calls satisfy the contract with residual
+Phase 2). Let `S` be a run whose inner calls satisfy the contract with residual
 decrease `δ > 0` and `κ_uns ≥ 0`; assume f.B.Fb (`f_low ≤ f ≤ f_up` on the points of `X` with
 `‖c‖ ≤ ε₀`), and let `G ≥ (1 - θ)ε₀/δ` and `N_a = (f_up - f_low + 1)/((1 - θ)ε₀)`. Then
 (i) every outer iteration `K ≥ 1` reached satisfies `K ≤ (N_a + 1)(G + 1) + n_bad(K)`, `n_bad(K)`

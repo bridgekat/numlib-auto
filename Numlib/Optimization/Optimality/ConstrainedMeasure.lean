@@ -35,8 +35,7 @@ subset `{d ∈ T | |B[d]^i| ≤ a}` ((6.1.8), (6.1.10), (6.2.1), (6.2.2)).
 
 ## Implementation notes
 
-The book prints (6.1.5) and (6.1.9) as `min … ≥ 0` without the leading minus sign; the minus sign
-is meant (compare (6.2.3) and (7.1.2) and the claimed nonnegativity), and is used here. The
+The measures (6.1.5) and (6.1.9) are `-min …`, nonnegative (compare (6.2.3) and (7.1.2)). The
 measure is the `decrementMeasure` (an `sSup`) of the decrease `d ↦ -A[d]^j` with radius `1`,
 finite since the image is bounded by `‖A‖`; it is a `max` in finite
 dimension when `T` is closed.
@@ -315,9 +314,8 @@ theorem restrictedSteps_mono (hab : a ≤ b) (hT : T ⊆ T') :
 
 /-- Transfer of restricted sets: if `|A[d]^i - B[d]^i| ≤ e` on `T ∩ 𝓑` and `e + a ≤ b`, then
 `𝓑 ∩ {d ∈ T | |A[d]^i| ≤ a} ⊆ {d ∈ T | |B[d]^i| ≤ b}`. This is the inclusion
-`𝒞¹(x_{k+1}, ε₁) ∩ 𝓑 ⊆ 𝓜¹_k(s_k)` of the proof of Theorem 6.2.3 of [cartis2022evaluation]; the
-book claims it without `∩ 𝓑`, which does not follow from the ball-restricted estimate (6.2.23),
-but only the ball part is used. -/
+`𝒞¹(x_{k+1}, ε₁) ∩ 𝓑 ⊆ 𝓜¹_k(s_k)` of the proof of Theorem 6.2.3 of [cartis2022evaluation],
+where the estimate (6.2.23) holds on the unit ball `𝓑` only. -/
 theorem inter_closedBall_restrictedSteps_subset
     (A : ContinuousMultilinearMap ℝ (fun _ : Fin i => E) ℝ) {e : ℝ}
     (h : ∀ d ∈ closedBall 0 1 ∩ T, |(A fun _ => d) - B fun _ => d| ≤ e) (hab : e + a ≤ b) :

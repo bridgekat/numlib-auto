@@ -1393,21 +1393,4 @@ theorem theorem_5_3_12 {ψmin κν κR κA : ℝ} (hψ : 0 < ψmin) {x : ℕ →
 
 end LeastSquares
 
-/-! ### Deprecated aliases (moved to `Optimization.GapRecurrence`) -/
-
-@[deprecated Optimization.frequently_of_density (since := "2026-10-26")]
-alias frequently_of_density := Optimization.frequently_of_density
-
-@[deprecated Optimization.exists_le_of_gap_count (since := "2026-10-26")]
-alias exists_le_of_gap_count := Optimization.exists_le_of_gap_count
-
-@[deprecated Optimization.superlinearCountConst (since := "2026-10-26")]
-alias kappaFGap1 := Optimization.superlinearCountConst
-
-@[deprecated Optimization.superlinearCountConst_nonneg (since := "2026-10-26")]
-alias kappaFGap1_nonneg := Optimization.superlinearCountConst_nonneg
-
-@[deprecated Optimization.IsImplicitGapDecrease.mul_kappaDom (since := "2026-10-26")]
-alias mul_kappaDom := Optimization.IsImplicitGapDecrease.mul_kappaDom
-
 end CartisGouldToint.Chapter05

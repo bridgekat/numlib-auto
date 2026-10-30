@@ -27,8 +27,9 @@ Real exponents:
 * `contDiff_normRpow_of_lt`, `iteratedFDeriv_normRpow_zero`: `‖·‖^λ` is `C^j` for `j < λ`, with
   vanishing derivatives at the origin.
 * `iteratedFDeriv_normRpow_apply_self`: (B.4.2), the radial values `π_j(λ) ‖x‖^λ`.
-* `not_norm_iteratedFDeriv_normRpow_eq_radial`: (B.4.3) is false for `β < 1`.
-* `convexOn_iteratedFDeriv_normRpow`: the convexity claims of Lemma B.4.1.
+* `not_norm_iteratedFDeriv_normRpow_eq_radial`: for `β < 1` the operator norm of
+  `D^{p+1}(‖·‖^{p+β})(x)` exceeds the radial value `β (p+β)! ‖x‖^{β-1}`.
+* `convexOn_iteratedFDeriv_normRpow`: the convexity statements of Lemma B.4.1.
 
 Natural exponents `‖s‖ ^ r` (`r : ℕ`), the form in which regularized models are written:
 * `contDiff_norm_pow` (`C^{r-1}`), `contDiff_norm_pow_of_even`, `contDiffAt_norm_pow`;
@@ -40,8 +41,8 @@ Natural exponents `‖s‖ ^ r` (`r : ℕ`), the form in which regularized model
 
 ## Implementation notes
 
-The book's proof of (B.4.1) maximizes over the radial direction, which is not justified as written
-(the terms of (B.4.9) have mixed signs). Instead, on a finite-dimensional space rotation invariance
+The operator norm in (B.4.1) is not obtained by maximizing over the radial direction directly (the
+terms of (B.4.9) have mixed signs). Instead, on a finite-dimensional space rotation invariance
 of Lebesgue measure on the unit ball gives `‖y‖^λ = κ⁻¹ ∫_{‖ω‖<1} |⟪y,ω⟫|^λ dω`. Differentiating
 `j ≤ λ` times under the integral sign (the integrand is Lipschitz in `y` since `λ - k ≥ 1` at each
 step, and differentiable off a null hyperplane) gives `iteratedFDeriv_normRpow_eq_integral`, and
@@ -918,7 +919,7 @@ theorem iteratedFDeriv_normRpow_apply_self (lam : ℝ) (j : ℕ) {x : E} (hx : x
 /-- **The operator norm of the derivatives of `‖·‖^λ`** ([cartis2022evaluation], (B.4.1) as an
 equality): for `j ≤ λ` and `x ≠ 0`, `‖D^j(‖·‖^λ)(x)‖ = λ(λ-1)⋯(λ-j+1) ‖x‖^{λ-j}`, attained in the
 radial direction. For `λ = j = p + 1` this is `‖∇^{p+1} ‖x‖^{p+1}‖ = (p+1)!`, the case `β = 1` of
-the book's (B.4.3). -/
+(B.4.3). -/
 theorem norm_iteratedFDeriv_normRpow {lam : ℝ} {j : ℕ} (hj : (j : ℝ) ≤ lam) {x : E}
     (hx : x ≠ 0) :
     ‖iteratedFDeriv ℝ j (fun y : E ↦ ‖y‖ ^ lam) x‖
@@ -1082,15 +1083,15 @@ theorem norm_iteratedFDeriv_norm_pow_le_factorial {r ℓ : ℕ} (hℓ : ℓ ≤ 
 
 end NaturalPower
 
-/-! ### Counterexample to (B.4.3) for `β < 1`, and the convexity claims of Lemma B.4.1 -/
+/-! ### The operator norm off the radial direction, and convexity (Lemma B.4.1) -/
 
 section Convexity
 
 open NormPowIteratedFDeriv
 
-/-- **(B.4.3) is false for fractional `β`.** For `p = 1`, `β = 1/2` (so `λ = p + β = 3/2`) and
-`x = e₀ ∈ ℝ²`, the operator norm of `D²(‖·‖^{3/2})(x)` exceeds the book's value
-`β (p+β)! ‖x‖^{β-1} = 3/4`: the derivative in the direction `e₁ ⊥ x` is already `3/2`. -/
+/-- **The radial value is not the operator norm for fractional `β`.** For `p = 1`, `β = 1/2` (so
+`λ = p + β = 3/2`) and `x = e₀ ∈ ℝ²`, the operator norm of `D²(‖·‖^{3/2})(x)` exceeds the radial
+value `β (p+β)! ‖x‖^{β-1} = 3/4`: the derivative in the direction `e₁ ⊥ x` is already `3/2`. -/
 theorem not_norm_iteratedFDeriv_normRpow_eq_radial :
     (1 / 2 : ℝ) * holderFactorial 1 (1 / 2)
         * ‖(EuclideanSpace.single 0 1 : EuclideanSpace ℝ (Fin 2))‖ ^ ((1 / 2 : ℝ) - 1)
@@ -1178,7 +1179,7 @@ theorem iteratedFDeriv_normRpow_apply_of_inner_eq_zero (lam : ℝ) (j : ℕ) {x 
 
 end NormPowIteratedFDeriv
 
-/-- **The convexity claims of Lemma B.4.1** ([cartis2022evaluation]). Let `x ≠ 0` and
+/-- **The convexity statements of Lemma B.4.1** ([cartis2022evaluation]). Let `x ≠ 0` and
 `j ≤ λ + 2`.
 (a) On the orthogonal complement of `x`, `d ↦ D^j(‖·‖^λ)(x)[d]^j` is convex: it equals
 `c ‖d‖^j` with `c = ‖x‖^{λ-j} h^{(j)}(0) ≥ 0`, `h(t) = (1 + t²)^{λ/2}` (and `c = 0` for odd `j`).

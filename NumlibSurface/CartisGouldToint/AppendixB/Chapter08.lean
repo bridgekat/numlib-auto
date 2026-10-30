@@ -15,6 +15,8 @@ Theorems 8.2.2–8.2.6 are the proofs of those Chapter 8 results.
   iterates are `1 - 2⁻ʲ`, only linearly convergent, and `γᴺ = 1`. In the concave (strictly
   increasing) case the starting condition must be `θ(λ₀) < 0` (and `θ(λ₁) < 0` for the secant
   method), as the reduction of the proof to `-θ` shows; the book prints `> 0` for both cases.
+  The tangent inequality (B.8.3) is printed reversed; the proof uses `θ(x) ≥ θ'(λ*) (x - λ*)`.
+  Iterates that reach `λ*` stay there, so the monotone increase is not strict in general.
   Continuous differentiability on `I` is formalized as a derivative within `I` at each point of
   `I` that is continuous on `I`.
 * Lemma B.8.2: the hypothesis that `λ*` is the root of `π(λ) = Δ²` plays no role; `g ≠ 0` is

@@ -42,6 +42,8 @@ with iterates `Optimization.zigZagIterate ε k_ε k`; throughout, `ε > 0` and `
   minimizer along the ray (with the book's bounded `f₂`, `f₁` keeps decreasing along the ray after
   the corridor is left). With the capped square the line minimizer is global, so the exact
   linesearch (2.2.26) itself is realized.
+* The data (B.2.5)–(B.2.6) are printed for all `k ≥ 0`, but `ε + ω_k` vanishes at `k = 2k_ε`;
+  the construction freezes `y_mid` after `x_{k_ε}`.
 -/
 
 open Set Finset Optimization
@@ -247,7 +249,7 @@ theorem lemma_B_2_5 :
   refine ⟨L, C, fun ε kε hε hkε => ?_⟩
   obtain ⟨hC, -, hlip⟩ := H ε kε ⟨hε, hkε⟩
   obtain ⟨h2, -, hz⟩ := H' ε kε ⟨hε, hkε⟩
-  exact ⟨⟨hC, hL, hlip⟩, h2, fun z => (hz z).1⟩
+  exact ⟨.of_lipschitz hC hL hlip, h2, fun z => (hz z).1⟩
 
 /-- **Lemma B.2.6** of [cartis2022evaluation] ("linesearches are exact"). For `ε > 0` with
 `k_ε ε² = 1` and every `k < k_ε`, the step `√2` from `(x_k, y_k)` is the first global minimizer of

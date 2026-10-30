@@ -36,17 +36,16 @@ symmetric operator `M⁻¹ H`.
 * `IsInverseIterationRun.convergence`, `IsInverseIterationRun.convergence_of_eventually_const`:
   Theorem 9.3.1.
 
-## Corrections to the source
+## Hypotheses
 
-* The start condition `z₀ ∈ 𝒵₁` of the book is `⟨z₀, vᵢ⟩ ≠ 0` for some leftmost eigenvector
-  `vᵢ`; for `M ≠ I` this is the wrong inner product. The condition used here is
-  `P₁ z₀ ≠ 0` for the orthogonal projection `P₁` onto `E₁` in the inner product of `E` (the
-  `M`-inner product), i.e. `⟨z₀, M vᵢ⟩ ≠ 0` for some `M`-orthonormal leftmost eigenvector.
-* The closeness `ε` must depend on a bound for `nₖ`. The book allows `n_U = ∞`, and then no
-  single `ε` serves all runs: for `H = diag (0, μ)` with `μ < 1` and `z₀ = (1, 1)/√2`, the choices
+* The start condition is `P₁ z₀ ≠ 0` for the orthogonal projection `P₁` onto `E₁` in the inner
+  product of `E`; for matrix data with a scaling `M` (the `M`-inner product) this is
+  `⟨z₀, M vᵢ⟩ ≠ 0` for some `M`-orthonormal leftmost eigenvector `vᵢ`.
+* The closeness `ε` depends on a bound `n_U` for `nₖ`. Without one (`n_U = ∞`) no single `ε`
+  serves all runs: for `H = diag (0, μ)` with `μ < 1` and `z₀ = (1, 1)/√2`, the choices
   `γ₀ = 2 n₀ - γ_U` and `n₀` large give `ℓ₁ < -λ₁` from any given `ℓ₀ ∈ (-λ₁, 1 - μ - λ₁)`,
-  because the Rayleigh-quotient error `≈ μ (e/(e+μ))^(2 n₀)` beats `ω e ^ γ₀`. The book's
-  statement holds when the sequences `nₖ, ωₖ, γₖ` are fixed before `ε`, with `nₖ` eventually
+  because the Rayleigh-quotient error `≈ μ (e/(e+μ))^(2 n₀)` beats `ω e ^ γ₀`. The convergence
+  holds when the sequences `nₖ, ωₖ, γₖ` are fixed before `ε`, with `nₖ` eventually
   constant (`IsInverseIterationRun.convergence_of_eventually_const`, `n_U = ∞` allowed);
   `IsInverseIterationRun.convergence` gives an `ε` uniform over all runs when `n_U < ∞`.
 * Only `γₖ = γ̄` for large `k` is needed for the Q-order `γ̄`; `nₖ` may keep varying. The two-sided

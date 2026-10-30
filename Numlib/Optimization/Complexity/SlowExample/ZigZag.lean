@@ -48,31 +48,29 @@ uniform bounds on derivatives.
 * `Optimization.zigZag_hessian_bounds` — Lemma B.2.3 and the second-derivative form of B.2.5:
   `f` and the corridor function `f₂` are `C²` with second derivatives bounded independently of
   `ε`, `∇f₂` is bounded and `f₂` is bounded on the bands around the corridor.
-* `Optimization.zigZag_isFirstLocalLineMin` — Lemma B.2.6 as proved in the book: the step `√2`
+* `Optimization.zigZag_isFirstLocalLineMin` — Lemma B.2.6: the step `√2`
   is the first local minimizer along `-∇f(x_k, y_k)` (`LineSearch.IsFirstLocalLineMin`) for
   `k < k_ε` ((B.2.32)–(B.2.36), `ZigZag.slope_neg`).
 * `Optimization.zigZag_isExactLineMin` — Lemma B.2.6 as needed for Theorem 2.2.5: the step `√2`
   is the first global minimizer along the ray (`LineSearch.IsExactLineMin`), because the slope is
   nonnegative beyond `(x_{k+1}, y_{k+1})` (`ZigZag.slope_nonneg`).
 
-## Deviations from the book
+## Design
 
-* **The corridor function.** The book's `f₂` (B.2.19) equals `(y - y_mid(x))²` inside the corridor
-  `y_low(x) ≤ y ≤ y_up(x)` and is continued by quintic Hermite transitions to the constant `8
-  δ(x)²`. Here `f₂(x, y) = ψ(y - y_mid(x))` with the capped square `ψ`: the two agree on the
-  corridor (whose half-width `δ(x)/2` is at most `1`), which is where the iteration path runs and
-  where the book's argument evaluates `f₂`; outside, `ψ` keeps `f₂ ≥ 0`, `|∇f₂|` bounded and `0 ≤
-  ψ'' ≤ 2`, so that `f` is `C²` with bounded Hessian as in the book. The growth of `ψ` away from the
-  corridor is what makes the line searches exact: with the book's bounded `f₂`, `f₁` keeps
-  decreasing along the ray after the corridor is left, and Lemma B.2.6 (whose proof only examines
-  the segment `[x_k, x_{k+1}]`) shows only that `(x_{k+1}, y_{k+1})` is the first *local* minimizer
-  along the ray.
-* **Beyond the last iterate.** The book's data (B.2.5)–(B.2.6) are stated for all `k ≥ 0`, but
-  `ε + ω_k` vanishes at `k = 2 k_ε`; here `y_mid` is constant after `x_{k_ε}` and `f₁` levels off
-  over `[x_{k_ε}, x_{k_ε} + 1]`.
-* The nonnegativity of the slope beyond `(x_{k+1}, y_{k+1})` (`ZigZag.slope_nonneg`) has no
-  counterpart in the book; it uses that the middle of the corridor never moves past its value at
-  `x_{k+1}` in the direction of the step (`ZigZag.neg_one_pow_mul_mid_sub_le`).
+* **The corridor function.** `f₂(x, y) = ψ(y - y_mid(x))` with the capped square `ψ`. It equals
+  `(y - y_mid(x))²` (the function (B.2.19)) inside the corridor `y_low(x) ≤ y ≤ y_up(x)` (whose
+  half-width `δ(x)/2` is at most `1`), which is where the iteration path runs; outside, `ψ` keeps
+  `f₂ ≥ 0`, `|∇f₂|` bounded and `0 ≤ ψ'' ≤ 2`, so that `f` is `C²` with bounded Hessian. The
+  growth of `ψ` away from the corridor is what makes the line searches exact: if `f₂` were bounded
+  outside the corridor (as for a continuation by Hermite transitions to the constant `8 δ(x)²`),
+  `f₁` would keep decreasing along the ray after the corridor is left, and `(x_{k+1}, y_{k+1})`
+  would only be the first *local* minimizer along the ray.
+* **Beyond the last iterate.** The data (B.2.5)–(B.2.6) degenerate for large `k` (`ε + ω_k`
+  vanishes at `k = 2 k_ε`); here `y_mid` is constant after `x_{k_ε}` and `f₁` levels off over
+  `[x_{k_ε}, x_{k_ε} + 1]`.
+* The nonnegativity of the slope beyond `(x_{k+1}, y_{k+1})` (`ZigZag.slope_nonneg`) uses that the
+  middle of the corridor never moves past its value at `x_{k+1}` in the direction of the step
+  (`ZigZag.neg_one_pow_mul_mid_sub_le`).
 -/
 
 open Set Finset

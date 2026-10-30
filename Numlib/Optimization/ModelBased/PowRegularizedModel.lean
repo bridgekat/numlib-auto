@@ -283,8 +283,7 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 convex set `C ∋ x, x + s` with `(H, β)`-Hölder `p`-th derivative there, `σ ≥ 0`, `r > 1`, and
 `m = powRegularizedModel (ftaylorSeries ℝ f x) p σ r`. Then
 `‖∇f(x + s)‖ ≤ H/(p - 1 + β)! ‖s‖^{p - 1 + β} + σ/(r-1)! ‖s‖^{r-1} + ‖∇m(s)‖`,
-where `(p - 1 + β)! = holderFactorial (p - 1) β`. (The book's display writes `∇_s m_k(x_k + s_k)`
-for the model gradient at the step.) -/
+where `(p - 1 + β)! = holderFactorial (p - 1) β`; `∇m(s)` is the model gradient at the step. -/
 theorem norm_fderiv_le_of_powRegularizedModel (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hp : 1 ≤ p) (hβ : 0 ≤ β)
     (hH : IteratedFDerivHolderOn f p H β C) (hx : x ∈ C) (hxs : x + s ∈ C) (hσ : 0 ≤ σ)
@@ -387,7 +386,7 @@ theorem abs_reductionRatio_sub_one_le_of_holder_sharp (hC : Convex ℝ C)
         rw [← hpow]; field_simp
     _ ≤ _ := by gcongr
 
-/-- **The ratio estimate (5.5.22)** as printed ([cartis2022evaluation], proof of Lemma 5.5.3): under
+/-- **The ratio estimate (5.5.22)** ([cartis2022evaluation], proof of Lemma 5.5.3): under
 the hypotheses of `Optimization.abs_reductionRatio_sub_one_le_of_holder_sharp` and `p ≥ 1`,
 `|ρ - 1| ≤ r! H / ((p - 1 + β)! σ) ‖s‖^{p + β - r}` (using `(p + β)! ≥ (p - 1 + β)!`). -/
 theorem abs_reductionRatio_sub_one_le_of_holder (hC : Convex ℝ C)

@@ -62,12 +62,11 @@ eigenvalues `λᵢ = hH.eigenvalues rfl i`: two vectors are equal when their coo
 eigenvalues decreasingly; `leftmost` is defined as their infimum, which is `0` on the zero space
 (hence the `[Nontrivial E]` hypotheses of the characterizations).
 
-## Corrections to the source
+## Strictness and domain
 
-The strictness claims of Lemma 8.2.3 and Theorem 8.2.5 fail for `β = -1/2` when `g` is an
+The strict inequalities of Lemma 8.2.3 and Theorem 8.2.5 fail for `β = -1/2` when `g` is an
 eigenvector of `H` (then `π(λ) ^ (-1/2)` is affine); Theorem 8.2.5 also needs `δ ≠ 0` for
-strictness. The results are stated on the interval `λ > -λ₁`, which contains the book's
-`λ > λₛ`.
+strictness. The results are stated on the interval `λ > -λ₁`, which contains `λ > λₛ`.
 -/
 
 open Set Filter Topology
@@ -898,8 +897,7 @@ theorem secular_rpow_eventuallyEq {lam : ℝ} (hlam : -leftmost hH < lam) (β : 
 /-- **Derivatives of the transformed secular function** (Cartis–Gould–Toint, Lemma 8.2.3, on
 `λ > -λ₁`). Let `g ≠ 0` and `q = fun λ => π(λ) ^ β`. Then `q' < 0` for `β > 0` and `q' > 0` for
 `β < 0`; `q'' > 0` for `β > 0`; `q'' ≤ 0` for `β ∈ [-1/2, 0)`, strictly unless `β = -1/2` and `g`
-is an eigenvector of `H`, in which case `q'' = 0` (a counterexample to the book's claim of
-strictness whenever `g ≠ 0`). -/
+is an eigenvector of `H`, in which case `q'' = 0`. -/
 theorem secular_rpow_deriv_sign (hg : g ≠ 0) {lam : ℝ} (hlam : -leftmost hH < lam) (β : ℝ) :
     (0 < β → deriv (fun t => secular g H t ^ β) lam < 0) ∧
     (β < 0 → 0 < deriv (fun t => secular g H t ^ β) lam) ∧
@@ -918,8 +916,7 @@ theorem secular_rpow_deriv_sign (hg : g ≠ 0) {lam : ℝ} (hlam : -leftmost hH 
 Theorem 8.2.5, on `λ > -λ₁`). Let `g ≠ 0`, `λc > -λ₁`, `λc + δ > -λ₁`, `q = fun λ => π(λ) ^ β`
 and `t₁(δ) = q(λc) + q'(λc) δ`. For `β > 0`, `q(λc + δ) ≥ t₁(δ)`; for `β ∈ [-1/2, 0)`,
 `q(λc + δ) ≤ t₁(δ)`. Both are strict for `δ ≠ 0`, except when `β = -1/2` and `g` is an
-eigenvector of `H`: then `q` is affine and `q(λc + δ) = t₁(δ)`. (The book claims strictness
-whenever `g ≠ 0`, without `δ ≠ 0` and without this exception.) The sign statements of
+eigenvector of `H`: then `q` is affine and `q(λc + δ) = t₁(δ)`. The sign statements of
 Lemma 8.2.3 are `secular_rpow_deriv_sign`. -/
 theorem secular_rpow_tangent (hg : g ≠ 0) {lamc δ : ℝ} (hlam : -leftmost hH < lamc)
     (hlamδ : -leftmost hH < lamc + δ) (β : ℝ) :

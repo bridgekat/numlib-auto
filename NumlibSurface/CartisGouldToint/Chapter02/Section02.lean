@@ -310,7 +310,7 @@ theorem ridge_assumptions {G : ℝ → ℝ} {L B : ℝ} (hG : ContDiff ℝ 1 G)
   have hgrad : ∀ y, gradient (ridge G e₀) y = deriv G ⟪e₀, y⟫ • e₀ :=
     gradient_ridge (hG.differentiable one_ne_zero)
   refine ⟨fun y => by rw [ridge_apply]; linarith [neg_abs_le (G ⟪e₀, y⟫), hGB ⟪e₀, y⟫],
-    ⟨contDiff_ridge hG, le_max_right _ _, fun y z => ?_⟩, hgrad⟩
+    .of_lipschitz (contDiff_ridge hG) (le_max_right _ _) fun y z => ?_, hgrad⟩
   rw [hgrad, hgrad, ← sub_smul, norm_smul, norm_e₀, mul_one, Real.norm_eq_abs]
   have h1 := hGL ⟪e₀, y⟫ ⟪e₀, z⟫
   have h2 : |⟪e₀, y⟫ - ⟪e₀, z⟫| ≤ ‖y - z‖ := by
@@ -542,7 +542,7 @@ theorem theorem_2_2_5 :
   have hrun : IsSDEXRun f ε z fun _ => √2 :=
     ⟨hε, fun k hk => zigZag_isExactLineMin hadm (hbefore k hk),
       fun k hk => (zigZag_gradient hadm (hbefore k hk).le).2.2⟩
-  refine ⟨f, hlow, ⟨hC, hL, hlip⟩, ⟨z, _, hz0, hrun⟩, fun x t hx0 h => ?_⟩
+  refine ⟨f, hlow, .of_lipschitz hC hL hlip, ⟨z, _, hz0, hrun⟩, fun x t hx0 h => ?_⟩
   -- every run follows the zig-zag iterates
   have heq : ∀ k ≤ kε, (∀ j ≤ k, x j = z j) ∧ ∀ j < k, t j = √2 := by
     intro k

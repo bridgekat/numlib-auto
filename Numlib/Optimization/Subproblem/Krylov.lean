@@ -60,8 +60,8 @@ The scaling norm `‖·‖_M` of the book is the norm of `E` (see
 `Numlib.Optimization.Subproblem.Matrix`), and the Krylov subspaces `𝒦(M⁻¹ H, M⁻¹ g)` are those of
 the operator `M⁻¹ H`, symmetric in the `M`-inner product. Lanczos indices are `0`-based: the
 book's `q_{j+1}`, `γ_{j+1}` are `Arnoldi.vec H g j`, `Lanczos.beta H g (j - 1)`, and its `γ₁`
-is `‖g‖`. The book states the monotonicity lemmas for `1 ≤ k ≤ ℓ ≤ grade(H, g)`; the bound
-`ℓ ≤ grade` is not needed.
+is `‖g‖`. The monotonicity lemmas hold for all `1 ≤ k ≤ ℓ`, without the bound
+`ℓ ≤ grade(H, g)`.
 -/
 
 open Set Metric Krylov

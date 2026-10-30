@@ -223,9 +223,6 @@ theorem one_div_kappa1CC_mul_rpow_div_two_pow (hL : 0 ≤ L) {β : ℝ} (hβ : 0
   rw [hS]
   field_simp
 
-@[deprecated one_div_kappa1CC_mul_rpow_div_two_pow (since := "2026-10-26")]
-alias one_div_kappaR1 := one_div_kappa1CC_mul_rpow_div_two_pow
-
 /-- **Theorem 6.3.1** ([cartis2022evaluation]): let `p ≥ 1`, `ℓ ≥ 2` and `i ≥ 0` be integers with
 `ι₁ = (2^i - 1)/2^i - (ℓ - 1)/p ≥ 0` (which holds under (5.1.38) or (5.1.39)), `β ∈ (0, 1)`,
 C.CNe, Φℓ.DpL.C and `ε₀, ε₁ > 0`. Then every ARpLE-CC run terminates at some `k_ε`

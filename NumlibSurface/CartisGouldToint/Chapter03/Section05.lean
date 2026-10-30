@@ -840,30 +840,4 @@ theorem corollary_3_5_5_iii (P : IRNParams) :
     have hf0 : f (x 0) - -B ≤ 2 * B := by linarith [le_abs_self (f (x 0)), hB (x 0)]
     gcongr
 
-/-! ### Deprecated aliases (moved to the backbone) -/
-
-@[deprecated Optimization.secondOrderK (since := "2026-10-26")]
-alias secondOrderK := Optimization.secondOrderK
-
-@[deprecated Optimization.secondOrderF (since := "2026-10-26")]
-alias secondOrderF := Optimization.secondOrderF
-
-@[deprecated Optimization.secondOrderG (since := "2026-10-26")]
-alias secondOrderG := Optimization.secondOrderG
-
-@[deprecated Optimization.secondOrderH (since := "2026-10-26")]
-alias secondOrderH := Optimization.secondOrderH
-
-@[deprecated Optimization.secondOrderF_gt_half (since := "2026-10-26")]
-alias secondOrderF_gt_half := Optimization.secondOrderF_gt_half
-
-@[deprecated Optimization.secondOrderF_le_one (since := "2026-10-26")]
-alias secondOrderF_le_one := Optimization.secondOrderF_le_one
-
-@[deprecated Optimization.secondOrderF_K_le_half (since := "2026-10-26")]
-alias secondOrderF_K_le_half := Optimization.secondOrderF_K_le_half
-
-@[deprecated Optimization.secondOrderF_pos (since := "2026-10-26")]
-alias secondOrderF_pos := Optimization.secondOrderF_pos
-
 end CartisGouldToint.Chapter03

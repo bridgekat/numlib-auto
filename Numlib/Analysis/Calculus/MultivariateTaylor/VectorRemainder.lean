@@ -7,9 +7,9 @@ import Numlib.Analysis.Calculus.MultivariateTaylor.Remainder
 The remainder bounds (A.19)–(A.20) of [cartis2022evaluation] for a vector-valued map
 `c : E → F` are `norm_sub_taylorPolynomial_le_of_lipschitz` and
 `norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz` (the Taylor polynomial is `F`-valued).
-The book applies them to constraint maps `c : ℝⁿ → ℝᵐ` whose components `cᵢ` each satisfy a
-Lipschitz (or boundedness) condition with a common constant; the Euclidean constant is then
-`√m` times the componentwise one ((14.1.3), (B.14.3)). This file proves that conversion.
+In [cartis2022evaluation] they are applied to constraint maps `c : ℝⁿ → ℝᵐ` whose components `cᵢ`
+each satisfy a Lipschitz (or boundedness) condition with a common constant; the Euclidean constant
+is then `√m` times the componentwise one ((14.1.3), (B.14.3)). This file proves that conversion.
 
 ## Main results
 

@@ -42,7 +42,7 @@ theorem sum_pow_div_factorial_le_two_mul {δ : ℝ} (h0 : 0 ≤ δ) (h1 : δ ≤
   linarith [le_abs_self (Real.exp δ - 1)]
 
 /-- **[cartis2022evaluation], Lemma A.10.1, first bound of (A.33).** For `δ ∈ [0, 1]`:
-`∑_{ℓ=j}^{p} δ^{ℓ-j}/(ℓ-j)! ≤ 1 + 2δ` (the book assumes `j ≤ p`; otherwise the sum is empty). -/
+`∑_{ℓ=j}^{p} δ^{ℓ-j}/(ℓ-j)! ≤ 1 + 2δ` (for `j > p` the sum is empty). -/
 theorem sum_pow_div_factorial_le_one_add_two_mul {δ : ℝ} (h0 : 0 ≤ δ) (h1 : δ ≤ 1) (j p : ℕ) :
     ∑ ℓ ∈ Icc j p, δ ^ (ℓ - j) / ((ℓ - j)! : ℝ) ≤ 1 + 2 * δ := by
   have e : ∑ ℓ ∈ Icc j p, δ ^ (ℓ - j) / ((ℓ - j)! : ℝ) =
@@ -58,7 +58,7 @@ theorem sum_pow_div_factorial_le_one_add_two_mul {δ : ℝ} (h0 : 0 ≤ δ) (h1 
   · rw [show p + 1 - j = 0 by omega]; simp; linarith
 
 /-- **[cartis2022evaluation], Lemma A.10.1, second bound of (A.33).** For `δ ∈ [0, 1]`:
-`∑_{ℓ=j+1}^{p+1} δ^ℓ/ℓ! ≤ 2 δ^{j+1}/j!` (the book assumes `j ≤ p`; otherwise the sum is empty). -/
+`∑_{ℓ=j+1}^{p+1} δ^ℓ/ℓ! ≤ 2 δ^{j+1}/j!` (for `j > p` the sum is empty). -/
 theorem sum_pow_div_factorial_Icc_succ_le {δ : ℝ} (h0 : 0 ≤ δ) (h1 : δ ≤ 1) (j p : ℕ) :
     ∑ ℓ ∈ Icc (j + 1) (p + 1), δ ^ ℓ / (ℓ ! : ℝ) ≤ 2 * δ ^ (j + 1) / (j ! : ℝ) := by
   rcases lt_or_ge p j with hpj | hjp
@@ -82,8 +82,8 @@ theorem sum_pow_div_factorial_Icc_succ_le {δ : ℝ} (h0 : 0 ≤ δ) (h1 : δ �
         gcongr; exact sum_pow_div_factorial_le_two_mul h0 h1 n
     _ = 2 * δ ^ (j + 1) / (j ! : ℝ) := by ring
 
-/-- **(A.35)** For `δ ≥ 1`: `∑_{ℓ=1}^{j} δ^ℓ/ℓ! ≤ 2 δ^j`. (The book states it for `j ≥ 1`; for
-`j = 0` both sides are `0` and `2`.) -/
+/-- **(A.35)** For `δ ≥ 1`: `∑_{ℓ=1}^{j} δ^ℓ/ℓ! ≤ 2 δ^j`. (For
+`j = 0` the two sides are `0` and `2`.) -/
 theorem sum_pow_div_factorial_le_two_mul_pow {δ : ℝ} (h1 : 1 ≤ δ) (j : ℕ) :
     ∑ ℓ ∈ Icc 1 j, δ ^ ℓ / (ℓ ! : ℝ) ≤ 2 * δ ^ j := by
   calc ∑ ℓ ∈ Icc 1 j, δ ^ ℓ / (ℓ ! : ℝ) ≤ ∑ ℓ ∈ Icc 1 j, δ ^ j * ((1 : ℝ) ^ ℓ / (ℓ ! : ℝ)) := by

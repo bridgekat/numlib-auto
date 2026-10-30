@@ -46,17 +46,17 @@ multiplier of a global minimizer; the two agree by the optimality conditions of 
 `λ > -λ₁` for the trust region and the Taylor corrections and `λ > λₛ = max 0 (-λ₁)` for
 regularization, where `λ ↦ (λ/σ) ^ γ` needs `λ > 0`.
 
-## Corrections to the source
+## Hypotheses
 
-* The book allows any `βⱼ ∈ [-1/2, (r-2)/2]` in (8.2.25); `β = 0` must be excluded, since
-  `θ₀ ≡ 0`. The `β → 0` limit of the trust-region factor is `newtonFactor μ 0 = -log μ`, the Newton
-  step for `log π - log τ`, which is not treated here.
-* Convexity of `-λ^γ` for `γ ∈ (0, 1]` and concavity for `γ < 0` are used on `λ > 0`; the book
-  states them on `λ ≥ λₛ`, which may contain `0` when `λ₁ ≥ 0`.
+* In (8.2.25) `βⱼ ∈ [-1/2, (r-2)/2]` must be nonzero, since `θ₀ ≡ 0`. The `β → 0` limit of the
+  trust-region factor is `newtonFactor μ 0 = -log μ`, the Newton step for `log π - log τ`, which is
+  not treated here.
+* Convexity of `-λ^γ` for `γ ∈ (0, 1]` and concavity for `γ < 0` hold on `λ > 0`; the interval
+  `λ ≥ λₛ` may contain `0` when `λ₁ ≥ 0`.
 
 ## Not formalized
 
-* The ultimate `Q`-order `k` of the odd-order Taylor iterations claimed in §8.3: only their
+* The ultimate `Q`-order `k` of the odd-order Taylor iterations stated in §8.3: only their
   convergence is proved.
 * The overshoot from `𝓖` in the hard case (when `λ* = λₛ` is not a root in the open domain), and
   the "least-negative root" remark of §8.2.1.
@@ -378,8 +378,7 @@ theorem regSecular_root {σ r β lamStar : ℝ} (hσ : 0 < σ) (hpos : 0 < lamSt
 /-- **Regularization Newton corrections** (book §8.2.2 and §8.3.1, easy case). Let `σ > 0`,
 `r > 2`, `β ∈ [-1/2, 0) ∪ (0, (r-2)/2]` and let `λ* > λₛ` solve the secular equation
 `π(λ*) = (λ*/σ) ^ (2/(r-2))` (8.2.42). From every `λc > λₛ`, `λc + δᴺ(λc, β) ≤ λ*`, and from
-`λc ≤ λ*` the correction is nonnegative. (The book's range `[-1/2, (r-2)/2]` must exclude
-`β = 0`, where `θ₀ ≡ 0`.) -/
+`λc ≤ λ*` the correction is nonnegative. (`β = 0` is excluded since `θ₀ ≡ 0`.) -/
 theorem regNewtonCorrection_mem {σ r β lamStar lamc : ℝ} (hσ : 0 < σ) (hr : 2 < r)
     (hβ : β ∈ Ico (-1 / 2) 0 ∪ Ioc 0 ((r - 2) / 2)) (hstar : shiftThreshold hH < lamStar)
     (hroot : secular g H lamStar = (lamStar / σ) ^ (2 / (r - 2)))

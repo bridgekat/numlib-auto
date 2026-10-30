@@ -40,12 +40,10 @@ is in `Numlib.Optimization.Constrained.TwoPhase.Complexity`.
 
 ## Implementation notes
 
-Step 2(a) of Algorithm 7.2.1 is printed with `‖r(x_{k+1}, t_k)‖ < θε₀`, while the inner stopping
-test (7.2.10) uses `≤ θε₀`; Algorithm 14.3.2 uses `<` in both places. The predicate `Ka` is left
-as a parameter constrained only by the two cases: case (a) (`Ka k`) needs
+The predicate `Ka` is a parameter constrained only by the two cases: case (a) (`Ka k`) needs
 `‖r(x_{k+1}, t_k)‖ ≤ θε₀`, case (b) (`¬ Ka k`) needs `‖r(x_{k+1}, t_k)‖ ≥ θε₀` and
-`f(x_{k+1}) < t_k`. This covers both variants. The terminating case (c) does not occur before the
-horizon `K`.
+`f(x_{k+1}) < t_k`. This covers the residual test of Step 2(a) both in the form `≤ θε₀` and in the
+strict form `< θε₀`. The terminating case (c) does not occur before the horizon `K`.
 -/
 open Finset
 open scoped Topology
@@ -64,7 +62,7 @@ case-(a) iterations (the book's `𝒦_a`, (7.2.25), (14.3.36)):
   `t_{k+1} = f(x_{k+1}) - √(ε₀² - ‖c(x_{k+1})‖²)` (7.2.11);
 * Step 2(b), for `1 ≤ k < K` with `¬ Ka k`: `‖r(x_{k+1}, t_k)‖ ≥ θε₀`, `f(x_{k+1}) < t_k` and
   `t_{k+1} = 2 f(x_{k+1}) - t_k` (7.2.13).
-Algorithm 7.2.1 with the corrected Step 2(a) takes `Ka k ↔ ‖r(x_{k+1}, t_k)‖ ≤ θε₀`;
+Algorithm 7.2.1 (with the test `≤ θε₀` in Step 2(a)) takes `Ka k ↔ ‖r(x_{k+1}, t_k)‖ ≤ θε₀`;
 Algorithm 14.3.2 takes `Ka k ↔ ‖r(x_{k+1}, t_k)‖ < θε₀`. -/
 structure IsTargetSequence (f : E → ℝ) (c : E → F) (θ ε₀ : ℝ) (x : ℕ → E) (t : ℕ → ℝ)
     (Ka : ℕ → Prop) (K : ℕ) : Prop where
@@ -462,14 +460,12 @@ decrease `μ(x_{j,i}) - μ(x_{j,i+1})` guaranteed by the inner method at a succe
 whose new iterate fails the criticality test), with `κ > 0`, `0 ≤ π_l ≤ π_max`, `ε_l > 0`. If
 `ε₀^{2-π_l} ε_l^{-π_l} ≤ M` for every `l ∈ L`, then `|T| ≤ (1 - θ) M / (κ θ^{π_max})`.
 
-Only the iterations of `T` are counted: the book's `|𝓘_k^s|` also contains the `i = 0` entries
-and the last successful iteration of case-(b) calls that end on the criticality test, which must be
-counted separately. For TPp-GC (`L = {1}`, `π = (p+1)/p`, `κ = κ₁`) the constant is
-`κ₁⁻¹ θ^{-(p+1)/p}`, sharper than the book's `κ₁⁻¹ θ^{-(p+2)/p}` (7.2.47); for TPqp-GC
-(`κ = κ^μ_decr β^{π_max}`) it is the book's `[κ^μ_decr]⁻¹ (βθ)^{-π_max}` of (14.3.71). The
-book's proof bounds `‖r(x_{j,s})‖^{π_l-1}` from below by `ε₀^{π_l-1}`, which is invalid
-(only `(θε₀)^{π_l-1}` is available, (B.14.20)), but the constant is correct, via
-`ρ_{i+1}^π / ρ_i ≥ (θε₀)^π / ε₀`; the ratio condition `ρ_{i+1} ≥ θ ρ_i` is not needed. -/
+Only the iterations of `T` are counted: the `i = 0` entries of the set `𝓘_k^s` of successful
+inner iterations and the last successful iteration of case-(b) calls that end on the criticality
+test are counted separately. For TPp-GC (`L = {1}`, `π = (p+1)/p`, `κ = κ₁`) the constant is
+`κ₁⁻¹ θ^{-(p+1)/p}`; for TPqp-GC (`κ = κ^μ_decr β^{π_max}`) it is `[κ^μ_decr]⁻¹ (βθ)^{-π_max}`
+(14.3.71). The proof uses `ρ_{i+1}^π / ρ_i ≥ (θε₀)^π / ε₀`; no ratio condition
+`ρ_{i+1} ≥ θ ρ_i` is needed. -/
 theorem card_le_of_residual_block {ι : Type*} {ρ : ℕ → ℝ} {N : ℕ} {T : Finset ℕ} {L : Finset ι}
     {π ε : ι → ℝ} {θ ε₀ κ πmax M : ℝ} (hθ0 : 0 < θ) (hθ1 : θ ≤ 1) (hε₀ : 0 < ε₀) (hκ : 0 < κ)
     (hL : L.Nonempty) (hπ : ∀ l ∈ L, 0 ≤ π l ∧ π l ≤ πmax) (hε : ∀ l ∈ L, 0 < ε l)

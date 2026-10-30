@@ -22,5 +22,5 @@ Umbrella module for the analysis of the two-phase target-following methods of
   `Constrained.targetCrit`) and the construction of runs from an inner oracle;
 * `Numlib.Optimization.Constrained.TwoPhase.HighOrder.Complexity`: the merit-decrease contracts of
   the inner method and the evaluation complexity of the high-order run (Lemma 14.3.8 and
-  Theorem 14.3.9, corrected).
+  Theorem 14.3.9).
 -/

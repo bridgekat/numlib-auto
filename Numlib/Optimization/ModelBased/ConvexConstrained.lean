@@ -27,11 +27,11 @@ at the points of `C`, `∇^p f` `L`-Lipschitz on `C`, `x, x + s ∈ C`, `σ ≥ 
   `Optimization.exists_isFirstOrderCCStep`: existence of model minimizers over closed sets and of
   admissible ARp1-CC steps.
 
-## Correction to the book
+## The unit ball
 
 (6.2.18)–(6.2.19) transfer the restricted sets `𝒞^1(x_{k+1}, ε₁)`, `𝒞^2(…)` from `f` to the
-model for every admissible `d`, but (6.2.23) is only proved for `‖d‖ ≤ 1` (the error grows like
-`‖d‖^j`); the transfer is stated on the unit ball, which is all that the measures use.
+model. The estimate (6.2.23) holds for `‖d‖ ≤ 1` (the error grows like `‖d‖^j`), so the transfer
+is stated on the unit ball, which is all that the measures use.
 -/
 
 open Set Metric
@@ -75,10 +75,9 @@ theorem formCriticality_le_regularizedModel (hC : Convex ℝ C)
   formCriticality_le_add_of_abs_sub_le _ _ ⟨0, zero_mem_closedBall_inter hT⟩ fun _ hd =>
     abs_iteratedFDeriv_sub_regularizedModel_le_of_mem_closedBall hC hf hL hL0 hx hxs hσ hj hd.1
 
-/-- **(6.2.18)–(6.2.19), corrected** ([cartis2022evaluation], Lemma 6.2.1): unit-ball
+/-- **(6.2.18)–(6.2.19)** ([cartis2022evaluation], Lemma 6.2.1): unit-ball
 displacements on which `|∇^j f(x+s)[d]^j| ≤ a` satisfy `|∇^j m(s)[d]^j| ≤ b` whenever
-`(L + σ)/(p-j+1)! ‖s‖^{p-j+1} + a ≤ b`. (The book states this without `∩ 𝓑`, but its bound is
-only proved for `‖d‖ ≤ 1`.) -/
+`(L + σ)/(p-j+1)! ‖s‖^{p-j+1} + a ≤ b`. -/
 theorem inter_closedBall_restrictedSteps_subset_regularizedModel (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hL : IteratedFDerivLipschitzOn f p L C) (hL0 : 0 ≤ L)
     (hx : x ∈ C) (hxs : x + s ∈ C) (hσ : 0 ≤ σ) {j : ℕ} (hj : j ≤ p) {T : Set E} {a b : ℝ}

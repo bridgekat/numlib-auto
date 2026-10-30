@@ -507,10 +507,10 @@ theorem arpWorstCase_le_arpComplexityBound {p : ℕ} (hp : 1 ≤ p) (P : ARpPara
   obtain ⟨hc, hlip, hbdd, hΔ⟩ := mem_functionClass.1 hF
   have hb : Chapter02.AssumptionBb F.2 (⨅ y, F.2 y) := fun y => ciInf_le hbdd y
   have hf : AssumptionDpL F.2 p (max 1 L) :=
-    assumptionDpL_iff.2 ⟨hc.of_le (by exact_mod_cast le_top), le_max_left _ _,
-      iteratedFDerivLipschitzOn_iff.2 fun x hx y hy =>
+    .of_iteratedFDerivLipschitzOn (hc.of_le (by exact_mod_cast le_top)) (le_max_left _ _)
+      (iteratedFDerivLipschitzOn_iff.2 fun x hx y hy =>
         (iteratedFDerivLipschitzOn_iff.1 hlip x hx y hy).trans
-          (mul_le_mul_of_nonneg_right (le_max_right _ _) (norm_nonneg _))⟩
+          (mul_le_mul_of_nonneg_right (le_max_right _ _) (norm_nonneg _)))
   obtain ⟨k, hk, hkB⟩ := firstStationaryIndex_arpOracleMethod_le hp P hε hb hf
   refine hk.trans (Nat.cast_le.2 (Nat.le_floor ?_))
   have hκ := kappaSARp_pos (P := P) (p := p) (L := max 1 L) (by positivity) 1

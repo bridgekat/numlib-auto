@@ -1,3 +1,4 @@
+import Numlib.Analysis.Calculus.AnchoredLipschitzDerivs
 import Numlib.Analysis.SpecialFunctions.Pow.Real
 import Numlib.Optimization.ResidualPower
 import NumlibSurface.CartisGouldToint.Chapter01.Section01
@@ -187,21 +188,34 @@ end Measures
 
 /-- **Assumption Φ_ℓ.DpL** ([cartis2022evaluation], §5.1.2): `Φ_ℓ` is `p` times continuously
 differentiable on `ℝⁿ` and its `p`-th derivative is Lipschitz with constant `L ≥ 0` (tensor norm
-= operator norm). -/
-structure AssumptionPhiDpL (r : ℝⁿ → ℝᵐ) (ℓ : ℝ) (p : ℕ) (L : ℝ) : Prop where
-  /-- `Φ_ℓ ∈ C^p`. -/
-  contDiff : ContDiff ℝ p (Phi r ℓ)
-  /-- `L ≥ 0`. -/
-  nonneg : 0 ≤ L
-  /-- `∇^p Φ_ℓ` is `L`-Lipschitz. -/
-  lipschitz : IteratedFDerivLipschitzOn (Phi r ℓ) p L univ
+= operator norm). It is stated as the anchored smoothness assumption of order `p` for `Φ_ℓ` on the
+whole space (`C = A = ℝⁿ`) together with `L ≥ 0`. -/
+abbrev AssumptionPhiDpL (r : ℝⁿ → ℝᵐ) (ℓ : ℝ) (p : ℕ) (L : ℝ) : Prop :=
+  LipschitzDerivsAnchored (Phi r ℓ) univ univ p p (fun _ => L) ∧ 0 ≤ L
 
-/-- Φ_ℓ.DpL is the backbone predicate `IteratedFDerivLipschitzOn` for `Φ_ℓ` on `ℝⁿ`, together with
-`Φ_ℓ ∈ C^p` and `L ≥ 0`. -/
-theorem assumptionPhiDpL_iff {r : ℝⁿ → ℝᵐ} {ℓ : ℝ} {p : ℕ} {L : ℝ} :
-    AssumptionPhiDpL r ℓ p L ↔
-      ContDiff ℝ p (Phi r ℓ) ∧ 0 ≤ L ∧ IteratedFDerivLipschitzOn (Phi r ℓ) p L univ :=
-  ⟨fun h => ⟨h.contDiff, h.nonneg, h.lipschitz⟩, fun ⟨h1, h2, h3⟩ => ⟨h1, h2, h3⟩⟩
+namespace AssumptionPhiDpL
+
+variable {r : ℝⁿ → ℝᵐ} {ℓ : ℝ} {p : ℕ} {L : ℝ}
+
+/-- Under Φ_ℓ.DpL, `Φ_ℓ ∈ C^p`. -/
+theorem contDiff (h : AssumptionPhiDpL r ℓ p L) : ContDiff ℝ p (Phi r ℓ) :=
+  h.1.contDiff
+
+/-- The Lipschitz constant of Φ_ℓ.DpL is nonnegative. -/
+theorem nonneg (h : AssumptionPhiDpL r ℓ p L) : 0 ≤ L :=
+  h.2
+
+/-- Under Φ_ℓ.DpL, `∇^p Φ_ℓ` is `L`-Lipschitz on `ℝⁿ`. -/
+theorem lipschitz (h : AssumptionPhiDpL r ℓ p L) :
+    IteratedFDerivLipschitzOn (Phi r ℓ) p L univ :=
+  (lipschitzDerivsAnchored_univ_top_iff.1 h.1).2
+
+/-- Φ_ℓ.DpL from `Φ_ℓ ∈ C^p` with `L`-Lipschitz `p`-th derivative on `ℝⁿ`, `L ≥ 0`. -/
+theorem of_lipschitz (hf : ContDiff ℝ p (Phi r ℓ)) (hL0 : 0 ≤ L)
+    (hL : IteratedFDerivLipschitzOn (Phi r ℓ) p L univ) : AssumptionPhiDpL r ℓ p L :=
+  ⟨lipschitzDerivsAnchored_univ_top_iff.2 ⟨hf, hL⟩, hL0⟩
+
+end AssumptionPhiDpL
 
 /-- The Step-1 termination test of ARpLE ([cartis2022evaluation], Algorithm 5.1.1, (5.1.9)–(5.1.14))
 at the point `x` with the direction set `M = 𝓜_k`, for the order `q ∈ {1, 2, 3}` (the book's

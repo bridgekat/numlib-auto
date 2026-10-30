@@ -66,9 +66,9 @@ def IsMeasureDominated (f ψ : E → ℝ) (fstar μ κψ : ℝ) (A : Set E) : Pr
 
 /-- A run `x` with success predicate `S` is in the class **`ARψ,ν`** ([cartis2022evaluation],
 §5.3.2): successful iterations decrease `f` by `κν ψ(x_{k+1})^ν` (5.3.5), unsuccessful iterations
-keep the iterate, and the successes are dense, `k ≤ κR |𝒮_k| + κA` (5.3.9). (The book's standing
-assumptions `κν > 0`, `ν ≥ 1`, `κR ≥ 1`, `κA ≥ 0`, `ψ ≥ 0` are hypotheses of the theorems that
-need them; density forces `S` to be infinite.) -/
+keep the iterate, and the successes are dense, `k ≤ κR |𝒮_k| + κA` (5.3.9). (The standing
+assumptions `κν > 0`, `ν ≥ 1`, `κR ≥ 1`, `κA ≥ 0`, `ψ ≥ 0` of §5.3 are hypotheses of the theorems
+that need them; density forces `S` to be infinite.) -/
 structure IsARLikeRun (f ψ : E → ℝ) (κν ν κR κA : ℝ) (x : ℕ → E) (S : ℕ → Prop) : Prop where
   /-- (5.3.5): the decrease on successful iterations. -/
   decrease : ∀ k, S k → κν * ψ (x (k + 1)) ^ ν ≤ f (x k) - f (x (k + 1))
@@ -79,9 +79,8 @@ structure IsARLikeRun (f ψ : E → ℝ) (κν ν κR κA : ℝ) (x : ℕ → E)
 
 /-- A run `x` with success predicate `S` is in the class **`TRψ,ν`** ([cartis2022evaluation],
 §5.3.3): successful iterations decrease `f` by `κν (min_{i ≤ k} ψ(x_i))^ν` (5.3.28), unsuccessful
-iterations keep the iterate, and the successes are dense (5.3.9). (The book also stops the method
-when `ψ(x_k) = 0`; this is not needed, since the decrease condition then only asks for a
-nonnegative decrease.) -/
+iterations keep the iterate, and the successes are dense (5.3.9). (No stop is needed when
+`ψ(x_k) = 0`: the decrease condition then only asks for a nonnegative decrease.) -/
 structure IsTRLikeRun (f ψ : E → ℝ) (κν ν κR κA : ℝ) (x : ℕ → E) (S : ℕ → Prop) : Prop where
   /-- (5.3.28): the decrease on successful iterations. -/
   decrease : ∀ k, S k → κν * ((range (k + 1)).inf' nonempty_range_add_one (ψ ∘ x)) ^ ν ≤
@@ -156,8 +155,8 @@ theorem IsARLikeRun.objective_antitone (h : IsARLikeRun f ψ κν ν κR κA x S
 
 /-- **(5.3.11)** ([cartis2022evaluation], proof of Lemma 5.3.1): for an `ARψ,ν` run of a
 `ψ`-dominated objective (domination at the iterates), the gap `Γ_k = f(x_k) - f_*` satisfies the
-implicit recurrence `κν/κψ^{ν/μ} Γ_{k+1}^{ν/μ} ≤ Γ_k - Γ_{k+1}` on successful iterations. (The
-book's `μ ≥ 1` is not needed, only `μ > 0`.) -/
+implicit recurrence `κν/κψ^{ν/μ} Γ_{k+1}^{ν/μ} ≤ Γ_k - Γ_{k+1}` on successful iterations. (Only
+`μ > 0` is used.) -/
 theorem isImplicitGapDecrease_of_isARLikeRun (h : IsARLikeRun f ψ κν ν κR κA x S)
     (hψ : ∀ y, 0 ≤ ψ y) (hκψ : 0 < κψ) (hμ : 0 < μ) (hκν : 0 ≤ κν) (hν : 0 ≤ ν)
     (hdom : IsMeasureDominated f ψ fstar μ κψ (Set.range x)) :
@@ -185,8 +184,8 @@ theorem IsTRLikeRun.objective_succ_le (h : IsTRLikeRun f ψ κν ν κR κA x S)
 /-- **(5.3.33)** ([cartis2022evaluation], proof of Lemma 5.3.6): for a `TRψ,ν` run of a
 `ψ`-dominated objective (domination at the iterates), the gap `Γ_k = f(x_k) - f_*` satisfies the
 explicit recurrence `κν/κψ^{ν/μ} Γ_k^{ν/μ} ≤ Γ_k - Γ_{k+1}` on successful iterations (domination
-is applied at the minimizing earlier iterate, then monotonicity of `Γ`). (The book's `μ ≥ 1` is
-not needed, only `μ > 0`.) -/
+is applied at the minimizing earlier iterate, then monotonicity of `Γ`). (Only `μ > 0` is
+used.) -/
 theorem isExplicitGapDecrease_of_isTRLikeRun (h : IsTRLikeRun f ψ κν ν κR κA x S)
     (hψ : ∀ y, 0 ≤ ψ y) (hκψ : 0 < κψ) (hμ : 0 < μ) (hκν : 0 ≤ κν) (hν : 0 ≤ ν)
     (hdom : IsMeasureDominated f ψ fstar μ κψ (Set.range x)) :

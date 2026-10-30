@@ -66,27 +66,20 @@ instances with `X = C = A = univ`.
   `algorithm_12_2_2_exists_of_D1pL` (runs with the radii property (12.2.50)),
   `lemma_12_2_10_le_two`, `isEpsDeltaApproxMinimizer_of_isMinOn_zero`.
 
-## Implementation notes
-
-The `export Optimization (…)` command near the top of this file re-exports names that moved to the
-library (`finMax`, `finMin` and their lemmas; `trqKappaDelta`, `kappaSTRq`, `kappaATRq`,
-`kappaBTRq`, `kappaCTRq`; `arqpData`, `arqpModel`, `arqpStop`, `arqpRho`; `arqpKappaDelta`,
-`arqpTau`, `arqpKappaHat`, `arqpPiOf`, `arqpKappaDmOf`, `kappaSARqpOf`, `kappaAARqpOf`,
-`kappaCARqp` and their lemmas; `isEpsDeltaApprox_of_isMinOn_zero_of_jet`). These are compatibility
-re-exports for the `Chapter12.…` references of Chapter 14, to be removed once those use the library
-names.
-
 ## Deviations from the book
 
 * **ARqp, Step 1.** The printed test continues when `ΔT_{f,j}(x_k, d_{k,j}) ≥ ς ε_j δ^j/j!`;
   with `≥` the sharpness examples of the book never stop. The test is normalized to `>` (as in
   TRq's (12.2.2)), see `Optimization.IsARqpRun`, which also lists the other normalizations
   (Step-2 termination only at a global model minimizer `0`, as guaranteed by Algorithm 12.2.3;
-  the long-step branch `‖s_k‖ ≥ 1`).
+  the long-step branch `‖s_k‖ ≥ 1`, printed `‖s_k‖ > 1` in (12.2.28) and `‖s‖ ≥ 1` in
+  Algorithm 12.2.3).
 * **Theorem 12.2.5.** The conclusion `φ^{δ_ε}_{f,q}` is a typo for `φ^{δ_ε}_{f,j}`.
 * **Theorem 12.2.6 (Appendix B).** The printed data decrease `f` by `½ ε^{q+1} c_k` while the
   Taylor decrease is `ε^{q+1} c_k` (so (B.12.8) fails), `x_k = (k-1)ε` is `kε`, and
-  `ε^{q+1} k_ε ≤ 1` is false; the corrected data are `Optimization.exists_slowTRq_interpolant`.
+  `ε^{q+1} k_ε ≤ 1` is false (only `ε^{q+1} k_ε ≤ 2` holds); the residuals at orders `1 ≤ j < q`
+  are `2 q!/(q-j)! s_k^{q-j+1}` (the factor `q!/(q-j)!` is missing). The corrected data are
+  `Optimization.exists_slowTRq_interpolant`.
 * **Lemma 12.2.10.** The printed proof applies (12.2.29) to the step `s_k = 0`, which need not be
   the returned step (Example 12.2.2 allows `s_k = ½`); the statement is proved from the global
   minimality of `0`, with explicit radii.
@@ -97,7 +90,8 @@ names.
   `κ_{δ,min} ≤ τ_q/2`, which fails for `θ` close to `ς`; the constant `κ_{δ,min}` is replaced by
   `κ̂ = min(κ_{δ,min}, τ_q/2)` (`arqpKappaHat`), also in Lemma 12.2.13 and Theorem 12.2.14 (2).
 * **Lemma 12.2.13.** It needs f.D1pL (printed: f.D1qL), and holds at successful iterations
-  followed by a non-terminating one (printed: every iteration before termination).
+  followed by a non-terminating one (printed: every iteration before termination). In (12.2.56)
+  `‖s_k‖^{p-j+1}` is a typo for `‖s_k‖^{p-ℓ+1}`.
 * **Theorem 12.2.14.** The hypotheses `θ < ς` (Lemma 12.2.11) and `σ_min > 0` (the book's Step 0;
   `Optimization.ARqpParams` only asks `σ_min ≥ 0`) are explicit. In (1) the radii equal to `1` are
   required of `δ₀` and of every returned step (the book's "the algorithm ensures `δ_{k+1,j} = 1`");
@@ -106,15 +100,18 @@ names.
 * **Theorem 12.2.15 for `q ≥ 3`.** Its hypothesis "the choice `δ_{s_k,j} = 1` is possible" fails
   for its own example, e.g. for `p = q = 3` (`theorem_12_2_15_counterexample`); the theorem is
   stated for the
-  global-step scenario `IsARqpGlobalStepRun`, which is a genuine ARqp run for `q ≤ 2`
+  global-step scenario `IsARqpGlobalStepRun`, which is an ARqp run (`algorithm_12_2_2`) for `q ≤ 2`
   (`corollary_12_2_16`).
 * **Example 12.2.2.** `s²(s - ½)² = ¼ s²(1 - 4s) + s⁴` (printed: `½ s²(1 - 2s) + s⁴`, which has
   the unique minimizer `0`); the measure is `φ^1_{m,3}(0) = ¾` and the radius threshold is `¼`.
-* **Theorem 12.2.17.** "`ε` sufficiently small" is `ε ≤ ½`.
+* **Theorem 12.2.17.** "`ε` sufficiently small" is `ε ≤ ½`. In (12.2.78) the `q`-th order
+  residual is `ε / k_ε`, not `0`; it still satisfies (A.32).
 
 ## Not formalized
 
-The `O(·)` restatements and Table 12.2.1. (The existence of an admissible step is proved twice:
+The `O(·)` restatements and Table 12.2.1, and the claim that every execution of Algorithm 12.2.3
+terminates (the execution started with `μ = 1` is shown to terminate,
+`Optimization.exists_isDetailedStepOutput`). (The existence of an admissible step is proved twice:
 directly from a global model minimizer in `lemma_12_2_9`, and through the termination of
 Algorithm 12.2.3 in `lemma_12_2_9_algorithm`.)
 -/
@@ -1251,7 +1248,7 @@ abbrev arqpGlobalStop (f : E → ℝ) (P : ARqpParams) (p q : ℕ) (ε : ℕ →
 /-- **The scenario of Theorem 12.2.15** of [cartis2022evaluation] ("the choice `δ_{s_k,j} = 1`
 is possible and made", with steps that globally minimize the model): an ARqp run with all radii
 equal to `1` (`δ₀ = 1`, `δ_{s_k} = 1`) whose Step 2 returns a global minimizer `s_k` of the model
-`m_k`, without the requirement (12.2.29). For `q ≤ 2` every such run is a genuine ARqp run
+`m_k`, without the requirement (12.2.29). For `q ≤ 2` every such run is an ARqp run
 (`IsARqpGlobalStepRun.toAlgorithm`); for `q ≥ 3` (12.2.29) may fail with radius `1`
 (`theorem_12_2_15_counterexample`). -/
 structure IsARqpGlobalStepRun (f : E → ℝ) (P : ARqpParams) (p q : ℕ) (ε : ℕ → ℝ)
@@ -1313,9 +1310,9 @@ theorem IsARqpGlobalStepRun.toAlgorithm {f : E → ℝ} {P : ARqpParams} {p q : 
 `ρ_k = 1`, whose first termination index is `k_ε = ⌈ε^{-(p+1)/(p-q+1)}⌉`, where
 `φ^1_{f,j}(x_{k_ε}) ≤ ε/j!` for `j ∈ [1:q]`, while `φ^1_{f,q}(x_k) > ε/q!` before: ARqp may need
 `ε^{-(p+1)/(p-q+1)}` iterations and evaluations. The run is in the relaxed scenario
-`IsARqpGlobalStepRun`, whose Step 2 does not require (12.2.29); it is a genuine ARqp run only for
-`q ≤ 2` (`corollary_12_2_16`), while for `q ≥ 3` (12.2.29) with radius `1` may fail, e.g. for
-`p = q = 3` (`theorem_12_2_15_counterexample`). -/
+`IsARqpGlobalStepRun`, whose Step 2 does not require (12.2.29); it is an ARqp run
+(`algorithm_12_2_2`) only for `q ≤ 2` (`corollary_12_2_16`), while for `q ≥ 3` (12.2.29) with
+radius `1` may fail, e.g. for `p = q = 3` (`theorem_12_2_15_counterexample`). -/
 theorem theorem_12_2_15 {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p) :
     ∃ flow L : ℝ, 1 ≤ L ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 → ∀ P : ARqpParams,
       P.σ₀ = (p ! : ℝ) / (q - 1)! →
@@ -1500,7 +1497,7 @@ theorem theorem_12_2_15 {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p) :
     exact div_lt_div_of_pos_right (ha_gt k hk) hqf
 
 /-- **Corollary 12.2.16** of [cartis2022evaluation] (slow convergence of ARqp for `q ∈ {1, 2}`).
-For `q ∈ {1, 2}`, `q ≤ p`, the conclusion of Theorem 12.2.15 holds for a genuine ARqp run
+For `q ∈ {1, 2}`, `q ≤ p`, the conclusion of Theorem 12.2.15 holds for an ARqp run
 (`algorithm_12_2_2` with `δ₀ = 1`, all radii `1` and `d^m = 0`): there are `f_low`, `L ≥ 1`
 depending only on `p, q` such that for every `ε ∈ (0, 1]` and `σ₀ = p!/(q-1)!` some `f : ℝ → ℝ`
 with f.Bb and f.D1pL and an ARqp run from `x₀ = 0` first terminate at
@@ -1649,11 +1646,11 @@ theorem arqpSigmaSharp_radius {p q : ℕ} (hp : 2 < p) (hqp : q ≤ p) {ε β : 
 /-- **Theorem 12.2.17** of [cartis2022evaluation] (slow convergence of ARqp, general case). For
 `1 ≤ q ≤ p ≤ r` there are `f_low` and `L ≥ 1` depending only on `p, q, r` such that, for every
 `ε ∈ (0, ½]` (all `ε_j = ε`; the book's "sufficiently small") and ARqp constants with `σ₀` the
-weight (12.2.85), there is `f : ℝ → ℝ` satisfying f.Bb and f.D1rL and a genuine ARqp run from
-`x₀ = 0` with `δ₀ = ε`, `σ_k = σ₀`, steps the global model minimizers (12.2.88), radii
-`δ_{s_k} = ε` (12.2.89) (so the radii property (12.2.50) of Theorem 12.2.14 (2) holds) and
-`ρ_k = 1`, whose first termination index is `k_ε = ⌈ε^{-q(p+1)/p}⌉`, where `x_{k_ε}` is an
-`(ε, ε)`-approximate `q`-th order minimizer: ARqp may need `ε^{-q(p+1)/p}` iterations and
+weight (12.2.85), there is `f : ℝ → ℝ` satisfying f.Bb and f.D1rL and an ARqp run
+(`algorithm_12_2_2`) from `x₀ = 0` with `δ₀ = ε`, `σ_k = σ₀`, steps the global model minimizers
+(12.2.88), radii `δ_{s_k} = ε` (12.2.89) (so the radii property (12.2.50) of Theorem 12.2.14 (2)
+holds) and `ρ_k = 1`, whose first termination index is `k_ε = ⌈ε^{-q(p+1)/p}⌉`, where `x_{k_ε}`
+is an `(ε, ε)`-approximate `q`-th order minimizer: ARqp may need `ε^{-q(p+1)/p}` iterations and
 evaluations, even on functions with more Lipschitz derivatives than it uses. -/
 theorem theorem_12_2_17 {p q r : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p) (hpr : p ≤ r) :
     ∃ flow L : ℝ, 1 ≤ L ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 / 2 → ∀ P : ARqpParams,

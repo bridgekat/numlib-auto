@@ -46,8 +46,8 @@ with the integer ceiling). Let `0 < β < 1` and `0 < ε₀`. Suppose that the ou
 holds whenever `r_k ≤ ε₀`, and that at every iteration `k ≥ 1` reached without termination
 (`test j` fails for `j ≤ k`) the residual contracts: `r_k < β r_{k-1}`. Then the loop terminates
 at an index `k ≤ ⌈log (ε₀ / r_0) / log β⌉₊`. (For LENq-SC, `test k` is (14.3.23); the plain
-residual test is `test k ↔ r k ≤ ε₀`. The book's bound `log (ε₀ / r_0) / log β` must be rounded
-up: if it equals `2.5`, termination may happen at iteration `3`.) -/
+residual test is `test k ↔ r k ≤ ε₀`. The ceiling is needed: if `log (ε₀ / r_0) / log β = 2.5`,
+termination may happen at iteration `3`.) -/
 theorem le_ceil_log_of_contract (hβ : 0 < β) (hβ1 : β < 1) (hε₀ : 0 < ε₀)
     (htest : ∀ k, ¬ test k → ε₀ < r k)
     (hcontr : ∀ k, 1 ≤ k → (∀ j ≤ k, ¬ test j) → r k < β * r (k - 1)) :

@@ -31,7 +31,8 @@ carries the counting of Lemma 7.2.6 and Theorem 7.2.7.
   `Phase2Seq.IsKb` — the sets `𝒦_a`, `𝒦_b` (7.2.25); `Phase2Seq.Stop`, `Phase2Seq.IsEnd` —
   termination; `Phase2Seq.funEvals`, `Phase2Seq.derivEvals` — the evaluation counts;
   `Phase2Seq.IsGood`, `Phase2Seq.IsBad` — good inner iterations and bad outer iterations (those of
-  the backbone for the exemption test `Phase2Seq.Exempt`, `IsTPpGCPhase2.isGood_iff`);
+  the backbone for the exemption test `Phase2Seq.Exempt`; on runs, `IsTPpGCPhase2.isGood_iff`);
+  the counts are those of the backbone's outer loop (`Phase2Seq.toCountSeq`);
 * `algorithm_7_2_1` — a whole run of TPp-GC (Phase 1, an ARpLE-CC run on `c`, then Phase 2).
 
 ## Main results
@@ -263,6 +264,18 @@ def toTargetFollowingSeq : Constrained.TargetFollowingSeq ℝⁿ where
   Kb := D.IsKb f c P ε₀
   crit k τ := targetCrit f c C ε₁ τ (D.X (k + 1))
 
+/-- The sequences of Phase 2 as data of the generic outer loop with the tests `Ka`, `Kb` and no
+criticality test, on which the counts that involve only some of the tests are taken (the counts
+of the outer loop do not involve the criticality test). -/
+def toCountSeq (Ka Kb : ℕ → Prop) : Constrained.TargetFollowingSeq ℝⁿ where
+  x := D.X
+  t := D.t
+  xi := D.xi
+  e := D.e
+  Ka := Ka
+  Kb := Kb
+  crit _ _ := False
+
 /-- Phase 2 terminates at outer iteration `k` (Step 2 of Algorithm 7.2.1): in case (c), or in
 cases (a)/(b) when (7.2.12) holds at `(x_{k+1}, t_{k+1})`. -/
 abbrev Stop (k : ℕ) : Prop := (D.toTargetFollowingSeq f c C P ε₀ ε₁).Stop k
@@ -273,41 +286,66 @@ abbrev Before (k : ℕ) : Prop := (D.toTargetFollowingSeq f c C P ε₀ ε₁).B
 /-- Phase 2 terminates at outer iteration `kε ≥ 1`. -/
 abbrev IsEnd (kε : ℕ) : Prop := (D.toTargetFollowingSeq f c C P ε₀ ε₁).IsEnd kε
 
-open Classical in
 /-- The output target `t_ε` of Phase 2 terminating at outer iteration `k`: `t_{k+1}` in cases
-(a)/(b) and `t_k` in case (c) (the output point is `x_ε = x_{k+1}`); it is
-`Constrained.TargetFollowingSeq.targetOut` of `toTargetFollowingSeq`. -/
-noncomputable def targetOut (k : ℕ) : ℝ :=
-  if D.IsKa f c P ε₀ k ∨ D.IsKb f c P ε₀ k then D.t (k + 1) else D.t k
+(a)/(b) and `t_k` in case (c) (the output point is `x_ε = x_{k+1}`). -/
+noncomputable abbrev targetOut (k : ℕ) : ℝ :=
+  (D.toCountSeq (D.IsKa f c P ε₀) (D.IsKb f c P ε₀)).targetOut k
 
 /-- Inner iteration `i` of the `k`-th inner run is successful. -/
 def InnerSucc (k i : ℕ) : Prop :=
   P.η₁ ≤ taylorRatio (Constrained.targetMerit f c (D.t k)) p (D.xi k) (D.si k) i
 
-open Classical in
 /-- The number of evaluations of `(f, c)` in Phase 2 up to outer iteration `k`:
 `1 + ∑_{j ∈ [1, k]} e_j` (one at `x₁` and one per inner iteration). -/
-noncomputable def funEvals (k : ℕ) : ℕ := 1 + ∑ j ∈ Finset.Icc 1 k, D.e j
+noncomputable abbrev funEvals (k : ℕ) : ℕ :=
+  (D.toCountSeq (fun _ => False) fun _ => False).funEvals k
 
-open Classical in
+/-- The number of successful iterations of the `k`-th inner run. -/
+noncomputable abbrev succCount (k : ℕ) : ℕ :=
+  (D.toCountSeq (fun _ => False) fun _ => False).succCount (D.InnerSucc f c p P) k
+
 /-- The number of evaluations of the derivatives of `(f, c)` in Phase 2 up to outer iteration
 `k`: one at `x₁` and one per successful inner iteration. -/
-noncomputable def derivEvals (k : ℕ) : ℕ :=
-  1 + ∑ j ∈ Finset.Icc 1 k, ((Finset.range (D.e j)).filter (D.InnerSucc f c p P j)).card
+noncomputable abbrev derivEvals (k : ℕ) : ℕ :=
+  (D.toCountSeq (fun _ => False) fun _ => False).derivEvals (D.InnerSucc f c p P) k
 
-/-- A *good* inner iteration `(k, i)`: it is successful, and its new iterate fails the third test
-of (7.2.10) with residual `> θε₀`. The decrease of these iterations is controlled by Lemma 6.2.4
-(the iterations counted by the proof of Lemma 7.2.6 of [cartis2022evaluation]). For Phase-2 runs
-they are the good iterations of the backbone (`IsTPpGCPhase2.isGood_iff`). -/
-def IsGood (k i : ℕ) : Prop :=
-  i < D.e k ∧ D.InnerSucc f c p P k i ∧ ¬ targetCrit f c C ε₁ (D.t k) (D.xi k (i + 1)) ∧
-    P.θ * ε₀ < Constrained.targetResidual f c (D.t k) (D.xi k (i + 1))
+/-- The number of outer iterations in `𝒦_a` among `[1, K)`. -/
+noncomputable abbrev kaCount (K : ℕ) : ℕ :=
+  (D.toCountSeq (D.IsKa f c P ε₀) fun _ => False).kaCount K
 
 /-- The exemption test of the counting of Phase 2 with tolerance `e₁`: the run of outer iteration
 `k` ends in case (a), or at a point `x_{k+1}` with `ω_{μ₂,𝒞,1}(x_{k+1}, t_k) ≤ e₁ ‖r(x_{k+1}, t_k)‖`
 (the third test of (7.2.10) for `e₁ = ε₁`); good iterations are not the last one of such runs. -/
 def Exempt (e₁ : ℝ) (k : ℕ) : Prop :=
   D.IsKa f c P ε₀ k ∨ targetCrit f c C e₁ (D.t k) (D.X (k + 1))
+
+/-- A *good* inner iteration `(k, i)` (the iterations counted by the proof of Lemma 7.2.6 of
+[cartis2022evaluation]): it is successful, it is not the last iteration of a run that ends in
+case (a) or at a point passing the third test of (7.2.10), and its new iterate has residual
+`≥ θε₀`. For Phase-2 runs these are the successful iterations whose new iterate fails the third
+test of (7.2.10) with residual `> θε₀` (`IsTPpGCPhase2.isGood_iff`); their decrease is controlled
+by Lemma 6.2.4. -/
+abbrev IsGood (k i : ℕ) : Prop :=
+  (D.toTargetFollowingSeq f c C P ε₀ ε₁).IsGood f c P.θ ε₀ (D.InnerSucc f c p P)
+    (D.Exempt f c C P ε₀ ε₁) k i
+
+/-- The number of good iterations (`Phase2Seq.IsGood`) of the `k`-th inner run. -/
+noncomputable abbrev goodCount (k : ℕ) : ℕ :=
+  (D.toTargetFollowingSeq f c C P ε₀ ε₁).goodCount f c P.θ ε₀ (D.InnerSucc f c p P)
+    (D.Exempt f c C P ε₀ ε₁) k
+
+/-- A *bad* outer iteration: `k ∈ 𝒦_b` and its inner run contains no good iteration. For Phase-2
+runs, the new iterate then passes the third test of (7.2.10) for the old target,
+`ω_{μ₂,𝒞,1}(x_{k+1}, t_k) ≤ ε₁ ‖r(x_{k+1}, t_k)‖` (`IsTPpGCPhase2.isBad_targetCrit`); the book
+gives no bound on the number of such iterations. -/
+abbrev IsBad (k : ℕ) : Prop :=
+  (D.toTargetFollowingSeq f c C P ε₀ ε₁).IsBad f c P.θ ε₀ (D.InnerSucc f c p P)
+    (D.Exempt f c C P ε₀ ε₁) k
+
+/-- The number of bad outer iterations (`Phase2Seq.IsBad`) among `[1, K)`. -/
+noncomputable abbrev badCount (K : ℕ) : ℕ :=
+  (D.toTargetFollowingSeq f c C P ε₀ ε₁).badCount f c P.θ ε₀ (D.InnerSucc f c p P)
+    (D.Exempt f c C P ε₀ ε₁) K
 
 end Phase2Seq
 
@@ -646,40 +684,6 @@ end Termination
 
 /-! ### Counting the inner iterations of Phase 2 (Lemma 7.2.6) -/
 
-namespace Phase2Seq
-
-variable (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (C : Set ℝⁿ) (p : ℕ) (P : TPpGCParams) (ε₀ ε₁ : ℝ)
-  (D : Phase2Seq n)
-
-open Classical in
-/-- The number of good iterations (`Phase2Seq.IsGood`) of the `k`-th inner run. -/
-noncomputable def goodCount (k : ℕ) : ℕ :=
-  ((Finset.range (D.e k)).filter (D.IsGood f c C p P ε₀ ε₁ k)).card
-
-open Classical in
-/-- The number of successful iterations of the `k`-th inner run
-(`Constrained.TargetFollowingSeq.succCount`). -/
-noncomputable def succCount (k : ℕ) : ℕ :=
-  ((Finset.range (D.e k)).filter (D.InnerSucc f c p P k)).card
-
-open Classical in
-/-- The number of outer iterations in `𝒦_a` among `[1, K)`
-(`Constrained.TargetFollowingSeq.kaCount`). -/
-noncomputable def kaCount (K : ℕ) : ℕ := ((Finset.Ico 1 K).filter (D.IsKa f c P ε₀)).card
-
-/-- A *bad* outer iteration: `k ∈ 𝒦_b` and its inner run contains no good iteration. For Phase-2
-runs, the new iterate then passes the third test of (7.2.10) for the old target,
-`ω_{μ₂,𝒞,1}(x_{k+1}, t_k) ≤ ε₁ ‖r(x_{k+1}, t_k)‖` (`IsTPpGCPhase2.isBad_targetCrit`); the book
-gives no bound on the number of such iterations. -/
-def IsBad (k : ℕ) : Prop := D.IsKb f c P ε₀ k ∧ D.goodCount f c C p P ε₀ ε₁ k = 0
-
-open Classical in
-/-- The number of bad outer iterations (`Phase2Seq.IsBad`) among `[1, K)`. -/
-noncomputable def badCount (K : ℕ) : ℕ :=
-  ((Finset.Ico 1 K).filter (D.IsBad f c C p P ε₀ ε₁)).card
-
-end Phase2Seq
-
 /-- The constant `κ^S_ARpGC = κ₁⁻¹ θ^{-(p+1)/p}` (the book's (7.2.47) has the weaker
 `θ^{-(p+2)/p}`), with `κ₁ = η₁ σ_min/(p+1)! (p!/(L_μ + σ_μ,max + θ₁ p!))^{(p+1)/p}` of Lemma 6.2.4
 for the merit functions `μ₂(·, t)` with uniform constant `L_μ` (Lemma 7.2.5). -/
@@ -822,7 +826,8 @@ theorem e_le (hC : Chapter06.AssumptionCNe C) {k : ℕ} (hk1 : 1 ≤ k)
         (Finset.range (D.e k)).filter (D.InnerSucc f c p P k) := by
       rw [successSet_eq_filter, hN]; rfl
     rw [hS] at this
-    unfold Phase2Seq.succCount
+    rw [Phase2Seq.succCount, Constrained.TargetFollowingSeq.succCount_eq_card_filter]
+    dsimp only [Phase2Seq.toCountSeq]
     push_cast
     linarith
 
@@ -862,22 +867,15 @@ variable {f : ℝⁿ → ℝ} {c : ℝⁿ → ℝᵐ} {C : Set ℝⁿ} {p : ℕ}
   {x₁ : ℝⁿ} {D : Phase2Seq n} (h : IsTPpGCPhase2 f c C p P ε₀ ε₁ x₁ D)
 include h
 
-/-- **The good iterations of Phase 2 are those of the backbone**: for every outer iteration
-reached, `Phase2Seq.IsGood` agrees with `Constrained.TargetFollowingSeq.IsGood` for the exemption
-test `Phase2Seq.Exempt` with tolerance `ε₁` (a non-final iterate of a run fails the third test of
-(7.2.10) and has residual `> θε₀`; the final one of a run not ending in case (a) has residual
-`> θε₀`). -/
+/-- **The good iterations of Phase 2**: for every outer iteration reached, a good iteration
+(`Phase2Seq.IsGood`) is a successful inner iteration whose new iterate fails the third test of
+(7.2.10) and has residual `> θε₀` (a non-final iterate of a run fails all the tests of (7.2.10);
+the final one of a run not ending in case (a) has residual `> θε₀`). -/
 theorem isGood_iff {k : ℕ} (hk1 : 1 ≤ k) (hk : D.Before f c C P ε₀ ε₁ k) {i : ℕ} :
-    D.IsGood f c C p P ε₀ ε₁ k i ↔ (D.toTargetFollowingSeq f c C P ε₀ ε₁).IsGood f c P.θ ε₀
-      (D.InnerSucc f c p P) (D.Exempt f c C P ε₀ ε₁) k i := by
+    D.IsGood f c C p P ε₀ ε₁ k i ↔ i < D.e k ∧ D.InnerSucc f c p P k i ∧
+      ¬ targetCrit f c C ε₁ (D.t k) (D.xi k (i + 1)) ∧
+        P.θ * ε₀ < Constrained.targetResidual f c (D.t k) (D.xi k (i + 1)) := by
   constructor
-  · rintro ⟨hi, hs, hnc, hlt⟩
-    refine ⟨hi, hs, ?_, hlt.le⟩
-    by_cases hi1 : i + 1 < D.e k
-    · exact Or.inl hi1
-    · have he : i + 1 = D.e k := by omega
-      rw [he, ← h.X_succ k hk1 hk] at hnc hlt
-      exact Or.inr fun hex => hex.elim (fun ha => absurd ha (not_le.2 hlt)) hnc
   · rintro ⟨hi, hs, hcont, -⟩
     change i < D.e k at hi
     change i + 1 < D.e k ∨ ¬ D.Exempt f c C P ε₀ ε₁ k at hcont
@@ -888,29 +886,20 @@ theorem isGood_iff {k : ℕ} (hk1 : 1 ≤ k) (hk : D.Before f c C P ε₀ ε₁ 
       simp only [Phase2Seq.Exempt, not_or, Phase2Seq.IsKa, not_le] at hex
       have hx : D.xi k (i + 1) = D.X (k + 1) := by rw [he, h.X_succ k hk1 hk]
       exact ⟨hi, hs, by rw [hx]; exact hex.2, by rw [hx]; exact hex.1⟩
-
-theorem goodCount_eq {k : ℕ} (hk1 : 1 ≤ k) (hk : D.Before f c C P ε₀ ε₁ k) :
-    D.goodCount f c C p P ε₀ ε₁ k = (D.toTargetFollowingSeq f c C P ε₀ ε₁).goodCount f c P.θ ε₀
-      (D.InnerSucc f c p P) (D.Exempt f c C P ε₀ ε₁) k := by
-  classical
-  rw [Constrained.TargetFollowingSeq.goodCount_eq_card_filter, Phase2Seq.goodCount]
-  exact congrArg Finset.card (Finset.filter_congr fun i _ => h.isGood_iff hk1 hk)
-
-theorem badCount_eq {K : ℕ} (hK : D.Before f c C P ε₀ ε₁ K) :
-    D.badCount f c C p P ε₀ ε₁ K = (D.toTargetFollowingSeq f c C P ε₀ ε₁).badCount f c P.θ ε₀
-      (D.InnerSucc f c p P) (D.Exempt f c C P ε₀ ε₁) K := by
-  classical
-  rw [Constrained.TargetFollowingSeq.badCount_eq_card_filter, Phase2Seq.badCount]
-  refine congrArg Finset.card (Finset.filter_congr fun k hk => ?_)
-  rw [Finset.mem_Ico] at hk
-  exact and_congr Iff.rfl (by rw [h.goodCount_eq hk.1 (hK.mono hk.2.le)])
+  · rintro ⟨hi, hs, hnc, hlt⟩
+    refine ⟨hi, hs, ?_, hlt.le⟩
+    by_cases hi1 : i + 1 < D.e k
+    · exact Or.inl hi1
+    · have he : i + 1 = D.e k := by omega
+      rw [he, ← h.X_succ k hk1 hk] at hnc hlt
+      exact Or.inr fun hex => hex.elim (fun ha => absurd ha (not_le.2 hlt)) hnc
 
 /-- The new iterate of a bad outer iteration passes the third test of (7.2.10) for the old
 target. -/
 theorem isBad_targetCrit {k : ℕ} (hk1 : 1 ≤ k) (hk : D.Before f c C P ε₀ ε₁ k)
     (hbad : D.IsBad f c C p P ε₀ ε₁ k) : targetCrit f c C ε₁ (D.t k) (D.X (k + 1)) :=
   (h.toRun.exempt_of_isBad (fun _ hk1 hk _ hi hns => h.inner_stay hk1 hk hi hns) hk1 hk
-    ⟨hbad.1, (h.goodCount_eq hk1 hk).symm.trans hbad.2⟩).resolve_left hbad.1.not_isKa
+    hbad).resolve_left hbad.1.not_isKa
 
 end Good
 
@@ -951,20 +940,11 @@ theorem lemma_7_2_6 (h : IsTPpGCPhase2 f c C p P ε₀ ε₁ x₁ D) (hC : Chapt
     K ≤ D.kaCount f c P ε₀ K + ∑ k ∈ Finset.Icc 1 K, D.goodCount f c C p P ε₀ ε₁ k +
       D.badCount f c C p P ε₀ ε₁ K + 1 := by
   have hc := h.toContract hB hL hC hp h.tol.ε₁_pos le_rfl
-  have hsum : ∑ k ∈ Finset.Icc 1 K, D.goodCount f c C p P ε₀ ε₁ k =
-      ∑ k ∈ Finset.Icc 1 K, (D.toTargetFollowingSeq f c C P ε₀ ε₁).goodCount f c P.θ ε₀
-        (D.InnerSucc f c p P) (D.Exempt f c C P ε₀ ε₁) k :=
-    Finset.sum_congr rfl fun k hk =>
-      h.goodCount_eq (Finset.mem_Icc.1 hk).1 (hK.mono (Finset.mem_Icc.1 hk).2)
-  refine ⟨fun k hk1 hkK => ⟨?_, h.e_le hB hL hC hk1 (hK.mono hkK)⟩, ?_, ?_⟩
-  · rw [h.goodCount_eq hk1 (hK.mono hkK)]
-    exact h.toRun.succCount_le (succ := D.InnerSucc f c p P) hk1 (hK.mono hkK)
-  · rw [goodBound_eq (h.Lμ_nonneg hB hL) hp h.tol.ε₀_pos h.tol.ε₁_pos, ← Nat.cast_sum, hsum,
-      Nat.cast_sum]
-    exact_mod_cast hc.sum_goodCount_le h.toRun
-      (goodDecr_pos (h.Lμ_nonneg hB hL) p h.tol.ε₀_pos h.tol.ε₁_pos) hK1 hK
-  · rw [hsum, h.badCount_eq hK]
-    exact Constrained.TargetFollowingSeq.le_counts hK
+  refine ⟨fun k hk1 hkK => ⟨h.toRun.succCount_le (succ := D.InnerSucc f c p P) hk1 (hK.mono hkK),
+    h.e_le hB hL hC hk1 (hK.mono hkK)⟩, ?_, Constrained.TargetFollowingSeq.le_counts hK⟩
+  rw [goodBound_eq (h.Lμ_nonneg hB hL) hp h.tol.ε₀_pos h.tol.ε₁_pos]
+  exact_mod_cast hc.sum_goodCount_le h.toRun
+    (goodDecr_pos (h.Lμ_nonneg hB hL) p h.tol.ε₀_pos h.tol.ε₁_pos) hK1 hK
 
 /-- **Theorem 7.2.7** of [cartis2022evaluation], Phase 2, **corrected**. Under C.CNe, f.B.Fb and
 a uniform constant `L_μ` (Lemma 7.2.5), let `N_a = (f_up - f_low + 1)/((1 - θ)ε₀)` (Lemma 7.2.4),
@@ -1000,9 +980,7 @@ theorem theorem_7_2_7_phase2 (h : IsTPpGCPhase2 f c C p P ε₀ ε₁ x₁ D)
     (goodDecr_pos (h.Lμ_nonneg hB hL) p h.tol.ε₀_pos h.tol.ε₁_pos)
     (goodBound_eq (h.Lμ_nonneg hB hL) hp h.tol.ε₀_pos h.tol.ε₁_pos).ge
     (by have := P.toARParams.log_γ₂_pos; positivity) (hB.of_le h.tol.ε₀_le_β)
-  refine ⟨fun K hK1 hK => ?_, fun M hM => hii M fun K hK => ?_, hiii⟩
-  · rw [h.badCount_eq hK]; exact hi K hK1 hK
-  · rw [← h.badCount_eq hK]; exact hM K hK
+  exact ⟨hi, hii, hiii⟩
 
 /-- The first-order measure of `μ₂(·, t)` is Lipschitz in the target:
 `ω_{μ₂,𝒞,1}(x, t') ≤ ω_{μ₂,𝒞,1}(x, t) + |t - t'| ‖∇f(x)‖` at `x ∈ 𝒞` (the derivatives of

@@ -24,8 +24,7 @@ theorem neg_add_sqrt_sq_add_eq_div {a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) :
     nlinarith
 
 /-- **Lemma B.3.1 of [cartis2022evaluation].** For `a, c ≥ 0` and any `b`,
-`(-b + √(b² + a)) min(1, c) ≤ -b + √(b² + a c)`. (The book assumes `a, b > 0`; the sign of `b`
-plays no role.) -/
+`(-b + √(b² + a)) min(1, c) ≤ -b + √(b² + a c)`. (The sign of `b` plays no role.) -/
 theorem neg_add_sqrt_sq_add_mul_ge {a b c : ℝ} (ha : 0 ≤ a) (hc : 0 ≤ c) :
     (-b + √(b ^ 2 + a)) * min 1 c ≤ -b + √(b ^ 2 + a * c) := by
   set r := -b + √(b ^ 2 + a) with hr

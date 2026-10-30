@@ -20,18 +20,17 @@ The run predicate `Optimization.IsARqpRun` is generic in
   satisfy `x_k + s_k ∈ X`, and model measures are taken over `{e | x_k + s_k + e ∈ X}`;
   unconstrained ARqp is `X = univ`.
 
-## Normalizations of the printed algorithm
+## Design of the run predicate
 
 * The Step-1 test stops when every decrease `ΔT_j(x_k, d_{k,j})` is at most `ς ε_j δ_{k,j}^j/j!`
-  (`Optimization.MeasureTestPasses`); the printed test continues when `ΔT_j ≥ ς ε_j δ^j/j!`, which
-  never stops on the book's own sharpness examples.
+  (`Optimization.MeasureTestPasses`), as in the test (12.2.2) of TRq.
 * Step 2 asks (12.2.27) and either the long-step branch `‖s_k‖ ≥ 1` (radii arbitrary in `(0, 1]`;
-  this covers the printed (12.2.28) and Algorithm 12.2.3) or (12.2.29) with witnesses
+  this covers (12.2.28) and Algorithm 12.2.3) or (12.2.29) with witnesses
   `d^m_{k,j}`.
 * Termination in Step 2 (`m_k(s_k) = m_k(0)`) is allowed only if `0` then globally minimizes the
   model over the feasible steps, as guaranteed by Algorithm 12.2.3 (12.2.34); without it
   termination in Step 2 would not certify anything (Lemma 12.2.10).
-* After an unsuccessful iteration the book skips Step 1; the run keeps `x`, `δ` and the Step-1
+* Step 1 is skipped after an unsuccessful iteration: the run keeps `x`, `δ` and the Step-1
   witnesses. For Taylor data (`ARqpData.ofTaylor`, whose decrements do not depend on `σ`) the test
   outcome is then unchanged; for model data that change with the iteration in other ways (e.g.
   re-evaluated inexact derivatives) the Step-1 test is re-evaluated with the kept witnesses, which
@@ -39,8 +38,8 @@ The run predicate `Optimization.IsARqpRun` is generic in
 * Long steps (`‖s_k‖ ≥ 1`) only constrain the radii to `(0, 1]`; lower bounds on the radii such as
   (12.2.45), (12.2.50) are not part of the run and are carried separately (as in
   `exists_isARqpRun`).
-* `ARqpParams` keeps the printed `θ ∈ (0, 1)`; the complexity analysis with `ς < 1` needs `θ < ς`,
-  imposed where used.
+* `ARqpParams` asks `θ ∈ (0, 1)`; the complexity analysis with `ς < 1` needs `θ < ς`, imposed
+  where used.
 
 ## Main definitions and results
 
@@ -60,7 +59,7 @@ namespace Optimization
 
 /-- The constants of ARqp and ARqpC ([cartis2022evaluation], Algorithms 12.2.2, 14.1.1, Step 0): the
 adaptive-regularization constants and `θ ∈ (0, 1)`, `ς ∈ (0, 1]`. (The complexity analysis also
-needs `θ < ς`, which is imposed where used; for `ς = 1` it is the printed `θ < 1`.) -/
+needs `θ < ς`, which is imposed where used; for `ς = 1` it is `θ < 1`.) -/
 structure ARqpParams extends ARParams where
   /-- The model-optimality tolerance factor of (12.2.29). -/
   θ : ℝ

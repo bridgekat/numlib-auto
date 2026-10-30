@@ -28,14 +28,13 @@ constant once a trial value lies in `Ioc a b`.
 * `Subproblem.IsBracketRun.exists_mem`: finite termination with an explicit iteration bound when
   `a < b` and the initial lower end is `< b`.
 
-## Notes on the source
+## Contraction and termination
 
-The book bounds the width ratio by `max (1 - θ, θ, γ √λᵁ/(√λᴸ + √λᵁ))`; this is valid but not
-uniformly below `1`. The geometric branch in fact contracts by `√λᴸ/(√λᴸ + √λᵁ) ≤ 1/2` when it
+The width ratio is at most `max (1 - θ, θ, γ √λᵁ/(√λᴸ + √λᵁ))`, which is not uniformly below
+`1`. The geometric branch in fact contracts by `√λᴸ/(√λᴸ + √λᵁ) ≤ 1/2` when it
 moves the upper end, which gives the uniform factor `ρ`. Finite termination needs the initial
 lower end below `b`: if `λᴸ = λ*` initially, a run need not stop (while the upper end exceeds
-`λ*`, every trial value exceeds `λ*`), a degenerate case not excluded by the book's "finite
-convergence if `𝓛` is nonempty".
+`λ*`, every trial value exceeds `λ*`), even when `𝓛` is nonempty.
 -/
 
 open Set

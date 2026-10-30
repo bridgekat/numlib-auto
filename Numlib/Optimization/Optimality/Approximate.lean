@@ -347,13 +347,6 @@ theorem isEpsApprox_iff {D : FormalMultilinearSeries ℝ E ℝ} {q : ℕ} {ε : 
       ∃ δ : ℕ → ℝ, (∀ j ∈ Finset.Icc 1 q, δ j ∈ Ioc (0 : ℝ) 1) ∧ IsEpsDeltaApprox D S q ε δ :=
   Iff.rfl
 
-/-- The first-order Taylor decrement is `-D₁[s]` (now
-`FormalMultilinearSeries.taylorDecrement_one_apply`). -/
-@[deprecated FormalMultilinearSeries.taylorDecrement_one_apply (since := "2026-10-26")]
-theorem taylorDecrement_one_apply (D : FormalMultilinearSeries ℝ E ℝ) (s : E) :
-    D.taylorDecrement 1 s = -D 1 (fun _ => s) :=
-  D.taylorDecrement_one_apply s
-
 /-! ### Gradient and Hessian on inner product spaces -/
 
 /-! ### Monotonicity of the low-order measures in the radius -/

@@ -211,7 +211,7 @@ theorem arqpPiOf_one (u : Prop) [Decidable u] {p : ℕ} (hp : 1 ≤ p) :
   · rw [arqpPiOf_of_neg hu]; ring
 
 /-- The ARqp-SC exponent of order `1` ((14.2.12), either radii mode) is `(p+1)/p ≤ 3/2` for
-`p ≥ 2`, so the order part of `theorem_14_3_9_false` applies to it. -/
+`p ≥ 2`. -/
 theorem arqpPiOf_one_le (unit : Prop) [Decidable unit] {p : ℕ} (hp : 2 ≤ p) :
     arqpPiOf unit p 1 ≤ 3 / 2 := by
   rw [arqpPiOf_one unit (by omega)]

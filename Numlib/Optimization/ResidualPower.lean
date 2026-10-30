@@ -15,7 +15,7 @@ a real `ℓ`, `Optimization.residualPow r ℓ x = ‖r x‖^ℓ / ℓ` is the ob
 ## Main statements
 
 * `Optimization.contDiff_residualPow`: Lemma 5.1.1, `Φ_ℓ` is `C^p` when `r` is, for `ℓ` an even
-  integer or `ℓ ≥ 2p` (the book states `ℓ > 2p`; the proof gives `ℓ ≥ 2p`);
+  integer or `ℓ ≥ 2p`;
 * `Optimization.gradient_residualPow`, `Optimization.norm_fderiv_residualPow`,
   `Optimization.norm_fderiv_residualPow_div`, `Optimization.norm_fderiv_residualPow_div_eq_two`:
   the gradient `∇Φ_ℓ = ‖r‖^{ℓ-2} J^* r` and (5.1.63),

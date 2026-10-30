@@ -17,8 +17,8 @@ space, as analysed in [cartis2022evaluation] §2.2, for an objective whose gradi
 * `LineSearch.backtrackingIndex` — the number of halvings of the backtracking-Armijo line search
   of Algorithm 2.2.1: the least `i` such that the trial step `t_ini 2^{-i}` satisfies (2.2.1).
   `LineSearch.backtrackingIndex_le` gives the book's bound (2.2.6) on it and the lower bound
-  `t ≥ min t_ini ((1-α)/L)` on the accepted step; the book's (2.2.7), `t ≥ (1-α)/L`, holds only
-  when `t_ini ≥ (1-α)/L`, since the first trial may already be shorter.
+  `t ≥ min t_ini ((1-α)/L)` on the accepted step ((2.2.7)); `t ≥ (1-α)/L` holds when
+  `t_ini ≥ (1-α)/L`, but not in general, since the first trial may already be shorter.
 * `LineSearch.IsExactLineMin` (the book's exact line search (2.2.26): the first global minimizer
   of `t ↦ f (x - t ∇f(x))` on `t ≥ 0`) and `LineSearch.IsFirstLocalLineMin` (the first stationary
   point along the ray, the slope being negative before it). The second rule is the one realised by
@@ -148,7 +148,7 @@ theorem backtrackingTest_of_le (hf : Differentiable ℝ f)
 /-- **Bounds (2.2.6)–(2.2.7)** of [cartis2022evaluation]. Under the hypotheses of Lemma 2.2.1,
 with `0 < α < 1` and `t_ini > 0`, the backtracking index satisfies
 `i ≤ ⌈log₂ (L t_ini / (2(1-α)))⌉₊`, and the accepted step `t = t_ini 2^{-i}` satisfies
-`t ≥ min t_ini ((1-α)/L)`. (The book's (2.2.7), `t ≥ (1-α)/L`, requires `t_ini ≥ (1-α)/L`.) -/
+`t ≥ min t_ini ((1-α)/L)`. (The bound `t ≥ (1-α)/L` requires `t_ini ≥ (1-α)/L`.) -/
 theorem backtrackingIndex_le (hf : Differentiable ℝ f)
     (hL : ∀ y z, ‖gradient f y - gradient f z‖ ≤ L * ‖y - z‖) (hL0 : 0 < L) (hα : α < 1)
     {tini : ℝ} (htini : 0 < tini) (x : E) :
