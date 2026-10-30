@@ -36,7 +36,10 @@ Kinds (**false**, **gap**, **typo**, **reading**) as in the book index `CartisGo
 * Theorem 3.2.6: **typo**, `κ^F_TR2` lacks a `|log ·|`; the proof's constant `kappaFTR2` is
   bounded by the repaired book constant (`kappaFTR2_le_book`); `ε₁ ≤ 1` is dropped
   (`theorem_3_2_6`).
-* (3.2.25): **typo**, `x_k = k ε` (`theorem_3_2_7`).
+* (3.2.25): **typo**, `x_k = k ε`; the claim `f_{k_ε} ≥ 0` needs `ε⁻³` integral (**gap**, only
+  boundedness is used) (`theorem_3_2_7`).
+* §3.2.1: **reading**, the trust-region constraints `x_k - t g ∈ 𝓡_k`, `x_k + t u ∈ 𝓑_{Δ_k}` on
+  the Cauchy and eigenpoint steps are `‖t g‖ ≤ Δ_k`, `‖t u‖ ≤ Δ_k`.
 * (3.3.30): **false** with `+ 1`; proved with `+ 2` (`theorem_3_3_9`).
 * Theorems 3.3.6, 3.3.10: **reading**, proved here from the data of Theorem 12.2.15 (the book
   defers them to §12.2.2.4) (`theorem_3_3_6`, `theorem_3_3_10`).

@@ -45,16 +45,14 @@ Lanczos tridiagonal `T_k` (`Lanczos.ritzValues`).
 
 `‖H‖` is the operator norm of `E`. For matrix data with a scaling `M`, `E` carries the
 `M`-inner product (`Numlib.Optimization.Subproblem.Matrix`), and `‖H‖` is the largest `|λ|` of the
-pencil `(H, M)`, i.e. `‖M^{-1/2} H M^{-1/2}‖₂`. The book's (B.10.4) claims
-`‖M^{-T/2} H M^{-1/2}‖ = ‖M⁻¹ H‖` "by similarity", which is false in general (similarity preserves
-eigenvalues, not Euclidean norms); only `≤` holds, which is all the bounds need, so the results are
-stated with the (smaller) operator norm.
+pencil `(H, M)`, i.e. `‖M^{-1/2} H M^{-1/2}‖₂`. It is at most `‖M⁻¹ H‖₂` and may be smaller
+(similarity preserves eigenvalues, not Euclidean norms); the results are stated with it.
 
-Corrections to the iteration counts: the book's `⌈log A / log((√κ* + 1)/(√κ* - 1))⌉ + 1` may be
-nonpositive or undefined. Here the ceiling is `⌈·⌉₊` (when `log A < 0` the bound is `k ≤ 1`), and
-the case `κ* = 1` (where `log((√κ* + 1)/(√κ* - 1))` is undefined) is stated separately: then
-`q* = 0` and the test holds at some `k ≤ min 2 grade`. The constant `κ*` may be any upper bound
-of the `κₖ`, `1 ≤ k ≤ grade`; the book's choice is their maximum (10.2.10).
+In the iteration counts `⌈log A / log((√κ* + 1)/(√κ* - 1))⌉₊ + 1` the ceiling is `⌈·⌉₊`
+(when `log A < 0` the bound is `k ≤ 1`), and the case `κ* = 1` (where
+`log((√κ* + 1)/(√κ* - 1))` is undefined) is stated separately: then `q* = 0` and the test holds
+at some `k ≤ min 2 grade`. The constant `κ*` may be any upper bound of the `κₖ`,
+`1 ≤ k ≤ grade`, such as their maximum (10.2.10).
 -/
 
 open Set Matrix Krylov
@@ -492,18 +490,18 @@ theorem krylov_residual_bound_trustRegion (hH : (H : E →ₗ[ℝ] E).IsSymmetri
   gcongr
 
 /-- **Corollary 10.2.3** (iteration bound for the Krylov approximation, regularization;
-[cartis2022evaluation] Corollary 10.2.3, corrected). Let `H` be symmetric, `g ≠ 0`, `σ > 0`,
+[cartis2022evaluation] Corollary 10.2.3). Let `H` be symmetric, `g ≠ 0`, `σ > 0`,
 `r > 2`, `θ > 0` (the constant `θ₁` of the stopping rule (9.3.14b)), and for `1 ≤ k ≤ grade(H, g)`
 let `sₖ` minimize the regularized model over `𝒦_k(H, g)`, with multiplier `λₖ = σ ‖sₖ‖^{r-2}`.
 Let `s*` be a global minimizer with `λ* = σ ‖s*‖^{r-2}`, `λmax` the greatest eigenvalue of `H`,
-`κ*` an upper bound of the `κₖ(λₖ)` (the book takes their maximum (10.2.10)), `q* = q(κ*)` and
+`κ*` an upper bound of the `κₖ(λₖ)` (such as their maximum (10.2.10)), `q* = q(κ*)` and
 `A = (4 ‖H‖ κ* / θ) (λ*/σ)^{1/(r-2)} ((λmax + λ*)/‖g‖)²`. Then the stopping rule (9.3.14b),
 `‖g + H sₖ + λₖ sₖ‖ ≤ ½ θ ‖sₖ‖²`, holds
 (i) at every `k ∈ [1, grade]` with `A q*^{k-1} ≤ 1`, and (ii) at `k = grade`; hence
 (iii) if `κ* > 1`, at some `k ≤ min (⌈log A / log (1/q*)⌉₊ + 1) grade`, and
 (iv) if `κ* = 1`, at some `k ≤ min 2 grade`.
-The book's ceiling is corrected to `⌈·⌉₊` (`log A` may be negative), and the case `κ* = 1`, where
-the book's `log((√κ* + 1)/(√κ* - 1))` is undefined, is separated. -/
+The ceiling is `⌈·⌉₊` (`log A` may be negative), and the case `κ* = 1`, where
+`log((√κ* + 1)/(√κ* - 1))` is undefined, is separate. -/
 theorem krylov_iteration_bound_regularization (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hg : g ≠ 0)
     {σ r θ : ℝ} (hσ : 0 < σ) (hr : 2 < r) (hθ : 0 < θ) {s : ℕ → E}
     (hs : ∀ k, s k ∈ 𝒦ₕ[k])
@@ -585,7 +583,7 @@ theorem krylov_iteration_bound_regularization (hH : (H : E →ₗ[ℝ] E).IsSymm
   rw [hκ, convFactor_one]
 
 /-- **Corollary 10.3.3** (iteration bound for the Krylov approximation, trust region;
-[cartis2022evaluation] Corollary 10.3.3, corrected). Let `H` be symmetric, `g ≠ 0`, `ε > 0`, and
+[cartis2022evaluation] Corollary 10.3.3). Let `H` be symmetric, `g ≠ 0`, `ε > 0`, and
 for `1 ≤ k ≤ grade(H, g)` let `sₖ ∈ 𝒦_k` be feasible with trust-region multiplier `λₖ` for the
 subproblem restricted to `𝒦_k`. Let `κ*` bound the `κₖ(λₖ)` and `q* = q(κ*)`. Then the residual
 test (10.3.2), `‖g + H sₖ + λₖ sₖ‖ ≤ ε`, holds (i) at every `k ∈ [1, grade]` with

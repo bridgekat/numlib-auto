@@ -45,8 +45,8 @@ glued function is again `C^p` (`Hermite.contDiff_glue`). In the bounded version 
 are Hermite pieces of length `1` towards constant jets, as in the book, with the consistency
 constant `(p + 2) κ`.
 
-The book states Theorem A.9.2 with `s_k > 0` for `k ∈ [0 : k_e]`, which only makes sense for
-`k < k_e`, and its bound "for all `x ∈ ℝⁿ`" is meant for `x ∈ ℝ`.
+In Theorem A.9.2 the steps `s_k > 0` are indexed by `k < k_e`, and the bound holds for all
+`x ∈ ℝ`.
 -/
 
 open Polynomial

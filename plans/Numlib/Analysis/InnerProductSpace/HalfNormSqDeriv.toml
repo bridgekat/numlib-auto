@@ -1,0 +1,17 @@
+[[node]]
+id = "iteratedFDeriv_apply_eq_iteratedDeriv"
+
+[[node]]
+id = "iteratedDeriv_two_half_norm_sq"
+
+[[node]]
+id = "iteratedDeriv_three_half_norm_sq"
+
+[[node]]
+id = "fderiv_half_norm_sq_apply"
+
+[[node]]
+id = "iteratedFDeriv_two_half_norm_sq_apply"
+
+[[node]]
+id = "iteratedFDeriv_three_half_norm_sq_apply"

@@ -41,9 +41,6 @@ theorem eq_A_35 {δ : ℝ} (h1 : 1 ≤ δ) (j : ℕ) :
     ∑ ℓ ∈ Icc 1 j, δ ^ ℓ / (ℓ ! : ℝ) ≤ 2 * δ ^ j :=
   sum_pow_div_factorial_le_two_mul_pow h1 j
 
-@[deprecated _root_.sum_inv_factorial_sub_le_exp_one (since := "2026-10-26")]
-alias sum_inv_factorial_sub_le_exp_one := _root_.sum_inv_factorial_sub_le_exp_one
-
 /-- **(A.36)** of [cartis2022evaluation] (the case `δ = 1`): for `j ≤ p`,
 `∑_{ℓ=1}^j 1/ℓ! ≤ 2`, `∑_{ℓ=j}^p 1/(ℓ-j)! < 3` and `∑_{ℓ=j+1}^{p+1} 1/ℓ! ≤ 2/j!`. -/
 theorem eq_A_36 {j p : ℕ} (_hjp : j ≤ p) :

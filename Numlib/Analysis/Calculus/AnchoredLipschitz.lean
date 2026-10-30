@@ -38,8 +38,8 @@ of the target `t`.
 
 ## Implementation notes
 
-The book expands `∇^j (u v)` by the Leibniz rule and splits each difference of products by hand.
-Here only Mathlib's Leibniz *bound* `norm_iteratedFDerivWithin_mul_le` is used: with
+Rather than expanding `∇^j (u v)` by the Leibniz rule and splitting each difference of products,
+only Mathlib's Leibniz *bound* `norm_iteratedFDerivWithin_mul_le` is used: with
 `a = u(x)`, `b = v(x)` one writes `u v = (u - a)(v - b) + a v + b u - a b`, and for
 `y = x + t` the difference of the `j`-th derivatives of `w = (u - a)(v - b)` at `x` and `y` is the
 `j`-th derivative at `x` of `z ↦ w(z) - w(z + t) = (u(z) - u(z + t)) (v(z) - b) +

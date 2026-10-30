@@ -33,7 +33,8 @@ norm is defined directly.
   `‖r(x,t)‖/(f(x) - t) = ‖(y, 1)‖` and the corresponding identities between Taylor measures and
   criticality measures (the proofs of Lemmas 7.2.1 and 14.3.5);
 * `Constrained.taylorMeasure_lagrangian_two_le`, `Constrained.taylorMeasure_lagrangian_three_le`:
-  the second- and third-order measure relations of the proof of Lemma 14.3.5, in corrected form;
+  the second- and third-order measure relations of the proof of Lemma 14.3.5, with the extra term
+  `(∇f(x)[d])²/(2(f(x) - t))`;
 * `Constrained.iteratedFDerivHolderOn_targetMerit_of_mem_Icc`: the derivatives of `μ₂(·, t)` have
   Hölder (Lipschitz) constants uniform over an interval of targets (the core of Lemma 7.2.5), since
   `μ₂` is affine in `t` up to an additive constant;
@@ -47,11 +48,9 @@ reducible abbreviation of `fun z => f z - ⟪y, c z⟫`, which is the form the s
 written in. Its multipliers enter with the sign opposite to that of `Constrained.lagrangian`
 (`Constrained.innerLagrangian_apply_eq_lagrangian`).
 
-The printed bounds (14.3.43) and (14.3.46) claim that the extra term in the second- and third-order
-relations is controlled by the first-order measure of the Lagrangian, via
-`|∇f(x)[d]|/(f(x) - t) = |∇ₓℒ(x,y)[d]|` on `T(x) = ker ∇c(x)`. On `T(x)` however
-`∇ₓℒ(x,y)[d] = ∇f(x)[d]`, and the extra term is `(∇f(x)[d])²/(2(f(x) - t))`; the corrected
-statements carry it explicitly.
+On `T(x) = ker ∇c(x)` the derivative of the Lagrangian is `∇ₓℒ(x,y)[d] = ∇f(x)[d]`, and the
+second- and third-order relations ((14.3.43), (14.3.46)) contain the extra term
+`(∇f(x)[d])²/(2(f(x) - t))`, which the statements below carry explicitly.
 -/
 
 open Set Metric Filter Finset
@@ -61,8 +60,8 @@ open scoped Topology RealInnerProductSpace Nat
 
 /-- **Lemma B.7.1** of [cartis2022evaluation]: for `0 ≤ ω ≤ ε` and reals `u, v` with
 `u² + v² ≤ ω²`, `ε - ω ≤ -u + √(ε² - v²)`; that is, the minimum of `ψ(u, v) = -u + √(ε² - v²)`
-over the disc `u² + v² ≤ ω²` is `ε - ω` (attained at `(ω, 0)`). The book assumes `0 < ω < ε` and
-argues through the KKT conditions; here `u ≤ √(ω² - v²)` and `√(ε² - v²) - √(ω² - v²) ≥ ε - ω`. -/
+over the disc `u² + v² ≤ ω²` is `ε - ω` (attained at `(ω, 0)`). The proof uses
+`u ≤ √(ω² - v²)` and `√(ε² - v²) - √(ω² - v²) ≥ ε - ω` instead of the KKT conditions. -/
 theorem neg_add_sqrt_sq_sub_sq_ge {ω ε u v : ℝ} (hω : 0 ≤ ω) (hωε : ω ≤ ε)
     (huv : u ^ 2 + v ^ 2 ≤ ω ^ 2) : ε - ω ≤ -u + √(ε ^ 2 - v ^ 2) := by
   set b := √(ω ^ 2 - v ^ 2) with hb
@@ -90,7 +89,7 @@ namespace Constrained
 
 /-- **Sufficiency of the Lagrangian** ([cartis2022evaluation], Theorem 7.1.1): if `c x = 0` and
 `x` minimizes the Lagrangian `z ↦ f z - ⟪y, c z⟫` over `S`, then `x` minimizes `f` over the
-feasible part `{z ∈ S | c z = 0}` of `S`. (The book's closedness of `S` is not needed.) -/
+feasible part `{z ∈ S | c z = 0}` of `S`. (`S` need not be closed.) -/
 theorem isMinOn_of_isMinOn_sub_inner {E F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
     {f : E → ℝ} {c : E → F} {S : Set E} {x : E} {y : F}
     (hcx : c x = 0) (hmin : IsMinOn (fun z => f z - ⟪y, c z⟫) S x) :
@@ -423,8 +422,8 @@ omit [InnerProductSpace ℝ F] in
 [cartis2022evaluation]): if `p ≥ 1`, `t₁ ≤ t ≤ t₂`, and for `i = 1, 2` the merit function
 `μ₂(·, tᵢ)` is `C^p` at every point of `C` with `(Hᵢ, β)`-Hölder `p`-th derivative on `C`, then the
 `p`-th derivative of `μ₂(·, t)` is `(max H₁ H₂, β)`-Hölder on `C`. The proof uses that `μ₂` is
-affine in `t` up to an additive constant; the book's argument ("`μ₂` depends continuously on `t`")
-does not by itself give a uniform constant. -/
+affine in `t` up to an additive constant (continuity in `t` alone would not give a uniform
+constant). -/
 theorem iteratedFDerivHolderOn_targetMerit_of_mem_Icc {p : ℕ} {t₁ t₂ t H₁ H₂ β : ℝ} {C : Set E}
     (hp : p ≠ 0) (ht : t ∈ Icc t₁ t₂)
     (hμ₁ : ∀ x ∈ C, ContDiffAt ℝ p (targetMerit f c t₁) x)
@@ -599,12 +598,12 @@ open Optimization
 
 variable {f : E → ℝ} {c : E → F} {t : ℝ} {x : E} {δ : ℝ} {S : Set E}
 
-/-- **Second-order measure relation** (corrected (14.3.43) of [cartis2022evaluation]). Let
+/-- **Second-order measure relation** ((14.3.43) of [cartis2022evaluation]). Let
 `τ = f(x) - t > 0`, `y = -c(x)/τ`, `ℒ(z) = f(z) - ⟪y, c(z)⟫`, `0 ∈ S`, `δ ≥ 0`, and
 `T = S ∩ ker ∇c(x)`. If `|∇f(x)[d]| ≤ G` for every `d ∈ T` with `‖d‖ ≤ δ` (e.g.
 `G = ‖∇f(x)‖ δ`), then `φ^δ_{ℒ,T,2}(x) ≤ (φ^δ_{μ,S,2}(x,t) + G²/2) / τ`. On `T`,
-`ΔT_{ℒ,2}(d) = (ΔT_{μ,2}(d) + ½ (∇f(x)[d])²)/τ` ((14.3.55)); the book bounds the extra term by
-`½ φ^δ_{ℒ,1} ‖∇f(x)‖ δ`, which is not valid since `∇ℒ(x)[d] = ∇f(x)[d]` on `T`. -/
+`ΔT_{ℒ,2}(d) = (ΔT_{μ,2}(d) + ½ (∇f(x)[d])²)/τ` ((14.3.55)); since `∇ℒ(x)[d] = ∇f(x)[d]` on `T`,
+the extra term is not controlled by `φ^δ_{ℒ,1}`. -/
 theorem taylorMeasure_lagrangian_two_le (hf : ContDiffAt ℝ 2 f x) (hc : ContDiffAt ℝ 2 c x)
     (ht : t < f x) (hδ : 0 ≤ δ) (hS : (0 : E) ∈ S) {G : ℝ}
     (hG : ∀ d ∈ closedBall (0 : E) δ ∩ (S ∩ {d | fderiv ℝ c x d = 0}), |fderiv ℝ f x d| ≤ G) :
@@ -642,7 +641,7 @@ theorem taylorMeasure_lagrangian_two_le_of_ker (hf : ContDiffAt ℝ 2 f x)
   rw [le_inv_mul_iff₀ hτ]
   linarith
 
-/-- **Third-order measure relation** (corrected (14.3.46) of [cartis2022evaluation]). With the
+/-- **Third-order measure relation** ((14.3.46) of [cartis2022evaluation]). With the
 notation of `taylorMeasure_lagrangian_two_le` and `C³` data, if `|∇f(x)[d]| ≤ G` and
 `|∇²f(x)[d]²| ≤ H` for every `d ∈ T` with `‖d‖ ≤ δ`, then
 `φ^δ_{ℒ,T,3}(x) ≤ (φ^δ_{μ,S,3}(x,t) + (G + H) G/2) / τ`. On `T`,

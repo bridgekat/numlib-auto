@@ -21,18 +21,18 @@ optimality conditions of low order and to local minimizers.
 * `taylorMeasure_eq_zero_of_isLocalMin`, `exists_taylorMeasure_le_of_isLocalMin`,
   `tendsto_taylorMeasure_div_pow_of_isLocalMin`: local minimizers (Theorem 12.1.4);
 * `isStrictLocalMin_taylorPolynomial_succ_of_growth`,
-  `isStrictLocalMin_of_taylorPolynomial_growth`: corrected forms of Theorem 12.1.5.
+  `isStrictLocalMin_of_taylorPolynomial_growth`: sufficient conditions of Theorem 12.1.5 under a
+  growth hypothesis.
 
 ## Implementation notes
 
-Statements about the measure alone are stated for arbitrary data `D` (exact, inexact, or the jet
-of a model). Low-order identifications are proved directly by testing the supremum at well-chosen
-displacements (`±d`, `t • d`), avoiding the trust-region multiplier `(H + λI)^+` of the book's
-proofs; the bound of Theorem 12.1.6 (ii) becomes explicit: `‖∇f‖² ≤ δ² ε max(‖∇²f‖, ε)`.
+Statements about the measure alone are stated for arbitrary data `D` (exact, inexact, or the jet of
+a model). Low-order identifications are proved directly by testing the supremum at well-chosen
+displacements (`±d`, `t • d`), avoiding the trust-region multiplier `(H + λI)^+`; the bound of
+Theorem 12.1.6 (ii) becomes explicit: `‖∇f‖² ≤ δ² ε max(‖∇²f‖, ε)`.
 
-Theorem 12.1.5 is false as stated (an isolated minimizer of `T_{f,j}(x, ·)` need not have
-uniform growth; see `isStrictLocalMin_taylorPolynomial_succ_of_growth` for a counterexample); the
-sufficient conditions here assume growth of order `j`.
+An isolated minimizer of `T_{f,j}(x, ·)` need not have uniform growth, and isolation alone does
+not make `x` a local minimizer of `f`; the sufficient conditions here assume growth of order `j`.
 -/
 
 open Finset Filter Metric Asymptotics
@@ -373,7 +373,7 @@ theorem tendsto_taylorMeasure_div_pow_of_isLocalMin (hf : ContDiffAt ℝ j f x)
 
 end LocalMin
 
-/-! ### Sufficient conditions (Theorem 12.1.5, corrected) -/
+/-! ### Sufficient conditions (Theorem 12.1.5, under a growth hypothesis) -/
 
 section Sufficient
 
@@ -418,7 +418,7 @@ theorem taylorSum_succ_zero_lt_of_growth (D : FormalMultilinearSeries ℝ E ℝ)
   linarith
 
 /-- **Propagation of growth to the next order** (the consequence stated after Theorem 12.1.5 of
-[cartis2022evaluation], in corrected form): if `‖D_{j+1}‖ ≤ L` and
+[cartis2022evaluation], under a growth hypothesis): if `‖D_{j+1}‖ ≤ L` and
 `T_j(s) - T_j(0) ≥ c ‖s‖^j` (`c > 0`) for `‖s‖ ≤ r` (`r > 0`), then `T_{j+1}` grows of the same
 order with constant `c/2` on a smaller ball. Iterating gives growth of every `T_ℓ`, `ℓ ≥ j`, when
 the higher derivatives are bounded. -/
@@ -444,8 +444,8 @@ theorem exists_growth_taylorSum_succ_of_growth (D : FormalMultilinearSeries ℝ 
   have hpow : 0 ≤ ‖s‖ ^ j := by positivity
   nlinarith
 
-/-- **Sufficient condition for the Taylor model, corrected form of [cartis2022evaluation],
-Theorem 12.1.5 (first conclusion).** If `‖D_{j+1}‖ ≤ L` and `T_j` grows like
+/-- **Sufficient condition for the Taylor model** ([cartis2022evaluation], Theorem 12.1.5, first
+conclusion, under a growth hypothesis). If `‖D_{j+1}‖ ≤ L` and `T_j` grows like
 `T_j(s) - T_j(0) ≥ c ‖s‖^j` (`c > 0`) for `‖s‖ ≤ r` (`r > 0`), then `s = 0` is a strict local
 minimizer of `T_{j+1}`.
 
@@ -484,12 +484,12 @@ theorem exists_add_le_of_taylorPolynomial_growth {f : E → ℝ} {x : E} {j : �
   have := (abs_le.1 h2).1
   linarith
 
-/-- **Sufficient condition for `f`, corrected form of [cartis2022evaluation], Theorem 12.1.5
-(second conclusion).** If `f` is `C^j` at `x` and its Taylor polynomial grows like
+/-- **Sufficient condition for `f`** ([cartis2022evaluation], Theorem 12.1.5, second conclusion,
+under a growth hypothesis). If `f` is `C^j` at `x` and its Taylor polynomial grows like
 `T_{f,j}(x, s) - f(x) ≥ c ‖s‖^j` (`c > 0`) for `‖s‖ ≤ r` (`r > 0`), then `x` is a strict local
-minimizer of `f`. For `j = 2` the growth condition is `∇f(x) = 0` with `∇²f(x)` coercive. The
-book's hypotheses ("`s = 0` is an isolated minimizer of `T_{f,j}(x, ·)`") are not sufficient
-(counterexample in `isStrictLocalMin_taylorPolynomial_succ_of_growth`). -/
+minimizer of `f`. For `j = 2` the growth condition is `∇f(x) = 0` with `∇²f(x)` coercive. That
+`s = 0` is an isolated minimizer of `T_{f,j}(x, ·)` would not suffice (see
+`isStrictLocalMin_taylorPolynomial_succ_of_growth`). -/
 theorem isStrictLocalMin_of_taylorPolynomial_growth {f : E → ℝ} {x : E} {j : ℕ}
     (hf : ContDiffAt ℝ j f x) {c r : ℝ} (hc : 0 < c) (hr : 0 < r)
     (hgrowth : ∀ s : E, ‖s‖ ≤ r → c * ‖s‖ ^ j ≤ taylorPolynomial f j x s - f x) :

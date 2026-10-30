@@ -23,9 +23,9 @@ The order-`j` measure at `s` with radius `δ` is `sSup (ΔT j s '' (closedBall 0
 The global minimal value `m* = sInf (m '' T)` of Step 2.2 is meaningful when `m` is bounded below
 on `T` (as the regularized models are); otherwise Lean's `sInf` of an unbounded set is `0`, and
 the results below still hold but say nothing about global minimization. The long-step test of
-Step 2.3 is `‖s‖ ≥ 1` as in Algorithms 12.2.3 and 14.1.2, whereas the Step-2 condition (12.2.28)
-of the outer algorithm is printed with `‖s_k‖ > 1`; the two differ only on the sphere `‖s‖ = 1`,
-where the short-step conditions are not checked.
+Step 2.3 is `‖s‖ ≥ 1` as in Algorithms 12.2.3 and 14.1.2; the long-step branch of the outer
+algorithm (12.2.28) is taken in the same form, so that on the sphere `‖s‖ = 1` the short-step
+conditions are not checked.
 
 The procedure chooses an approximate global minimizer `s_μ` (Step 2.2) and approximate maximizers
 `d_{μ,j}` (Step 2.4.1); it is modelled as a nondeterministic transition system
@@ -433,10 +433,8 @@ radius `1`); and if `j ∈ J`, there is `δbar j ∈ (0, 1]` such that, for `δ 
 feasible `d` of norm at most `δ`, `ς θ ε_j δ^j / j! ≤ ΔT j sstar d` implies the model decrease
 `m sstar - m (sstar + d) ≥ ς θ ε_j δ^j / (2 j!)` (Lemma 12.2.8, resp. 14.1.2, with
 `α = ς θ ε_j`). Then the procedure started with `μ = 1` returns `(sstar, δs)` with `δs j = 1` for
-`j ∉ J` and `δs j ≥ δbar j / 2` for `j ∈ J ∩ [1, q]`.
-
-(The book shows moreover that every execution of the procedure terminates; that statement is not
-formalized here.) -/
+`j ∉ J` and `δs j ≥ δbar j / 2` for `j ∈ J ∩ [1, q]`. (This is the termination of one
+execution; that every execution terminates is not proved here.) -/
 theorem exists_isDetailedStepOutput {sstar : E} {δbar : ℕ → ℝ} (hq : 1 ≤ q) (hs : sstar ∈ T)
     (hmin : ∀ t ∈ T, m sstar ≤ m t) (hfeas : ∀ d ∈ Sd sstar, sstar + d ∈ T)
     (h0 : (0 : E) ∈ Sd sstar) (hς : 0 < ς) (hς1 : ς ≤ 1) (hθ : 0 < θ)
@@ -479,8 +477,8 @@ critical for the model at every order `j ∈ [1 : q]`: if `s ∈ T`, the model i
 `μ = (m(0) - m(s))/(m(0) - m*) ∈ (0, 1]` at Step 2.1 ("Initialize `μ ∈ (0, 1]`" in both
 algorithms; `μ` is chosen afresh at every Step 2 and is not a constant of the outer algorithm), then
 Steps 2.2, 2.4.1–2.4.2 for `j = 1, …, q` and 2.5: every approximately critical point of the model
-with `m(s) < m(0)` is an output, however small its decrease relative to `m(0) - m*` (the book notes
-after the proof of Lemma 12.2.9 that global minimization is not required). -/
+with `m(s) < m(0)` is an output, however small its decrease relative to `m(0) - m*` (global
+minimization is not required, as noted after the proof of Lemma 12.2.9). -/
 theorem IsDetailedStepOutput.of_short_step {s : E} {dm : ℕ → E} (hq : 1 ≤ q) (hs : s ∈ T)
     (hbdd : BddBelow (m '' T)) (hlt : m s < m 0) (hs1 : ‖s‖ < 1)
     (hdm : ∀ j ∈ Icc 1 q, dm j ∈ closedBall 0 1 ∩ Sd s ∧
@@ -870,14 +868,12 @@ theorem MeasureIneq.le_of_ge (h : MeasureIneq A B a ε δ t j p) (hA : 0 ≤ A) 
   unfold MeasureIneq at h
   linarith
 
-/-- **Step-length bound for ARqp and ARqpIDA** ([cartis2022evaluation], Lemmas 12.2.12, 13.1.17,
-corrected). Let `1 ≤ j ≤ p`, `A, a, ε > 0`, `t ∈ (0, 1]`, `δ > 0`, and suppose the measure
-inequality `a ε δ^j / j! ≤ A ∑_{ℓ=1}^j δ^ℓ/ℓ! t^{p-ℓ+1}` holds. If `κ > 0` and `κ ε ≤ δ`
+/-- **Step-length bound for ARqp and ARqpIDA** ([cartis2022evaluation], Lemmas 12.2.12, 13.1.17).
+Let `1 ≤ j ≤ p`, `A, a, ε > 0`, `t ∈ (0, 1]`, `δ > 0`, and suppose the measure inequality
+`a ε δ^j / j! ≤ A ∑_{ℓ=1}^j δ^ℓ/ℓ! t^{p-ℓ+1}` holds. If `κ > 0` and `κ ε ≤ δ`
 (e.g. `δ = 1`, `κ = 1`, `ε ≤ 1`), then with `τ = a / (A j!)` and `κ̂ = min κ (τ/2)`:
-`(τ/2) κ̂^{j-1} ε^j ≤ t^p`.
-
-(The book states `(τ/2) κ^{j-1} ε^j ≤ t^p`; its proof in the case `t ≤ δ` uses `κ ≤ τ/2`, which is
-not assumed, hence `κ̂`.) -/
+`(τ/2) κ̂^{j-1} ε^j ≤ t^p`. (In the case `t ≤ δ` the bound with `κ` in place of `κ̂` needs
+`κ ≤ τ/2`.) -/
 theorem pow_ge_of_measure_ineq {κ : ℝ} (h : MeasureIneq A 0 a ε δ t j p) (hA : 0 < A)
     (ha : 0 < a) (hε : 0 < ε) (ht : 0 < t) (ht1 : t ≤ 1) (hδ : 0 < δ)
     (hj : 1 ≤ j) (hjp : j ≤ p) (hκ : 0 < κ) (hκε : κ * ε ≤ δ) :
@@ -946,14 +942,12 @@ theorem pow_rpow_div {t : ℝ} {m : ℕ} (hm : m ≠ 0) (ht : 0 ≤ t) (r : ℝ)
   congr 1
   field_simp
 
-/-- **Step-length bound for ARqpC** ([cartis2022evaluation], Lemma 14.1.8, corrected). Let
+/-- **Step-length bound for ARqpC** ([cartis2022evaluation], Lemma 14.1.8). Let
 `j ≤ p`, `A > 0`, `0 ≤ B ≤ A`, `0 < a ≤ j! A`, `ε ∈ (0, 1]`, `t > 0`, `δ > 0`, and suppose the
 measure inequality `a ε δ^j / j! ≤ A ∑_{ℓ=1}^j δ^ℓ/ℓ! t^{p-ℓ+1} + B t^{p+1}` holds. Let
 `α = a / (j! A) ∈ (0, 1]`.
 * If `t ≤ δ`, then `(α ε / 3)^{1/(p-j+1)} ≤ t`.
-* If `κ ∈ (0, 1]` and `κ ε ≤ δ`, then `(α κ^j / 3)^{1/(p-j+1)} ε^{(j+1)/(p+1)} ≤ t`.
-
-(The second case of (14.1.31) as printed omits the factor `ε^{(j+1)/(p+1)}`.) -/
+* If `κ ∈ (0, 1]` and `κ ε ≤ δ`, then `(α κ^j / 3)^{1/(p-j+1)} ε^{(j+1)/(p+1)} ≤ t`. -/
 theorem norm_step_ge_of_measure_ineq (h : MeasureIneq A B a ε δ t j p) (hA : 0 < A)
     (hB : 0 ≤ B) (hBA : B ≤ A) (ha : 0 < a) (haA : a ≤ j ! * A) (hε : 0 < ε) (hε1 : ε ≤ 1)
     (ht : 0 < t) (hδ : 0 < δ) (hjp : j ≤ p) :

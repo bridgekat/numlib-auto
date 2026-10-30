@@ -221,8 +221,8 @@ theorem IsLocalMin.minCurvature_iteratedFDeriv_two_nonneg {f : E → ℝ} {x : E
 
 /-- **Third-order necessary condition** ([cartis2022evaluation], Theorem 1.1.1): at a local
 minimizer `x` of a function `C³` at `x`, `∇³f(x)[d]³ = 0` for every `d` with `∇²f(x)[d]² = 0`.
-The book assumes `∇²f(x) d = 0`; at a local minimizer the Hessian is positive semidefinite, so
-the two hypotheses are equivalent, and only the quadratic one is needed. -/
+At a local minimizer the Hessian is positive semidefinite, so the hypothesis is equivalent to
+`∇²f(x) d = 0`. -/
 theorem IsLocalMin.iteratedFDeriv_three_eq_zero {f : E → ℝ} {x d : E} (hmin : IsLocalMin f x)
     (hf : ContDiffAt ℝ 3 f x) (hd : iteratedFDeriv ℝ 2 f x (fun _ => d) = 0) :
     iteratedFDeriv ℝ 3 f x (fun _ => d) = 0 := by

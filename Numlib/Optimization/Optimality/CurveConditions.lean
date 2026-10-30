@@ -31,7 +31,8 @@ along every arc staying in the feasible set (Theorems 12.1.1 and 14.3.1).
   one-dimensional sign and uniqueness tests for asymptotic expansions.
 * `Optimization.IsLocalMin.isCurveCritical`: Theorem 12.1.1.
 * `Optimization.curveCoeff_eq_zero_of_isFeasibleArc`: the constraint expansion (14.3.3).
-* `Optimization.curveCoeff_lagrangian_nonneg_of_isLocalMinOn`: Theorem 14.3.1 (corrected).
+* `Optimization.curveCoeff_lagrangian_nonneg_of_isLocalMinOn`: Theorem 14.3.1, for
+  arcs in the feasible set `X ∩ {c = 0}`.
 * `Optimization.curveCoeff_eq_of_isLittleO`, `Optimization.iteratedFDeriv_apply_diag_eq_of_poly`,
   `Optimization.taylorPolynomial_eq_of_poly`: coefficients, diagonal derivatives and Taylor
   polynomials read off an explicit expansion along a curve or a ray.
@@ -39,9 +40,9 @@ along every arc staying in the feasible set (Theorems 12.1.1 and 14.3.1).
 ## Implementation notes
 
 `curveCoeff` is defined literally from `P(j,k)` (the tuples `ℓ : Fin k → ℕ` with entries in
-`[1, j]` summing to `j`; these are the compositions of `j` into `k` parts). The book's restriction
-to tuples of nonzero `s_i` is dropped: the conclusions hold for every tuple, which makes the
-statements stronger (and tuples with zero entries give the classical ray conditions). No Faà di
+`[1, j]` summing to `j`; these are the compositions of `j` into `k` parts). The tuples `s_i` need
+not be nonzero: the conclusions hold for every tuple (tuples with zero entries give the classical
+ray conditions). No Faà di
 Bruno formula is needed: the expansion along an arc follows from the Peano form of Taylor's
 theorem and the algebra of `taylorSum_polyCurve_eq`.
 -/
@@ -595,18 +596,17 @@ theorem curveCoeff_eq_zero_of_isFeasibleArc {c : E → F} (hc : ContDiffAt ℝ j
   simp [hα0, hcx]
 
 /-- **Curve-based necessary conditions for a constrained local minimum**
-([cartis2022evaluation], Theorem 14.3.1, corrected). Let `f : E → ℝ` and `c : E → F` be `C^q` at
+([cartis2022evaluation], Theorem 14.3.1). Let `f : E → ℝ` and `c : E → F` be `C^q` at
 `x` with `c x = 0`, and let `x` be a local minimizer of `f` on `X ∩ {c = 0}`. For any multiplier
 `y`, write `ℒ(z) = f(z) - ⟪y, c(z)⟫`. If `j ∈ [1, q]`, `s` is feasible for `X ∩ {c = 0}` up to
 order `j`, and the coefficients `c_1, …, c_{j-1}` of `ℒ` along `s` vanish, then the coefficient
 `c_j` of `ℒ` is nonnegative (14.3.4).
 
-The book quantifies over tuples `s` admitting an arc that only stays in `X` and satisfies the
-first-order feasibility conditions (14.3.3) for `c`. That version is false: for `X = ℝ²`,
-`c(x) = x₁² + x₂²`, `f(x) = -x₁`, `x = 0` is the only feasible point, (14.3.3) holds for every
-`s_1` and X.CQ holds for `q = 1`, yet (14.3.4) for `j = 1`, `s_1 = e_1` reads `-1 ≥ 0`. Here the
-arc must stay in the whole feasible set, as the book's derivation (substituting the arc into
-`c = 0`) intends; (14.3.3) then holds by `curveCoeff_eq_zero_of_isFeasibleArc`. -/
+The arc must stay in the whole feasible set `X ∩ {c = 0}`; (14.3.3) then holds by
+`curveCoeff_eq_zero_of_isFeasibleArc`. Arcs that only stay in `X` and satisfy (14.3.3) do not
+suffice: for `X = ℝ²`, `c(x) = x₁² + x₂²`, `f(x) = -x₁`, `x = 0` is the only feasible point,
+(14.3.3) holds for every `s_1` and X.CQ holds for `q = 1`, yet (14.3.4) for `j = 1`, `s_1 = e_1`
+reads `-1 ≥ 0`. -/
 theorem curveCoeff_lagrangian_nonneg_of_isLocalMinOn {F : Type*} [NormedAddCommGroup F]
     [InnerProductSpace ℝ F] {f : E → ℝ} {c : E → F} {X : Set E} {q : ℕ}
     (hf : ContDiffAt ℝ q f x) (hc : ContDiffAt ℝ q c x) (hcx : c x = 0)

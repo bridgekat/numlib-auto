@@ -186,9 +186,9 @@ neutral iterations. Let `σ_0 > 0`, `0 < γS ≤ 1 < γU`, `succ` and `fail` inc
 otherwise. If `σ_{k+1} ≤ σmax`, the number `|𝒯_k|` of iterations `j ≤ k` that are successful or
 failed satisfies `|𝒯_k| ≤ |𝒮_k| (1 + |log γS| / log γU) + log (σmax / σ_0) / log γU`.
 
-The book assumes the upper bound only at `σ_k`, which makes the statement false: for `k = 0`, an
-unsuccessful iteration `0` and `σmax = σ_0` the left side is `1` and the right side `0`. The bound
-is assumed here at `σ_{k+1}`, the parameter after iteration `k`. -/
+The bound is needed at `σ_{k+1}`, the parameter after iteration `k`: with it only at `σ_k` the
+statement fails for `k = 0`, an unsuccessful iteration `0` and `σmax = σ_0` (the left side is `1`,
+the right side `0`). -/
 theorem card_successSet_or_le_of_lower_ratio (hσ0 : 0 < σ 0) (hγS : 0 < γS) (hγS1 : γS ≤ 1)
     (hγU : 1 < γU) (hdisj : ∀ j ≤ k, succ j → ¬ fail j)
     (hsucc : ∀ j ≤ k, succ j → γS * σ j ≤ σ (j + 1))
@@ -235,7 +235,7 @@ private theorem pos_of_le_mul (hΔ : 0 < Δ (k + 1))
 `1 ≤ γ₃` and for `j ≤ k`: `Δ_{j+1} ≤ γ₃ Δ_j` if `succ j`, `Δ_{j+1} ≤ γ₂ Δ_j` if `fail j`, and
 `Δ_{j+1} ≤ Δ_j` otherwise. If `0 < Δmin ≤ Δ_{k+1}` (positivity of `Δ_0, …, Δ_k` follows), then
 `|𝒰_k| ≤ |𝒮_k| log γ₃ / |log γ₂| + log (Δ_0 / Δmin) / |log γ₂|`. (This is the sharp form; the
-book writes `|log (Δmin / Δ_0)|`, see `Optimization.card_fail_le_of_upper_ratio_abs`.) Proof: apply
+form with `|log (Δmin / Δ_0)|` is `Optimization.card_fail_le_of_upper_ratio_abs`.) Proof: apply
 `Optimization.card_fail_le_of_lower_ratio` to `σ_j = 1/Δ_j`, `γS = 1/γ₃`, `γU = 1/γ₂`. -/
 theorem card_fail_le_of_upper_ratio (hγ₂ : 0 < γ₂) (hγ₂1 : γ₂ < 1) (hγ₃ : 1 ≤ γ₃)
     (hsucc : ∀ j ≤ k, succ j → Δ (j + 1) ≤ γ₃ * Δ j)
@@ -336,9 +336,9 @@ iterations. Let `0 < γ₂ < 1 ≤ γ₃`, `succ` and `fail` incompatible, and f
 `0 < Δmin ≤ Δ_{k+1}`, the number `|𝒯_k|` of iterations `j ≤ k` that are successful or failed
 satisfies `|𝒯_k| ≤ |𝒮_k| (1 + log γ₃ / |log γ₂|) + |log (Δmin / Δ_0)| / |log γ₂|`.
 
-The book assumes the lower bound only at `Δ_k`, which makes the statement false: for `k = 0`, an
-unsuccessful iteration `0` and `Δmin = Δ_0` the left side is `1` and the right side `0`. The bound
-is assumed here at `Δ_{k+1}`, the radius after iteration `k`. -/
+The bound is needed at `Δ_{k+1}`, the radius after iteration `k`: with it only at `Δ_k` the
+statement fails for `k = 0`, an unsuccessful iteration `0` and `Δmin = Δ_0` (the left side is `1`,
+the right side `0`). -/
 theorem card_successSet_or_le_of_upper_ratio (hγ₂ : 0 < γ₂) (hγ₂1 : γ₂ < 1) (hγ₃ : 1 ≤ γ₃)
     (hdisj : ∀ j ≤ k, succ j → ¬ fail j)
     (hsucc : ∀ j ≤ k, succ j → Δ (j + 1) ≤ γ₃ * Δ j)

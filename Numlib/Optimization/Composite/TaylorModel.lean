@@ -344,8 +344,7 @@ private theorem compositeTaylorDecrement_one_smul (f : E → ℝ) (c : E → F) 
 generalized). Let `X ⊆ E` be convex, `x ∈ X`, `f` and `c` differentiable at `x`, `h` convex with
 Lipschitz constant `Lh`, and `x` a local minimizer of `w = f + h ∘ c` on `X`. Then for every `s`
 with `x + s ∈ X`, `ΔT_{w,1}(x, s) ≤ 0`: `0` is a global minimizer of `T_{w,1}(x, ·)` over `X - x`.
-(The book assumes a global minimizer; local minimality, plain Lipschitz continuity of `h` and no
-subadditivity suffice.) -/
+(Local minimality, plain Lipschitz continuity of `h` and no subadditivity suffice.) -/
 theorem compositeTaylorDecrement_one_nonpos_of_isLocalMinOn {f : E → ℝ} {c : E → F} {h : F → ℝ}
     {Lh : ℝ} {X : Set E} {x : E} (hX : Convex ℝ X) (hx : x ∈ X) (hf : DifferentiableAt ℝ f x)
     (hc : DifferentiableAt ℝ c x) (hconv : ConvexOn ℝ univ h)
@@ -464,7 +463,7 @@ theorem abs_sub_compositeTaylor_le_of_lipschitzAnchored {f : E → ℝ} {c : E �
 `L_{w,p} = L_{f,p} + L_{h,0} L_{c,p}` (14.1.27)). If `f`, `c` are `C^p` on the convex set `C`, with
 `∇^p f` `Lf`-Lipschitz and `∇^p c` `Lc`-Lipschitz on `C`, and `h` has Lipschitz constant `Lh`,
 then for `x, x + s ∈ C`,
-`|w(x + s) - T_{w,p}(x, s)| ≤ (Lf + Lh Lc) / (p + 1)! ‖s‖^{p+1}`. (The book's `√m` comes from
+`|w(x + s) - T_{w,p}(x, s)| ≤ (Lf + Lh Lc) / (p + 1)! ‖s‖^{p+1}`. (A factor `√m` arises from
 componentwise constants, see `ContinuousMultilinearMap.norm_le_sqrt_card_mul_of_euclidean`.) -/
 theorem abs_sub_compositeTaylor_le_of_lipschitz {f : E → ℝ} {c : E → F} {h : F → ℝ} {p : ℕ}
     {Lf Lc Lh : ℝ} {C : Set E} {x s : E} (hC : Convex ℝ C) (hf : ∀ y ∈ C, ContDiffAt ℝ p f y)

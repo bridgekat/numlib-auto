@@ -58,7 +58,7 @@ namespace Optimization
 /-- The constants of an adaptive-regularization method ([cartis2022evaluation], (2.4.2), (3.3.3),
 Step 0 of Algorithms 4.1.1, 6.2.1, 12.2.2, 13.1.2, 14.1.1): the initial weight `σ₀ > 0`, the lower
 bound `σ_min ∈ [0, σ₀]`, the acceptance thresholds `0 < η₁ ≤ η₂ < 1` and the update factors
-`0 < γ₁ < 1 < γ₂ ≤ γ₃`. (`σ_min = 0` is allowed for ARp-H, Algorithm 5.5.1; the book's strict
+`0 < γ₁ < 1 < γ₂ ≤ γ₃`. (`σ_min = 0` is allowed for ARp-H, Algorithm 5.5.1; strict
 `γ₂ < γ₃` is never used.) -/
 structure ARParams where
   /-- The initial regularization weight. -/
@@ -241,15 +241,6 @@ theorem IsARRun.forall_le_not_stop_iff {stop₁ : ℕ → Prop} {k : ℕ} :
 theorem IsARRun.isFirstHit_stop_iff {stop₁ : ℕ → Prop} {k : ℕ} :
     IsFirstHit (IsARRun.Stop stop₁ fun _ => False) k ↔ IsFirstHit stop₁ k := by
   simp [isFirstHit_iff, IsARRun.Stop]
-
-@[deprecated IsARRun.forall_lt_not_stop_iff (since := "2026-10-26")]
-alias IsARRun.forall_lt_not_stop_false_iff := IsARRun.forall_lt_not_stop_iff
-
-@[deprecated IsARRun.forall_le_not_stop_iff (since := "2026-10-26")]
-alias IsARRun.forall_le_not_stop_false_iff := IsARRun.forall_le_not_stop_iff
-
-@[deprecated IsARRun.isFirstHit_stop_iff (since := "2026-10-26")]
-alias IsARRun.isFirstHit_stop_false_iff := IsARRun.isFirstHit_stop_iff
 
 /-- A run of an adaptive-regularization method ([cartis2022evaluation], Algorithms 2.4.1, 3.3.1,
 4.1.1, 12.2.2, Steps 2–4). `stop₁ k` is the Step-1 termination test at iteration `k`, `stop₂ k` a

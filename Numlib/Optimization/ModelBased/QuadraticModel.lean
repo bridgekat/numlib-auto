@@ -27,8 +27,8 @@ quadratic model `m(s) = f(x) + q(s)`, `q(s) = ⟪g, s⟫ + ½ ⟪s, H s⟫` (2.3
 * `Optimization.exists_isMinOn_quadModel_ball`: a global model minimizer in the trust region
   exists in finite dimension and satisfies both the Cauchy and the eigenpoint conditions.
 
-The book writes the trust-region constraints `x_k - t g ∈ 𝓡_k`, `x_k + t u ∈ 𝓑_{Δ_k}`; they mean
-`‖t g‖ ≤ Δ_k`, `‖t u‖ ≤ Δ_k`.
+The trust-region constraints on the Cauchy and eigenpoint steps are `‖t g‖ ≤ Δ_k`,
+`‖t u‖ ≤ Δ_k` (written `x_k - t g ∈ 𝓡_k`, `x_k + t u ∈ 𝓑_{Δ_k}` in [cartis2022evaluation]).
 -/
 
 open Set Metric

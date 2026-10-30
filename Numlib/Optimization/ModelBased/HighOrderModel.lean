@@ -33,8 +33,7 @@ model-decrease results here.
 * `Optimization.sub_mul_lt_of_measure_comparison`: the radius inequality from an abstract one-step
   comparison, with instances `Optimization.radius_inequality_of_measure_gt` (Lemmas 12.2.11 and
   13.1.16 with an error budget) and `Optimization.radius_inequality_of_compositeTaylorMeasure_gt`
-  (Lemma 14.1.7), in the corrected form with `ς - θ` (requiring `θ < ς`) instead of the printed
-  `1 - θ`.
+  (Lemma 14.1.7), with the factor `ς - θ` (requiring `θ < ς`).
 
 The step-length algebra that follows (Lemmas 12.2.12, 13.1.17, 14.1.8) is
 `Optimization.pow_ge_of_measure_ineq` and `Optimization.norm_step_ge_of_measure_ineq`; the measure
@@ -210,7 +209,7 @@ Then there are a global minimizer `s` of the model `m = regularizedModel D p σ`
 `δs_ℓ = 1` for `ℓ ≤ 2` ((12.2.44)), `δs_ℓ = min(1, ς θ ε_ℓ/(4 (3 L + σ)))` for `ℓ ≥ 3`
 ((12.2.45)), and either `‖s‖ ≥ 1` or, for every `ℓ = 1, …, q`, `dm_ℓ` is a `ς`-approximate
 optimality displacement of the model at `s` with `ΔT_{m,ℓ}(s, dm_ℓ) ≤ ς θ ε_ℓ δs_ℓ^ℓ/ℓ!`
-((12.2.29)). The step is a global minimizer, which the book notes is always acceptable; this
+((12.2.29)). The step is a global minimizer, which is always acceptable; this
 avoids the limiting argument of Algorithm 12.2.3. -/
 theorem exists_highOrderStep [FiniteDimensional ℝ E] (hp : 1 ≤ p) (hq : q ≤ p) (hσ : 0 < σ)
     (hL : 0 ≤ L) (hD : ∀ i ∈ Finset.Icc 2 p, ‖D i‖ ≤ L) {θ ς : ℝ} (hθ : 0 < θ) (hς : 0 < ς)
@@ -440,7 +439,7 @@ theorem taylorMeasure_le_of_regularizedModel_anchored (hC : Convex ℝ C)
 `m = regularizedModel (ftaylorSeries ℝ f x) p σ`, `j ≤ p`, feasible displacements `S ∋ 0` and
 `δ ≥ 0`. Then
 `φ^δ_{f,j}(x + s) ≤ φ^δ_{m,j}(s) + (L + σ) ∑_{ℓ=1}^j δ^ℓ/ℓ! ‖s‖^{p-ℓ+1}/(p-ℓ+1)!`.
-(The book's (12.2.56) writes `‖s_k‖^{p-j+1}` for `‖s_k‖^{p-ℓ+1}`.) -/
+(This is (12.2.56), with the exponent `p - ℓ + 1`.) -/
 theorem taylorMeasure_le_of_regularizedModel (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hL : IteratedFDerivLipschitzOn f p L C) (hL0 : 0 ≤ L)
     (hx : x ∈ C) (hxs : x + s ∈ C) (hσ : 0 ≤ σ) {j : ℕ} (hjp : j ≤ p) {S : Set E}
@@ -507,7 +506,7 @@ theorem radius_inequality_of_measure_gt_anchored (hC : Convex ℝ C)
   linarith
 
 /-- **The radius inequality** ([cartis2022evaluation], Lemmas 12.2.11 and 13.1.16, with an
-explicit error budget, corrected). Let `f` be `C^p` on a convex `C ∋ x, x + s` with
+explicit error budget). Let `f` be `C^p` on a convex `C ∋ x, x + s` with
 `Lp`-Lipschitz `∇^p f` there (`Lp ≥ 0`), `Dbar` approximate the jet of `f` at `x` with errors
 `err_i ≤ κ κs ‖s‖^{p-i+1}` (`κ, κs ≥ 0`), `0 ≤ σ ≤ σmax`, `j ≤ p`, feasible displacements
 `S ∋ 0` at `x + s`, and `δ ≥ 0`. Suppose
@@ -518,8 +517,8 @@ explicit error budget, corrected). Let `f` be `C^p` on a convex `C ∋ x, x + s`
 Then `(a - θ) ε δ^j/j! < (Lp + σmax + 3 κ κs) ∑_{ℓ=1}^j δ^ℓ/ℓ! ‖s‖^{p-ℓ+1} + e₀`.
 
 For exact ARqp (Lemma 12.2.11): `Dbar` the exact jet, `κ = 0`, `e₀ = 0` and `a = ς`: the failed
-Step-1 test at `x + s` only certifies `φ > ς ε δ^j/j!`, so the printed factor `1 - θ` must read
-`ς - θ` (and the analysis needs `θ < ς`). For ARqpIDA (Lemma 13.1.16) `κ = κ_{∇,max}`. -/
+Step-1 test at `x + s` only certifies `φ > ς ε δ^j/j!`, hence the factor `ς - θ` (and the
+analysis needs `θ < ς`). For ARqpIDA (Lemma 13.1.16) `κ = κ_{∇,max}`. -/
 theorem radius_inequality_of_measure_gt (hC : Convex ℝ C) (hf : ∀ y ∈ C, ContDiffAt ℝ p f y)
     {Lp : ℝ} (hLp : IteratedFDerivLipschitzOn f p Lp C) (hLp0 : 0 ≤ Lp) (hx : x ∈ C)
     (hxs : x + s ∈ C) {Dbar : FormalMultilinearSeries ℝ E ℝ} {err : ℕ → ℝ}
@@ -537,7 +536,7 @@ theorem radius_inequality_of_measure_gt (hC : Convex ℝ C) (hf : ∀ y ∈ C, C
     hσmax hjp hS0 hδ h₁ h₂
 
 /-- **The radius inequality for composite problems, anchored** ([cartis2022evaluation],
-Lemma 14.1.7, corrected): as `radius_inequality_of_compositeTaylorMeasure_gt`, with `∇^p f` and
+Lemma 14.1.7): as `radius_inequality_of_compositeTaylorMeasure_gt`, with `∇^p f` and
 `∇^p c` only Lipschitz anchored at `x` (between `x` and the points of `C`). -/
 theorem radius_inequality_of_compositeTaylorMeasure_gt_anchored {F : Type*} [NormedAddCommGroup F]
     [NormedSpace ℝ F] {c : E → F} {h : F → ℝ} {Lf Lc Lh σmax : ℝ} (hC : Convex ℝ C)
@@ -564,16 +563,15 @@ theorem radius_inequality_of_compositeTaylorMeasure_gt_anchored {F : Type*} [Nor
   refine sub_mul_lt_of_measure_comparison h₁ ?_ h₂
   linarith
 
-/-- **The radius inequality for composite problems** ([cartis2022evaluation], Lemma 14.1.7,
-corrected). Under the hypotheses of `compositeTaylorMeasure_le_of_step` (with `0 ≤ σ ≤ σmax`),
+/-- **The radius inequality for composite problems** ([cartis2022evaluation], Lemma 14.1.7).
+Under the hypotheses of `compositeTaylorMeasure_le_of_step` (with `0 ≤ σ ≤ σmax`),
 suppose
 * (h₁) `a ε δ^j/j! - e₀ < φ^δ_{w,j}(x + s)`, and
 * (h₂) `φ^δ_{m̂,j}(s) ≤ θ ε δ^j/j!` for the composite model `m̂` built at `x` ((14.1.13)).
 
 Then `(a - θ) ε δ^j/j! < (Lf + Lh Lc + σmax) ∑_{ℓ=1}^j δ^ℓ/ℓ! ‖s‖^{p-ℓ+1} +
-2 Lh Lc/(p+1)! ‖s‖^{p+1} + e₀`. For ARqpC, `a = ς` and `e₀ = 0`: this is (14.1.30) with `ς - θ`
-for the printed `1 - θ` and the factor `2` on the last term (see
-`compositeTaylorDecrement_le_of_step`). -/
+2 Lh Lc/(p+1)! ‖s‖^{p+1} + e₀`. For ARqpC, `a = ς` and `e₀ = 0`: this is (14.1.30), with the
+factors `ς - θ` and `2` on the last term (see `compositeTaylorDecrement_le_of_step`). -/
 theorem radius_inequality_of_compositeTaylorMeasure_gt {F : Type*} [NormedAddCommGroup F]
     [NormedSpace ℝ F] {c : E → F} {h : F → ℝ} {Lf Lc Lh σmax : ℝ} (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hc : ∀ y ∈ C, ContDiffAt ℝ p c y)

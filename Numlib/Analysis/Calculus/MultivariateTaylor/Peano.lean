@@ -15,8 +15,8 @@ If `f : E → F` (real normed spaces) is `C^n` at `x`, then
 
 ## Implementation notes
 
-The book states (A.12) for `f` merely `n` times differentiable at `x`; here `f` is `C^n` at `x`
-(i.e. `C^n` on a neighbourhood of `x`), the setting of all its applications. The proof is the
+Here `f` is `C^n` at `x` (i.e. `C^n` on a neighbourhood of `x`), the setting of all the
+applications of (A.12). The proof is the
 Hölder bound (A.14) with exponent `β = 0` on a small ball, whose "Hölder constant" is the
 oscillation of `∇^n f`, small by continuity; the generalized factorial `(n + 0)!` is `n!`.
 

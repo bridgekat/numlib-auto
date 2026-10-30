@@ -969,18 +969,4 @@ theorem theorem_3_3_10 (P : AR2Params) :
 
 end Sharpness
 
-/-! ### Deprecated aliases (moved to the backbone) -/
-
-@[deprecated IsARRun.forall_lt_not_stop_iff (since := "2026-10-26")]
-alias not_stop_iff := IsARRun.forall_lt_not_stop_iff
-
-@[deprecated IsARRun.forall_le_not_stop_iff (since := "2026-10-26")]
-alias not_stop_le_iff := IsARRun.forall_le_not_stop_iff
-
-@[deprecated IsARRun.isFirstHit_stop_iff (since := "2026-10-26")]
-alias isFirstHit_stop_iff := IsARRun.isFirstHit_stop_iff
-
-@[deprecated Optimization.arAcceptance_of_one_le (since := "2026-10-26")]
-alias arAcceptance_of_one_le := Optimization.arAcceptance_of_one_le
-
 end CartisGouldToint.Chapter03

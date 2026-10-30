@@ -21,7 +21,7 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddComm
 
 /-- **Theorem A.8.5 of [cartis2022evaluation], (A.21) ⇒ (A.18).** If `C` is convex, `f` is
 `C^{p+1}` at every point of `C` and `‖∇^{p+1} f(x)‖ ≤ L` on `C`, then `∇^p f` is `L`-Lipschitz on
-`C`. (The book assumes `C` open; convexity suffices.) -/
+`C`. (`C` need not be open.) -/
 theorem iteratedFDerivLipschitzOn_of_norm_le (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ (p + 1) f y)
     (hb : ∀ x ∈ C, ‖iteratedFDeriv ℝ (p + 1) f x‖ ≤ L) : IteratedFDerivLipschitzOn f p L C := by

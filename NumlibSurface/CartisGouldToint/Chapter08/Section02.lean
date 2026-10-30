@@ -49,6 +49,9 @@ space `Subproblem.ScaledSpace hM`: the secular function is the operator secular 
 * Corollary 8.2.4: the starting value "`π(λₛ; β)`" is read as the right limit at `λₛ`
   (`corollary_8_2_4_tendsto_lambdaS`), which may be `+∞` for `β > 0` when `λₛ = -λ₁` is a pole.
 * Theorem 8.2.2: the book states it for `k > 0`; it holds for every `k`.
+* The convexity of `-λ^γ` (`γ ∈ (0, 1]`) and the concavity of `λ^γ` (`γ < 0`) used for the
+  transformed secular equations are stated on `λ ≥ λₛ`, which may contain `0` when `λ₁ ≥ 0`; they
+  hold on `λ > 0`.
 -/
 
 open Matrix Set Filter Topology

@@ -24,6 +24,8 @@ Kinds (**false**, **gap**, **typo**, **reading**) as in the book index `CartisGo
   A.8.2: **gap**, assumes `h ≠ 0` (`theorem_A_8_2`).
 * Theorem A.9.2: **typo**, the index range of `s_k > 0` is `k < k_e` and the bound is for `x ∈ ℝ`
   (printed `x ∈ ℝⁿ`); `p > 0` is dropped (`theorem_A_9_2`).
+* Theorem A.8.3: **typo**, the proof of (A.15) displays the constant `(p-j+1)!/(p-j+β)!`; the stated
+  constant is proved (`theorem_A_8_3`). (A.12): **reading**, for `f` of class `C^n` at `x`.
 
 ## Not formalized
 

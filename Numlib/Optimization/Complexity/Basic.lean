@@ -32,7 +32,7 @@ where the test holds (`Optimization.IsFirstHit`).
   via `Optimization.derivEvalCount_le_of_isFirstHit`).
 * `Optimization.card_successSet_le_two_mul_add_one`: if every successful iteration that is not
   "good" is followed (at the next success) by a good one, then `|𝒮_k| ≤ 2 |𝒢_k| + 1` (the counting
-  of the corrected Theorems 3.4.6 and 3.4.12 of [cartis2022evaluation]).
+  of Theorems 3.4.6 and 3.4.12 of [cartis2022evaluation]).
 * `Optimization.exists_isFirstHit_of_sub_ge`: the counting skeleton of methods with a uniform
   decrease per iteration (no unsuccessful iterations): a potential bounded below by `φlow` that
   decreases by `c > 0` at every iteration before termination forces termination at some `k` with

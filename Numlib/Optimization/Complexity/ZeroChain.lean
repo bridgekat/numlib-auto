@@ -596,7 +596,7 @@ theorem le_firstStationaryIndex_of_isZeroChain
 
 /-- **Lemma 4.2.3 of [cartis2022evaluation]**: under the hypotheses of
 `le_firstStationaryIndex_of_isZeroChain`, `#_ε(𝓜_ZR(p), {f}) ≥ n`, and so `#_ε(𝓜_ZR(p), 𝓕) ≥ n`
-for every class `𝓕` containing `f`. (The book refers to (4.2.3) for `#_ε`; it is (4.2.2).) -/
+for every class `𝓕` containing `f` (`#_ε` as in (4.2.2)). -/
 theorem le_classComplexity_of_isZeroChain {f : EuclideanSpace ℝ (Fin n) → ℝ} {ε : ℝ}
     (hf : IsZeroChain f p)
     (hgrad : ∀ (hn : 0 < n) (x : EuclideanSpace ℝ (Fin n)), x ⟨n - 1, by omega⟩ = 0 →

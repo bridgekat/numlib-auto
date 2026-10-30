@@ -16,8 +16,7 @@ the regularization terms `σ/(p+1)! ‖s‖^{p+1}` of adaptive-regularization mo
   `D²(‖·‖^r)(s)[u, v] = r ‖s‖^{r-2} ⟪u, v⟫ + r (r - 2) ‖s‖^{r-4} ⟪s, u⟫ ⟪s, v⟫`; at the origin the
   Hessian is `0` for `r > 2` (`iteratedFDeriv_two_norm_rpow_zero`) and `2 ⟪u, v⟫` for `r = 2`
   (`iteratedFDeriv_two_norm_rpow_two_apply`); `‖·‖^r` is `C²` for `r ≥ 2`
-  (`contDiff_two_norm_rpow`). For `r = 3` the Hessian of `σ/6 ‖s‖³` is `σ/2 (‖s‖ I + s sᵀ/‖s‖)`;
-  the book's display after (3.3.2) has a spurious factor `2`.
+  (`contDiff_two_norm_rpow`). For `r = 3` the Hessian of `σ/6 ‖s‖³` is `σ/2 (‖s‖ I + s sᵀ/‖s‖)`.
 * `iteratedFDeriv_two_norm_rpow_bounds`: for `r ≥ 2`,
   `0 ≤ D²(‖·‖^r)(s)[d, d] ≤ r (r - 1) ‖s‖^{r-2} ‖d‖²`, with equality on the right for `d = s`;
   the Hessian has operator norm `r (r - 1) ‖s‖^{r-2}` (`norm_iteratedFDeriv_normRpow`), which is the

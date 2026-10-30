@@ -26,6 +26,8 @@ function itself is Lipschitz as well (f.D0pL).
 
 ## Main results
 
+* `lipschitzDerivsAnchored_univ_iff`, `lipschitzDerivsAnchored_univ_top_iff`: on the whole space
+  the condition is global Lipschitz continuity of the derivatives of a `C^p` function;
 * monotonicity in the anchor set, the orders and the constants;
 * `LipschitzDerivsAnchored.norm_iteratedFDeriv_le`: the derivative of order `j + 1` is bounded by
   `L_j` at the anchors;
@@ -76,6 +78,10 @@ theorem of_contDiff (hf : ContDiff ℝ p f)
 theorem lipschitzOn (h : LipschitzDerivsAnchored f C C j₀ p L) {j : ℕ} (hj : j ∈ Icc j₀ p) :
     IteratedFDerivLipschitzOn f j (L j) C :=
   iteratedFDerivLipschitzAnchored_self_iff.1 (h.lipschitzAnchored j hj)
+
+/-- On the whole space, `f` is `C^p`. -/
+theorem contDiff (h : LipschitzDerivsAnchored f Set.univ A j₀ p L) : ContDiff ℝ p f :=
+  contDiff_iff_contDiffAt.2 fun y => h.contDiffAt y (Set.mem_univ y)
 
 /-- The zero function has anchored Lipschitz derivatives of all orders, with constants `0`. -/
 theorem zero_fun (hC : IsOpen C) (hCc : Convex ℝ C) (hA : A ⊆ C) :
@@ -131,6 +137,21 @@ theorem norm_iteratedFDeriv_le (h : LipschitzDerivsAnchored f C A j₀ p L) {j :
   exact h.lipschitzAt hj hx y hy
 
 end LipschitzDerivsAnchored
+
+/-- On the whole space, the anchored condition with `A = univ` is the global Lipschitz condition
+on the derivatives of a `C^p` function. -/
+theorem lipschitzDerivsAnchored_univ_iff {f : E → F} {j₀ p : ℕ} {L : ℕ → ℝ} :
+    LipschitzDerivsAnchored f Set.univ Set.univ j₀ p L ↔
+      ContDiff ℝ p f ∧ ∀ j ∈ Icc j₀ p, IteratedFDerivLipschitzOn f j (L j) Set.univ :=
+  ⟨fun h => ⟨h.contDiff, fun _ hj => h.lipschitzOn hj⟩, fun ⟨hf, hL⟩ => .of_contDiff hf hL _⟩
+
+/-- On the whole space and for the single order `p`, the anchored condition with constant `L` is
+the global `L`-Lipschitz condition on `∇^p f` for a `C^p` function. -/
+theorem lipschitzDerivsAnchored_univ_top_iff {f : E → F} {p : ℕ} {L : ℝ} :
+    LipschitzDerivsAnchored f Set.univ Set.univ p p (fun _ => L) ↔
+      ContDiff ℝ p f ∧ IteratedFDerivLipschitzOn f p L Set.univ := by
+  rw [lipschitzDerivsAnchored_univ_iff, Icc_self]
+  simp
 
 /-- With `A = C`, the anchored condition is the Lipschitz condition on the open convex set `C`. -/
 theorem lipschitzDerivsAnchored_self_iff {f : E → F} {C : Set E} {j₀ p : ℕ} {L : ℕ → ℝ} :

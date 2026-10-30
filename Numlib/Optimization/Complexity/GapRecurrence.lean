@@ -38,14 +38,14 @@ Helpers for the measure-dominated complexity theorems: `Optimization.frequently_
 `Optimization.IsExplicitGapDecrease.mul_rpow_le_one`,
 `Optimization.IsExplicitGapDecrease.eq_zero_of_one_le_mul_rpow`.
 
-## Corrections to the book
+## Remarks on the constants
 
-* (B.5.12): `(1 - t)^α ≤ 1 - α t` and `1 - t^α ≥ α (1 - t)` hold only for `α ∈ (0, 1]`; the
-  valid replacement for all `α > 0` is `1 - t^α ≥ min 1 α * (1 - t)`
-  (`Optimization.one_sub_rpow_ge`).
-  This changes the constant of the sublinear rate (`κdom`, (B.5.14)–(B.5.15)).
-* Theorem 5.3.3: the second phase must reach `ω ≤ c^{1/α} ε`, not `ω ≤ ε`.
-* The halving argument of Theorem 5.3.5 yields `2 ⌊M⌋₊ + 2` successful iterations.
+* (B.5.12): `(1 - t)^α ≤ 1 - α t` and `1 - t^α ≥ α (1 - t)` hold only for `α ∈ (0, 1]`; for all
+  `α > 0` one has `1 - t^α ≥ min 1 α * (1 - t)` (`Optimization.one_sub_rpow_ge`), which enters
+  the constant of the sublinear rate (`κdom`, (B.5.14)–(B.5.15)).
+* Superlinear case (Theorem 5.3.3): the second phase must reach the scaled gap `ω ≤ c^{1/α} ε`.
+* The halving argument of the sublinear case (Theorem 5.3.5) yields `2 ⌊M⌋₊ + 2` successful
+  iterations.
 -/
 
 open Finset Filter Topology
@@ -56,8 +56,8 @@ namespace Optimization
 
 section Elementary
 
-/-- **(B.5.12), corrected.** For `t ∈ [0, 1]` and `α > 0`: `min 1 α * (1 - t) ≤ 1 - t ^ α`.
-(The book's `α (1 - t) ≤ 1 - t ^ α` holds only for `α ≤ 1`, see
+/-- **(B.5.12)** for all `α > 0`. For `t ∈ [0, 1]` and `α > 0`: `min 1 α * (1 - t) ≤ 1 - t ^ α`.
+(The bound `α (1 - t) ≤ 1 - t ^ α` holds only for `α ≤ 1`, see
 `Optimization.mul_one_sub_le_one_sub_rpow`; for `α = 2`, `t = 1/2` it fails.) -/
 theorem one_sub_rpow_ge {t α : ℝ} (ht : 0 ≤ t) (ht1 : t ≤ 1) (hα : 0 < α) :
     min 1 α * (1 - t) ≤ 1 - t ^ α := by
@@ -502,7 +502,7 @@ theorem superlinear (hc : 0 < c) (hτ0 : 0 < τ) (hτ1 : τ < 1) (hS : ∀ N, �
   · rw [← hzero]; exact mul_nonneg hη.le (h.nonneg k)
 
 /-- The constant `κdom = min (Γ_0^{-α} c⁻¹ (2^α - 1)) (min 1 α / 2)` of the sublinear rate
-(corrected (B.5.14)–(B.5.15), `α = τ - 1`). -/
+((B.5.14)–(B.5.15), `α = τ - 1`). -/
 noncomputable def kappaDom (c α Γ0 : ℝ) : ℝ :=
   min (Γ0 ^ (-α) * c⁻¹ * (2 ^ α - 1)) (min 1 α / 2)
 
@@ -514,7 +514,7 @@ theorem kappaDom_pos {α Γ0 : ℝ} (hc : 0 < c) (hα : 0 < α) (hΓ0 : 0 < Γ0)
   exact lt_min (by have := Real.rpow_pos_of_pos hΓ0 (-α); positivity)
     (by have : 0 < min 1 α := lt_min one_pos hα; positivity)
 
-/-- One step of the sublinear analysis ((B.5.13)–(B.5.15), corrected): at a successful iteration
+/-- One step of the sublinear analysis ((B.5.13)–(B.5.15)): at a successful iteration
 with `Γ_{k+1} > 0` and `τ > 1`, `Γ_{k+1}^{-α} - Γ_k^{-α} ≥ c κdom`. -/
 theorem kappaDom_le_sub (hc : 0 < c) (hτ : 1 < τ) {k : ℕ} (hk : S k) (hpos : 0 < Γ (k + 1)) :
     c * kappaDom c (τ - 1) (Γ 0) ≤ Γ (k + 1) ^ (-(τ - 1)) - Γ k ^ (-(τ - 1)) := by
@@ -565,7 +565,7 @@ theorem kappaDom_le_sub (hc : 0 < c) (hτ : 1 < τ) {k : ℕ} (hk : S k) (hpos :
       _ ≤ y ^ (-α) * (1 - t ^ α) := mul_le_mul_of_nonneg_left hm hyα.le
       _ = y ^ (-α) - x ^ (-α) := by rw [hxy]; ring
 
-/-- **Sublinear rate** ([cartis2022evaluation], Lemma 5.3.1 (iii), (B.5.14) corrected): if
+/-- **Sublinear rate** ([cartis2022evaluation], Lemma 5.3.1 (iii), (B.5.14)): if
 `τ > 1`, `c > 0` and `Γ_0 > 0`, then with `α = τ - 1`,
 `Γ_{k+1} ≤ (Γ_0^{-α} + c κdom |𝒮_k|)^{-1/α}` for all `k`. -/
 theorem sublinear (hc : 0 < c) (hτ : 1 < τ) (hΓ0 : 0 < Γ 0) (k : ℕ) :
@@ -607,7 +607,7 @@ theorem rates (hc : 0 < c) (hτ0 : 0 < τ) (hS : ∀ N, ∃ k ≥ N, S k) :
   ⟨fun hτ1 _ hη => h.superlinear hc hτ0 hτ1 hS hη, fun hτ _ hk => h.linear hτ hc.le hk,
     fun hτ hΓ0 k => h.sublinear hc hτ hΓ0 k⟩
 
-/-- **Count for the sublinear case** ([cartis2022evaluation], proof of Theorem 5.3.5, corrected):
+/-- **Count for the sublinear case** ([cartis2022evaluation], proof of Theorem 5.3.5):
 if `τ > 1`, `c > 0`, `Γ_0 > 0` and `ε > 0`, then with `α = τ - 1`, `Γ_{k+1} ≤ ε` as soon as
 `(ε^{-α} - Γ_0^{-α}) / (c κdom) ≤ |𝒮_k|`. -/
 theorem le_of_sublinear_count (hc : 0 < c) (hτ : 1 < τ) (hΓ0 : 0 < Γ 0) {ε : ℝ} (hε : 0 < ε)
@@ -659,7 +659,7 @@ end IsExplicitGapDecrease
 /-! ### The two-phase count of the superlinear case -/
 
 /-- The number of successful iterations after which the implicit gap with `τ < 1` is at most `ε`
-(proof of [cartis2022evaluation], Theorem 5.3.3, corrected). With `α = τ - 1 < 0`, the scaled
+(proof of [cartis2022evaluation], Theorem 5.3.3). With `α = τ - 1 < 0`, the scaled
 gap `ω_0 = c^{1/α} Γ_0`, the scaled tolerance `ε' = c^{1/α} ε` and `q = (1 + ω_0^α)⁻¹`:
 `N₁ = ⌈log ω_0 / log (1 + ω_0^α)⌉₊ + 1` successful iterations bring `ω` below `q` (linear
 phase), and `N₂ = ⌈(log (log (1/ε')) - log (log (1 + ω_0^α))) / log (1/τ)⌉₊` more bring it below
@@ -678,7 +678,7 @@ variable (h : IsImplicitGapDecrease Γ S c τ)
 include h
 
 /-- **Count for the superlinear case** ([cartis2022evaluation], Theorem 5.3.3, proof in
-Appendix B, corrected): if `0 < τ < 1`, `c > 0`, `Γ_0 > 0` and `ε > 0`, then `Γ_{k+1} ≤ ε` as
+Appendix B): if `0 < τ < 1`, `c > 0`, `Γ_0 > 0` and `ε > 0`, then `Γ_{k+1} ≤ ε` as
 soon as `superlinearGapCount c τ Γ_0 ε ≤ |𝒮_k|`. -/
 theorem le_of_superlinear_count (hc : 0 < c) (hτ0 : 0 < τ) (hτ1 : τ < 1) (hΓ0 : 0 < Γ 0)
     {ε : ℝ} (hε : 0 < ε) {k : ℕ} (hk : superlinearGapCount c τ (Γ 0) ε ≤ (successSet S k).card) :
@@ -800,8 +800,8 @@ theorem le_of_superlinear_count (hc : 0 < c) (hτ0 : 0 < τ) (hτ1 : τ < 1) (h�
 
 end IsImplicitGapDecrease
 
-/-- **The superlinear count is `O(log |log ε|)`** ([cartis2022evaluation], (5.3.16), constants
-of the corrected proof): for `c > 0`, `0 < τ < 1`, `Γ_0 > 0`, `ε > 0`, with `α = τ - 1`,
+/-- **The superlinear count is `O(log |log ε|)`** ([cartis2022evaluation], (5.3.16), explicit
+constants): for `c > 0`, `0 < τ < 1`, `Γ_0 > 0`, `ε > 0`, with `α = τ - 1`,
 `ω_0 = c^{1/α} Γ_0`,
 `superlinearGapCount c τ Γ_0 ε ≤ log (max 1 |log ε|) / log (1/τ) + κ`, where
 `κ = max 0 (log ω_0) / log (1 + ω_0^α) + 2
@@ -905,7 +905,7 @@ Lemma 5.3.6 (ii), proof of Theorem 5.3.7). Let `c > 0`, `τ < 1`, `α = τ - 1` 
 * Every successful iteration with `Γ_k > 0` has `Γ_k ≥ Γ□`.
 * If `Γ_0 > 0` and some iteration is successful, then `Γ_0 ≥ Γ□` (5.3.29).
 * With `ω_0 = Γ_0 / Γ□`: if `Γ_0 > 0`, then `Γ_{k+1} = 0` as soon as
-  `⌈log ω_0 / |log (1 - ω_0^α)|⌉₊ + 1 ≤ |𝒮_k|`. This is the integer form of the book's real
+  `⌈log ω_0 / |log (1 - ω_0^α)|⌉₊ + 1 ≤ |𝒮_k|`. This is the integer form of the real
   bound `log ω_0 / |log (1 - ω_0^α)| + 1` (proof of Theorem 5.3.7); no assumption that there are
   infinitely many successful iterations is needed. -/
 theorem eq_zero_of_lt_one (hc : 0 < c) (hτ : τ < 1) :
@@ -1087,7 +1087,7 @@ theorem exists_card_successSet_eq {n k : ℕ} (hn : 1 ≤ n) (hk : n ≤ (succes
     exact ⟨hSi, by omega⟩
 
 /-- **Measure counts from gap rates** ([cartis2022evaluation], proof of Theorem 5.3.5, the
-halving argument, corrected). Let `Γ ≥ 0` be unchanged at the unsuccessful iterations, with
+halving argument). Let `Γ ≥ 0` be unchanged at the unsuccessful iterations, with
 `Γ_{k+1} ≤ (A |𝒮_k|)^{-1/α}` whenever `|𝒮_k| ≥ 1` (`A, α > 0`), and let
 `κν φ_k^ν ≤ Γ_k - Γ_{k+1}` at the successful iterations (`κν, ν > 0`). Let `ε > 0` and
 `M = A^{-1/(α+1)} κν^{-α/(α+1)} ε^{-να/(α+1)}`. If at least `2 (⌊M⌋₊ + 1)` successful iterations
@@ -1485,7 +1485,7 @@ theorem exists_le_of_gap_count_nat {φ : ℕ → ℝ} {κν ν ε : ℝ} {n : �
 end Counting
 
 /-- The additive constant of the superlinear count (`superlinearGapCount_le`; `κ^F_{AR,gap,1}`
-of Theorem 5.3.3 of [cartis2022evaluation], corrected): with `α = τ - 1` and `ω_0 = c^{1/α} Γ_0`,
+of Theorem 5.3.3 of [cartis2022evaluation]): with `α = τ - 1` and `ω_0 = c^{1/α} Γ_0`,
 `max(0, log ω_0)/log(1 + ω_0^α) + 2 + (log(1 + |log c|/|α|) + |log log(1 + ω_0^α)|)/log(1/τ)`
 `+ 1`. -/
 noncomputable def superlinearCountConst (c τ Γ0 : ℝ) : ℝ :=

@@ -43,8 +43,8 @@ evaluated along them; the run predicate is `Constrained.IsTargetFollowingRun`.
 
 The tests are abstract predicates, constrained by the fields of `Constrained.IsTargetFollowingRun`:
 case (a) needs `‖r(x_{k+1}, t_k)‖ ≤ θε₀`, its failure needs `‖r(x_{k+1}, t_k)‖ ≥ θε₀`, and case (b)
-is the failure of case (a) together with `f(x_{k+1}) < t_k`. This covers Step 2(a) with `≤ θε₀`
-and with the printed `< θε₀`. The criticality test `crit k τ` is evaluated at the output `x_{k+1}`
+is the failure of case (a) together with `f(x_{k+1}) < t_k`. This covers Step 2(a) both with
+`≤ θε₀` and with `< θε₀`. The criticality test `crit k τ` is evaluated at the output `x_{k+1}`
 of the `k`-th call: for `τ = t_k` it is the third stopping test of the inner call, for
 `τ = t_{k+1}` the termination test of Step 2; it may depend on further data of the call (such as
 the radii of the order-`q` measures of TPqp-GC).

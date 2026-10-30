@@ -37,15 +37,15 @@ results apply equally to tridiagonal (Lanczos) and scaled problems.
 * `newtonFactor`, `antitone_newtonFactor`: the factor `(1 - μ^β)/β` of the Newton step on the
   transformed secular equation is antitone in `β` (Lemma B.8.2).
 
-## Corrections to the source
+## Strictness
 
-The book claims that the inequalities of Lemma 8.2.3 (ii), Corollary 8.2.4 (concavity) and
-Theorem 8.2.5 are strict whenever `g ≠ 0`. This fails for `β = -1/2` when all the positive weight
-sits at a single pole (`g` in one eigenspace of `H`): then `secularSum μ w x ^ (-1/2)` is affine on
-`secularDomain μ` (for `n = 1`, `H = 0`, `g = 1`, it is `x ↦ x`), the second derivative vanishes
-and the first-order Taylor estimate is exact. Here strictness is stated under `β ≠ -1/2 ∨
-¬ SinglePole μ w`, and the exceptional case is proved to give equality. The strict Taylor
-estimates also need `δ ≠ 0`, which the book omits in Theorem 8.2.5.
+The inequalities of Lemma 8.2.3 (ii), Corollary 8.2.4 (concavity) and Theorem 8.2.5 are strict
+for `g ≠ 0`, except for `β = -1/2` when all the positive weight sits at a single pole (`g` in one
+eigenspace of `H`): then `secularSum μ w x ^ (-1/2)` is affine on `secularDomain μ` (for `n = 1`,
+`H = 0`, `g = 1`, it is `x ↦ x`), the second derivative vanishes and the first-order Taylor
+estimate is exact. Here strictness is stated under `β ≠ -1/2 ∨ ¬ SinglePole μ w`, and the
+exceptional case is proved to give equality. The strict Taylor estimates of Theorem 8.2.5 also
+need `δ ≠ 0`.
 -/
 
 open Set Filter Topology
@@ -302,7 +302,7 @@ private theorem neg_pow_succ_pos_of_odd {δ : ℝ} (hδ : 0 < δ) {k : ℕ} (hk 
 `x ∈ secularDomain μ` and `tₖ(δ) = ∑ j ≤ k, π⁽ʲ⁾(x) / j! δʲ` the Taylor polynomials of
 `π = secularSum μ w` at `x`. For `δ > 0`, `π(x + δ) ≤ tₖ(δ)` for even `k` and `π(x + δ) ≥ tₖ(δ)`
 for odd `k`; for `δ < 0` with `x + δ ∈ secularDomain μ`, `tₖ(δ) ≤ tₖ₊₁(δ) ≤ π(x + δ)` for every
-`k`. (The book states these for `k > 0`; they hold for `k = 0` as well.) The strict forms are
+`k`, including `k = 0`. The strict forms are
 `secularSum_taylor_bounds_strict`. -/
 theorem secularSum_taylor_bounds (hw : 0 ≤ w) {x : ℝ} (hx : x ∈ secularDomain μ) (k : ℕ) :
     (∀ δ, 0 < δ → (Even k → secularSum μ w (x + δ) ≤
@@ -526,9 +526,7 @@ spectral form). Let the weights be nonnegative and not all zero, `x ∈ secularD
 `q = fun y => secularSum μ w y ^ β`. Then
 (i) `q'(x) < 0` for `β > 0` and `q'(x) > 0` for `β < 0`;
 (ii) `q''(x) > 0` for `β > 0`, and `q''(x) ≤ 0` for `β ∈ [-1/2, 0)`, strictly unless `β = -1/2`
-and the nonzero weights sit at a single pole, in which case `q''(x) = 0`.
-The book claims strictness in (ii) whenever `g ≠ 0`; the single-pole case at `β = -1/2` is a
-counterexample. -/
+and the nonzero weights sit at a single pole, in which case `q''(x) = 0`. -/
 theorem secularSum_rpow_deriv_sign {x : ℝ} (hx : x ∈ secularDomain μ) :
     (0 < β → deriv (fun y => secularSum μ w y ^ β) x < 0) ∧
     (β < 0 → 0 < deriv (fun y => secularSum μ w y ^ β) x) ∧
@@ -648,8 +646,7 @@ Theorem 8.2.5, in spectral form). Let the weights be nonnegative and not all zer
 `x + δ` in `secularDomain μ`, `q = fun y => secularSum μ w y ^ β` and `t₁ = q x + q'(x) δ`.
 For `β > 0`, `q (x + δ) ≥ t₁`; for `β ∈ [-1/2, 0)`, `q (x + δ) ≤ t₁`. Both are strict when
 `δ ≠ 0`, except when `β = -1/2` and the nonzero weights sit at a single pole: then
-`q (x + δ) = t₁` (`q` is affine). The book's strictness claim omits both `δ ≠ 0` and this
-exception. -/
+`q (x + δ) = t₁` (`q` is affine). -/
 theorem secularSum_rpow_tangent {x δ : ℝ} (hx : x ∈ secularDomain μ)
     (hxδ : x + δ ∈ secularDomain μ) :
     (0 < β → secularSum μ w x ^ β + deriv (fun y => secularSum μ w y ^ β) x * δ ≤
@@ -703,7 +700,7 @@ private theorem newtonFactor_eq_neg_slope {m β : ℝ} (hβ : β ≠ 0) :
 /-- **Monotonicity of the transformed secular Newton step** (Cartis–Gould–Toint, Lemma B.8.2):
 for `μ > 0`, `β ↦ newtonFactor μ β = (1 - μ ^ β) / β` is antitone on `ℝ`. Hence the Newton
 correction `-(π / π') (1 - μ^β)/β` for `π(λ) ^ β = Δ ^ (2 β)` from `λc` (with `π' < 0`) decreases
-as `β` increases. (The book's hypothesis about the root `λ*` is not needed.) -/
+as `β` increases. (No hypothesis on the root `λ*` is needed.) -/
 theorem antitone_newtonFactor {μ : ℝ} (hμ : 0 < μ) : Antitone (newtonFactor μ) := by
   have hconv := convexOn_rpow_left hμ
   have hmono := hconv.slope_mono (Set.mem_univ 0)

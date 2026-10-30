@@ -41,7 +41,9 @@ Kinds (**false**, **gap**, **typo**, **reading**) as in the book index `CartisGo
   `> 0`) (`lemma_B_8_1_concave`).
 * Lemma B.2.1: **gap**, the bound needs `|f₀|, |g₀|, |H₀| ≤ κ_f` (`lemma_B_2_1_bound`). Lemma B.2.6:
   **gap**, the book's corridor function gives a first *local* line minimizer; the backbone's capped
-  square makes it global (`lemma_B_2_6`).
+  square makes it global (`lemma_B_2_6`). (B.2.5)–(B.2.6): **gap**, the data are printed for all
+  `k ≥ 0` but degenerate at `k = 2k_ε`, where `ε + ω_k` vanishes; `y_mid` is frozen after
+  `x_{k_ε}`.
 * Lemma B.5.1: **typo**, `ι₁` for `ι₃` (`lemma_B_5_1`). Lemma B.7.1: **reading**, also covers the
   boundary cases `ω = 0`, `ω = ε` used by Lemma 7.2.3 (`lemma_B_7_1`). Lemma B.12.1: **reading**,
   no symmetry of `H`, `T` is needed (`lemma_B_12_1`).

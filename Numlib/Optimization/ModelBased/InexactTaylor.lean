@@ -249,8 +249,8 @@ proofs of Lemmas 13.1.7, 13.1.15, 13.3.3(i) and 13.3.6(i) of [cartis2022evaluati
 `ς φ^δ_j(Dbar) ≤ ΔT̄_j(d) ≤ ς ε δ^j / j! / 2` (Step 1 found no significant inexact decrease at
 order `j`), where the data are accurate enough at that radius:
 `∑_{i=1}^j err i δ^i / i! ≤ ε δ^j / j! / 2`. Then the exact measure satisfies
-`φ^δ_j(D) ≤ ε δ^j / j!` ((12.1.25) at order `j`). (The book also assumes `δ ≤ 1`, `ς ≤ 1`,
-`ε ≥ 0` and `‖d‖ ≤ δ`; these are not needed.) -/
+`φ^δ_j(D) ≤ ε δ^j / j!` ((12.1.25) at order `j`). (No bound `δ ≤ 1`, `ς ≤ 1`, `ε ≥ 0` or
+`‖d‖ ≤ δ` is needed.) -/
 theorem taylorMeasure_le_of_inexact_certificate {q : ℕ} {ς ε : ℝ} {d : E}
     (h : JetApprox D Dbar q err) (hj : j ≤ q) (h0 : (0 : E) ∈ S) (hδ : 0 ≤ δ) (hς : 0 < ς)
     (hφ : ς * taylorMeasure Dbar j δ S ≤ Dbar.taylorDecrement j d)

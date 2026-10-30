@@ -90,9 +90,6 @@ theorem lemma_B_4_1_ii (hβ : β ∈ Ioc (0 : ℝ) 1) {j : ℕ} (hj : j ≤ p)
     rfl
   · exact iteratedFDeriv_normRpow_apply_self _ j hs
 
-@[deprecated _root_.prod_fin_succ_eq_mul_holderFactorial (since := "2026-10-26")]
-alias prod_fin_succ_eq_mul_holderFactorial := _root_.prod_fin_succ_eq_mul_holderFactorial
-
 /-- **Lemma B.4.1, (B.4.3)** of [cartis2022evaluation], for `β = 1`: for `s ≠ 0`,
 `‖∇^{p+1}_s(‖s‖^{p+β})‖ = β (p+β)! ‖s‖^{β-1}` with `β = 1`, that is,
 `‖∇^{p+1}_s ‖s‖^{p+1}‖ = (p+1)!`. For `β ∈ (0, 1)` the equality is false

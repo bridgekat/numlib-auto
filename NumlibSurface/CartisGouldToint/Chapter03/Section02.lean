@@ -34,6 +34,8 @@ of the generic trust-region run `Optimization.IsTRRun`.
 
 ## Fixes with respect to the book
 
+* The trust-region constraints on the Cauchy and eigenpoint steps, written `x_k - t g ∈ 𝓡_k` and
+  `x_k + t u ∈ 𝓑_{Δ_k}`, are read as `‖t g‖ ≤ Δ_k` and `‖t u‖ ≤ Δ_k`.
 * Step 1 of TR2 also terminates at "`ε`-approximate strict local minimizers" (`‖∇f‖ ≤ ε₁`,
   `λ_min > ε₂`); these satisfy (3.2.9), so the termination test is (3.2.9) alone.
 * Theorem 3.2.2: the book claims `‖∇f(x_k)‖ > ε₁` for all `k ≤ ⌈ε₁⁻²⌉` with the data (3.1.4);
@@ -46,6 +48,7 @@ of the generic trust-region run `Optimization.IsTRRun`.
   at most the book's constant with `|log ·|` inserted (`kappaFTR2_le_book`). The bound holds for
   all `ε₁ > 0` (the book's `ε₁ ≤ 1` is not used).
 * Theorem 3.2.7: (3.2.25) `x_k = (k - 1) ε` is a typo for `x_k = k ε`; "`s₁ = ε`" means `s₀`.
+  The claim `f_{k_ε} ≥ 0` needs `ε⁻³` to be an integer; only boundedness of `f` is used.
 -/
 
 open Set Finset Optimization Subproblem
@@ -77,13 +80,10 @@ theorem nonneg (h : AssumptionHBa f κH) : 0 ≤ κH :=
 
 /-- **f.HBa implies f.gL** with `L_{f,1} = κ_H` ([cartis2022evaluation], (3.2.13), Theorem
 A.8.5). -/
-theorem assumptionGL (h : AssumptionHBa f κH) : Chapter02.AssumptionGL f κH := by
-  refine ⟨h.contDiff.of_le (by norm_num), h.one_le, fun x y => ?_⟩
-  have hL : IteratedFDerivLipschitzOn f 1 κH univ :=
-    iteratedFDerivLipschitzOn_of_norm_le convex_univ (fun y _ => h.contDiff.contDiffAt)
-      fun x _ => h.bound x
-  have := iteratedFDerivLipschitzOn_iff.1 hL x (mem_univ _) y (mem_univ _)
-  rwa [Chapter02.norm_iteratedFDeriv_one_sub, Chapter02.norm_fderiv_sub_fderiv] at this
+theorem assumptionGL (h : AssumptionHBa f κH) : Chapter02.AssumptionGL f κH :=
+  .of_iteratedFDerivLipschitzOn (h.contDiff.of_le (by norm_num)) h.one_le
+    (iteratedFDerivLipschitzOn_of_norm_le convex_univ (fun y _ => h.contDiff.contDiffAt)
+      fun x _ => h.bound x)
 
 /-- The Hessian operators along any sequence satisfy m.HBa with `κ_B = κ_H` ((3.2.13)). -/
 theorem assumptionMHBa (h : AssumptionHBa f κH) (x : ℕ → EuclideanSpace ℝ (Fin n)) :
@@ -423,7 +423,7 @@ theorem ridge_assumptions_two {G : ℝ → ℝ} {L B : ℝ} (hG : ContDiff ℝ 2
     have h := iteratedFDerivLipschitzOn_ridge hG (by norm_num) norm_e₀.le hL0 hGL
     exact (iteratedFDerivLipschitzOn_iff.1 h x (mem_univ _) y (mem_univ _)).trans
       (mul_le_mul_of_nonneg_right (le_max_left _ _) (norm_nonneg _))
-  exact ⟨hb, hHBa.assumptionGL, hHBa, ⟨contDiff_ridge hG, le_max_right _ _, hlip⟩,
+  exact ⟨hb, hHBa.assumptionGL, hHBa, .of_lipschitz (contDiff_ridge hG) (le_max_right _ _) hlip,
     gradient_ridge (hG.differentiable (by norm_num))⟩
 
 end OneDim
@@ -998,17 +998,5 @@ theorem theorem_3_2_7 :
     exact trAcceptance_of_one_le P.toTRParams le_rfl _ _ hε.le
 
 end Main
-
-
-/-! ### Deprecated aliases (moved to the backbone) -/
-
-@[deprecated Optimization.norm_hessianOperator_le (since := "2026-10-26")]
-alias norm_hessianOperator_le := Optimization.norm_hessianOperator_le
-
-@[deprecated Optimization.iteratedFDeriv_two_symm (since := "2026-10-26")]
-alias iteratedFDeriv_two_symm := Optimization.iteratedFDeriv_two_symm
-
-@[deprecated Optimization.trAcceptance_of_one_le (since := "2026-10-26")]
-alias trAcceptance_of_one_le := Optimization.trAcceptance_of_one_le
 
 end CartisGouldToint.Chapter03

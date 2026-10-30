@@ -70,24 +70,6 @@ section Model
 
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {x : EuclideanSpace ℝ (Fin n)}
 
-@[deprecated Chapter03.hasFDerivAt_ar2Model (since := "2026-10-26")]
-alias hasFDerivAt_ar2Model := Chapter03.hasFDerivAt_ar2Model
-
-@[deprecated Chapter03.norm_fderiv_ar2Model (since := "2026-10-26")]
-alias norm_fderiv_ar2Model := Chapter03.norm_fderiv_ar2Model
-
-@[deprecated Chapter03.taylorDecrement_two_eq (since := "2026-10-26")]
-alias taylorDecrement_two_eq := Chapter03.taylorDecrement_two_eq
-
-@[deprecated Chapter03.sub_taylorDecrement_eq (since := "2026-10-26")]
-alias sub_taylorDecrement_eq := Chapter03.sub_taylorDecrement_eq
-
-@[deprecated Chapter03.hessianMinEig_mul_le_inner (since := "2026-10-26")]
-alias hessianMinEig_mul_le_inner := Chapter03.hessianMinEig_mul_le_inner
-
-@[deprecated Chapter03.inner_ar2ModelGrad_self (since := "2026-10-26")]
-alias inner_ar2ModelGrad_self := Chapter03.inner_ar2ModelGrad_self
-
 /-- **The step bound (5.4.8), corrected** ([cartis2022evaluation], Lemma 5.4.2): if
 `λ_min[∇²f(x)] ≥ μ > 0`, `σ ≥ 0` and the step satisfies `‖∇m(s)‖ ≤ θ ‖∇f(x)‖` (part of (5.4.3)),
 then `‖s‖ ≤ (1 + θ)/μ ‖∇f(x)‖` (`θ ≥ 0`). With `μ = λ_*/2` this is `κ_s = 2(1 + θ₁)/λ_*`. -/
@@ -640,17 +622,8 @@ end Lemma543
 
 section Theorem544
 
-@[deprecated IsARRun.eq_of_forall_not_succ (since := "2026-10-26")]
-alias arRun_eq_of_forall_not_succ := IsARRun.eq_of_forall_not_succ
-
-@[deprecated IsARRun.card_successSet_le_card_succ_add_one (since := "2026-10-26")]
-alias arRun_card_successSet_le_card_succ_add_one := IsARRun.card_successSet_le_card_succ_add_one
-
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {P : AR2Params} {ε₁ L flow : ℝ} {ε₂ : Option ℝ}
   {x s : ℕ → EuclideanSpace ℝ (Fin n)} {σ : ℕ → ℝ} {xs : EuclideanSpace ℝ (Fin n)}
-
-@[deprecated Chapter03.ar2_decrease_of_le (since := "2026-10-26")]
-alias ar2_decrease_of_le := Chapter03.ar2_decrease_of_le
 
 /-- **(5.4.16)** ([cartis2022evaluation], Theorem 5.4.4, first part) for any AR2 run (with
 `ε₂ = +∞`) under f.Bb and f.HL, and any `ζ > 0`: at every iteration `k` before termination, the

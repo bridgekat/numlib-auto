@@ -1,6 +1,6 @@
 import Mathlib.Analysis.Calculus.Gradient.Basic
 import Mathlib.Analysis.InnerProductSpace.PiL2
-import Numlib.Analysis.Calculus.LipschitzIteratedFDeriv
+import Numlib.Analysis.Calculus.AnchoredLipschitzDerivs
 
 /-!
 # Cartis–Gould–Toint §2.1: A requirement
@@ -15,10 +15,12 @@ unconstrained problem (2.1.1).
 * `AssumptionBb f flow` — f.Bb: `f` is bounded below by `flow` on `ℝⁿ`.
 * `AssumptionC1 f` — f.C1: `f` is continuously differentiable on `ℝⁿ`.
 * `AssumptionGL f L` — f.gL: `f` is `C¹` and its gradient is `L`-Lipschitz (2.1.5), with
-  `L = L_{f,1} ≥ 1` as in the book.
+  `L = L_{f,1} ≥ 1` as in the book; it is the anchored smoothness assumption
+  `LipschitzDerivsAnchored` of order `1` on the whole space, with `L ≥ 1`.
 
 ## Main results
 
+* `AssumptionGL.lipschitz`, `AssumptionGL.of_lipschitz` — f.gL in the gradient form (2.1.5);
 * `AssumptionGL.iteratedFDerivLipschitzOn` — f.gL in the form used by the Taylor remainder
   bounds: the first derivative (as a multilinear map) is `L`-Lipschitz on `ℝⁿ`.
 * `AssumptionGL.norm_iteratedFDeriv_two_le` — under f.gL the second derivative is bounded by
@@ -46,14 +48,11 @@ def AssumptionC1 (f : EuclideanSpace ℝ (Fin n) → ℝ) : Prop :=
 
 /-- **Assumption f.gL** of [cartis2022evaluation] (§2.1): `f` is continuously differentiable on
 `ℝⁿ` and its gradient is Lipschitz continuous with constant `L = L_{f,1} ≥ 1`,
-`‖∇f(x) - ∇f(y)‖ ≤ L ‖x - y‖` for all `x, y` (2.1.5). -/
-structure AssumptionGL (f : EuclideanSpace ℝ (Fin n) → ℝ) (L : ℝ) : Prop where
-  /-- `f` is continuously differentiable. -/
-  contDiff : ContDiff ℝ 1 f
-  /-- The Lipschitz constant satisfies `L_{f,1} ≥ 1`. -/
-  one_le : 1 ≤ L
-  /-- The gradient is `L`-Lipschitz (2.1.5). -/
-  lipschitz : ∀ x y, ‖gradient f x - gradient f y‖ ≤ L * ‖x - y‖
+`‖∇f(x) - ∇f(y)‖ ≤ L ‖x - y‖` for all `x, y` (2.1.5). It is stated as the anchored smoothness
+assumption of order `1` on the whole space (`C = A = ℝⁿ`) together with `L ≥ 1`; the gradient
+form is `AssumptionGL.lipschitz` and `AssumptionGL.of_lipschitz`. -/
+abbrev AssumptionGL (f : EuclideanSpace ℝ (Fin n) → ℝ) (L : ℝ) : Prop :=
+  LipschitzDerivsAnchored f univ univ 1 1 (fun _ => L) ∧ 1 ≤ L
 
 /-- f.Bb unfolded: `f` is bounded below by `f_low` everywhere. -/
 theorem assumptionBb_iff {f : EuclideanSpace ℝ (Fin n) → ℝ} {flow : ℝ} :
@@ -86,6 +85,38 @@ namespace AssumptionGL
 
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {L : ℝ}
 
+/-- Under f.gL, `f` is continuously differentiable. -/
+theorem contDiff (h : AssumptionGL f L) : ContDiff ℝ 1 f :=
+  h.1.contDiff
+
+/-- The Lipschitz constant of f.gL satisfies `L_{f,1} ≥ 1`. -/
+theorem one_le (h : AssumptionGL f L) : 1 ≤ L :=
+  h.2
+
+/-- **Bridge to the backbone.** Under f.gL, `∇¹f` is `L`-Lipschitz on `ℝⁿ` as a multilinear map:
+`IteratedFDerivLipschitzOn f 1 L univ`. -/
+theorem iteratedFDerivLipschitzOn (h : AssumptionGL f L) :
+    IteratedFDerivLipschitzOn f 1 L univ :=
+  (lipschitzDerivsAnchored_univ_top_iff.1 h.1).2
+
+/-- f.gL from a `C¹` function whose first derivative is `L`-Lipschitz on `ℝⁿ`, `L ≥ 1`. -/
+theorem of_iteratedFDerivLipschitzOn (hf : ContDiff ℝ 1 f) (hL1 : 1 ≤ L)
+    (hL : IteratedFDerivLipschitzOn f 1 L univ) : AssumptionGL f L :=
+  ⟨lipschitzDerivsAnchored_univ_top_iff.2 ⟨hf, hL⟩, hL1⟩
+
+/-- The gradient is `L`-Lipschitz (2.1.5). -/
+theorem lipschitz (h : AssumptionGL f L) (x y : EuclideanSpace ℝ (Fin n)) :
+    ‖gradient f x - gradient f y‖ ≤ L * ‖x - y‖ := by
+  rw [← norm_fderiv_sub_fderiv, ← norm_iteratedFDeriv_one_sub]
+  exact iteratedFDerivLipschitzOn_iff.1 h.iteratedFDerivLipschitzOn x (mem_univ _) y (mem_univ _)
+
+/-- f.gL in the gradient form (2.1.5): a `C¹` function with `L`-Lipschitz gradient, `L ≥ 1`. -/
+theorem of_lipschitz (hf : ContDiff ℝ 1 f) (hL1 : 1 ≤ L)
+    (hL : ∀ x y, ‖gradient f x - gradient f y‖ ≤ L * ‖x - y‖) : AssumptionGL f L := by
+  refine of_iteratedFDerivLipschitzOn hf hL1 (iteratedFDerivLipschitzOn_iff.2 fun x _ y _ => ?_)
+  rw [norm_iteratedFDeriv_one_sub, norm_fderiv_sub_fderiv]
+  exact hL x y
+
 /-- f.gL implies f.C1. -/
 theorem assumptionC1 (h : AssumptionGL f L) : AssumptionC1 f :=
   h.contDiff
@@ -102,15 +133,6 @@ theorem pos (h : AssumptionGL f L) : 0 < L :=
 theorem nonneg (h : AssumptionGL f L) : 0 ≤ L :=
   h.pos.le
 
-/-- **Bridge to the backbone.** Under f.gL, `∇¹f` is `L`-Lipschitz on `ℝⁿ` as a multilinear map:
-`IteratedFDerivLipschitzOn f 1 L univ`. -/
-theorem iteratedFDerivLipschitzOn (h : AssumptionGL f L) :
-    IteratedFDerivLipschitzOn f 1 L univ := by
-  rw [iteratedFDerivLipschitzOn_iff]
-  intro x _ y _
-  rw [norm_iteratedFDeriv_one_sub, norm_fderiv_sub_fderiv]
-  exact h.lipschitz x y
-
 /-- Under f.gL, `‖∇²f(x)‖ ≤ L` for every `x` (operator norm; Theorem A.8.5 of
 [cartis2022evaluation] with `p = 1`). No second-order smoothness is needed: where `∇f` is not
 differentiable, `∇²f` is `0` by convention. -/
@@ -120,14 +142,5 @@ theorem norm_iteratedFDeriv_two_le (h : AssumptionGL f L) (x : EuclideanSpace �
     (mem_univ x)
 
 end AssumptionGL
-
-/-- f.gL is `C¹` with an `L`-Lipschitz first derivative on `ℝⁿ` (the backbone predicate
-`IteratedFDerivLipschitzOn f 1 L univ`) and `L ≥ 1`. -/
-theorem assumptionGL_iff {f : EuclideanSpace ℝ (Fin n) → ℝ} {L : ℝ} :
-    AssumptionGL f L ↔ ContDiff ℝ 1 f ∧ 1 ≤ L ∧ IteratedFDerivLipschitzOn f 1 L univ := by
-  refine ⟨fun h => ⟨h.contDiff, h.one_le, h.iteratedFDerivLipschitzOn⟩, fun ⟨h1, h2, h3⟩ =>
-    ⟨h1, h2, fun x y => ?_⟩⟩
-  rw [← norm_fderiv_sub_fderiv, ← norm_iteratedFDeriv_one_sub]
-  exact iteratedFDerivLipschitzOn_iff.1 h3 x (mem_univ _) y (mem_univ _)
 
 end CartisGouldToint.Chapter02

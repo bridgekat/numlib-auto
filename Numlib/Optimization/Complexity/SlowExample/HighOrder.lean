@@ -25,7 +25,7 @@ bounded and whose top derivative is Lipschitz, with constants independent of `ε
   scale `c > 0` (steps `s_k = (c (ε + ω_k))^{1/(p-q+1)}`), also used for Theorems 3.3.6, 3.3.10 and
   4.1.6.
 * `Optimization.exists_slowTRq_interpolant` — the data of the trust-region example of
-  Theorem 12.2.6 (Appendix B), corrected.
+  Theorem 12.2.6 (Appendix B).
 * `Optimization.exists_slowARqpSmooth_interpolant` — the data of Theorem 12.2.17, for any
   regularization weight `σ > 0`.
 * `Optimization.taylorMeasure_linearRegModel_eq_zero` — Example 12.1.3 in one variable: the
@@ -40,15 +40,14 @@ bounded and whose top derivative is Lipschitz, with constants independent of `ε
 
 The function values are not prescribed: the statements give the decrease
 `G (x (k+1)) = G (x k) - …` between consecutive iterates, which is all the algorithms see (the
-initial value is `0` in the construction). Corrections to the source:
+initial value is `0` in the construction). Facts about the data used below:
 
-* (12.2.78): the book claims `|f^{(q)}_{k+1} - T^{(q)}_{f,p}(x_k, s_k)| = 0`; it equals
-  `ω_k - ω_{k+1} = ε / k_ε`, which still satisfies (A.32).
-* (B.12.5)–(B.12.8): the printed decrease `f_{k+1} = f_k - ½ ε^{q+1} c_k` contradicts
-  `f_{k+1} = T_{f,q}(x_k, s_k)` (B.12.8); the Taylor decrease is `ε^{q+1} c_k`, which is used here.
-  The printed (B.12.7) `x_k = (k-1) ε` is a typo for `x_k = k ε`, and the claimed
-  `ε^{q+1} k_ε ≤ 1` is false (only `ε^{q+1} k_ε ≤ 2` holds). The residuals at orders `1 ≤ j < q`
-  are `2 q!/(q-j)! s_k^{q-j+1}` (the book omits the factor `q!/(q-j)!`).
+* in the ARqp example ((12.2.78)), the `q`-th order residual
+  `|f^{(q)}_{k+1} - T^{(q)}_{f,p}(x_k, s_k)|` is `ω_k - ω_{k+1} = ε / k_ε`, which satisfies (A.32);
+* in the TRq example ((B.12.5)–(B.12.8)), the decrease `f_{k+1} = f_k - ε^{q+1} c_k` is the Taylor
+  decrease, so that `f_{k+1} = T_{f,q}(x_k, s_k)`; the abscissae are `x_k = k ε`, the number of
+  iterations satisfies `ε^{q+1} k_ε ≤ 2`, and the residuals at orders `1 ≤ j < q` are
+  `2 q!/(q-j)! s_k^{q-j+1}`.
 -/
 
 open Set
@@ -209,7 +208,7 @@ theorem iteratedDeriv_eq_of_spikeJet {G : ℝ → ℝ} {f d : ℕ → ℝ} {m n 
 /-! ### The trust-region example of order `q` (Theorem 12.2.6) -/
 
 /-- **TRq slow example** ([cartis2022evaluation], Appendix B, proof of Theorem 12.2.6,
-(B.12.4)–(B.12.9), corrected). For `q ≥ 1` there are `L, B ≥ 0` depending only on `q` such that:
+(B.12.4)–(B.12.9)). For `q ≥ 1` there are `L, B ≥ 0` depending only on `q` such that:
 for every `ε ∈ (0, 1]`, with `k_ε = ⌈ε^{-(q+1)}⌉₊`, `c_k = 2 - k/k_ε` and `x_{k+1} = x_k + ε`, there
 is a `C^q` function `G : ℝ → ℝ` with `L`-Lipschitz `q`-th derivative, `|G^{(j)}| ≤ B` (`j ≤ q`),
 `G^{(j)}(x_k) = 0` for `1 ≤ j < q` and `G^{(q)}(x_k) = -ε c_k q!` (`k ≤ k_ε`), and

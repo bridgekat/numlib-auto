@@ -18,3 +18,9 @@ source = "Cartis–Gould–Toint, Theorem A.8.5"
 [[node]]
 id = "LipschitzDerivsAnchored.abs_sub_taylorDecrement_le"
 source = "Cartis–Gould–Toint, (A.19), (14.2.9)"
+
+[[node]]
+id = "lipschitzDerivsAnchored_univ_iff"
+
+[[node]]
+id = "lipschitzDerivsAnchored_univ_top_iff"

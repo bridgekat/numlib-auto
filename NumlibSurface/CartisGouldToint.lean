@@ -40,9 +40,11 @@ A declaration is named for the item it states: `theorem_3_3_5` is Theorem 3.3.5,
 is Lemma B.4.1 (i), `corollary_8_2_4`, `example_12_2_2`, `eq_A_16` is the display (A.16), and
 `algorithm_2_3_1` is Algorithm 2.3.1 as a run predicate. Clauses of one result are told apart by a
 roman-numeral or descriptive suffix (`theorem_4_1_5_ii`, `theorem_12_1_5_counterexample`). The
-book's named assumptions are structures `AssumptionXY` (f.gL is `AssumptionGL`, f.DpL is
-`AssumptionDpL`), and its constants are definitions named for their symbols (`kappaSDBA`,
-`sigmaMaxAR2`). Module `ChapterNN.SectionMM` is §N.M (namespace `CartisGouldToint.ChapterNN`),
+book's named assumptions are `AssumptionXY` (f.gL is `AssumptionGL`, f.DpL is `AssumptionDpL`);
+the smoothness assumptions on the derivatives are, where they fit, the library's anchored
+assumption `LipschitzDerivsAnchored` on the whole space together with the bound on the constants.
+The book's constants are definitions named for their symbols (`kappaSDBA`, `sigmaMaxAR2`).
+Module `ChapterNN.SectionMM` is §N.M (namespace `CartisGouldToint.ChapterNN`),
 `AppendixA.SectionMM` is §A.M (namespace `CartisGouldToint.AppendixA`), and `AppendixB.ChapterNN`
 holds the separately numbered Lemmas B.N.k (namespace `CartisGouldToint.AppendixB`). Within the
 library dependencies run forward in the book's order.

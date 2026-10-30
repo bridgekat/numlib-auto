@@ -18,10 +18,10 @@ space ([cartis2022evaluation], Theorem 1.1.2), with the feasible displacements
   (1.1.8);
 * `Optimization.IsLocalMinOn.iteratedFDeriv_three_nonneg_of_convex`: the third-order condition
   (1.1.9);
-* `Optimization.isStrictLocalMinOn_of_tangentCone`: the (corrected) second-order sufficient
-  condition, over directions of the tangent cone;
-* `Optimization.not_isLocalMinOn_parabola_counterexample`: the sufficient condition as printed in
-  the book is false.
+* `Optimization.isStrictLocalMinOn_of_tangentCone`: the second-order sufficient condition, over
+  directions of the tangent cone;
+* `Optimization.not_isLocalMinOn_parabola_counterexample`: the same condition over the feasible
+  directions `d ∈ C(x)` only is not sufficient.
 
 The necessary conditions follow from the ray lemma
 `Optimization.iteratedFDeriv_apply_nonneg_of_ray` along the segment `t ↦ x + t d`, `t ∈ [0, 1]`,
@@ -29,11 +29,11 @@ which stays in `C` by convexity.
 
 ## The sufficient condition
 
-The book's converse of Theorem 1.1.2 assumes (1.1.6) and `∇²f(x)[d]² > 0` for every nonzero
-`d ∈ C(x)` with `∇f(x)[d] = 0`. This is false: for `C = {(u, v) | u² ≤ v}`,
+The conditions (1.1.6) and `∇²f(x)[d]² > 0` for every nonzero `d ∈ C(x)` with `∇f(x)[d] = 0` do
+not imply local minimality: for `C = {(u, v) | u² ≤ v}`,
 `f(u, v) = v - 2u²` and `x = 0`, (1.1.6) holds, no nonzero `d ∈ C(0)` is orthogonal to
 `∇f(0) = (0, 1)`, yet `f(u, u²) = -u² < 0` (`not_isLocalMinOn_parabola_counterexample`). Radial
-directions do not see the curvature of the boundary. The correct condition quantifies over the
+directions do not see the curvature of the boundary. The sufficient condition quantifies over the
 tangent cone `T_C(x) = tangentConeAt ℝ C x` (the closure of the cone of feasible directions); it
 needs neither the convexity of `C` nor `x ∈ C`.
 -/
@@ -94,14 +94,14 @@ theorem IsLocalMinOn.iteratedFDeriv_three_nonneg_of_convex {f : E → ℝ} {C : 
   · rwa [iteratedFDeriv_one_apply]
   · exact hd2
 
-/-- **Second-order sufficient condition on a set** (corrected converse of [cartis2022evaluation],
+/-- **Second-order sufficient condition on a set** (converse of [cartis2022evaluation],
 Theorem 1.1.2). In finite dimension, let `f` be `C²` at `x`, satisfy the first-order condition
 (1.1.6) `∇f(x)[y - x] ≥ 0` for `y ∈ C` near `x`, and `∇²f(x)[d]² > 0` for every nonzero `d` in
 the tangent cone of `C` at `x` with `∇f(x)[d] = 0`. Then `x` is a strict local minimizer of `f`
 on `C`.
 
-The book quantifies over the radial directions `d ∈ C(x)` instead of the tangent cone; that
-version is false (`not_isLocalMinOn_parabola_counterexample`). Convexity of `C` is not needed.
+The tangent cone cannot be replaced by the radial directions `d ∈ C(x)`
+(`not_isLocalMinOn_parabola_counterexample`). Convexity of `C` is not needed.
 Proof: a violating sequence `y_k → x` in `C` has unit directions converging to some `d` in the
 tangent cone; first-order expansions give `∇f(x)[d] = 0`, and the second-order expansion together
 with `∇f(x)[y_k - x] ≥ 0` gives `∇²f(x)[d]² ≤ 0`. -/
@@ -146,11 +146,11 @@ theorem isStrictLocalMinOn_of_tangentCone [FiniteDimensional ℝ E] {f : E → �
     linarith [(hy n).2.2]
   linarith [hso z htan hz0 hz1]
 
-/-- **The printed converse of Theorem 1.1.2 is false** ([cartis2022evaluation], Theorem 1.1.2).
-On `ℝ × ℝ`, `C = {p | p.1² ≤ p.2}` is closed and convex, and `f p = p.2 - 2 p.1²` satisfies at
-`x = 0`: (i) the first-order condition (1.1.6); (ii) `∇f(0)[d] > 0` for every nonzero `d ∈ C(0)`,
-so the book's radial second-order condition holds vacuously; yet (iii) `0` is not a local
-minimizer of `f` on `C`, since `f(t, t²) = -t²`. -/
+/-- **Feasible directions do not give a sufficient condition** (cf. [cartis2022evaluation],
+Theorem 1.1.2). On `ℝ × ℝ`, `C = {p | p.1² ≤ p.2}` is closed and convex, and `f p = p.2 - 2 p.1²`
+satisfies at `x = 0`: (i) the first-order condition (1.1.6); (ii) `∇f(0)[d] > 0` for every nonzero
+`d ∈ C(0)`, so the second-order condition over the feasible directions holds vacuously; yet (iii)
+`0` is not a local minimizer of `f` on `C`, since `f(t, t²) = -t²`. -/
 theorem not_isLocalMinOn_parabola_counterexample :
     Convex ℝ {p : ℝ × ℝ | p.1 ^ 2 ≤ p.2} ∧ IsClosed {p : ℝ × ℝ | p.1 ^ 2 ≤ p.2} ∧
       (∀ y ∈ {p : ℝ × ℝ | p.1 ^ 2 ≤ p.2},

@@ -50,9 +50,9 @@ Instead of requiring `f` to be `C^p` on an open set `D ⊇ C`, the results assum
 
 ## Implementation notes
 
-The book proves (A.14)–(A.15) from the integral remainder and the Beta integral. Here the bounds
-follow from a curve version (`norm_sub_taylorSum_le_of_holder`) proved by induction on the order
-with the mean value inequality, applied to `t ↦ (∇^{j+i} f(x + t s) - ∇^{j+i}_s T_{f,p}(x, t s))
+The bounds (A.14)–(A.15) follow, without the integral remainder or the Beta integral, from a
+curve version (`norm_sub_taylorSum_le_of_holder`) proved by induction on the order with the mean
+value inequality, applied to `t ↦ (∇^{j+i} f(x + t s) - ∇^{j+i}_s T_{f,p}(x, t s))
 [v, s, …, s]`; this uses the symmetry of iterated derivatives and formula (A.11) from
 `Numlib.Analysis.Calculus.MultivariateTaylor.Basic`.
 -/
@@ -499,9 +499,7 @@ theorem norm_iteratedFDeriv_sub_taylorPolynomial_le_of_holderAt (hC : Convex ℝ
 Theorem A.8.3, (A.15)). Let `C` be convex, `f` be `C^p` at every point of `C` (e.g. `C^p` on an
 open set containing `C`) and `∇^p f` be `(H, β)`-Hölder on `C`, `β ≥ 0`. Then for `x, x + s ∈ C`
 and `j ≤ p`,
-`‖∇^j f(x + s) - ∇^j_s T_{f,p}(x, s)‖ ≤ H / (p - j + β)! · ‖s‖^{p - j + β}`.
-(The book states it for `1 ≤ j ≤ p` and `β ∈ [0, 1]`; its proof displays the constant
-`(p-j+1)!/(p-j+β)!`, the bound being `1/(p-j+β)!` as stated in (A.15).) The case `j = 0` is
+`‖∇^j f(x + s) - ∇^j_s T_{f,p}(x, s)‖ ≤ H / (p - j + β)! · ‖s‖^{p - j + β}`. The case `j = 0` is
 `norm_sub_taylorPolynomial_le_of_holder`. -/
 theorem norm_iteratedFDeriv_sub_taylorPolynomial_le_of_holder (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hβ : 0 ≤ β) (hH : IteratedFDerivHolderOn f p H β C)

@@ -43,4 +43,6 @@ Kinds (**false**, **gap**, **typo**, **reading**) as in the book index `CartisGo
 * Corollary 8.3.2, boundary form: **false** for interior solutions with `λ* = 0`; stated for
   `λ* > 0` (`corollary_8_3_2`).
 * Theorem 8.2.2: **reading**, holds for every `k`, not only `k > 0` (`theorem_8_2_2`).
+* §8.2: **gap**, the convexity of `-λ^γ` and the concavity of `λ^γ` (`γ < 0`) are claimed on
+  `λ ≥ λₛ`, which may contain `0`; they hold on `λ > 0`.
 -/

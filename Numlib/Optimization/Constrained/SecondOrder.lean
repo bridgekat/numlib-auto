@@ -9,7 +9,7 @@ constraints `h i x = 0` and inequality constraints `g j x ≤ 0` on a finite-dim
 space ([cartis2022evaluation], Theorems 1.1.3 and 1.1.4; Nocedal–Wright, *Numerical
 Optimization*, Theorems 12.5 and 12.6), in the conventions of `Numlib.Optimization.Constrained`:
 Lagrangian `ℒ = f + ∑ λ_i h_i + ∑ μ_j g_j`, multipliers `μ ≥ 0`, LICQ = `IsRegularPointIneq`.
-The book writes the constraints as `c(x) ≥ 0` with `ℒ = f - ⟨y, c⟩`; this is the instance
+Constraints `c(x) ≥ 0` with `ℒ = f - ⟨y, c⟩`, as in [cartis2022evaluation], are the instance
 `g = -c`, `μ = y`, and the equality-constrained Theorem 1.1.3 is the instance with no inequality
 constraints (`κ = Empty`).
 
@@ -32,10 +32,9 @@ constraints (`κ = Empty`).
 
 ## Implementation notes
 
-The book leaves "a constraint qualification" unspecified; the necessary conditions are proved
-under LICQ, as is the first-order theory `Constrained.exists_kkt_of_isLocalMinOn`. The book's
-sufficient conditions (1.1.15) and (1.1.18) quantify over *all* `d` of the cone, including
-`d = 0`, for which the strict inequality `0 < 0` fails; they are stated here for `d ≠ 0`.
+The necessary conditions are proved under LICQ, as is the first-order theory
+`Constrained.exists_kkt_of_isLocalMinOn`. The sufficient conditions (1.1.15) and (1.1.18) quantify
+over the nonzero `d` of the cone (for `d = 0` the strict inequality fails).
 
 The necessary condition uses the feasible arcs of `Constrained.exists_contDiff_feasible_arc` and
 needs only their differentiability at `0`: along the arc `γ` the
@@ -275,8 +274,7 @@ at `x` and derivatives `f' x`, `h' i x`, `g' j x` there, and suppose `∇²ℒ(x
 nonzero `d` in the critical cone. Then `x` is a strict local minimizer of `f` on the feasible
 set. No constraint qualification is needed.
 
-The book quantifies over all `d` of the cone, `d = 0` included, which makes its hypothesis
-unsatisfiable; the condition is stated here for `d ≠ 0`. Proof: a violating feasible sequence has
+Proof: a violating feasible sequence has
 unit directions converging to some `d ≠ 0`; first-order expansions and the sign conditions of the
 Karush–Kuhn–Tucker point put `d` in the critical cone, and the second-order expansion of `ℒ`,
 which is `≤ f` on the feasible set and `= f` at `x`, gives `∇²ℒ(x)[d]² ≤ 0`. -/
