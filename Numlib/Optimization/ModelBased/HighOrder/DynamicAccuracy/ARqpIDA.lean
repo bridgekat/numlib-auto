@@ -1,3 +1,4 @@
+import Numlib.Data.Nat.SeqAppend
 import Numlib.Optimization.ModelBased.HighOrder.DynamicAccuracy.ARqpDAStep
 
 /-!
@@ -1108,5 +1109,65 @@ theorem IsARqpIDARun.complexity_of_radiiControl (hf : LipschitzDerivsAnchored f 
   exact ⟨kε, hk, hrun.mem kε, h1, h2⟩
 
 end Iterations
+
+section Splice
+
+variable {X : Set E} {P : ARqpIDAParams} {ε : ℕ → ℝ} {f : E → ℝ} {κ : ℕ} {x x' : ℕ → E}
+  {σ σ' : ℕ → ℝ} {δ δ' δ₁ δ₁' δs δs' h h' : ℕ → ℕ → ℝ} {dd dd' : ℕ → ℕ → E} {jk jk' : ℕ → ℕ}
+  {s s' : ℕ → E} {acc acc' : ℕ → Prop}
+
+/-- **Splicing ARqpIDA iterations with exact Taylor data**: if the first `κ` iterations of some
+sequences are ARqpIDA steps (with `D_k` the Taylor jet of `f` at `x_k` and the ratio (13.1.58)),
+and other sequences starting at their state at `κ` are ARqpIDA steps at every iteration, then the
+sequences following the first ones before `κ` and the second ones (shifted by `κ`) from `κ` on
+are ARqpIDA steps at every iteration. -/
+theorem ARqpDAStep.seqAppend
+    (hpre : ∀ k < κ, ARqpDAStep X P ε x σ δ δ₁ δs h (fun i => ftaylorSeries ℝ f (x i)) dd jk s acc
+      (arqpIDARatio f P (fun i => ftaylorSeries ℝ f (x i)) x s) k)
+    (hpost : ∀ k, ARqpDAStep X P ε x' σ' δ' δ₁' δs' h' (fun i => ftaylorSeries ℝ f (x' i)) dd' jk'
+      s' acc' (arqpIDARatio f P (fun i => ftaylorSeries ℝ f (x' i)) x' s') k)
+    (hx : x' 0 = x κ) (hσ : σ' 0 = σ κ) (hδ : δ' 0 = δ κ) (hh : h' 0 = h κ) (k : ℕ) :
+    ARqpDAStep X P ε (Nat.seqAppend κ x x') (Nat.seqAppend κ σ σ') (Nat.seqAppend κ δ δ')
+      (Nat.seqAppend κ δ₁ δ₁') (Nat.seqAppend κ δs δs') (Nat.seqAppend κ h h')
+      (fun i => ftaylorSeries ℝ f (Nat.seqAppend κ x x' i)) (Nat.seqAppend κ dd dd')
+      (Nat.seqAppend κ jk jk') (Nat.seqAppend κ s s') (Nat.seqAppend κ acc acc')
+      (arqpIDARatio f P (fun i => ftaylorSeries ℝ f (Nat.seqAppend κ x x' i))
+        (Nat.seqAppend κ x x') (Nat.seqAppend κ s s')) k := by
+  rcases lt_or_ge k κ with hk | hk
+  · have hk1 : k + 1 ≤ κ := hk
+    refine (hpre k hk).congr ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ <;>
+      simp only [arqpIDARatio, Nat.seqAppend_of_lt hk, Nat.seqAppend_eq_of_le hx hk1,
+        Nat.seqAppend_eq_of_le hσ hk1, Nat.seqAppend_eq_of_le hδ hk1, Nat.seqAppend_eq_of_le hh hk1]
+  · refine (hpost (k - κ)).congr ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ <;>
+      simp only [arqpIDARatio, Nat.seqAppend_of_le hk, Nat.seqAppend_succ_of_le hk]
+
+/-- **The ARqpIDA criterion at a spike of order `q`**: if the measures of the Taylor jet of `f` at
+`x_k` vanish below order `q` and are `(c/q!) t^q` at order `q` and radius `t ≥ 0`, then `x_k` is
+`(ε, δ)`-approximately optimal for some radii `δ ∈ (0, 1]^q` (`Optimization.arqpIDATest` without
+constraints) if and only if `c ≤ ε`. -/
+theorem arqpIDATest_univ_iff_of_taylorMeasure_eq {ε c : ℝ} {k : ℕ} (hε : 0 < ε)
+    (hmeas : ∀ j ∈ Finset.Icc 1 P.q, ∀ t : ℝ, 0 ≤ t →
+      taylorMeasure (ftaylorSeries ℝ f (x k)) j t univ =
+        (if j = P.q then c / P.q ! else 0) * t ^ P.q) :
+    arqpIDATest f univ P (fun _ => ε) x k ↔ c ≤ ε := by
+  have hqm : P.q ∈ Finset.Icc 1 P.q := Finset.mem_Icc.2 ⟨P.one_le_q, le_rfl⟩
+  have hqf : (0 : ℝ) < P.q ! := by positivity
+  rw [arqpIDATest, Set.setOf_add_mem_univ]
+  constructor
+  · rintro ⟨δ', hδ', ht⟩
+    have h1 := ht P.q hqm
+    have hδq := (hδ' P.q hqm).1
+    rw [hmeas P.q hqm _ hδq.le, ite_eq_left rfl, div_mul_eq_mul_div] at h1
+    have h3 : 0 < δ' P.q ^ P.q := by positivity
+    have := (div_le_div_iff_of_pos_right hqf).1 h1
+    exact le_of_mul_le_mul_right this h3
+  · intro hc
+    refine ⟨fun _ => 1, fun _ _ => ⟨one_pos, le_rfl⟩, fun j hj => ?_⟩
+    rw [hmeas j hj 1 zero_le_one, one_pow, mul_one, one_pow, mul_one]
+    split_ifs with hjq
+    · subst hjq; exact div_le_div_of_nonneg_right hc hqf.le
+    · positivity
+
+end Splice
 
 end Optimization

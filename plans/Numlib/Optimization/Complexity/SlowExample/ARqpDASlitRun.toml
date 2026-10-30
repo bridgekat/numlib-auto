@@ -1,0 +1,5 @@
+namespace = "Optimization"
+
+[[node]]
+id = "exists_isARqpIDARun_slit"
+source = "Cartis–Gould–Toint, Theorem 12.2.17 (slow example) on a line and a parallel half-plane, as a run of Algorithm 13.1.2 in the lower-bound mode"

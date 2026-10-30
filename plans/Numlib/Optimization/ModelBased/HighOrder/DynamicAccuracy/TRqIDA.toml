@@ -9,6 +9,9 @@ id = "TRqDAStep"
 source = "Cartis–Gould–Toint, Algorithm 13.1.1, (13.1.19)–(13.1.21)"
 
 [[node]]
+id = "TRqDAStep.seqAppend"
+
+[[node]]
 id = "trqDA_delta_ge"
 source = "Cartis–Gould–Toint, Lemma 13.1.4"
 

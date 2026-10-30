@@ -1,0 +1,77 @@
+namespace = "Optimization"
+
+[[node]]
+id = "halfSq"
+
+[[node]]
+id = "halfSq_apply"
+
+[[node]]
+id = "deriv_halfSq"
+
+[[node]]
+id = "iteratedDeriv_halfSq_one"
+
+[[node]]
+id = "iteratedDeriv_halfSq_two"
+
+[[node]]
+id = "iteratedDeriv_halfSq_three"
+
+[[node]]
+id = "contDiff_halfSq"
+
+[[node]]
+id = "contDiff_halfSq_comp_apply"
+
+[[node]]
+id = "saddleQuad"
+
+[[node]]
+id = "contDiff_saddleQuad"
+
+[[node]]
+id = "contDiffAt_saddleQuad"
+
+[[node]]
+id = "norm_iteratedFDeriv_saddleQuad_le"
+
+[[node]]
+id = "iteratedFDerivLipschitzOn_saddleQuad_two"
+
+[[node]]
+id = "taylorDecrement_two_saddleQuad"
+
+[[node]]
+id = "hasFDerivAt_saddleQuad"
+
+[[node]]
+id = "taylorDecrement_one_saddleQuad"
+
+[[node]]
+id = "saddleBox"
+
+[[node]]
+id = "mem_saddleBox"
+
+[[node]]
+id = "isClosed_saddleBox"
+
+[[node]]
+id = "saddleBox_subset_ball"
+
+[[node]]
+id = "iteratedFDerivLipschitzOn_saddleQuad"
+
+[[node]]
+id = "norm_iteratedFDeriv_saddleQuad_le_four"
+
+[[node]]
+id = "saddleTRqParams"
+
+[[node]]
+id = "saddleQuad_apply"
+
+[[node]]
+id = "exists_isTRqRun_saddleQuad_decrease_lt"
+source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.12) and Lemma 12.2.4 (decrease at successful TRq iterations with a radius shared across the orders, q = 2)"

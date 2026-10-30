@@ -216,99 +216,52 @@ source = "Cartis–Gould–Toint, Lemma 14.2.3 (ARqpC-SC row) under f.D1pLaB.X"
 id = "theorem_14_2_4_arqpc_anchored"
 source = "Cartis–Gould–Toint, Theorem 14.2.4 (ARqpC-SC row) under f.D1pLaB.X"
 
-
-
+[[node]]
+id = "theorem_14_2_4_sharp"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (\"the orders … are sharp\")"
 
 [[node]]
-id = "trqLog_norm_sq"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
+id = "theorem_14_2_4_sharp_arqp"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, ARqp-SC row for q > 2, via Theorem 12.2.17)"
 
 [[node]]
-id = "trqLog_continuous_coord"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
+id = "theorem_14_2_4_sharp_arqp_otherwise"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, ARqp-SC row, \"otherwise\" order, 1 ≤ q ≤ p, nonconvex X ≠ ℝⁿ); Theorem 12.2.17"
 
 [[node]]
-id = "trqSadSq"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
+id = "theorem_14_2_4_sharp_trqida"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, TRqIDA-SC row); Theorem 12.2.6"
 
 [[node]]
-id = "iteratedDeriv_trqSadSq_one"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
+id = "theorem_14_2_4_sharp_trqeda"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, TRqEDA-SC row); Theorem 12.2.6"
 
 [[node]]
-id = "deriv_trqSadSq"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
+id = "theorem_14_2_4_sharp_arqpida"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, ARqpIDA-SC row, q ≤ 2); Theorem 12.2.15, Algorithm 13.1.2"
 
 [[node]]
-id = "iteratedDeriv_trqSadSq_two"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
+id = "theorem_14_2_4_sharp_arqpeda"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, ARqpEDA-SC row, q ≤ 2); Theorem 12.2.15, Algorithm 13.3.2"
 
 [[node]]
-id = "iteratedDeriv_trqSadSq_three"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
+id = "theorem_14_2_4_sharp_arqpeda_otherwise"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, ARqpEDA-SC row, \"otherwise\" order); Theorem 12.2.17, Algorithm 13.3.2"
 
 [[node]]
-id = "contDiff_trqSadSq"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
+id = "theorem_14_2_4_sharp_arqpida_otherwise"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, ARqpIDA-SC row, \"otherwise\" order, q = p ≥ 3); Theorem 12.2.15, Algorithm 13.1.2"
 
 [[node]]
-id = "norm_iteratedFDeriv_trqSadSq_comp"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
-
-[[node]]
-id = "trqSad_contDiff_coordSq"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
+id = "theorem_14_2_4_sharp_arqpida_otherwise_constrained"
+source = "Cartis–Gould–Toint, Theorem 14.2.4 (sharpness, ARqpIDA-SC row, \"otherwise\" order, 1 ≤ q ≤ p, nonconvex feasible set X ≠ ℝⁿ); Theorem 12.2.17, Algorithm 13.1.2"
 
 [[node]]
 id = "trqSadF"
 source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
 
 [[node]]
-id = "trqSadF_eq"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
-
-[[node]]
-id = "contDiff_trqSadF"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
-
-[[node]]
-id = "contDiffAt_trqSadF"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
-
-[[node]]
-id = "norm_iteratedFDeriv_trqSadF_le"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
-
-[[node]]
-id = "iteratedFDerivLipschitzOn_trqSadF_two"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
-
-[[node]]
-id = "taylorDecrement_two_trqSadF"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
-
-[[node]]
-id = "hasFDerivAt_trqSadF"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
-
-[[node]]
-id = "taylorDecrement_one_trqSadF"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
-
-[[node]]
 id = "trqSadX"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
-
-[[node]]
-id = "trqSadX_mem"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
-
-[[node]]
-id = "isClosed_trqSadX"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
-
-[[node]]
-id = "trqSadX_subset_ball"
 source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
 
 [[node]]
@@ -317,78 +270,6 @@ source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC ro
 
 [[node]]
 id = "trqSadP"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
-
-[[node]]
-id = "trqSadE"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
-
-[[node]]
-id = "norm_smul_trqSadE"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
-
-[[node]]
-id = "trqSadF_apply"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
-
-[[node]]
-id = "trqSad_ΔT1_p"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
-
-[[node]]
-id = "trqSad_ΔT1_zero"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
-
-[[node]]
-id = "trqSad_ΔT2_zero"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
-
-[[node]]
-id = "trqSad_smul_e0_mem"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
-
-[[node]]
-id = "trqSadE0_mem"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
-
-[[node]]
-id = "trqSad_witness_p"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
-
-[[node]]
-id = "trqSad_step_p"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
-
-[[node]]
-id = "trqSadF_p"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
-
-[[node]]
-id = "trqSadF_p_step"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
-
-[[node]]
-id = "trqSad_accept_p_unsucc"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
-
-[[node]]
-id = "trqSad_accept_p_succ"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
-
-[[node]]
-id = "trqSad_witness_zero"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
-
-[[node]]
-id = "trqSad_step_zero"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
-
-[[node]]
-id = "trqSad_ratio_zero"
-source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
-
-[[node]]
-id = "trqSad_accept_zero"
 source = "Cartis–Gould–Toint, Lemma 14.2.2, (14.2.11)–(14.2.12) (TRq-SC row j + 1 fails with uniform constants, q = 2)"
 
 [[node]]

@@ -1,0 +1,17 @@
+namespace = "Optimization"
+
+[[node]]
+id = "exists_isARqpIDARun_slow"
+source = "Cartis–Gould–Toint, Theorem 12.2.15 (slow example, q ≤ 2) as a run of Algorithm 13.1.2 with unit radii"
+
+[[node]]
+id = "exists_isARqpEDARun_slow"
+source = "Cartis–Gould–Toint, Theorem 12.2.15 (slow example, q ≤ 2) as a run of Algorithm 13.3.2 with unit radii"
+
+[[node]]
+id = "exists_isARqpEDARun_slowGrad"
+source = "Cartis–Gould–Toint, Theorem 12.2.17 (slow example, r = p) as a run of Algorithm 13.3.2 in the lower-bound mode"
+
+[[node]]
+id = "exists_isARqpIDARun_slowTop"
+source = "Cartis–Gould–Toint, Theorem 12.2.15 (slow example, q = p ≥ 3) as a run of Algorithm 13.1.2 in the lower-bound mode"

@@ -71,3 +71,9 @@ source = "Cartis–Gould–Toint, Lemma 14.2.3 (ARqpIDA-SC row) under f.D0pL anc
 [[node]]
 id = "IsARqpIDARun.complexity_of_radiiControl"
 source = "Cartis–Gould–Toint, Theorem 14.2.4 (ARqpIDA-SC row) under f.D0pL anchored on a set containing the sublevel set (14.2.8)"
+
+[[node]]
+id = "ARqpDAStep.seqAppend"
+
+[[node]]
+id = "arqpIDATest_univ_iff_of_taylorMeasure_eq"

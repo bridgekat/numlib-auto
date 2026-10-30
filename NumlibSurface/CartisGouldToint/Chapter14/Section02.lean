@@ -1,10 +1,12 @@
-import Numlib.Analysis.Calculus.MultivariateTaylor.Coord
-import Numlib.Optimization.Complexity.SlowExample.TRq
 import Numlib.Optimization.ModelBased.HighOrder.TRqCall
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import Numlib.Analysis.Calculus.AnchoredLipschitz
 import Numlib.Optimization.Optimality.TaylorStability
 import Numlib.Optimization.Subproblem.SparseLinear
+import Numlib.Optimization.Complexity.SlowExample.ARqpDARun
+import Numlib.Optimization.Complexity.SlowExample.ARqpDASlitRun
+import Numlib.Optimization.Complexity.SlowExample.TRqDARun
+import Numlib.Optimization.Complexity.SlowExample.TRqSaddle
 import NumlibSurface.CartisGouldToint.Chapter13.Section03
 import NumlibSurface.CartisGouldToint.Chapter14.Section01
 
@@ -75,7 +77,42 @@ subproblems. It therefore has no declaration of its own.
   `h_{k,0} ≤ κ_s \overline{ΔT}_k` give a true decrease of at least `η₁/2 \overline{ΔT}_k > 0` on
   successful iterations;
 * bridges: `AssumptionD1qLaBX.of_lipschitzOn`, `AssumptionD1qLaBX.lipschitzDerivsAnchored_self`,
-  `assumptionBbX_iff_assumptionWBb`.
+  `assumptionBbX_iff_assumptionWBb`;
+* sharpness of the orders of Theorem 14.2.4 ("the orders of complexity mentioned in the last
+  column of the table are sharp"), by the book's argument ("unconstrained problems are a special
+  case of simply constrained ones") with `X = ℝ` or `X = ℝ¹` (`univ`), and on closed nonconvex
+  feasible sets for the "otherwise" entries that this argument does not reach:
+  - `theorem_14_2_4_sharp` — the TRq-SC, ARqp-SC (`q ≤ 2`) and ARqpC-SC (`q = 1`, convex `h`)
+    orders, from Theorem 12.2.6, Corollary 12.2.16 and Corollary 14.1.11 with `X = ℝ`;
+    `theorem_14_2_4_sharp_arqp` — the ARqp-SC order for `q ≥ 3` (Theorem 12.2.17);
+  - `theorem_14_2_4_sharp_arqp_otherwise` — the ARqp-SC order `ε^{-q(p+1)/p}` of the lower-bound
+    radius mode for every `1 ≤ q ≤ p`, on the closed nonconvex `X = (-∞, R] ∪ [R + 2, ∞) ⊂ ℝ`
+    (Theorem 12.2.17 restricted to `X`; the "otherwise" entries for `q = 1`, nonconvex `X`, and
+    `q = 2`, `X ≠ ℝⁿ`);
+  - `theorem_14_2_4_sharp_trqida`, `theorem_14_2_4_sharp_trqeda` — the TRqIDA-SC and TRqEDA-SC
+    orders `ε^{-(q+1)}`, from the example of Theorem 12.2.6 lifted to `ℝ¹` (for TRqEDA with `f`
+    halved);
+  - `theorem_14_2_4_sharp_arqpida`, `theorem_14_2_4_sharp_arqpeda` — the ARqpIDA-SC and
+    ARqpEDA-SC order `ε^{-(p+1)/(p-q+1)}` of the unit-radii mode for `q ≤ 2` (for `q = 1` and for
+    `q = p = 2` also the order of the lower-bound mode), from the example of Theorem 12.2.15
+    lifted to `ℝ¹`;
+  - `theorem_14_2_4_sharp_arqpeda_otherwise` — the ARqpEDA-SC order `ε^{-q(p+1)/p}` of the
+    lower-bound mode, for every `q ≤ p`, from the example of Theorem 12.2.17 (`r = p`);
+  - `theorem_14_2_4_sharp_arqpida_otherwise` — the ARqpIDA-SC order `ε^{-q(p+1)/p}` of the
+    lower-bound mode for `q = p ≥ 3`, from pure `p`-th order spikes (Theorem 12.2.15 with
+    `q = p`);
+  - `theorem_14_2_4_sharp_arqpida_otherwise_constrained` — the ARqpIDA-SC order `ε^{-q(p+1)/p}`
+    of the lower-bound mode for every `1 ≤ q ≤ p` (in particular the "otherwise" entries for
+    `q = 1`, nonconvex `X`, and `q = 2`, `X ≠ ℝⁿ`), on the closed feasible set
+    `X = {v | v 1 = 0} ∪ {v | ρ ≤ v 1} ⊂ ℝ²` (`v 1` the second coordinate: a line and a parallel
+    half-plane at distance `ρ ∈ (ε, 2ε]`), from the example of Theorem 12.2.17 on the line.
+
+  The dynamic-accuracy runs are the backbone slow runs (`Optimization.exists_isTRqIDARun_slow`,
+  `Optimization.exists_isTRqEDARun_slow`, `Optimization.exists_isARqpIDARun_slow`,
+  `Optimization.exists_isARqpEDARun_slow`, `Optimization.exists_isARqpEDARun_slowGrad`,
+  `Optimization.exists_isARqpIDARun_slowTop`, `Optimization.exists_isARqpIDARun_slit`): runs of
+  the Chapter 13 run predicates with exact derivatives (and values), with class constants
+  independent of `ε`.
 
 ## Deviations from the book
 
@@ -113,11 +150,58 @@ subproblems. It therefore has no declaration of its own.
   is not sharp on `ℝⁿ` for `q = 2 < p` (for ARqpEDA it is,
   `theorem_14_2_4_sharp_arqpeda_otherwise`).
   The book's sharpness argument (reduction to `X = ℝⁿ`) does not reach the "otherwise" entries
-  with `q ≤ 2` (`q = 2` with `X ≠ ℝⁿ`, `q = 1` with `X` nonconvex). The sharpness results are in
-  `Chapter14.Section02Sharp`.
+  with `q ≤ 2` (`q = 2` with `X ≠ ℝⁿ`, `q = 1` with `X` nonconvex); they are attained on closed
+  nonconvex sets (`theorem_14_2_4_sharp_arqp_otherwise`,
+  `theorem_14_2_4_sharp_arqpida_otherwise_constrained`).
+* Sharpness, TRqIDA-SC and TRqEDA-SC. The slow example of Theorem 12.2.6 becomes a run of these
+  methods only for suitable constants:
+  - `ϑ = Δ₀ = ε`, forced by `ε_min ≤ ϑ ≤ Δ₀`;
+  - initial accuracies passing (13.1.9) along the steps (`h_{0,i} ≤ κ_s ε^{q-i+1}`);
+  - for TRqEDA, (13.3.8) at radius `ε`.
+
+  The tests (13.1.14) and (13.3.7) have half the threshold of the TRq test, so TRqEDA is run on
+  `f/2` to make it terminate at `k_ε`. TRqIDA has no termination rule and is continued after
+  `k_ε` by an arbitrary run from `x_{k_ε}`.
+* Sharpness, ARqpIDA-SC and ARqpEDA-SC. The Chapter 12 slow runs are not runs of the Chapter 13
+  regularization steps. The Step-1 test (13.1.53) has half the threshold of the ARqp test, and the
+  model-decrease condition (13.1.54) can fail at the Step-1 displacements: for the example of
+  Theorem 12.2.17 with `p = q = 3`, `ς = 1`, near `k_ε`, `Δm̄ = 5ε⁴/192 < ε⁴/24`. The data are
+  therefore adapted as follows.
+  - **Unit-radii mode** (`q ≤ 2`, Theorem 12.2.15, `σ₀ = p!/(q-1)!`, unit initial radii). The
+    Step-1 radius of order `q` is halved from `1` to a dyadic radius `2^{-m}` at the scale of the
+    step, where (13.1.54) holds while it fails at twice that radius. This requires `ε` below some
+    `ε₀(p, q)`.
+  - **Lower-bound mode of ARqpEDA** (Theorem 12.2.17 with `r = p`, radii `ε`). The weight is
+    `σ₀ = (3/(p+2))^p/2` instead of (12.2.85), and the Step-1 displacements achieve exactly the
+    fraction `ς` of the measures.
+  - **Lower-bound mode of ARqpIDA** (`q = p ≥ 3`, `σ₀ = p`, initial radii `ε`). The Step-2 radii
+    are `ε/p`.
+  - **Lower-bound mode of ARqpIDA with a feasible set** (`1 ≤ q ≤ p`, `σ₀ = (3/(p+2))^p`, all
+    radii `ε`). The criterion `Optimization.arqpIDATest` asks for approximate optimality for
+    *some* radii, and on the line alone the gradient spikes `β_k ≈ ε^q/q!` meet it at radius `1`.
+    A second coordinate with `∂f/∂(v 1) = -1` and the half-plane `{ρ ≤ v 1}` make every radius
+    `δ ≥ ρ` fail, while radii `δ < ρ` (including the algorithm's radii `ε`) only see the line;
+    `ρ^{q-1} = ε^{q-1}(1 + 1/k_ε)` (`ρ = ε(1 + 1/k_ε)` for `q = 1`) makes the first hit exactly
+    `k_ε`. After `k_ε` the run makes one more step, to a point where the derivatives along the
+    line vanish, and continues with accuracy-improving iterations there.
+  - **Termination and continuation.** ARqpEDA is run on `f/2` so that it terminates at `k_ε`.
+    ARqpIDA is continued after `k_ε` by ARqpIDA iterations from the state at `k_ε`
+    (`Optimization.exists_arqpDA_steps`).
+  - **Accuracies.** The initial accuracies are assumed to pass (13.1.46) along the steps and, for
+    ARqpEDA, (13.3.17) at termination.
 
 ## Not formalized here
 
+* Sharpness of the "otherwise" entry of the ARqpIDA-SC row on `X = ℝⁿ` for `3 ≤ q < p`. The
+  table's claim for this entry is met with a feasible set `X ≠ ℝⁿ`
+  (`theorem_14_2_4_sharp_arqpida_otherwise_constrained`); the book's proof, by reduction to
+  `X = ℝⁿ`, would also need this case. The example of Theorem 12.2.17 meets the criterion at
+  `x₀` (its measures at radius `1` are `β_0 ≤ ε/j!`), and pure `q`-th order spikes fail it at
+  every radius but have the order `ε^{-(p+1)/(p-q+1)}`. Heuristically, failing the criterion at
+  radius `1` needs a derivative of some order `3 ≤ i ≤ q` of size `≳ ε` at every iterate, and if
+  these derivatives are periodic along the run, Taylor consistency of the jets needs steps
+  `t ≳ ε^{1/(p-2)} ≫ ε^{q/p}`. The book's statement of Theorem 12.2.17, "for some `δ_ε`", has the
+  same caveat.
 * Runs satisfying the radius policy of the ARqp-SC rows under the anchored assumptions exist on
   `X = ℝⁿ` (`Optimization.exists_isARqpRun_of_anchored`); for a general closed `X` they are the
   ARqpC-SC runs with `c = 0`, `h = 0` of `Chapter14.Section03` (`exists_algorithm_14_1_1_of_hLip`,
@@ -1511,445 +1595,562 @@ theorem theorem_14_2_4_arqpeda_anchored (hf : AssumptionD0qLaBX f X X₀ x₀ P.
 
 end ARqpEDASC
 
+/-! ### Sharpness of the orders of Theorem 14.2.4
+
+"The orders of complexity mentioned in the last column of the table are sharp": each row is
+attained by a slow example, run with a simple feasible set (`X = ℝ`, `X = ℝ¹`, or a closed
+nonconvex `X` for the "otherwise" entries that the reduction to `X = ℝⁿ` does not reach). -/
+
+section Sharp
+
+open Chapter13 Optimization
+
+/-- f.D0qL with a single constant `L ≥ 1` is the library's smoothness hypothesis on the whole
+space. -/
+private theorem assumptionD0qL_of_lipschitzDerivsAnchored {m q : ℕ}
+    {f : EuclideanSpace ℝ (Fin m) → ℝ} {L : ℝ}
+    (hf : LipschitzDerivsAnchored f univ univ 0 q (fun _ => L)) (hL : 1 ≤ L) :
+    AssumptionD0qL f q (fun _ => L) :=
+  assumptionD0qL_iff_lipschitzDerivsAnchored.2 ⟨hf, fun _ _ => hL⟩
+
+/-- **Theorem 14.2.4** of [cartis2022evaluation], sharpness: the orders of the TRq-SC row
+(`ε^{-(q+1)}`), of the ARqp-SC row for `q ≤ 2` (`ε^{-(p+1)/(p-q+1)}`) and of the ARqpC-SC row
+for `q = 1` and convex `h` (`ε^{-(p+1)/p}`) are attained, by the slow examples of
+Theorem 12.2.6, Corollary 12.2.16 and Corollary 14.1.11 run with the (simple) feasible set
+`X = ℝ` (`univ`; `X = ℝ¹` and `h = ‖·‖` for ARqpC-SC). The ARqp-SC row for `q ≥ 3` is
+`theorem_14_2_4_sharp_arqp`; the TRqIDA-SC and TRqEDA-SC rows are `theorem_14_2_4_sharp_trqida`
+and `theorem_14_2_4_sharp_trqeda`, the ARqpIDA-SC and ARqpEDA-SC rows
+`theorem_14_2_4_sharp_arqpida`, `theorem_14_2_4_sharp_arqpeda`,
+`theorem_14_2_4_sharp_arqpeda_otherwise` and `theorem_14_2_4_sharp_arqpida_otherwise`. -/
+theorem theorem_14_2_4_sharp {p q : ℕ} (hq : 1 ≤ q) :
+    (∃ flow L : ℝ, 1 ≤ L ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 / q ! → ∀ P : Optimization.TRqParams,
+      P.Δ₀ = ε → ∃ f : ℝ → ℝ, (∀ t, flow ≤ f t) ∧ Chapter12.AssumptionD1pL f q (fun _ => L) ∧
+        ∃ (x s : ℕ → ℝ) (Δ : ℕ → ℝ) (jk : ℕ → ℕ) (d : ℕ → ℕ → ℝ),
+          Chapter12.algorithm_12_2_1_feasible f univ P q (fun j => j ! * ε) 1 x s Δ jk d ∧
+          Optimization.IsFirstHit (Chapter12.trqStop f P q (fun j => j ! * ε) 1 x Δ d)
+            ⌈(ε ^ (q + 1))⁻¹⌉₊ ∧
+          (ε ^ (q + 1))⁻¹ + 1 ≤ (Optimization.funEvalCount ⌈(ε ^ (q + 1))⁻¹⌉₊ : ℝ)) ∧
+    (q ≤ 2 → q ≤ p → ∃ flow L : ℝ, 1 ≤ L ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 →
+      ∀ P : Optimization.ARqpParams, P.σ₀ = (p ! : ℝ) / (q - 1)! →
+      ∃ f : ℝ → ℝ, (∀ t, flow ≤ f t) ∧ Chapter12.AssumptionD1pL f p (fun _ => L) ∧
+        ∃ (x s σ : ℕ → ℝ) (d : ℕ → ℕ → ℝ),
+          Chapter12.algorithm_12_2_2_feasible f univ P p q (fun _ => ε) (fun _ => 1) x s σ
+            (fun _ _ => 1) (fun _ _ => 1) d (fun _ _ => 0) ∧
+          Optimization.IsFirstHit (Optimization.arqpStop f P p q (fun _ => ε) x s σ
+              (fun _ _ => 1) d)
+            ⌈ε ^ (-((p + 1 : ℝ) / ((p - q + 1 : ℕ) : ℝ)))⌉₊) ∧
+    (1 ≤ p → ∀ P : ARqpCParams, ∃ L : ℝ, 1 ≤ L ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 →
+      ∃ c : EuclideanSpace ℝ (Fin 1) → EuclideanSpace ℝ (Fin 1),
+        AssumptionCD1pL c p (fun _ => L) ∧ ‖c 0‖ ≤ L ∧
+        AssumptionWBb (fun _ => 0) c (fun v => ‖v‖) univ 0 ∧
+        ∃ (x s : ℕ → EuclideanSpace ℝ (Fin 1)) (σ : ℕ → ℝ) (δ δs : ℕ → ℕ → ℝ)
+          (d dm : ℕ → ℕ → EuclideanSpace ℝ (Fin 1)),
+          algorithm_14_1_1 (fun _ => 0) c (fun v => ‖v‖) univ p 1 P (fun _ => ε) (fun _ => 1)
+            x s σ δ δs d dm ∧
+          Optimization.IsFirstHit
+            (arqpcStop (fun _ => 0) c (fun v => ‖v‖) p 1 P (fun _ => ε) x s σ δ d)
+            ⌈ε ^ (-((p + 1 : ℝ) / p))⌉₊ ∧
+          ε ^ (-((p + 1 : ℝ) / p)) + 1 ≤
+            (Optimization.funEvalCount ⌈ε ^ (-((p + 1 : ℝ) / p))⌉₊ : ℝ)) := by
+  refine ⟨?_, fun hq2 hqp => ?_, fun hp P => ?_⟩
+  · obtain ⟨flow, L, hL, H⟩ := Chapter12.theorem_12_2_6 hq
+    refine ⟨flow, L, hL, fun ε hε hε1 P hP => ?_⟩
+    obtain ⟨f, hb, hf, x, s, Δ, jk, d, hrun, -, -, hhit, -, hF, -⟩ := H ε hε hε1 P hP
+    exact ⟨f, hb, hf, x, s, Δ, jk, d, Chapter12.algorithm_12_2_1_iff_feasible.1 hrun, hhit, hF⟩
+  · obtain ⟨flow, L, hL, H⟩ := Chapter12.corollary_12_2_16 hq hq2 hqp
+    refine ⟨flow, L, hL, fun ε hε hε1 P hP => ?_⟩
+    obtain ⟨f, hb, hf, x, s, σ, d, hrun, -, hhit, -⟩ := H ε hε hε1 P hP
+    exact ⟨f, hb, hf, x, s, σ, d, hrun, hhit⟩
+  · obtain ⟨-, -, -, -, L, hL, H⟩ := corollary_14_1_11 hp P
+    refine ⟨L, hL, fun ε hε hε1 => ?_⟩
+    obtain ⟨c, hc, hc0, -, hw, x, s, σ, δ, δs, d, dm, hrun, -, hhit, -, hF, -⟩ := H ε hε hε1
+    exact ⟨c, hc, hc0, hw, x, s, σ, δ, δs, d, dm, hrun, hhit, hF⟩
+
+/-- **Theorem 14.2.4** of [cartis2022evaluation], sharpness of the ARqp-SC row for `q ≥ 3`
+(the "otherwise" order `ε^{-q(p+1)/p}`): the slow example of Theorem 12.2.17 run with the (simple)
+feasible set `X = ℝ` (`univ`). For `3 ≤ q ≤ p` there are `f_low` and `L ≥ 1` such that for every
+`ε ∈ (0, ½]` and ARqp constants with `σ₀` the weight (12.2.85) there is `f` with f.bB and f.D1pL
+and an ARqp-SC run with radii `ε` satisfying the radius hypothesis of `theorem_14_2_4_arqp`
+(`δ_{s_k,j} ≥ κ_δ(σ_k) ε_j`) that first terminates at `k_ε = ⌈ε^{-q(p+1)/p}⌉`, after
+`k_ε + 1 ≥ ε^{-q(p+1)/p} + 1` evaluations. -/
+theorem theorem_14_2_4_sharp_arqp {p q : ℕ} (hq : 2 < q) (hqp : q ≤ p) :
+    ∃ flow L : ℝ, 1 ≤ L ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 / 2 → ∀ P : Optimization.ARqpParams,
+      P.σ₀ = Chapter12.arqpSigmaSharp p q →
+      ∃ f : ℝ → ℝ, (∀ t, flow ≤ f t) ∧ Chapter12.AssumptionD1pL f p (fun _ => L) ∧
+        ∃ (x s σ : ℕ → ℝ) (d : ℕ → ℕ → ℝ),
+          Chapter12.algorithm_12_2_2_feasible f univ P p q (fun _ => ε) (fun _ => ε) x s σ
+            (fun _ _ => ε) (fun _ _ => ε) d (fun _ _ => 0) ∧
+          (∀ k, (∀ i ≤ k, ¬ Optimization.arqpStop f P p q (fun _ => ε) x s σ (fun _ _ => ε) d i) →
+            ‖s k‖ < 1 → ∀ j ∈ Finset.Icc 1 q,
+              Optimization.arqpKappaDelta P (Optimization.finMax 1 (fun _ => L) p) (σ k) * ε ≤ ε) ∧
+          Optimization.IsFirstHit (Optimization.arqpStop f P p q (fun _ => ε) x s σ
+              (fun _ _ => ε) d)
+            ⌈ε ^ (-((q : ℝ) * (p + 1) / p))⌉₊ ∧
+          ε ^ (-((q : ℝ) * (p + 1) / p)) + 1 ≤
+            (Optimization.funEvalCount ⌈ε ^ (-((q : ℝ) * (p + 1) / p))⌉₊ : ℝ) := by
+  obtain ⟨flow, L, hL, H⟩ := Chapter12.theorem_12_2_17 (r := p) (by omega) hqp le_rfl
+  refine ⟨flow, L, hL, fun ε hε hε2 P hP => ?_⟩
+  obtain ⟨f, hb, hf, x, s, σ, d, hrun, -, -, hκ, -, hhit, -⟩ := H ε hε hε2 P hP
+  refine ⟨f, hb, hf, x, s, σ, d, hrun, fun k _ _ _ _ => hκ k, hhit, ?_⟩
+  simp only [Optimization.funEvalCount, Nat.cast_add, Nat.cast_one]
+  linarith [Nat.le_ceil (ε ^ (-((q : ℝ) * (p + 1) / p)))]
+
+/-! ### Sharpness of the ARqp-SC row in the lower-bound mode with a constrained feasible set
+
+The slow example of Theorem 12.2.17 never leaves a half-line, so it is also an ARqp-SC run on a
+closed nonconvex `X ⊂ ℝ` (`X ≠ ℝ`), which reaches the "otherwise" entries of the table for
+`q ≤ 2`. -/
+
+section ARqpOtherwise
+
+open Optimization
+
+/-- **Theorem 14.2.4** of [cartis2022evaluation], sharpness of the ARqp-SC row in the lower-bound
+mode of the radius policy (the "otherwise" order `ε^{-q(p+1)/p}`) for every `1 ≤ q ≤ p`, with a
+closed nonconvex feasible set `X = (-∞, R] ∪ [R + 2, ∞) ⊂ ℝ`: the slow example of
+Theorem 12.2.17 (`r = p`) restricted to `X`. For `1 ≤ q ≤ p` there are `f_low` and `L ≥ 1` such
+that for every `ε ∈ (0, ½]` and ARqp constants with `σ₀` the weight (12.2.85) there are `R` and
+`f` with f.bB and f.D1pL and an ARqp-SC run on `X` with radii `ε` satisfying the radius hypothesis
+of the lower-bound mode of `theorem_14_2_4_arqp` (`δ_{s_k,j} ≥ κ_δ(σ_k) ε_j`) that first
+terminates at `k_ε = ⌈ε^{-q(p+1)/p}⌉`, after `k_ε + 1 ≥ ε^{-q(p+1)/p} + 1` evaluations. The run
+of Theorem 12.2.17 stays in `(-∞, R]` together with its displacements, so it is a run on `X`.
+This covers the "otherwise" entries of the table for `q = 1` (nonconvex `X`) and `q = 2`
+(`X ≠ ℝⁿ`), which the reduction to `X = ℝⁿ` does not reach; for `q > 2` it complements
+`theorem_14_2_4_sharp_arqp` (`X = ℝ`). -/
+theorem theorem_14_2_4_sharp_arqp_otherwise {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p) :
+    ∃ flow L : ℝ, 1 ≤ L ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 / 2 → ∀ P : ARqpParams,
+      P.σ₀ = Chapter12.arqpSigmaSharp p q →
+      ∃ (R : ℝ) (f : ℝ → ℝ), (∀ t, flow ≤ f t) ∧ Chapter12.AssumptionD1pL f p (fun _ => L) ∧
+        ∃ (x s σ : ℕ → ℝ) (d : ℕ → ℕ → ℝ),
+          Chapter12.algorithm_12_2_2_feasible f ({t | t ≤ R} ∪ {t | R + 2 ≤ t}) P p q
+            (fun _ => ε) (fun _ => ε) x s σ (fun _ _ => ε) (fun _ _ => ε) d (fun _ _ => 0) ∧
+          (∀ k, (∀ i ≤ k, ¬ Optimization.arqpStop f P p q (fun _ => ε) x s σ (fun _ _ => ε) d i) →
+            ‖s k‖ < 1 → ∀ j ∈ Finset.Icc 1 q,
+              Optimization.arqpKappaDelta P (Optimization.finMax 1 (fun _ => L) p) (σ k) * ε ≤ ε) ∧
+          IsFirstHit (Optimization.arqpStop f P p q (fun _ => ε) x s σ (fun _ _ => ε) d)
+            ⌈ε ^ (-((q : ℝ) * (p + 1) / p))⌉₊ ∧
+          ε ^ (-((q : ℝ) * (p + 1) / p)) + 1 ≤
+            (funEvalCount ⌈ε ^ (-((q : ℝ) * (p + 1) / p))⌉₊ : ℝ) := by
+  obtain ⟨flow, L, hL, H⟩ := Chapter12.theorem_12_2_17 (r := p) hq hqp le_rfl
+  refine ⟨flow, L, hL, fun ε hε hε2 P hP => ?_⟩
+  obtain ⟨f, hb, hf, x, s, σ, d, hrun, -, -, hκ, -, hhit, -⟩ := H ε hε hε2 P hP
+  set kε := ⌈ε ^ (-((q : ℝ) * (p + 1) / p))⌉₊
+  set R : ℝ := ∑ k ∈ Finset.range (kε + 1), (|x k| + |s k|) + 2 with hR
+  have hxs : ∀ k ≤ kε, |x k| + |s k| ≤ R - 2 := fun k hk => by
+    rw [hR, add_sub_cancel_right]
+    exact Finset.single_le_sum (f := fun k => |x k| + |s k|) (fun _ _ => by positivity)
+      (Finset.mem_range.2 (Nat.lt_succ_of_le hk))
+  have hX : ∀ k, (∀ i < k, ¬ Optimization.arqpStop f P p q (fun _ => ε) x s σ (fun _ _ => ε) d i) →
+      x k ∈ {t | t ≤ R} ∪ {t | R + 2 ≤ t} ∧
+      (∀ j ∈ Finset.Icc 1 q, x k + d k j ∈ {t | t ≤ R} ∪ {t | R + 2 ≤ t}) ∧
+      x k + s k ∈ {t | t ≤ R} ∪ {t | R + 2 ≤ t} ∧
+      (‖s k‖ < 1 → ∀ j ∈ Finset.Icc 1 q,
+        x k + s k + (fun _ _ => (0 : ℝ)) k j ∈ {t | t ≤ R} ∪ {t | R + 2 ≤ t}) := by
+    intro k hk
+    have hkε : k ≤ kε := not_lt.1 fun hlt => hk kε hlt hhit.1
+    have h1 := hxs k hkε
+    have hxa := le_abs_self (x k)
+    have hsa := le_abs_self (s k)
+    have hsa' := abs_nonneg (s k)
+    refine ⟨Or.inl (by simp only [mem_ofPred_eq]; linarith), fun j hj => Or.inl ?_,
+      Or.inl (by simp only [mem_ofPred_eq]; linarith), fun _ j _ => Or.inl (by
+        simp only [mem_ofPred_eq, add_zero]; linarith)⟩
+    have hd := (hrun.witness k hk j hj).1.1
+    rw [mem_closedBall_zero_iff, Real.norm_eq_abs] at hd
+    have := le_abs_self (d k j)
+    simp only [mem_ofPred_eq]
+    linarith
+  refine ⟨R, f, hb, hf, x, s, σ, d,
+    IsARqpRun.of_univ hrun (fun _ _ _ => bddAbove_taylorDecrement _ _ _ _)
+    (fun _ _ _ => bddAbove_taylorDecrement _ _ _ _) hX,
+    fun k _ _ _ _ => hκ k, hhit, ?_⟩
+  simp only [funEvalCount, Nat.cast_add, Nat.cast_one]
+  linarith [Nat.le_ceil (ε ^ (-((q : ℝ) * (p + 1) / p)))]
+
+end ARqpOtherwise
+
+/-! ### Sharpness of the dynamic-accuracy rows
+
+The orders of the TRqIDA-SC, TRqEDA-SC, ARqpIDA-SC and ARqpEDA-SC rows are attained by the
+library's slow runs of these methods with exact derivatives (and values)
+(`Numlib.Optimization.Complexity.SlowExample.TRqDARun`,
+`Numlib.Optimization.Complexity.SlowExample.ARqpDARun`,
+`Numlib.Optimization.Complexity.SlowExample.ARqpDASlitRun`), with f.D0qL read as
+`LipschitzDerivsAnchored f univ univ 0 q (fun _ => L)` and `L ≥ 1`. -/
+
+/-- **Theorem 14.2.4** of [cartis2022evaluation], sharpness of the TRqIDA-SC row: the order
+`ε^{-(q+1)}` is attained with the (simple) feasible set `X = ℝ¹` (`univ`) and exact derivatives
+(`κ_{∇,i} = 0`, so (13.1.2) asks for zero error). For `q ≥ 1` there are `f_low` and `L ≥ 1` such
+that, for every `ε ∈ (0, 1/q!]` (tolerances `ε_j = j! ε`) and all TRqIDA constants with `q`,
+`Δ₀ = ϑ = ε` and initial accuracies passing (13.1.9) along steps of length `ε`
+(`h_{0,i} ≤ κ_s ε^{q-i+1}`), there is `f` with f.bB and f.D0qL (all `L_{f,j} = L`) and a TRqIDA-SC
+run with exact derivatives from `x₀ = 0` whose first `(ε, δ_k)`-approximately optimal iterate is
+`x_{k_ε}`, `k_ε = ⌈ε^{-(q+1)}⌉`, after `k_ε + 1 ≥ ε^{-(q+1)} + 1` function evaluations and as
+many derivative evaluations. The run follows the slow example of Theorem 12.2.6
+(`x_k = k ε e₁`, `Δ_k = ε`, `ρ_k = 1`, no accuracy-improving iteration) up to `k_ε`, and continues
+as any run from `x_{k_ε}` (`Optimization.exists_trqDA_run`). This is
+`Optimization.exists_isTRqIDARun_slow`. -/
+theorem theorem_14_2_4_sharp_trqida {q : ℕ} (hq : 1 ≤ q) :
+    ∃ flow L : ℝ, 1 ≤ L ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 / q ! → ∀ P : TRqIDAParams, P.q = q →
+      P.Δ₀ = ε → P.ϑ = ε → (∀ i ∈ Finset.Icc 1 q, P.h₀ i ≤ P.κs * ε ^ (q - i + 1)) →
+      ∃ f : EuclideanSpace ℝ (Fin 1) → ℝ, (∀ y, flow ≤ f y) ∧ AssumptionD0qL f q (fun _ => L) ∧
+        ∃ (x : ℕ → EuclideanSpace ℝ (Fin 1)) (Δ : ℕ → ℝ) (h : ℕ → ℕ → ℝ)
+          (D : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin 1)) ℝ)
+          (dd : ℕ → ℕ → EuclideanSpace ℝ (Fin 1)) (jk : ℕ → ℕ)
+          (s : ℕ → EuclideanSpace ℝ (Fin 1)) (acc : ℕ → Prop),
+          IsTRqIDARun f univ (fun _ => 0) P (fun j => j ! * ε) 0 x Δ h D dd jk s
+            acc ∧
+          (∀ k, D k = ftaylorSeries ℝ f (x k)) ∧
+          IsFirstHit (trqIDATest f univ P (fun j => j ! * ε) x Δ) ⌈(ε ^ (q + 1))⁻¹⌉₊ ∧
+          (ε ^ (q + 1))⁻¹ + 1 ≤ (derivEvalCount (fun i => ¬ acc i) ⌈(ε ^ (q + 1))⁻¹⌉₊ : ℝ) ∧
+          (ε ^ (q + 1))⁻¹ + 1 ≤ (derivEvalCount
+            (fun i => acc i ∨ (¬ acc i ∧ P.η₁ ≤ trqRatio f D x s jk i))
+              ⌈(ε ^ (q + 1))⁻¹⌉₊ : ℝ) := by
+  obtain ⟨flow, L, hL, H⟩ := exists_isTRqIDARun_slow hq
+  refine ⟨flow, L, hL, fun ε hε hεq P hPq hΔ₀ hϑ hh₀ => ?_⟩
+  obtain ⟨f, hb, hf, H⟩ := H ε hε hεq P hPq hΔ₀ hϑ hh₀
+  exact ⟨f, hb, assumptionD0qL_of_lipschitzDerivsAnchored hf hL, H⟩
+
+/-- **Theorem 14.2.4** of [cartis2022evaluation], sharpness of the TRqEDA-SC row: the order
+`ε^{-(q+1)}` is attained with the (simple) feasible set `X = ℝ¹` (`univ`) and exact function and
+derivative values. For `q ≥ 1` there are `f_low` and `L ≥ 1` such that, for every
+`ε ∈ (0, 1/q!]` (tolerances `ε_j = j! ε`) and all TRqEDA constants with `q`, `Δ₀ = ϑ = ε`,
+(13.3.5) `κ_s ≤ min(η₁, 1 - η₂)/4` and initial accuracies passing (13.1.9) along steps of
+length `ε` and the termination test (13.3.8) at radius `ε`
+(`∑_{i=1}^q h_{0,i} ε^i/i! ≤ ½ ς ε ε^q/q!`), there is `f` with f.bB and f.D0qL (all
+`L_{f,j} = L`) and a TRqEDA-SC run with exact derivatives and function values from `x₀ = 0`
+that first terminates at `k_ε = ⌈ε^{-(q+1)}⌉`, after `2 k_ε ≥ 2 ε^{-(q+1)}` function evaluations
+(each value recomputed) and `k_ε + 1 ≥ ε^{-(q+1)} + 1` derivative evaluations. The run is the
+slow example of Theorem 12.2.6 with `f` halved (`x_k = k ε e₁`, `Δ_k = ε`, `ρ_k = 1`, no
+accuracy-improving iteration), the halving making the test (13.3.7), whose threshold is half
+that of TRq, pass exactly at `k_ε`.
+This is `Optimization.exists_isTRqEDARun_slow`. -/
+theorem theorem_14_2_4_sharp_trqeda {q : ℕ} (hq : 1 ≤ q) :
+    ∃ flow L : ℝ, 1 ≤ L ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 / q ! → ∀ P : TRqIDAParams, P.q = q →
+      P.Δ₀ = ε → P.ϑ = ε → P.κs ≤ min P.η₁ (1 - P.η₂) / 4 →
+      (∀ i ∈ Finset.Icc 1 q, P.h₀ i ≤ P.κs * ε ^ (q - i + 1)) →
+      ∑ i ∈ Finset.Icc 1 q, P.h₀ i * ε ^ i / i ! ≤ P.ς * ε * ε ^ q / q ! / 2 →
+      ∃ f : EuclideanSpace ℝ (Fin 1) → ℝ, (∀ y, flow ≤ f y) ∧ AssumptionD0qL f q (fun _ => L) ∧
+        ∃ (x : ℕ → EuclideanSpace ℝ (Fin 1)) (Δ : ℕ → ℝ) (h : ℕ → ℕ → ℝ)
+          (D : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin 1)) ℝ)
+          (dd : ℕ → ℕ → EuclideanSpace ℝ (Fin 1)) (jk : ℕ → ℕ)
+          (s : ℕ → EuclideanSpace ℝ (Fin 1)) (acc : ℕ → Prop) (fx fxs h₀ : ℕ → ℝ)
+          (R : ℕ → Prop),
+          IsTRqEDARun f univ P (fun j => j ! * ε) 0 x Δ h D dd jk s acc fx fxs h₀
+            R ∧
+          (∀ k, D k = ftaylorSeries ℝ f (x k) ∧ fx k = f (x k) ∧ fxs k = f (x k + s k)) ∧
+          IsFirstHit (edaStopTR P (fun j => j ! * ε) D Δ h dd) ⌈(ε ^ (q + 1))⁻¹⌉₊ ∧
+          2 * (ε ^ (q + 1))⁻¹ ≤ (edaFunEvalCount acc R ⌈(ε ^ (q + 1))⁻¹⌉₊ : ℝ) ∧
+          (ε ^ (q + 1))⁻¹ + 1 ≤ (derivEvalCount (fun i => acc i ∨ (¬ acc i ∧
+            P.η₁ ≤ edaRatio fx fxs (fun i => (D i).taylorDecrement (jk i) (s i)) i))
+              ⌈(ε ^ (q + 1))⁻¹⌉₊ : ℝ) := by
+  obtain ⟨flow, L, hL, H⟩ := exists_isTRqEDARun_slow hq
+  refine ⟨flow, L, hL, fun ε hε hεq P hPq hΔ₀ hϑ hκs hh₀ hsum => ?_⟩
+  obtain ⟨f, hb, hf, H⟩ := H ε hε hεq P hPq hΔ₀ hϑ hκs hh₀ hsum
+  exact ⟨f, hb, assumptionD0qL_of_lipschitzDerivsAnchored hf hL, H⟩
+
+/-- **Theorem 14.2.4** of [cartis2022evaluation], sharpness of the ARqpIDA-SC row for `q ∈ {1, 2}`:
+the order `ε^{-(p+1)/(p-q+1)}` of the unit-radii mode is attained with the (simple) feasible set
+`X = ℝ¹` (`univ`) and exact derivatives (`κ_{∇,i} = 0`). For `1 ≤ q ≤ min(2, p)` there are
+`f_low`, `L ≥ 1` and `ε₀ > 0` such that, for every `ε ∈ (0, ε₀]` (all `ε_j = ε`) and all ARqpIDA
+constants with orders `p, q`, `σ₀ = p!/(q-1)!`, unit initial radii and initial accuracies
+`0 < h_{0,i} ≤ κ_s (ε/2)^{p-i+1}` (so that (13.1.46) passes along the steps), there is `f` with
+f.bB and f.D0pL (all `L_{f,j} = L`) and an ARqpIDA-SC run with exact derivatives from `x₀ = 0`
+satisfying the radii control in both modes (`Optimization.ARqpDARadiiControl u` for every `u`
+and every `L̄ ≥ 1`: unit radii after every short trial step), whose first iterate that is
+`(ε, δ)`-approximately optimal for some radii `δ ∈ (0, 1]^q` (`Optimization.arqpIDATest`) is
+`x_{k_ε}`, `k_ε = ⌈ε^{-(p+1)/(p-q+1)}⌉`, after `k_ε + 1 ≥ ε^{-(p+1)/(p-q+1)} + 1` function and
+derivative evaluations. The run follows the slow example of Theorem 12.2.15 (spike jets
+`f^{(q)}(x_k) = -(ε + ω_k)`, steps the global model minimizers, `σ_k = σ₀`, `ρ_k = 1`, no
+accuracy-improving iteration) up to `k_ε`, the Step-1 radius of order `q` being halved to the
+scale of the step (where (13.1.54) holds), and continues as any run from `x_{k_ε}`
+(`Optimization.exists_arqpDA_steps`). For `q = 1` and for `q = p = 2` the order is also
+the order `ε^{-q(p+1)/p}` of the lower-bound mode.
+This is `Optimization.exists_isARqpIDARun_slow`. -/
+theorem theorem_14_2_4_sharp_arqpida {p q : ℕ} (hq : 1 ≤ q) (hq2 : q ≤ 2) (hqp : q ≤ p) :
+    ∃ flow L ε₀ : ℝ, 1 ≤ L ∧ 0 < ε₀ ∧ ∀ ε : ℝ, 0 < ε → ε ≤ ε₀ → ∀ P : ARqpIDAParams,
+      P.p = p → P.q = q → P.σ₀ = (p ! : ℝ) / (q - 1)! → (∀ j ∈ Finset.Icc 1 q, P.δ₀ j = 1) →
+      (∀ i ∈ Finset.Icc 1 p, 0 < P.h₀ i ∧ P.h₀ i ≤ P.κs * (ε / 2) ^ (p - i + 1)) →
+      ∃ f : EuclideanSpace ℝ (Fin 1) → ℝ, (∀ y, flow ≤ f y) ∧ AssumptionD0pL f p (fun _ => L) ∧
+        ∃ (x : ℕ → EuclideanSpace ℝ (Fin 1)) (σ : ℕ → ℝ) (δ δ₁ δs : ℕ → ℕ → ℝ)
+          (h : ℕ → ℕ → ℝ) (D : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin 1)) ℝ)
+          (dd : ℕ → ℕ → EuclideanSpace ℝ (Fin 1)) (jk : ℕ → ℕ)
+          (s : ℕ → EuclideanSpace ℝ (Fin 1)) (acc : ℕ → Prop),
+          IsARqpIDARun f univ (fun _ => 0) P (fun _ => ε) 0 x σ δ δ₁ δs h D dd jk s
+            acc ∧
+          (∀ k, D k = ftaylorSeries ℝ f (x k)) ∧
+          (∀ (u : Prop) (Lb : ℝ), 1 ≤ Lb → ∀ k, ARqpDARadiiControl u P
+              (fun _ => ε) Lb σ δs s acc k) ∧
+          IsFirstHit (arqpIDATest f univ P (fun _ => ε) x)
+            ⌈ε ^ (-((p + 1 : ℝ) / ((p - q + 1 : ℕ) : ℝ)))⌉₊ ∧
+          ε ^ (-((p + 1 : ℝ) / ((p - q + 1 : ℕ) : ℝ))) + 1 ≤ (derivEvalCount (fun i => ¬ acc i)
+            ⌈ε ^ (-((p + 1 : ℝ) / ((p - q + 1 : ℕ) : ℝ)))⌉₊ : ℝ) ∧
+          ε ^ (-((p + 1 : ℝ) / ((p - q + 1 : ℕ) : ℝ))) + 1 ≤ (derivEvalCount
+            (fun i => acc i ∨ (¬ acc i ∧ P.η₁ ≤ arqpIDARatio f P D x s i))
+              ⌈ε ^ (-((p + 1 : ℝ) / ((p - q + 1 : ℕ) : ℝ)))⌉₊ : ℝ) := by
+  obtain ⟨flow, L, ε₀, hL, hε₀, H⟩ := exists_isARqpIDARun_slow hq hq2 hqp
+  refine ⟨flow, L, ε₀, hL, hε₀, fun ε hε hεε P hPp hPq hσ hδ₀ hh₀ => ?_⟩
+  obtain ⟨f, hb, hf, H⟩ := H ε hε hεε P hPp hPq hσ hδ₀ hh₀
+  exact ⟨f, hb, assumptionD0qL_of_lipschitzDerivsAnchored hf hL, H⟩
+
+/-- **Theorem 14.2.4** of [cartis2022evaluation], sharpness of the ARqpEDA-SC row for `q ∈ {1, 2}`:
+the order `ε^{-(p+1)/(p-q+1)}` of the unit-radii mode is attained with the (simple) feasible set
+`X = ℝ¹` (`univ`) and exact derivatives and function values. For `1 ≤ q ≤ min(2, p)` there are
+`f_low`, `L ≥ 1` and `ε₀ > 0` such that, for every `ε ∈ (0, ε₀]` (all `ε_j = ε`) and all ARqpEDA
+constants with orders `p, q`, `σ₀ = p!/(q-1)!`, unit initial radii, (13.3.13)
+`κ_s ≤ min(η₁, 1 - η₂)/4`, initial accuracies passing (13.1.46) along the steps
+(`h_{0,i} ≤ κ_s (ε/2)^{p-i+1}`) and the termination test (13.3.17) at unit radii
+(`∑_{i=1}^j h_{0,i}/i! ≤ ½ ς ε/j!`), there is `f` with f.bB and f.D0pL (all `L_{f,j} = L`) and
+an ARqpEDA-SC run with exact derivatives and function values from `x₀ = 0` satisfying the radii
+control in both modes (`Optimization.ARqpDARadiiControl u` for every `u` and every `L̄ ≥ 1`), which
+first terminates at `k_ε = ⌈ε^{-(p+1)/(p-q+1)}⌉`, after `2 k_ε ≥ 2 ε^{-(p+1)/(p-q+1)}` function
+evaluations (each value recomputed) and `k_ε + 1 ≥ ε^{-(p+1)/(p-q+1)} + 1` derivative
+evaluations. The run is the slow example of Theorem 12.2.15 with `f` halved (spike jets
+`f^{(q)}(x_k) = -(ε + ω_k)/2`, steps the global model minimizers, `σ_k = σ₀`, `ρ_k = 1`, no
+accuracy-improving iteration, the Step-1 radius of order `q` halved to the scale of the step), the
+halving making the test (13.1.53), whose threshold is half that of ARqp, pass exactly at
+`k_ε`. For `q = 1` and for `q = p = 2` the order is also the order `ε^{-q(p+1)/p}` of the
+lower-bound mode.
+This is `Optimization.exists_isARqpEDARun_slow`. -/
+theorem theorem_14_2_4_sharp_arqpeda {p q : ℕ} (hq : 1 ≤ q) (hq2 : q ≤ 2) (hqp : q ≤ p) :
+    ∃ flow L ε₀ : ℝ, 1 ≤ L ∧ 0 < ε₀ ∧ ∀ ε : ℝ, 0 < ε → ε ≤ ε₀ → ∀ P : ARqpIDAParams,
+      P.p = p → P.q = q → P.σ₀ = (p ! : ℝ) / (q - 1)! → (∀ j ∈ Finset.Icc 1 q, P.δ₀ j = 1) →
+      P.κs ≤ min P.η₁ (1 - P.η₂) / 4 →
+      (∀ i ∈ Finset.Icc 1 p, P.h₀ i ≤ P.κs * (ε / 2) ^ (p - i + 1)) →
+      (∀ j ∈ Finset.Icc 1 q, ∑ i ∈ Finset.Icc 1 j, P.h₀ i / i ! ≤ P.ς * ε / j ! / 2) →
+      ∃ f : EuclideanSpace ℝ (Fin 1) → ℝ, (∀ y, flow ≤ f y) ∧ AssumptionD0pL f p (fun _ => L) ∧
+        ∃ (x : ℕ → EuclideanSpace ℝ (Fin 1)) (σ : ℕ → ℝ) (δ δ₁ δs : ℕ → ℕ → ℝ)
+          (h : ℕ → ℕ → ℝ) (D : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin 1)) ℝ)
+          (dd : ℕ → ℕ → EuclideanSpace ℝ (Fin 1)) (jk : ℕ → ℕ)
+          (s : ℕ → EuclideanSpace ℝ (Fin 1)) (acc : ℕ → Prop) (fx fxs h₀ : ℕ → ℝ)
+          (R : ℕ → Prop),
+          IsARqpEDARun f univ P (fun _ => ε) 0 x σ δ δ₁ δs h D dd jk s acc fx fxs
+            h₀ R ∧
+          (∀ k, D k = ftaylorSeries ℝ f (x k) ∧ fx k = f (x k) ∧ fxs k = f (x k + s k)) ∧
+          (∀ (u : Prop) (Lb : ℝ), 1 ≤ Lb → ∀ k, ARqpDARadiiControl u P
+              (fun _ => ε) Lb σ δs s acc k) ∧
+          IsFirstHit (edaStopAR P (fun _ => ε) D δ₁ h dd)
+            ⌈ε ^ (-((p + 1 : ℝ) / ((p - q + 1 : ℕ) : ℝ)))⌉₊ ∧
+          2 * ε ^ (-((p + 1 : ℝ) / ((p - q + 1 : ℕ) : ℝ))) ≤ (edaFunEvalCount acc R
+            ⌈ε ^ (-((p + 1 : ℝ) / ((p - q + 1 : ℕ) : ℝ)))⌉₊ : ℝ) ∧
+          ε ^ (-((p + 1 : ℝ) / ((p - q + 1 : ℕ) : ℝ))) + 1 ≤ (derivEvalCount (fun i => acc i ∨
+            (¬ acc i ∧ P.η₁ ≤ edaRatio fx fxs (fun i => (D i).taylorDecrement P.p (s i)) i))
+              ⌈ε ^ (-((p + 1 : ℝ) / ((p - q + 1 : ℕ) : ℝ)))⌉₊ : ℝ) := by
+  obtain ⟨flow, L, ε₀, hL, hε₀, H⟩ := exists_isARqpEDARun_slow hq hq2 hqp
+  refine ⟨flow, L, ε₀, hL, hε₀, fun ε hε hεε P hPp hPq hσ hδ₀ hκs hh₀ hsum => ?_⟩
+  obtain ⟨f, hb, hf, H⟩ := H ε hε hεε P hPp hPq hσ hδ₀ hκs hh₀ hsum
+  exact ⟨f, hb, assumptionD0qL_of_lipschitzDerivsAnchored hf hL, H⟩
+
+/-- **Theorem 14.2.4** of [cartis2022evaluation], sharpness of the ARqpEDA-SC row in the
+lower-bound mode of the radii control (the "otherwise" order `ε^{-q(p+1)/p}`), for every
+`1 ≤ q ≤ p`, with the (simple) feasible set `X = ℝ¹` (`univ`) and exact derivatives and function
+values. There are `f_low`, `L ≥ 1` and `ε₀ > 0` such that, for every `ε ∈ (0, ε₀]` (all
+`ε_j = ε`) and all ARqpEDA constants with orders `p, q`, weight `σ₀ = (3/(p+2))^p/2`, initial
+radii `δ₀ = ε`, (13.3.13) `κ_s ≤ min(η₁, 1 - η₂)/4`, initial accuracies passing (13.1.46) along
+the steps (`h_{0,i} ≤ κ_s ε^{p-i+1}`) and the termination test (13.3.17) at radius `ε`
+(`∑_{i=1}^j h_{0,i} ε^i/i! ≤ ½ ς ε ε^j/j!`), there is `f` with f.bB and f.D0pL (all
+`L_{f,j} = L`) and an ARqpEDA-SC run with exact derivatives and function values from `x₀ = 0`
+satisfying the radii control in the lower-bound mode (`Optimization.ARqpDARadiiControl False` for
+every `L̄ ≥ 1`; all radii are `ε`), which first terminates at `k_ε = ⌈ε^{-q(p+1)/p}⌉`, after
+`2 k_ε ≥ 2 ε^{-q(p+1)/p}` function evaluations (each value recomputed) and
+`k_ε + 1 ≥ ε^{-q(p+1)/p} + 1` derivative evaluations. The run is the slow example of
+Theorem 12.2.17 (with `r = p`) with `f` halved and a smaller weight: gradient spikes
+`f'(x_k) = -β_k/2`, `β_k = (ε^q + ω_k)/q!`, steps the global model minimizers, `σ_k = σ₀`,
+`ρ_k = 1`, no accuracy-improving iteration, and Step-1 displacements achieving exactly the
+fraction `ς` of the measures; the weight is small enough for (13.1.54) to hold at these
+displacements (unlike with the weight (12.2.85) of Theorem 12.2.17) and for the measures of the
+model at its minimizer to vanish at radius `ε` (Example 12.1.3).
+This is `Optimization.exists_isARqpEDARun_slowGrad`. -/
+theorem theorem_14_2_4_sharp_arqpeda_otherwise {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p) :
+    ∃ flow L ε₀ : ℝ, 1 ≤ L ∧ 0 < ε₀ ∧ ∀ ε : ℝ, 0 < ε → ε ≤ ε₀ → ∀ P : ARqpIDAParams,
+      P.p = p → P.q = q → P.σ₀ = (3 / ((p : ℝ) + 2)) ^ p / 2 → (∀ j ∈ Finset.Icc 1 q, P.δ₀ j = ε) →
+      P.κs ≤ min P.η₁ (1 - P.η₂) / 4 →
+      (∀ i ∈ Finset.Icc 1 p, P.h₀ i ≤ P.κs * ε ^ (p - i + 1)) →
+      (∀ j ∈ Finset.Icc 1 q, ∑ i ∈ Finset.Icc 1 j, P.h₀ i * ε ^ i / i ! ≤
+        P.ς * ε * ε ^ j / j ! / 2) →
+      ∃ f : EuclideanSpace ℝ (Fin 1) → ℝ, (∀ y, flow ≤ f y) ∧ AssumptionD0pL f p (fun _ => L) ∧
+        ∃ (x : ℕ → EuclideanSpace ℝ (Fin 1)) (σ : ℕ → ℝ) (δ δ₁ δs : ℕ → ℕ → ℝ)
+          (h : ℕ → ℕ → ℝ) (D : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin 1)) ℝ)
+          (dd : ℕ → ℕ → EuclideanSpace ℝ (Fin 1)) (jk : ℕ → ℕ)
+          (s : ℕ → EuclideanSpace ℝ (Fin 1)) (acc : ℕ → Prop) (fx fxs h₀ : ℕ → ℝ)
+          (R : ℕ → Prop),
+          IsARqpEDARun f univ P (fun _ => ε) 0 x σ δ δ₁ δs h D dd jk s acc fx fxs
+            h₀ R ∧
+          (∀ k, D k = ftaylorSeries ℝ f (x k) ∧ fx k = f (x k) ∧ fxs k = f (x k + s k)) ∧
+          (∀ Lb : ℝ, 1 ≤ Lb → ∀ k, ARqpDARadiiControl False P (fun _ => ε) Lb σ δs s acc k) ∧
+          IsFirstHit (edaStopAR P (fun _ => ε) D δ₁ h dd)
+            ⌈ε ^ (-((q : ℝ) * (p + 1) / p))⌉₊ ∧
+          2 * ε ^ (-((q : ℝ) * (p + 1) / p)) ≤
+            (edaFunEvalCount acc R ⌈ε ^ (-((q : ℝ) * (p + 1) / p))⌉₊ : ℝ) ∧
+          ε ^ (-((q : ℝ) * (p + 1) / p)) + 1 ≤ (derivEvalCount (fun i => acc i ∨
+            (¬ acc i ∧ P.η₁ ≤ edaRatio fx fxs (fun i => (D i).taylorDecrement P.p (s i)) i))
+              ⌈ε ^ (-((q : ℝ) * (p + 1) / p))⌉₊ : ℝ) := by
+  obtain ⟨flow, L, ε₀, hL, hε₀, H⟩ := exists_isARqpEDARun_slowGrad hq hqp
+  refine ⟨flow, L, ε₀, hL, hε₀, fun ε hε hεε P hPp hPq hσ hδ₀ hκs hh₀ hsum => ?_⟩
+  obtain ⟨f, hb, hf, H⟩ := H ε hε hεε P hPp hPq hσ hδ₀ hκs hh₀ hsum
+  exact ⟨f, hb, assumptionD0qL_of_lipschitzDerivsAnchored hf hL, H⟩
+
+/-- **Theorem 14.2.4** of [cartis2022evaluation], sharpness of the ARqpIDA-SC row in the
+lower-bound mode of the radii control for `q = p ≥ 3` (the "otherwise" order `ε^{-q(p+1)/p}`,
+here `ε^{-(p+1)}`), with the (simple) feasible set `X = ℝ¹` (`univ`) and exact derivatives. There
+are `f_low`, `L ≥ 1` and `ε₀ > 0` such that, for every `ε ∈ (0, ε₀]` (all `ε_j = ε`) and all
+ARqpIDA constants with `q = p`, weight `σ₀ = p`, initial radii `δ₀ = ε` and initial accuracies
+`0 < h_{0,i} ≤ κ_s ε^{p-i+1}`, there is `f` with f.bB and f.D0pL (all `L_{f,j} = L`) and an
+ARqpIDA-SC run with exact derivatives from `x₀ = 0` satisfying the radii control in the lower-bound
+mode (`Optimization.ARqpDARadiiControl False`), whose first iterate that is `(ε, δ)`-approximately
+optimal for some radii `δ ∈ (0, 1]^q` (`Optimization.arqpIDATest`) is `x_{k_ε}`,
+`k_ε = ⌈ε^{-(p+1)}⌉`, after `k_ε + 1 ≥ ε^{-(p+1)} + 1` function and derivative evaluations. The
+run follows the slow example of Theorem 12.2.15 with `q = p` (pure `p`-th order spikes
+`f^{(p)}(x_k) = -(ε + ω_k)`, which fail the criterion at every radius; steps the global model
+minimizers `t*_k = ε + ω_k`, `σ_k = σ₀`, `ρ_k = 1`) with Step-2 radii `δ_{s_k} = ε/p`, at which the
+model measures at its minimizer vanish (`Optimization.taylorMeasure_topMonomialRegModel_eq_zero`),
+and continues after `k_ε` as any ARqpIDA iteration from the state at `k_ε`
+(`Optimization.exists_arqpDA_steps`).
+This is `Optimization.exists_isARqpIDARun_slowTop`. -/
+theorem theorem_14_2_4_sharp_arqpida_otherwise {p : ℕ} (hp : 3 ≤ p) :
+    ∃ flow L ε₀ : ℝ, 1 ≤ L ∧ 0 < ε₀ ∧ ∀ ε : ℝ, 0 < ε → ε ≤ ε₀ → ∀ P : ARqpIDAParams,
+      P.p = p → P.q = p → P.σ₀ = p → (∀ j ∈ Finset.Icc 1 p, P.δ₀ j = ε) →
+      (∀ i ∈ Finset.Icc 1 p, 0 < P.h₀ i ∧ P.h₀ i ≤ P.κs * ε ^ (p - i + 1)) →
+      ∃ f : EuclideanSpace ℝ (Fin 1) → ℝ, (∀ y, flow ≤ f y) ∧ AssumptionD0pL f p (fun _ => L) ∧
+        ∃ (x : ℕ → EuclideanSpace ℝ (Fin 1)) (σ : ℕ → ℝ) (δ δ₁ δs : ℕ → ℕ → ℝ)
+          (h : ℕ → ℕ → ℝ) (D : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin 1)) ℝ)
+          (dd : ℕ → ℕ → EuclideanSpace ℝ (Fin 1)) (jk : ℕ → ℕ)
+          (s : ℕ → EuclideanSpace ℝ (Fin 1)) (acc : ℕ → Prop),
+          IsARqpIDARun f univ (fun _ => 0) P (fun _ => ε) 0 x σ δ δ₁ δs h D dd jk s
+            acc ∧
+          (∀ k, D k = ftaylorSeries ℝ f (x k)) ∧
+          (∀ k, ARqpDARadiiControl False P (fun _ => ε)
+            (lipMax (fun _ => L) P.p + ordMax P.p (fun _ => 0) * P.κh) σ δs s acc k) ∧
+          IsFirstHit (arqpIDATest f univ P (fun _ => ε) x) ⌈(ε ^ (p + 1))⁻¹⌉₊ ∧
+          (ε ^ (p + 1))⁻¹ + 1 ≤ (derivEvalCount (fun i => ¬ acc i) ⌈(ε ^ (p + 1))⁻¹⌉₊ : ℝ) ∧
+          (ε ^ (p + 1))⁻¹ + 1 ≤ (derivEvalCount
+            (fun i => acc i ∨ (¬ acc i ∧ P.η₁ ≤ arqpIDARatio f P D x s i))
+              ⌈(ε ^ (p + 1))⁻¹⌉₊ : ℝ) := by
+  obtain ⟨flow, L, ε₀, hL, hε₀, H⟩ := exists_isARqpIDARun_slowTop hp
+  refine ⟨flow, L, ε₀, hL, hε₀, fun ε hε hεε P hPp hPq hσ hδ₀ hh₀ => ?_⟩
+  obtain ⟨f, hb, hf, H⟩ := H ε hε hεε P hPp hPq hσ hδ₀ hh₀
+  exact ⟨f, hb, assumptionD0qL_of_lipschitzDerivsAnchored hf hL, H⟩
+
+/-- **Theorem 14.2.4** of [cartis2022evaluation], sharpness of the ARqpIDA-SC row in the
+lower-bound mode of the radii control (the "otherwise" order `ε^{-q(p+1)/p}`) for every
+`1 ≤ q ≤ p`, with a closed nonconvex feasible set in `ℝ²` and exact derivatives. There are
+`f_low`, `L ≥ 1` and `ε₀ > 0` such that, for every `ε ∈ (0, ε₀]` (all `ε_j = ε`) and all ARqpIDA
+constants with orders `p, q`, weight `σ₀ = (3/(p+2))^p`, initial radii `δ₀ = ε` and initial
+accuracies `h_{0,i} ≤ κ_s ε^{p-i+1}`, there are `ρ ∈ (ε, 2ε]`, the feasible set
+`X = {v | v 1 = 0} ∪ {v | ρ ≤ v 1}` (`v 1` is the second coordinate; a line and a parallel
+half-plane at distance `ρ`), `f` with f.bB and f.D0pL (all `L_{f,j} = L`) and an ARqpIDA-SC run
+on `X` with exact derivatives from `x₀ = 0` satisfying the radii control in the lower-bound mode
+(`Optimization.ARqpDARadiiControl False` for every `L̄ ≥ 1`; all radii are `ε`), whose first
+iterate that is `(ε, δ)`-approximately optimal on `X` for some radii `δ ∈ (0, 1]^q`
+(`Optimization.arqpIDATest`) is `x_{k_ε}`, `k_ε = ⌈ε^{-q(p+1)/p}⌉`, after
+`k_ε + 1 ≥ ε^{-q(p+1)/p} + 1` function and derivative evaluations.
+
+The run follows the slow example of Theorem 12.2.17 (`r = p`) on the line `v 1 = 0`:
+`f(v) = G(v 0) + H(v 1)` with gradient spikes `G'(x_k) = -β_k`,
+`β_k = (ε^q + ε^q (k_ε - k)/k_ε)/q!`, steps the minimizers of the model on the line (admissible
+Step-2 steps, since (13.1.55)–(13.1.57) are local conditions, but not global minimizers of the
+model on `X`, which are in the half-plane), `σ_k = σ₀`, `ρ_k = 1`, and `H'(0) = -1`, so that the
+half-plane lowers the Taylor models by at least `ρ > ε`. Radii `δ < ρ` only see the line, where
+the measure of order `q` is `β_k δ`; with `ρ^n = ε^n (1 + 1/k_ε)`, `n = max(q - 1, 1)`, this
+exceeds `ε δ^q/q!` for every `δ < ρ` exactly when `k < k_ε`, and radii `δ ≥ ρ` reach the
+half-plane. So the criterion fails at every radius before `k_ε`, while the Step-1 and Step-2 radii
+`ε < ρ` only see the line, where the model measures at the steps vanish (Example 12.1.3). After
+`k_ε` one more step reaches a point where all derivatives of `G` vanish, and the run continues with
+accuracy-improving iterations there. For `q = 1` this is the "otherwise" entry with a nonconvex
+`X` (its order `ε^{-(p+1)/p}` coincides with that of the convex entry). The cases `q = 2 < p`
+(with `X ≠ ℝⁿ`) and `3 ≤ q < p` are not reached by the book's reduction to unconstrained
+problems: on `ℝⁿ` the order is not attained for `q = 2 < p` (`theorem_14_2_4_arqpida_le_two`), and
+for `3 ≤ q < p` the case `X = ℝⁿ` is open (see the module doc).
+This is `Optimization.exists_isARqpIDARun_slit`. -/
+theorem theorem_14_2_4_sharp_arqpida_otherwise_constrained {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p) :
+    ∃ flow L ε₀ : ℝ, 1 ≤ L ∧ 0 < ε₀ ∧ ∀ ε : ℝ, 0 < ε → ε ≤ ε₀ → ∀ P : ARqpIDAParams,
+      P.p = p → P.q = q → P.σ₀ = (3 / ((p : ℝ) + 2)) ^ p → (∀ j ∈ Finset.Icc 1 q, P.δ₀ j = ε) →
+      (∀ i ∈ Finset.Icc 1 p, P.h₀ i ≤ P.κs * ε ^ (p - i + 1)) →
+      ∃ (ρ : ℝ) (X : Set (EuclideanSpace ℝ (Fin 2))) (f : EuclideanSpace ℝ (Fin 2) → ℝ),
+        ε < ρ ∧ ρ ≤ 2 * ε ∧ X = {v | v 1 = 0} ∪ {v | ρ ≤ v 1} ∧ IsClosed X ∧
+        (∀ y, flow ≤ f y) ∧ AssumptionD0pL f p (fun _ => L) ∧
+        ∃ (x : ℕ → EuclideanSpace ℝ (Fin 2)) (σ : ℕ → ℝ) (δ δ₁ δs : ℕ → ℕ → ℝ)
+          (h : ℕ → ℕ → ℝ) (D : ℕ → FormalMultilinearSeries ℝ (EuclideanSpace ℝ (Fin 2)) ℝ)
+          (dd : ℕ → ℕ → EuclideanSpace ℝ (Fin 2)) (jk : ℕ → ℕ)
+          (s : ℕ → EuclideanSpace ℝ (Fin 2)) (acc : ℕ → Prop),
+          IsARqpIDARun f X (fun _ => 0) P (fun _ => ε) 0 x σ δ δ₁ δs h D dd jk s
+            acc ∧
+          (∀ k, D k = ftaylorSeries ℝ f (x k)) ∧
+          (∀ Lb : ℝ, 1 ≤ Lb → ∀ k, ARqpDARadiiControl False P (fun _ => ε) Lb σ δs s acc k) ∧
+          IsFirstHit (arqpIDATest f X P (fun _ => ε) x)
+            ⌈ε ^ (-((q : ℝ) * (p + 1) / p))⌉₊ ∧
+          ε ^ (-((q : ℝ) * (p + 1) / p)) + 1 ≤
+            (derivEvalCount (fun i => ¬ acc i) ⌈ε ^ (-((q : ℝ) * (p + 1) / p))⌉₊ : ℝ) ∧
+          ε ^ (-((q : ℝ) * (p + 1) / p)) + 1 ≤ (derivEvalCount
+            (fun i => acc i ∨ (¬ acc i ∧ P.η₁ ≤ arqpIDARatio f P D x s i))
+              ⌈ε ^ (-((q : ℝ) * (p + 1) / p))⌉₊ : ℝ) := by
+  obtain ⟨flow, L, ε₀, hL, hε₀, H⟩ := exists_isARqpIDARun_slit hq hqp
+  refine ⟨flow, L, ε₀, hL, hε₀, fun ε hε hεε P hPp hPq hσ hδ₀ hh₀ => ?_⟩
+  obtain ⟨ρ, X, f, hρ, hρ2, hX, hXc, hb, hf, H⟩ := H ε hε hεε P hPp hPq hσ hδ₀ hh₀
+  exact ⟨ρ, X, f, hρ, hρ2, hX, hXc, hb, assumptionD0qL_of_lipschitzDerivsAnchored hf hL, H⟩
+
+end Sharp
+
 section TRqPrintedFalse
 
 open scoped ContDiff
+open Optimization
 
 set_option hygiene false in
 local notation "ℝ²" => EuclideanSpace ℝ (Fin 2)
 
+/-! ### Coordinates of `ℝ²` and the half square, as used in §14.3 -/
+
 /-- `‖s‖² = s₁² + s₂²` on `ℝ²`. -/
-theorem trqLog_norm_sq (s : ℝ²) : ‖s‖ ^ 2 = (s 0) ^ 2 + (s 1) ^ 2 := by
-  rw [EuclideanSpace.norm_sq_eq, Fin.sum_univ_two]
-  simp [sq_abs]
+theorem trqLog_norm_sq (s : ℝ²) : ‖s‖ ^ 2 = (s 0) ^ 2 + (s 1) ^ 2 :=
+  EuclideanSpace.norm_sq_eq_fin_two s
 
 /-- The coordinates are continuous. -/
 theorem trqLog_continuous_coord (i : Fin 2) : Continuous (fun v : ℝ² => v i) :=
   (EuclideanSpace.proj i : ℝ² →L[ℝ] ℝ).continuous
 
-/-! ### The TRq-SC row `j + 1` of (14.2.12) fails per iteration with uniform constants (`q = 2`) -/
-
-section Decrease
-
-/-- `t ↦ t²/2`. -/
+/-- `t ↦ t²/2` (`Optimization.halfSq`). -/
 noncomputable def trqSadSq : ℝ → ℝ := fun t => t ^ 2 / 2
 
 /-- `(t²/2)' = t`. -/
-theorem iteratedDeriv_trqSadSq_one (t : ℝ) : iteratedDeriv 1 trqSadSq t = t := by
-  rw [iteratedDeriv_one]
-  unfold trqSadSq
-  have := ((hasDerivAt_pow 2 t).div_const 2)
-  rw [this.deriv]; ring
-
-/-- `(t²/2)' = t`. -/
-theorem deriv_trqSadSq : deriv trqSadSq = fun t => t := by
-  funext t
-  unfold trqSadSq
-  have := ((hasDerivAt_pow 2 t).div_const 2)
-  rw [this.deriv]; ring
+theorem iteratedDeriv_trqSadSq_one (t : ℝ) : iteratedDeriv 1 trqSadSq t = t :=
+  iteratedDeriv_halfSq_one t
 
 /-- `(t²/2)'' = 1`. -/
-theorem iteratedDeriv_trqSadSq_two (t : ℝ) : iteratedDeriv 2 trqSadSq t = 1 := by
-  rw [iteratedDeriv_succ, iteratedDeriv_one, deriv_trqSadSq, deriv_id'']
-
-/-- `(t²/2)''' = 0`. -/
-theorem iteratedDeriv_trqSadSq_three (t : ℝ) : iteratedDeriv 3 trqSadSq t = 0 := by
-  rw [iteratedDeriv_succ, iteratedDeriv_succ, iteratedDeriv_one, deriv_trqSadSq, deriv_id'']
-  simp
+theorem iteratedDeriv_trqSadSq_two (t : ℝ) : iteratedDeriv 2 trqSadSq t = 1 :=
+  iteratedDeriv_halfSq_two t
 
 /-- `t ↦ t²/2` is smooth. -/
-theorem contDiff_trqSadSq : ContDiff ℝ ∞ trqSadSq := by
-  unfold trqSadSq; fun_prop
-
-/-- `‖∇ⁿ (w ↦ w_i²/2)(v)‖ ≤ |(t²/2)^{(n)}(v_i)|`. -/
-theorem norm_iteratedFDeriv_trqSadSq_comp (i : Fin 2) (n : ℕ) (v : ℝ²) :
-    ‖iteratedFDeriv ℝ n (fun w : ℝ² => trqSadSq (w i)) v‖ ≤ |iteratedDeriv n trqSadSq (v i)| :=
-  ContDiffAt.norm_iteratedFDeriv_comp_coord_le i
-    (contDiff_trqSadSq.contDiffAt.of_le (by exact_mod_cast le_top))
-
+theorem contDiff_trqSadSq : ContDiff ℝ ∞ trqSadSq := contDiff_halfSq
 
 /-- `w ↦ w_i²/2` is smooth. -/
 theorem trqSad_contDiff_coordSq (i : Fin 2) : ContDiff ℝ ∞ (fun w : ℝ² => trqSadSq (w i)) :=
-  contDiff_trqSadSq.comp (EuclideanSpace.proj i : ℝ² →L[ℝ] ℝ).contDiff
+  contDiff_halfSq_comp_apply i
 
-/-- The objective `f_a(x) = x_1²/2 - a x_2²/2` of the example
-(`x_1 = v 0`, `x_2 = v 1`). -/
-noncomputable def trqSadF (a : ℝ) : ℝ² → ℝ := fun v => trqSadSq (v 0) - a * trqSadSq (v 1)
+/-! ### The TRq-SC row `j + 1` of (14.2.12) fails per iteration with uniform constants (`q = 2`)
 
-/-- `f_a` as a difference of coordinate squares. -/
-theorem trqSadF_eq (a : ℝ) :
-    trqSadF a = (fun w : ℝ² => trqSadSq (w 0)) - a • (fun w : ℝ² => trqSadSq (w 1)) := by
-  funext v; simp [trqSadF]
+The example is the backbone `Numlib.Optimization.Complexity.SlowExample.TRqSaddle`. -/
 
-/-- `f_a` is smooth. -/
-theorem contDiff_trqSadF (a : ℝ) : ContDiff ℝ ∞ (trqSadF a) := by
-  rw [trqSadF_eq]; exact (trqSad_contDiff_coordSq 0).sub ((trqSad_contDiff_coordSq 1).const_smul a)
+/-- The objective `f_a(x) = x_1²/2 - a x_2²/2` of the example (`Optimization.saddleQuad`). -/
+noncomputable abbrev trqSadF (a : ℝ) : ℝ² → ℝ := saddleQuad a
 
-/-- `f_a` is `C^n` everywhere. -/
-theorem contDiffAt_trqSadF (a : ℝ) (n : ℕ) (y : ℝ²) : ContDiffAt ℝ n (trqSadF a) y :=
-  ((contDiff_trqSadF a).of_le (by exact_mod_cast le_top : (n : ℕ∞ω) ≤ ∞)).contDiffAt
+/-- The box `X = [-1, 1]²` of the example (`Optimization.saddleBox`). -/
+abbrev trqSadX : Set ℝ² := saddleBox
 
-/-- `‖∇ⁿ f_a(v)‖ ≤ |(t²/2)^{(n)}(v_1)| + a |(t²/2)^{(n)}(v_2)|` for `a ≥ 0`. -/
-theorem norm_iteratedFDeriv_trqSadF_le {a : ℝ} (ha : 0 ≤ a) (n : ℕ) (v : ℝ²) :
-    ‖iteratedFDeriv ℝ n (trqSadF a) v‖ ≤
-      |iteratedDeriv n trqSadSq (v 0)| + a * |iteratedDeriv n trqSadSq (v 1)| := by
-  have h0 := ((trqSad_contDiff_coordSq 0).of_le (by exact_mod_cast le_top : (n : ℕ∞ω) ≤
-      ∞)).contDiffAt
-    (x := v)
-  have h1 := ((trqSad_contDiff_coordSq 1).of_le (by exact_mod_cast le_top : (n : ℕ∞ω) ≤
-      ∞)).contDiffAt
-    (x := v)
-  have h1' : ContDiffAt ℝ n (a • fun w : ℝ² => trqSadSq (w 1)) v := h1.const_smul a
-  rw [trqSadF_eq, iteratedFDeriv_sub_apply h0 h1', iteratedFDeriv_const_smul_apply h1]
-  refine (norm_sub_le _ _).trans (add_le_add (norm_iteratedFDeriv_trqSadSq_comp 0 n v) ?_)
-  rw [norm_smul, Real.norm_of_nonneg ha]
-  exact mul_le_mul_of_nonneg_left (norm_iteratedFDeriv_trqSadSq_comp 1 n v) ha
-
-/-- `∇² f_a` is constant (`0`-Lipschitz) for `a ≥ 0`. -/
-theorem iteratedFDerivLipschitzOn_trqSadF_two {a : ℝ} (ha : 0 ≤ a) (C : Set ℝ²)
-    (hC : Convex ℝ C) : IteratedFDerivLipschitzOn (trqSadF a) 2 0 C :=
-  iteratedFDerivLipschitzOn_of_norm_le hC
-    (fun y _ => contDiffAt_trqSadF a _ y)
-    fun x _ => (norm_iteratedFDeriv_trqSadF_le ha 3 x).trans (by
-      rw [iteratedDeriv_trqSadSq_three, iteratedDeriv_trqSadSq_three]; simp)
-
-/-- `f_a` is quadratic: `ΔT_2(x, s) = f_a(x) - f_a(x + s)`. -/
-theorem taylorDecrement_two_trqSadF {a : ℝ} (ha : 0 ≤ a) (x s : ℝ²) :
-    (ftaylorSeries ℝ (trqSadF a) x).taylorDecrement 2 s = trqSadF a x - trqSadF a (x + s) := by
-  rw [ftaylorSeries_taylorDecrement_eq]
-  have := norm_sub_taylorPolynomial_le_of_lipschitz convex_univ
-    (fun y _ => contDiffAt_trqSadF a _ y)
-    (iteratedFDerivLipschitzOn_trqSadF_two ha univ convex_univ) (mem_univ x) (mem_univ (x + s))
-  simp only [zero_div, zero_mul] at this
-  have h := norm_le_zero_iff.1 this
-  rw [sub_eq_zero] at h
-  rw [h]
-
-/-- The derivative of `f_a`: `s ↦ x_1 s_1 - a x_2 s_2`. -/
-theorem hasFDerivAt_trqSadF (a : ℝ) (v : ℝ²) :
-    HasFDerivAt (trqSadF a)
-      ((v 0) • (EuclideanSpace.proj 0 : ℝ² →L[ℝ] ℝ) - (a * v 1) • EuclideanSpace.proj 1) v := by
-  have h1 : HasFDerivAt (fun w : ℝ² => w 1) (EuclideanSpace.proj 1 : ℝ² →L[ℝ] ℝ) v :=
-    (EuclideanSpace.proj 1 : ℝ² →L[ℝ] ℝ).hasFDerivAt
-  have h0 : HasFDerivAt (fun w : ℝ² => w 0) (EuclideanSpace.proj 0 : ℝ² →L[ℝ] ℝ) v :=
-    (EuclideanSpace.proj 0 : ℝ² →L[ℝ] ℝ).hasFDerivAt
-  have := ((h0.pow 2).mul_const (1 / 2 : ℝ)).sub (((h1.pow 2).mul_const (1 / 2 : ℝ)).const_mul a)
-  convert this using 1
-  · funext w; simp only [trqSadF, trqSadSq, Pi.sub_apply]; ring
-  · ext s; simp; ring
-
-/-- `ΔT_1(x, s) = -(x_1 s_1 - a x_2 s_2)`. -/
-theorem taylorDecrement_one_trqSadF (a : ℝ) (x s : ℝ²) :
-    (ftaylorSeries ℝ (trqSadF a) x).taylorDecrement 1 s = -(x 0 * s 0 - a * x 1 * s 1) := by
-  rw [FormalMultilinearSeries.taylorDecrement_one_apply]
-  change -(iteratedFDeriv ℝ 1 _ x (fun _ => s)) = _
-  rw [iteratedFDeriv_one_apply, (hasFDerivAt_trqSadF a x).fderiv]
-  simp
-
-
-/-- The box `[-1, 1]²`. -/
-def trqSadX : Set ℝ² := {v | -1 ≤ v 0 ∧ v 0 ≤ 1 ∧ -1 ≤ v 1 ∧ v 1 ≤ 1}
-
-/-- Membership in the box. -/
-theorem trqSadX_mem {v : ℝ²} : v ∈ trqSadX ↔ -1 ≤ v 0 ∧ v 0 ≤ 1 ∧ -1 ≤ v 1 ∧ v 1 ≤ 1 := Iff.rfl
-
-/-- The box is closed. -/
-theorem isClosed_trqSadX : IsClosed trqSadX := by
-  have hc : ∀ a : ℝ, Continuous fun _ : ℝ² => a := fun a => continuous_const
-  have h := ((isClosed_le (hc (-1)) (trqLog_continuous_coord 0)).inter
-    (isClosed_le (trqLog_continuous_coord 0) (hc 1))).inter
-    ((isClosed_le (hc (-1)) (trqLog_continuous_coord 1)).inter
-    (isClosed_le (trqLog_continuous_coord 1) (hc 1)))
-  convert h using 1
-  ext v
-  simp only [trqSadX, Set.mem_ofPred_eq, Set.mem_inter_iff]
-  tauto
-
-/-- The box lies in the ball of radius `2`. -/
-theorem trqSadX_subset_ball : trqSadX ⊆ ball (0 : ℝ²) 2 := by
-  intro v hv
-  obtain ⟨h0, h2, h3, h4⟩ := hv
-  rw [mem_ball_zero_iff]
-  have hs := trqLog_norm_sq v
-  have : ‖v‖ ^ 2 < 2 ^ 2 := by nlinarith
-  exact lt_of_pow_lt_pow_left₀ 2 (by norm_num) this
+/-- The trust-region parameters of the example (`Optimization.saddleTRqParams`): `Δ₀ = Δ_max = 1`,
+`η₁ = 1/4`, `η₂ = 3/4`, `γ₁ = 1/4`, `γ₂ = 1/2`, `γ₃ = 2`, `ς = 1/2`. -/
+noncomputable abbrev trqSadP : Optimization.TRqParams := saddleTRqParams
 
 /-- f.D1qLaB.X (`q = 2`) for `f_a` with `a ∈ [0, 1]`, on `X₀` the ball of radius `2`, with the
 constants `L_j = B_j = 4` independent of `a` and of the anchor. -/
 theorem trqSadF_assumption {a : ℝ} (ha0 : 0 ≤ a) (ha1 : a ≤ 1) (x₀ : ℝ²) :
-    AssumptionD1qLaBX (trqSadF a) trqSadX (ball 0 2) x₀ 1 2 (fun _ => 4) (fun _ => 4) := by
-  have hd : ∀ n, ∀ v, ‖iteratedFDeriv ℝ n (trqSadF a) v‖ ≤
-      |iteratedDeriv n trqSadSq (v 0)| + a * |iteratedDeriv n trqSadSq (v 1)| :=
-    fun n v => norm_iteratedFDeriv_trqSadF_le ha0 n v
-  refine AssumptionD1qLaBX.of_lipschitzOn isOpen_ball (convex_ball 0 2) trqSadX_subset_ball
-    (fun y _ => (contDiffAt_trqSadF a 2 y).contDiffWithinAt)
+    AssumptionD1qLaBX (trqSadF a) trqSadX (ball 0 2) x₀ 1 2 (fun _ => 4) (fun _ => 4) :=
+  AssumptionD1qLaBX.of_lipschitzOn isOpen_ball (convex_ball 0 2) saddleBox_subset_ball
+    (fun y _ => (contDiffAt_saddleQuad a 2 y).contDiffWithinAt)
     (fun _ _ => by norm_num) (fun _ _ => by norm_num)
-    (fun j hj => ?_) (fun j hj x hx => ?_)
-  · have hj' : j = 1 ∨ j = 2 := by have := Finset.mem_Icc.1 hj; omega
-    refine iteratedFDerivLipschitzOn_of_norm_le (convex_ball 0 2)
-      (fun y _ => contDiffAt_trqSadF a _ y) fun x _ => (hd _ x).trans ?_
-    rcases hj' with rfl | rfl
-    · rw [iteratedDeriv_trqSadSq_two, iteratedDeriv_trqSadSq_two]; norm_num; linarith
-    · rw [iteratedDeriv_trqSadSq_three, iteratedDeriv_trqSadSq_three]; norm_num
-  · have hj' : j = 1 ∨ j = 2 := by have := Finset.mem_Icc.1 hj; omega
-    refine (hd _ x).trans ?_
-    rcases hj' with rfl | rfl
-    · rw [iteratedDeriv_trqSadSq_one, iteratedDeriv_trqSadSq_one]
-      have hx' : ‖x‖ < 2 := mem_ball_zero_iff.1 hx
-      have h0 := (EuclideanSpace.abs_apply_le_norm x 0).trans hx'.le
-      have h1 := (EuclideanSpace.abs_apply_le_norm x 1).trans hx'.le
-      nlinarith [abs_nonneg (x 1)]
-    · rw [iteratedDeriv_trqSadSq_two, iteratedDeriv_trqSadSq_two]; norm_num; linarith
+    (fun _ hj => iteratedFDerivLipschitzOn_saddleQuad ha0 ha1 hj)
+    (fun _ hj _ hx => norm_iteratedFDeriv_saddleQuad_le_four ha0 ha1 hj hx)
 
-
-/-- The trust-region parameters of the example: `Δ₀ = Δ_max = 1`, `η₁ = 1/4`, `η₂ = 3/4`,
-`γ₁ = 1/4`, `γ₂ = 1/2`, `γ₃ = 2`, `ς = 1/2`. -/
-noncomputable def trqSadP : Optimization.TRqParams where
-  Δ₀ := 1
-  η₁ := 1 / 4
-  η₂ := 3 / 4
-  γ₁ := 1 / 4
-  γ₂ := 1 / 2
-  γ₃ := 2
-  Δ₀_pos := one_pos
-  η₁_pos := by norm_num
-  η₁_le_η₂ := by norm_num
-  η₂_lt_one := by norm_num
-  γ₁_pos := by norm_num
-  γ₁_le_γ₂ := by norm_num
-  γ₂_lt_one := by norm_num
-  one_le_γ₃ := by norm_num
-  Δmax := 1
-  ς := 1 / 2
-  Δ₀_le_Δmax := le_rfl
-  ς_pos := by norm_num
-  ς_le_one := by norm_num
-
-/-- The unit vector `e_i` of `ℝ²`. -/
-noncomputable def trqSadE (i : Fin 2) : ℝ² := EuclideanSpace.single i 1
-
-@[simp] theorem trqSadE_apply (i j : Fin 2) : trqSadE i j = if j = i then 1 else 0 := by
-  simp [trqSadE, PiLp.single_apply]
-
-/-- `‖c e_i‖ = |c|`. -/
-theorem norm_smul_trqSadE (c : ℝ) (i : Fin 2) : ‖c • trqSadE i‖ = |c| := by
-  rw [norm_smul]; simp [trqSadE]
-
-/-- Unfolding `f_a`. -/
-theorem trqSadF_apply (a : ℝ) (v : ℝ²) : trqSadF a v = (v 0) ^ 2 / 2 - a * ((v 1) ^ 2 / 2) := rfl
-
-/-- At `p = b e_0`, `ΔT_1(d) = -b d_0`. -/
-theorem trqSad_ΔT1_p (a b : ℝ) (d : ℝ²) :
-    (ftaylorSeries ℝ (trqSadF a) (b • trqSadE 0)).taylorDecrement 1 d = -(b * d 0) := by
-  rw [taylorDecrement_one_trqSadF]; simp
-
-/-- At `0`, `ΔT_1 = 0`. -/
-theorem trqSad_ΔT1_zero (a : ℝ) (d : ℝ²) :
-    (ftaylorSeries ℝ (trqSadF a) 0).taylorDecrement 1 d = 0 := by
-  rw [taylorDecrement_one_trqSadF]; simp
-
-/-- At `0`, `ΔT_2(d) = -d_0²/2 + a d_1²/2`. -/
-theorem trqSad_ΔT2_zero {a : ℝ} (ha : 0 ≤ a) (d : ℝ²) :
-    (ftaylorSeries ℝ (trqSadF a) 0).taylorDecrement 2 d = -((d 0) ^ 2 / 2) + a * ((d 1) ^ 2 / 2)
-        := by
-  rw [taylorDecrement_two_trqSadF ha, zero_add, trqSadF_apply, trqSadF_apply]; simp; ring
-
-
-section Prefix
-
-variable {a b Δ : ℝ} {ε : ℕ → ℝ}
-
-/-- `b e_1 ∈ X` for `b ∈ [0, 1]` (`e_1 = trqSadE 0`, the first unit vector). -/
-theorem trqSad_smul_e0_mem {b : ℝ} (hb0 : 0 ≤ b) (hb1 : b ≤ 1) : b • trqSadE 0 ∈ trqSadX := by
-  simp only [trqSadX_mem, PiLp.smul_apply, trqSadE_apply]
-  norm_num
-  exact ⟨by linarith, hb1⟩
-
-/-- `b e_1 - Δ e_1 ∈ X` for `b, Δ ∈ [0, 1]`. -/
-theorem trqSadE0_mem {b Δ : ℝ} (hb0 : 0 ≤ b) (hb1 : b ≤ 1) (hΔ0 : 0 ≤ Δ) (hΔ1 : Δ ≤ 1) :
-    (-Δ) • trqSadE 0 ∈ {e | b • trqSadE 0 + e ∈ trqSadX} := by
-  simp only [Set.mem_ofPred_eq, trqSadX_mem, PiLp.add_apply, PiLp.smul_apply, trqSadE_apply]
-  norm_num
-  refine ⟨by linarith, by linarith⟩
-
-/-- The first-order Step 1 at `p = b e_0` with radius `Δ ≤ 1`: the displacement `-Δ e_0`
-achieves the first-order measure `b Δ`. -/
-theorem trqSad_witness_p (hb0 : 0 ≤ b) (hb1 : b ≤ 1) (hΔ0 : 0 ≤ Δ) (hΔ1 : Δ ≤ 1) :
-    Optimization.IsApproxMeasureStep ((ftaylorSeries ℝ (trqSadF a) (b • trqSadE
-        0)).taylorDecrement 1)
-      (min Δ 1) {e | b • trqSadE 0 + e ∈ trqSadX} trqSadP.ς ((-Δ) • trqSadE 0) := by
-  rw [min_eq_left hΔ1]
-  refine ⟨⟨mem_closedBall_zero_iff.2 (by rw [norm_smul_trqSadE, abs_neg, abs_of_nonneg hΔ0]),
-    trqSadE0_mem hb0 hb1 hΔ0 hΔ1⟩, ?_⟩
-  have hm : Optimization.decrementMeasure
-      ((ftaylorSeries ℝ (trqSadF a) (b • trqSadE 0)).taylorDecrement 1) Δ
-      {e | b • trqSadE 0 + e ∈ trqSadX} ≤ b * Δ := by
-    refine Optimization.decrementMeasure_le ⟨0, mem_closedBall_self hΔ0, by
-      change b • trqSadE 0 + 0 ∈ trqSadX
-      rw [add_zero]; exact trqSad_smul_e0_mem hb0 hb1⟩ fun d hd => ?_
-    rw [trqSad_ΔT1_p]
-    have h1 := EuclideanSpace.abs_apply_le_norm d 0
-    have h2 := mem_closedBall_zero_iff.1 hd.1
-    have h3 := mul_le_mul_of_nonneg_left (neg_le_abs (d 0)) hb0
-    have h4 := mul_le_mul_of_nonneg_left (h1.trans h2) hb0
-    linarith
-  rw [trqSad_ΔT1_p]
-  simp only [PiLp.smul_apply, trqSadE_apply, ↓reduceIte, smul_eq_mul, mul_one]
-  have hς : trqSadP.ς = 1 / 2 := rfl
-  rw [hς]
-  linarith [mul_nonneg hb0 hΔ0]
-
-
-/-- The first-order step at `p = b e_0` with radius `Δ ≤ 1` (`ε_1 = b`): order `1` fails, the
-step is the Step-1 displacement `-Δ e_0`. -/
-theorem trqSad_step_p (hb : 0 < b) (hb1 : b ≤ 1) (hΔ0 : 0 < Δ) (hΔ1 : Δ ≤ 1) (hε1 : ε 1 = b)
-    (W : ℕ → ℝ²) :
-    Optimization.IsTRqStep (ftaylorSeries ℝ (trqSadF a) (b • trqSadE 0)) {e | b • trqSadE 0 + e ∈
-        trqSadX}
-      trqSadP.ς 2 ε (min Δ 1) Δ (fun j => if j = 1 then (-Δ) • trqSadE 0 else W j) 1
-      ((-Δ) • trqSadE 0) where
-  order_mem := by simp
-  lt_taylorDecrement := by
-    simp only [↓reduceIte, trqSad_ΔT1_p, PiLp.smul_apply, trqSadE_apply, smul_eq_mul, mul_one,
-      min_eq_left hΔ1, pow_one, Nat.factorial_one, Nat.cast_one, div_one, hε1]
-    have hς : trqSadP.ς = 1 / 2 := rfl
-    rw [hς]; nlinarith [mul_pos hb hΔ0]
-  taylorDecrement_le_of_lt := fun i hi hlt => absurd hlt (by have := (Finset.mem_Icc.1 hi).1; omega)
-  mem := ⟨mem_closedBall_zero_iff.2 (by rw [norm_smul_trqSadE, abs_neg, abs_of_pos hΔ0]),
-    trqSadE0_mem hb.le hb1 hΔ0.le hΔ1⟩
-  taylorDecrement_le := le_of_eq (by simp)
-
-/-- `f_a(b e_1) = b²/2`. -/
-theorem trqSadF_p (a b : ℝ) : trqSadF a (b • trqSadE 0) = b ^ 2 / 2 := by
-  rw [trqSadF_apply]; simp
-
-/-- `f_a(b e_1 - Δ e_1) = (b - Δ)²/2`. -/
-theorem trqSadF_p_step (a b Δ : ℝ) : trqSadF a (b • trqSadE 0 + (-Δ) • trqSadE 0) = (b - Δ) ^ 2 /
-    2 := by
-  rw [trqSadF_apply]; simp; ring
-
-/-- An unsuccessful first-order iteration at `p` with radius `Δ ≥ 4b`: the ratio is
-`1 - Δ/(2b) ≤ -1`, the iterate stays and the radius is divided by `4`. -/
-theorem trqSad_accept_p_unsucc (hb : 0 < b) (h4 : 4 * b ≤ Δ) :
-    Optimization.TRAcceptance trqSadP.toTRParams
-      (Optimization.reductionRatio (trqSadF a) (b • trqSadE 0) ((-Δ) • trqSadE 0)
-        ((ftaylorSeries ℝ (trqSadF a) (b • trqSadE 0)).taylorDecrement 1 ((-Δ) • trqSadE 0)))
-      (b • trqSadE 0) ((-Δ) • trqSadE 0) (b • trqSadE 0) Δ (Δ / 4) := by
-  have hΔ : 0 < Δ := by linarith
-  have hρ : Optimization.reductionRatio (trqSadF a) (b • trqSadE 0) ((-Δ) • trqSadE 0)
-      ((ftaylorSeries ℝ (trqSadF a) (b • trqSadE 0)).taylorDecrement 1 ((-Δ) • trqSadE 0)) < 1 /
-          4 := by
-    rw [Optimization.reductionRatio_def, trqSadF_p, trqSadF_p_step, trqSad_ΔT1_p]
-    simp only [PiLp.smul_apply, trqSadE_apply, ↓reduceIte, smul_eq_mul, mul_one]
-    rw [div_lt_iff₀ (by nlinarith)]
-    nlinarith
-  refine ⟨?_, ⟨fun h => absurd h (not_le.2 (hρ.trans (by norm_num : (1 : ℝ) / 4 < 3 / 4))),
-    fun h => absurd h (not_le.2 hρ), fun _ => ⟨by change 1 / 4 * Δ ≤ Δ / 4; linarith,
-      by change Δ / 4 ≤ 1 / 2 * Δ; linarith⟩⟩⟩
-  exact (ite_eq_right (not_le.2 hρ)).symm
-
-/-- The successful first-order iteration at `p` with radius `b`: the ratio is `1/2`, the step
-lands at `0` and the radius stays `b`. -/
-theorem trqSad_accept_p_succ (hb : 0 < b) :
-    Optimization.TRAcceptance trqSadP.toTRParams
-      (Optimization.reductionRatio (trqSadF a) (b • trqSadE 0) ((-b) • trqSadE 0)
-        ((ftaylorSeries ℝ (trqSadF a) (b • trqSadE 0)).taylorDecrement 1 ((-b) • trqSadE 0)))
-      (b • trqSadE 0) ((-b) • trqSadE 0) 0 b b := by
-  have hρ : Optimization.reductionRatio (trqSadF a) (b • trqSadE 0) ((-b) • trqSadE 0)
-      ((ftaylorSeries ℝ (trqSadF a) (b • trqSadE 0)).taylorDecrement 1 ((-b) • trqSadE 0)) = 1 /
-          2 := by
-    rw [Optimization.reductionRatio_def, trqSadF_p, trqSadF_p_step, trqSad_ΔT1_p]
-    simp only [PiLp.smul_apply, trqSadE_apply, ↓reduceIte, smul_eq_mul, mul_one]
-    field_simp; ring
-  rw [hρ]
-  refine ⟨?_, ⟨fun h => absurd h (by change ¬ (3 / 4 : ℝ) ≤ 1 / 2; norm_num),
-    fun _ _ => ⟨by change 1 / 2 * b ≤ b; linarith, le_rfl⟩,
-    fun h => absurd h (by change ¬ (1 / 2 : ℝ) < 1 / 4; norm_num)⟩⟩
-  rw [ite_eq_left (show trqSadP.η₁ ≤ (1 / 2 : ℝ) by change (1 / 4 : ℝ) ≤ 1 / 2; norm_num),
-    ← add_smul, add_neg_cancel, zero_smul]
-
-/-- The second-order Step 1 at `0` with radius `b ≤ 1`: `b e_2` achieves the measure
-`a b²/2`. -/
-theorem trqSad_witness_zero (ha : 0 ≤ a) (hb0 : 0 ≤ b) (hb1 : b ≤ 1) :
-    Optimization.IsApproxMeasureStep ((ftaylorSeries ℝ (trqSadF a) 0).taylorDecrement 2)
-      (min b 1) {e | (0 : ℝ²) + e ∈ trqSadX} trqSadP.ς (b • trqSadE 1) := by
-  rw [min_eq_left hb1]
-  have hmem : b • trqSadE 1 ∈ {e | (0 : ℝ²) + e ∈ trqSadX} := by
-    simp only [Set.mem_ofPred_eq, zero_add, trqSadX_mem, PiLp.smul_apply, trqSadE_apply]
-    norm_num; exact ⟨by linarith, hb1⟩
-  refine ⟨⟨mem_closedBall_zero_iff.2 (by rw [norm_smul_trqSadE, abs_of_nonneg hb0]), hmem⟩, ?_⟩
-  have hm : Optimization.decrementMeasure ((ftaylorSeries ℝ (trqSadF a) 0).taylorDecrement 2) b
-      {e | (0 : ℝ²) + e ∈ trqSadX} ≤ a * (b ^ 2 / 2) := by
-    refine Optimization.decrementMeasure_le ⟨0, mem_closedBall_self hb0, by
-      change (0 : ℝ²) + 0 ∈ trqSadX
-      simp only [add_zero, trqSadX_mem, PiLp.zero_apply]; norm_num⟩ fun d hd => ?_
-    rw [trqSad_ΔT2_zero ha]
-    have h1 := EuclideanSpace.abs_apply_le_norm d 1
-    have h2 := mem_closedBall_zero_iff.1 hd.1
-    have h3 : (d 1) ^ 2 ≤ b ^ 2 := by
-      rw [← sq_abs]; exact pow_le_pow_left₀ (abs_nonneg _) (h1.trans h2) 2
-    nlinarith [sq_nonneg (d 0)]
-  have hval : (ftaylorSeries ℝ (trqSadF a) 0).taylorDecrement 2 (b • trqSadE 1) = a * (b ^ 2 / 2)
-      := by
-    rw [trqSad_ΔT2_zero ha]; simp
-  rw [hval]
-  have hς : trqSadP.ς = 1 / 2 := rfl
-  rw [hς]
-  linarith [mul_nonneg ha (sq_nonneg b)]
-
-/-- The second-order step at `0` with radius `b ≤ 1` (`ε_2 = a`): order `1` passes
-(`∇f(0) = 0`), order `2` fails, the step is the Step-1 displacement `b e_2`. -/
-theorem trqSad_step_zero (ha : 0 < a) (hb : 0 < b) (hb1 : b ≤ 1) (hε1 : 0 ≤ ε 1) (hε2 : ε 2 = a)
-    (W : ℕ → ℝ²) :
-    Optimization.IsTRqStep (ftaylorSeries ℝ (trqSadF a) 0) {e | (0 : ℝ²) + e ∈ trqSadX}
-      trqSadP.ς 2 ε (min b 1) b (fun j => if j = 2 then b • trqSadE 1 else W j) 2 (b • trqSadE 1)
-          where
-  order_mem := by simp
-  lt_taylorDecrement := by
-    simp only [↓reduceIte, trqSad_ΔT2_zero ha.le, PiLp.smul_apply, trqSadE_apply, smul_eq_mul,
-      min_eq_left hb1, hε2]
-    norm_num
-    have hς : trqSadP.ς = 1 / 2 := rfl
-    rw [hς]; nlinarith [mul_pos ha (pow_pos hb 2)]
-  taylorDecrement_le_of_lt := fun i hi hlt => by
-    have hi1 : i = 1 := by have := (Finset.mem_Icc.1 hi).1; omega
-    subst hi1
-    simp only [trqSad_ΔT1_zero, show ¬ ((1 : ℕ) = 2) by decide, ↓reduceIte]
-    have := trqSadP.ς_pos
-    have : 0 ≤ min b 1 := le_min hb.le zero_le_one
-    positivity
-  mem := ⟨mem_closedBall_zero_iff.2 (by rw [norm_smul_trqSadE, abs_of_pos hb]), by
-    simp only [Set.mem_ofPred_eq, zero_add, trqSadX_mem, PiLp.smul_apply, trqSadE_apply]
-    norm_num; exact ⟨by linarith, hb1⟩⟩
-  taylorDecrement_le := le_of_eq (by simp)
-
-/-- The very successful second-order iteration at `0` with radius `b`: the ratio is `1`, the
-step lands at `b e_2` and the radius stays `b`. -/
-theorem trqSad_ratio_zero (ha : 0 < a) (hb : 0 < b) :
-    Optimization.reductionRatio (trqSadF a) 0 (b • trqSadE 1)
-      ((ftaylorSeries ℝ (trqSadF a) 0).taylorDecrement 2 (b • trqSadE 1)) = 1 := by
-  have h : trqSadF a 0 - trqSadF a (0 + b • trqSadE 1) = a * (b ^ 2 / 2) := by
-    rw [zero_add, trqSadF_apply, trqSadF_apply]; simp
-  rw [Optimization.reductionRatio_def, taylorDecrement_two_trqSadF ha.le, h, div_self]
-  positivity
-
-/-- The very successful second-order iteration at `0` with radius `b`: the step lands at
-`b e_2` and the radius stays `b`. -/
-theorem trqSad_accept_zero (ha : 0 < a) (hb : 0 < b) :
-    Optimization.TRAcceptance trqSadP.toTRParams
-      (Optimization.reductionRatio (trqSadF a) 0 (b • trqSadE 1)
-        ((ftaylorSeries ℝ (trqSadF a) 0).taylorDecrement 2 (b • trqSadE 1)))
-      0 (b • trqSadE 1) (b • trqSadE 1) b b := by
-  rw [trqSad_ratio_zero ha hb]
-  refine ⟨?_, ⟨fun _ => ⟨le_rfl, by change b ≤ 2 * b; linarith⟩,
-    fun _ h => absurd h (by change ¬ (1 : ℝ) < 3 / 4; norm_num),
-    fun h => absurd h (by change ¬ (1 : ℝ) < 1 / 4; norm_num)⟩⟩
-  rw [ite_eq_left (show trqSadP.η₁ ≤ (1 : ℝ) by change (1 / 4 : ℝ) ≤ 1; norm_num), zero_add]
-
-end Prefix
-
-
-open Classical in
 /-- **(14.2.11) with the printed TRq-SC exponents `π_j = j + 1` is false for `q = 2` with `κ_decr`
 depending only on the algorithm parameters, `ϑ` and the f.D1qLaB.X constants**
 ([cartis2022evaluation], Lemma 14.2.2, (14.2.12); the dependence of the explicit `κ_decr` of Lemma
@@ -1963,7 +2164,8 @@ that decreases `f_a` by less than `κ min_j ε_j^{j+1}`. With `r = 2^{-N}`, `ε_
 successful step reaches `0`, where the gradient vanishes and the second-order test fails, and the
 second-order step `r² e_2` decreases `f_a` by `r⁵/2`, against `κ min(ε_1², ε_2³) = κ r⁴`. The radius
 is shared across the orders and is driven down by the first-order failures; the decrease proved in
-Lemma 12.2.4 is `κ ε_min^{q+1}` (`Chapter14.lemma_14_2_2_trq`). -/
+Lemma 12.2.4 is `κ ε_min^{q+1}` (`Chapter14.lemma_14_2_2_trq`). The run is
+`Optimization.exists_isTRqRun_saddleQuad_decrease_lt`. -/
 theorem lemma_14_2_2_trq_printed_false {κ : ℝ} (hκ : 0 < κ) :
     ∃ (a : ℝ) (ε : ℕ → ℝ) (x s : ℕ → ℝ²) (Δ : ℕ → ℝ) (jk : ℕ → ℕ) (d : ℕ → ℕ → ℝ²) (k : ℕ),
       0 < a ∧ a ≤ 1 ∧ (∀ j ∈ Finset.Icc 1 2, ε j ∈ Ioc 0 1) ∧ x 0 ∈ trqSadX ∧
@@ -1973,163 +2175,10 @@ theorem lemma_14_2_2_trq_printed_false {κ : ℝ} (hκ : 0 < κ) :
       trqSadP.η₁ ≤ Chapter12.trqRho (trqSadF a) x s jk k ∧
       trqSadF a (x k) - trqSadF a (x (k + 1)) < κ * Optimization.finMin 1 (fun j => ε j ^ (j + 1)) 2
           := by
-  obtain ⟨N, hN⟩ := exists_pow_lt_of_lt_one (mul_pos two_pos hκ) (by norm_num : (1 / 2 : ℝ) < 1)
-  obtain ⟨r, hr⟩ : ∃ r : ℝ, r = (1 / 2) ^ N := ⟨_, rfl⟩
-  have hr0 : 0 < r := hr ▸ by positivity
-  have hr1 : r ≤ 1 := hr ▸ pow_le_one₀ (by norm_num) (by norm_num)
-  obtain ⟨b, hbdef⟩ : ∃ b : ℝ, b = r ^ 2 := ⟨_, rfl⟩
-  have hb : 0 < b := hbdef ▸ by positivity
-  have hb1 : b ≤ 1 := hbdef ▸ pow_le_one₀ hr0.le hr1
-  have hpowN : ((1 : ℝ) / 4) ^ N = b := by
-    rw [hbdef, hr, ← pow_mul, mul_comm, pow_mul]; norm_num
-  have hq0 : ∀ k : ℕ, 0 < ((1 : ℝ) / 4) ^ k := fun k => by positivity
-  have hq1 : ∀ k : ℕ, ((1 : ℝ) / 4) ^ k ≤ 1 := fun k => pow_le_one₀ (by norm_num) (by norm_num)
-  obtain ⟨ε, hεdef⟩ : ∃ ε : ℕ → ℝ, ε = fun j => if j = 1 then b else r := ⟨_, rfl⟩
-  have hε1 : ε 1 = b := by simp [hεdef]
-  have hε2 : ε 2 = r := by simp [hεdef]
-  -- the Step-1 displacements of the orders not used
-  have hW : ∀ (y : ℝ²) (δ : ℝ) (j : ℕ), ∃ w : ℝ², y ∈ trqSadX → 0 ≤ δ →
-      Optimization.IsApproxMeasureStep ((ftaylorSeries ℝ (trqSadF r) y).taylorDecrement j) δ
-        {e | y + e ∈ trqSadX} trqSadP.ς w := by
-    intro y δ j
-    by_cases h : y ∈ trqSadX ∧ 0 ≤ δ
-    · obtain ⟨w, hw⟩ := Optimization.exists_isApproxMeasureStep_taylorDecrement
-        (ftaylorSeries ℝ (trqSadF r) y) j
-        (isClosed_trqSadX.preimage (continuous_const.add continuous_id))
-        (by change y + 0 ∈ trqSadX; rw [add_zero]; exact h.1) h.2 trqSadP.ς_le_one
-      exact ⟨w, fun _ _ => hw⟩
-    · exact ⟨0, fun h1 h2 => absurd ⟨h1, h2⟩ h⟩
-  choose W hW using hW
-  -- the continuation: any TRq-SC run from `b e_2` with initial radius `b`
-  have hbmax : b ≤ trqSadP.Δmax := hb1
-  have hq₀ : b • trqSadE 1 ∈ trqSadX := by
-    simp only [trqSadX_mem, PiLp.smul_apply, trqSadE_apply]; norm_num; exact ⟨by linarith, hb1⟩
-  obtain ⟨y, sy, Δy, jy, dy, hy0, hyr⟩ := Optimization.exists_isTRqRun_feasible isClosed_trqSadX
-    (trqSadF r) (trqSadP.withΔ₀ b hb hbmax) 2 ε zero_le_one hq₀
-  -- the explicit prefix: `N` unsuccessful first-order iterations at `b e_1`, a successful one to
-  -- `0`, and the successful second-order iteration from `0` to `b e_2`
-  obtain ⟨xp, hxp⟩ : ∃ xp : ℕ → ℝ², ∀ k, xp k =
-      if k ≤ N then b • trqSadE 0 else if k = N + 1 then 0 else b • trqSadE 1 :=
-    ⟨_, fun _ => rfl⟩
-  obtain ⟨Δp, hΔp⟩ : ∃ Δp : ℕ → ℝ, ∀ k, Δp k = if k ≤ N then ((1 : ℝ) / 4) ^ k else b :=
-    ⟨_, fun _ => rfl⟩
-  obtain ⟨sp, hsp⟩ : ∃ sp : ℕ → ℝ², ∀ k, sp k =
-      if k ≤ N then (-((1 : ℝ) / 4) ^ k) • trqSadE 0 else b • trqSadE 1 :=
-    ⟨_, fun _ => rfl⟩
-  obtain ⟨jp, hjp⟩ : ∃ jp : ℕ → ℕ, ∀ k, jp k = if k ≤ N then 1 else 2 := ⟨_, fun _ => rfl⟩
-  obtain ⟨dp, hdp⟩ : ∃ dp : ℕ → ℕ → ℝ², ∀ k, dp k =
-      if k ≤ N then (fun j => if j = 1 then (-((1 : ℝ) / 4) ^ k) • trqSadE 0
-        else W (b • trqSadE 0) (min (((1 : ℝ) / 4) ^ k) 1) j)
-      else (fun j => if j = 2 then b • trqSadE 1 else W 0 (min b 1) j) :=
-    ⟨_, fun _ => rfl⟩
-  have hxl : ∀ k ≤ N, xp k = b • trqSadE 0 := fun k hk => by rw [hxp, ite_eq_left hk]
-  have hΔl : ∀ k ≤ N, Δp k = ((1 : ℝ) / 4) ^ k := fun k hk => by rw [hΔp, ite_eq_left hk]
-  have hsl : ∀ k ≤ N, sp k = (-((1 : ℝ) / 4) ^ k) • trqSadE 0 := fun k hk => by
-    rw [hsp, ite_eq_left hk]
-  have hjl : ∀ k ≤ N, jp k = 1 := fun k hk => by rw [hjp, ite_eq_left hk]
-  have hdl : ∀ k ≤ N, dp k = (fun j => if j = 1 then (-((1 : ℝ) / 4) ^ k) • trqSadE 0
-      else W (b • trqSadE 0) (min (((1 : ℝ) / 4) ^ k) 1) j) := fun k hk => by
-    rw [hdp, ite_eq_left hk]
-  have hxN : xp (N + 1) = 0 := by rw [hxp, ite_eq_right (by omega), ite_eq_left rfl]
-  have hxN2 : xp (N + 1 + 1) = b • trqSadE 1 := by
-    rw [hxp, ite_eq_right (by omega), ite_eq_right (by omega)]
-  have hΔN : ∀ k, N < k → Δp k = b := fun k hk => by rw [hΔp, ite_eq_right (by omega)]
-  have hsN : sp (N + 1) = b • trqSadE 1 := by rw [hsp, ite_eq_right (by omega)]
-  have hjN : jp (N + 1) = 2 := by rw [hjp, ite_eq_right (by omega)]
-  have hdN : dp (N + 1) = (fun j => if j = 2 then b • trqSadE 1 else W 0 (min b 1) j) := by
-    rw [hdp, ite_eq_right (by omega)]
-  have hcases : ∀ k < N + 2, k ≤ N ∨ k = N + 1 := fun k hk => by omega
-  have hstep : ∀ k < N + 2, Optimization.IsTRqStep (ftaylorSeries ℝ (trqSadF r) (xp k))
-      {e | xp k + e ∈ trqSadX} trqSadP.ς 2 ε (min (Δp k) 1) (Δp k) (dp k) (jp k) (sp k) :=
-    fun k hk => by
-    rcases hcases k hk with h | rfl
-    · rw [hxl k h, hΔl k h, hdl k h, hjl k h, hsl k h]
-      exact trqSad_step_p hb hb1 (hq0 k) (hq1 k) hε1 _
-    · rw [hxN, hΔN _ (by omega), hdN, hjN, hsN]
-      exact trqSad_step_zero hr0 hb hb1 (hε1 ▸ hb.le) hε2 _
-  have hacc : ∀ k < N + 2, Optimization.TRAcceptance trqSadP.toTRParams
-      (Optimization.reductionRatio (trqSadF r) (xp k) (sp k)
-        ((ftaylorSeries ℝ (trqSadF r) (xp k)).taylorDecrement (jp k) (sp k)))
-      (xp k) (sp k) (xp (k + 1)) (Δp k) (Δp (k + 1)) := fun k hk => by
-    rcases hcases k hk with h | rfl
-    · rcases Nat.lt_or_ge k N with hkN | hkN
-      · rw [hxl k h, hxl (k + 1) hkN, hsl k h, hΔl k h, hΔl (k + 1) hkN, hjl k h]
-        have h4 : 4 * b ≤ ((1 : ℝ) / 4) ^ k := by
-          rw [← hpowN]
-          have := pow_le_pow_of_le_one (by norm_num : (0 : ℝ) ≤ 1 / 4) (by norm_num)
-            (show k + 1 ≤ N by omega)
-          rw [pow_succ] at this
-          linarith
-        have e : ((1 : ℝ) / 4) ^ (k + 1) = ((1 : ℝ) / 4) ^ k / 4 := by rw [pow_succ]; ring
-        rw [e]
-        exact trqSad_accept_p_unsucc hb h4
-      · obtain rfl : k = N := le_antisymm h hkN
-        rw [hxl k h, hxN, hsl k h, hΔl k h, hΔN _ (by omega), hjl k h, hpowN]
-        exact trqSad_accept_p_succ hb
-    · rw [hxN, hxN2, hΔN _ (by omega), hΔN _ (by omega), hsN, hjN]
-      exact trqSad_accept_zero hr0 hb
-  have hwit : ∀ k < N + 2, ∀ j ∈ Finset.Icc 1 2, Optimization.IsApproxMeasureStep
-      ((ftaylorSeries ℝ (trqSadF r) (xp k)).taylorDecrement j) (min (Δp k) 1)
-      {e | xp k + e ∈ trqSadX} trqSadP.ς (dp k j) := fun k hk j _ => by
-    rcases hcases k hk with h | rfl
-    · rw [hxl k h, hΔl k h, hdl k h]
-      by_cases hj1 : j = 1
-      · subst hj1
-        simp only [↓reduceIte]
-        exact trqSad_witness_p hb.le hb1 (hq0 k).le (hq1 k)
-      · simp only [hj1, ↓reduceIte]
-        exact hW _ _ _ (trqSad_smul_e0_mem hb.le hb1) (le_min (hq0 k).le zero_le_one)
-    · rw [hxN, hΔN _ (by omega), hdN]
-      by_cases hj2 : j = 2
-      · subst hj2
-        simp only [↓reduceIte]
-        exact trqSad_witness_zero hr0.le hb.le hb1
-      · simp only [hj2, ↓reduceIte]
-        exact hW _ _ _ (by simp [trqSadX_mem]) (le_min hb.le zero_le_one)
-  have hcap : ∀ k < N + 2, Δp (k + 1) ≤ trqSadP.Δmax := fun k _ => by
-    change Δp (k + 1) ≤ 1
-    rcases Nat.lt_or_ge k N with hkN | hkN
-    · rw [hΔl (k + 1) hkN]; exact hq1 _
-    · rw [hΔN _ (by omega)]; exact hb1
-  -- the run
-  obtain ⟨x, s, Δ, jk, d, hx0, hrun, hns, -, hpre, hpre'⟩ := Optimization.exists_isTRqRun_append
-    (T := N + 2) (T' := 0) (c := 0) (f := trqSadF r) (D := ftaylorSeries ℝ (trqSadF r))
-    (S := fun y => {e | y + e ∈ trqSadX}) (P := trqSadP) (q := 2) (ε := ε) (ϑ := 1) (xp := xp)
-    (sp := sp) (Δp := Δp) (jp := jp) (dp := dp) (by rw [hΔl 0 (Nat.zero_le _), pow_zero]; rfl)
-    (hΔN _ (by omega)) hb hbmax hstep hacc hwit hcap (by rw [hy0, ← hxN2]) hyr
-    (fun _ h => absurd h (Nat.not_lt_zero _)) (Nat.zero_le _)
-  have hxN' : x (N + 1) = 0 := (hpre (N + 1) (by omega)).1.trans hxN
-  refine ⟨r, ε, x, s, Δ, jk, d, N + 1, hr0, hr1, fun j hj => ?_, ?_,
-    trqSadF_assumption hr0.le hr1 (x 0), hrun, fun i hi => hns i (by omega), ?_, ?_⟩
-  · have : j = 1 ∨ j = 2 := by have := Finset.mem_Icc.1 hj; omega
-    rcases this with rfl | rfl
-    · rw [hε1]; exact ⟨hb, hb1⟩
-    · rw [hε2]; exact ⟨hr0, hr1⟩
-  · rw [hx0, hxl 0 (Nat.zero_le _)]; exact trqSad_smul_e0_mem hb.le hb1
-  · obtain ⟨hsk, hjk, -⟩ := hpre' (N + 1) (by omega)
-    change trqSadP.η₁ ≤ Optimization.trqRatio (trqSadF r)
-      (fun k => ftaylorSeries ℝ (trqSadF r) (x k)) x s jk (N + 1)
-    rw [Optimization.trqRatio_eq, hxN', hsk, hjk, hsN, hjN, trqSad_ratio_zero hr0 hb]
-    change (1 / 4 : ℝ) ≤ 1; norm_num
-  · -- the decrease `r⁵/2` against `κ min_j ε_j^{j+1} ≥ κ r⁴`
-    rw [(hpre (N + 1 + 1) (by omega)).1, hxN2, hxN']
-    have hdec : trqSadF r 0 - trqSadF r (b • trqSadE 1) = r * (b ^ 2 / 2) := by
-      rw [trqSadF_apply, trqSadF_apply]; simp
-    rw [hdec]
-    have hmin : b ^ 2 ≤ Optimization.finMin 1 (fun j => ε j ^ (j + 1)) 2 := by
-      refine Optimization.le_finMin (pow_le_one₀ hb.le hb1) fun j hj => ?_
-      have : j = 1 ∨ j = 2 := by have := Finset.mem_Icc.1 hj; omega
-      rcases this with rfl | rfl
-      · rw [hε1]
-      · rw [hε2, hbdef]
-        have : r ^ 4 ≤ r ^ 3 := pow_le_pow_of_le_one hr0.le hr1 (by norm_num)
-        calc (r ^ 2) ^ 2 = r ^ 4 := by ring
-          _ ≤ r ^ 3 := this
-    have hrN : r < 2 * κ := hr ▸ hN
-    have hb2 : 0 < b ^ 2 := by positivity
-    calc r * (b ^ 2 / 2) < κ * b ^ 2 := by nlinarith
-      _ ≤ κ * Optimization.finMin 1 (fun j => ε j ^ (j + 1)) 2 :=
-          mul_le_mul_of_nonneg_left hmin hκ.le
+  obtain ⟨a, ε, x, s, Δ, jk, d, k, ha0, ha1, hε, hx0, hrun, hns, hρ, hlt⟩ :=
+    exists_isTRqRun_saddleQuad_decrease_lt hκ
+  exact ⟨a, ε, x, s, Δ, jk, d, k, ha0, ha1, hε, hx0, trqSadF_assumption ha0.le ha1 (x 0), hrun,
+    hns, hρ, hlt⟩
 
 /-- **No uniform `κ_decr` for the TRq-SC row `j + 1`** ([cartis2022evaluation], (14.2.11)–(14.2.12),
 `q = 2`): there is no `κ > 0` such that, for every `a ∈ (0, 1]`, every TRq-SC run (parameters
@@ -2149,8 +2198,6 @@ theorem lemma_14_2_2_trq_printed_false_uniform :
   obtain ⟨a, ε, x, s, Δ, jk, d, k, ha0, ha1, hε, -, hA, hrun, hns, hsucc, hlt⟩ :=
     lemma_14_2_2_trq_printed_false hκ
   exact absurd (H a ε x s Δ jk d k ha0 ha1 hε hA hrun hns hsucc) (not_le.2 hlt)
-
-end Decrease
 
 end TRqPrintedFalse
 
