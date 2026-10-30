@@ -261,10 +261,6 @@ id = "theorem_14_3_9_arqp"
 source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER = ARqp-SC, exponents j(p+1)/p, q = p)"
 
 [[node]]
-id = "exists_callData"
-source = "Cartis–Gould–Toint, Algorithm 14.3.2, Step 1 (existence of an ARqp-SC call)"
-
-[[node]]
 id = "exists_isTPqpGCARqpSCRun"
 source = "Cartis–Gould–Toint, Algorithm 14.3.2 with INNER = ARqp-SC (existence of runs)"
 
@@ -310,10 +306,6 @@ id = "exists_tpqpOrderF_lt_arqp_unit"
 source = "Cartis–Gould–Toint, Theorem 14.3.9 with the unit-radius exponents, q < p"
 
 [[node]]
-id = "exists_unitCallOut"
-source = "Cartis–Gould–Toint, Algorithm 14.3.2, Step 1 (existence of an ARqp call with unit radii)"
-
-[[node]]
 id = "exists_isTPqpGCARqpUnitRun"
 source = "Cartis–Gould–Toint, Algorithm 14.3.2 on ℝⁿ with INNER = ARqp with unit radii (existence)"
 
@@ -326,36 +318,8 @@ id = "theorem_14_3_9_arqp_printed_false"
 source = "Cartis–Gould–Toint, Theorem 14.3.9 with INNER = ARqp-SC, q ∈ {1, 2}, p ≥ q + 3 (the printed statement is false)"
 
 [[node]]
-id = "Theorem1439ARqpCex.callOut_one_step"
-source = "Cartis–Gould–Toint, Algorithms 14.1.1–14.1.2 with c = 0, h = 0 (a one-step ARqp-SC call)"
-
-[[node]]
-id = "Theorem1439ARqpCex.callOut_run"
-source = "Cartis–Gould–Toint, Algorithm 14.3.2, Step 1 with INNER = ARqp-SC (the calls of the counterexample run)"
-
-[[node]]
-id = "Theorem1439ARqpCex.isTPqpGCARqpSCRun"
-source = "Cartis–Gould–Toint, Algorithm 14.3.2 with INNER = ARqp-SC (the counterexample run)"
-
-[[node]]
-id = "trqSCKappaUnc0"
-source = "Cartis–Gould–Toint, Lemma 14.2.3 (κ_unc of a Phase-2 TRq-SC call, constant part)"
-
-[[node]]
-id = "trqSCLogTerm"
-source = "Cartis–Gould–Toint, Lemma 14.2.3, TRq-SC row (|log ε_min| term of κ_unc)"
-
-[[node]]
 id = "IsTRqSCPhase2Calls"
 source = "Cartis–Gould–Toint, Algorithm 14.3.2, Step 1 with INNER of trust-region type"
-
-[[node]]
-id = "IsTPqpGCPhase2.le_targetResidual"
-source = "Cartis–Gould–Toint, Algorithm 14.3.2, Step 2 (‖r(x_k, t_k)‖ ≥ θε₀)"
-
-[[node]]
-id = "IsTRqSCPhase2Calls.isInnerPhaseRunStrong"
-source = "Cartis–Gould–Toint, Lemmas 14.2.2–14.2.3 for μ(·, t_k), TRq-SC rows"
 
 [[node]]
 id = "le_innerEvalBound_succ"
@@ -390,123 +354,15 @@ id = "theorem_14_3_9_trq_one"
 source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1)"
 
 [[node]]
-id = "exists_trqCallData"
-source = "Cartis–Gould–Toint, Algorithm 14.3.2, Step 1 (existence of a TRq-SC call)"
-
-[[node]]
 id = "exists_isTPqpGCTRqSCRun"
 source = "Cartis–Gould–Toint, Algorithm 14.3.2 with INNER of trust-region type (existence of runs)"
-
-[[node]]
-id = "trqLogF"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
-
-[[node]]
-id = "trqLogC"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
-
-[[node]]
-id = "trqLogX"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
-
-[[node]]
-id = "trqLogX₀"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
-
-[[node]]
-id = "norm_trqLogC"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
-
-[[node]]
-id = "trqLogMerit_eq"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
-
-[[node]]
-id = "trqLogResid_eq"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
-
-[[node]]
-id = "hasFDerivAt_trqLogMerit"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
-
-[[node]]
-id = "taylorDecrement_trqLogMerit"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
-
-[[node]]
-id = "trqLogMerit_add"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
-
-[[node]]
-id = "trqLog_abs_lin_le"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
-
-[[node]]
-id = "trqLogX_mem"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
-
-[[node]]
-id = "trqLog_measure_ge"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
-
-[[node]]
-id = "trqLog_not_meritCrit"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
-
-[[node]]
-id = "trqLog_measure_gt"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type: the logarithmic factor)"
-
-[[node]]
-id = "trqLog_call_stuck"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
-
-[[node]]
-id = "trqLog_f_succ_ge"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
-
-[[node]]
-id = "trqLog_target_ge"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
-
-[[node]]
-id = "trqLog_not_stop"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
 
 [[node]]
 id = "trqLog_phase1"
 source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
 
 [[node]]
-id = "trqLog_call_long"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
-
-[[node]]
-id = "trqLog_funEvals_ge"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
-
-[[node]]
-id = "trqLog_contDiff_coord"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
-
-[[node]]
-id = "isClosed_trqLogX"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
-
-[[node]]
-id = "trqLogX₀_mem"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
-
-[[node]]
-id = "trqLogX_subset_ball"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
-
-[[node]]
 id = "trqLog_assumptions"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
-
-[[node]]
-id = "trqLogTol"
 source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q = 1: the logarithmic factor is needed)"
 
 [[node]]
@@ -526,307 +382,7 @@ id = "inv_sq_le_tpqpOrderF_trqLogTol"
 source = "Cartis–Gould–Toint, Theorem 14.3.9 (INNER of trust-region type, q ≥ 2: the printed order at the example tolerances)"
 
 [[node]]
-id = "trqSlowP"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "iteratedDeriv_trqSlowP"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "iteratedDeriv_trqSlowP_one"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "iteratedDeriv_trqSlowP_two"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "contDiffOn_trqSlowP"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "slowPt"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "slowPt_add"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "norm_slowPt_sq"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "norm_slowPt_le"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlowG"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlowG_sq"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlowC"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "norm_trqSlowC_sq"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "one_le_norm_trqSlowC"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlowNu"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "phi2_trqSlowC_eq"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "phi2_trqSlowC_slowPt"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "phi2_trqSlowC_eventuallyEq"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "ftaylorSeries_phi2_trqSlowC"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "contDiffAt_trqSlowNu"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "iteratedFDeriv_trqSlowNu_apply"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlowA"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlowB"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlow_ΔT1"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlow_ΔT2"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlowA_pos"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlowB_nonneg"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlowA_anti"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlowB_eq"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlowB_mul_le"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlowA_le_two_mul"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "hasDerivAt_rpow_quarter"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlow_decrease_ge"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlowParams"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlowX"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlowX₀"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "slowPt_add_mem"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlow_accept_succ"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlow_accept_unsucc"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlow_ratio_ge_quarter"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlow_ratio_lt_quarter"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlow_ΔT1_le"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlow_ΔT2_le_ΔT1"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlow_ΔT2_le"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlow_isApproxMeasureStep"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlow_ΔT1_pt"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlow_ΔT2_pt"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlow_exists_witness"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlow_wit_axis_one"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlow_wit_axis_two"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlow_wit_shrink_one"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlow_wit_shrink_two"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlow_step_axis_one"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlow_step_axis_two"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlow_step_shrink"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlow_ratio_axis"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlow_ratio_shrink_unsucc"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlow_ratio_shrink_succ"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlowParamsAt"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "isClosed_trqSlowX"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "slowPt_mem_trqSlowX"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlow_slow_phase"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlow_shrink_phase"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlow_travel_phase"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlowA_two_pow"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlowA_le_of_ge"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlowA_gt_of_lt"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "two_pow_add_mul_half_pow"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlow_exists_long_run"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
 id = "assumptionD1pLBX_comp_coord"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlowCB"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "one_le_trqSlowCB"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "abs_iteratedDeriv_trqSlowG_le"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "isOpen_trqSlowX₀"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "convex_trqSlowX₀"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlowX_subset"
 source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
 
 [[node]]
@@ -848,43 +404,7 @@ id = "trqSlowF_assumptionBFb"
 source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
 
 [[node]]
-id = "trqSlow_tol_lt_A_two"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlowβ₁"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlowβ₁_mul"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlowβ₁_pos"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlowβ₁_lt_one"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
 id = "trqSlow_exists_tpqp_run"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlowC2"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "norm_trqSlowC2_sq"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "targetMerit_trqSlowC2"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "taylorDecrement_targetMerit_trqSlowC2"
 source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
 
 [[node]]
@@ -892,43 +412,7 @@ id = "trqSlowC2_assumption"
 source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
 
 [[node]]
-id = "trqSlowG_256"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "norm_trqSlowC2_x₀"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlow_tol_lt_A_256"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
 id = "trqSlow_exists_tpqp_run_phase2"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlowTol"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlowTol_mem"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "half_pow_rpow_neg"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "tpqpOrderF_trqSlowTol_le"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSCLogTerm_trqSlowTol_le"
-source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
-
-[[node]]
-id = "trqSlow_final_lt"
 source = "Cartis–Gould–Toint, Theorem 14.3.9 with TRq-SC INNER and the printed exponents of (14.2.12) (counterexample)"
 
 [[node]]

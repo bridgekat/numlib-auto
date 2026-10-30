@@ -1,0 +1,19 @@
+namespace = "Constrained.TwoPhaseExample"
+
+[[node]]
+id = "pt"
+
+[[node]]
+id = "unitVec"
+
+[[node]]
+id = "linObj"
+
+[[node]]
+id = "decrementMeasure_lin_le"
+
+[[node]]
+id = "decrementMeasure_lin_le_sqrt"
+
+[[node]]
+id = "isApproxMeasureStep_lin"

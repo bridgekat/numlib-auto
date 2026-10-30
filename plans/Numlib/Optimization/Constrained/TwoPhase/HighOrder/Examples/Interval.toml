@@ -1,0 +1,43 @@
+namespace = "Constrained.TwoPhaseExample.Interval"
+
+[[node]]
+id = "interval"
+
+[[node]]
+id = "con"
+
+[[node]]
+id = "seq"
+
+[[node]]
+id = "isHighOrderTargetRun"
+
+[[node]]
+id = "isEnd_one"
+
+[[node]]
+id = "targetOut_one"
+
+[[node]]
+id = "isEndCritContract"
+
+[[node]]
+id = "quad"
+
+[[node]]
+id = "cubic"
+
+[[node]]
+id = "tol"
+
+[[node]]
+id = "targetCrit_quad"
+
+[[node]]
+id = "targetCrit_cubic"
+
+[[node]]
+id = "quad_lt_taylorMeasure_two"
+
+[[node]]
+id = "cubic_lt_taylorMeasure_three"

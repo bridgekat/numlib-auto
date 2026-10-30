@@ -1,0 +1,16 @@
+namespace = "Constrained.TwoPhaseExample.SlowDecay"
+
+[[node]]
+id = "exists_isTRqOutputCost"
+
+[[node]]
+id = "exists_isHighOrderTargetRun"
+
+[[node]]
+id = "finMax_tol_le"
+
+[[node]]
+id = "abs_log_tol_le"
+
+[[node]]
+id = "not_le_of_count"
