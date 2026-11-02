@@ -283,7 +283,7 @@ theorem exists_forall_eLpNorm_indicator_compl_closedBall_le_of_forall_norm_le [F
     ⟨subset_toMeasurable μ Ω hx.2, hx.1⟩
   calc eLpNorm ((closedBall (0:G) n)ᶜ.indicator g) p (μ.restrict Ω)
       = eLpNorm g p ((μ.restrict Ω).restrict (closedBall (0:G) n)ᶜ) :=
-        eLpNorm_indicator_eq_eLpNorm_restrict measurableSet_closedBall.compl
+        eLpNorm_indicator_eq_eLpNorm_restrict measurableSet_closedBall.compl.nullMeasurableSet
     _ ≤ ((μ.restrict Ω).restrict (closedBall (0:G) n)ᶜ) univ ^ p.toReal⁻¹ * ENNReal.ofReal M :=
         eLpNorm_le_of_ae_bound (hg.mono_measure (Measure.restrict_le_self.trans
           Measure.restrict_le_self)) (ae_of_all _ hgM)
@@ -510,7 +510,7 @@ theorem Lp.exists_forall_eLpNorm_indicator_compl_closedBall_le [CompleteSpace E]
         + eLpNorm ((closedBall (0:G) R)ᶜ.indicator (ρ ⋆[lsmul ℝ ℝ, μ] ⇑f)) p (μ.restrict Ω)
       ≤ eLpNorm (⇑f - ρ ⋆[lsmul ℝ ℝ, μ] ⇑f) p μ + ε / 2 := by
         gcongr
-        · exact (eLpNorm_indicator_le _ measurableSet_closedBall.compl).trans
+        · exact (eLpNorm_indicator_le _ measurableSet_closedBall.compl.nullMeasurableSet).trans
             (eLpNorm_mono_measure _ Measure.restrict_le_self)
         · exact hR _ hmeas (hbdd f hf)
     _ ≤ ε / 2 + ε / 2 := by
@@ -544,14 +544,15 @@ theorem Lp.isCompact_closure_of_uniform_translate_of_tight [FiniteDimensional �
   -- extension by zero, `L^p(Ω) → L^p(G)`, is an isometry
   obtain ⟨Ext, hExt_coe⟩ : ∃ Ext : Lp E p (μ.restrict Ω) → Lp E p μ,
       ∀ g : Lp E p (μ.restrict Ω), ⇑(Ext g) =ᵐ[μ] Ω.indicator ⇑g :=
-    ⟨fun g => ((memLp_indicator_iff_restrict hΩm).2 (Lp.memLp g)).toLp (Ω.indicator g),
+    ⟨fun g =>
+      ((memLp_indicator_iff_restrict hΩm.nullMeasurableSet).2 (Lp.memLp g)).toLp (Ω.indicator g),
       fun g => MemLp.coeFn_toLp _⟩
   have hExt : LipschitzWith 1 Ext := by
     refine LipschitzWith.of_dist_le_mul fun g g' => ?_
     rw [NNReal.coe_one, one_mul, Lp.dist_def, Lp.dist_def]
     refine le_of_eq (congrArg ENNReal.toReal ?_)
     rw [eLpNorm_congr_ae ((hExt_coe g).sub (hExt_coe g')), ← Set.indicator_sub',
-      eLpNorm_indicator_eq_eLpNorm_restrict hΩm]
+      eLpNorm_indicator_eq_eLpNorm_restrict hΩm.nullMeasurableSet]
   refine ⟨Ext '' (Lp.restrictCLM ℝ E p μ Ω '' F), hT.image hExt.uniformContinuous, ?_⟩
   intro f hf
   refine ⟨Ext (Lp.restrictCLM ℝ E p μ Ω f), ⟨_, ⟨f, hf, rfl⟩, rfl⟩, ?_⟩
@@ -747,10 +748,10 @@ theorem Lp.tight_of_isCompact_closure [Fact (1 ≤ p)] (hp : p ≠ ∞) {F : Set
         exact eLpNorm_add_le Fact.out
     _ ≤ eLpNorm (⇑f - ⇑g) p μ + eLpNorm ((K g)ᶜ.indicator ⇑g) p μ := by
         gcongr
-        · exact eLpNorm_indicator_le _ hΩm.compl
+        · exact eLpNorm_indicator_le _ hΩm.compl.nullMeasurableSet
         · rw [show Ωᶜ.indicator ⇑g = Ωᶜ.indicator ((K g)ᶜ.indicator ⇑g) by
             rw [Set.indicator_indicator, Set.inter_eq_left.2 hsub]]
-          exact eLpNorm_indicator_le _ hΩm.compl
+          exact eLpNorm_indicator_le _ hΩm.compl.nullMeasurableSet
     _ < ENNReal.ofReal (ε' / 3) + ENNReal.ofReal (ε' / 3) :=
         ENNReal.add_lt_add_of_lt_of_le ((hKg g).trans_lt ENNReal.ofReal_lt_top).ne hfg' (hKg g)
     _ < ENNReal.ofReal ε' := by

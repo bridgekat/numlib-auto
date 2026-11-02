@@ -410,8 +410,8 @@ private theorem roundsLDL_exact_diag_ne_zero {A L D : Matrix (Fin n) (Fin n) ℝ
   rw [hsub, hB.isLU.det_strictLeadingPrincipalSubmatrix, Finset.prod_ne_zero_iff] at hdet
   have hj := hdet j (mem_filter.2 ⟨mem_univ _, Fin.lt_def.2 (Nat.lt_succ_self _)⟩)
   have hDL : (D * Lᵀ) j j = D j j := by
-    rw [mul_apply, Finset.sum_eq_single j (fun t _ htj => by rw [h.isDiag htj.symm, zero_mul])
-      (by simp), transpose_apply, h.lower_diag, mul_one]
+    rw [Matrix.mul_apply, Finset.sum_eq_single j (fun t _ htj => by rw [h.isDiag htj.symm,
+      zero_mul]) (by simp), transpose_apply, h.lower_diag, mul_one]
   rwa [hDL] at hj
 
 /-- **Exact correctness of Algorithm 4.1.1**: for a symmetric `A` with `A(1:k, 1:k)` nonsingular for

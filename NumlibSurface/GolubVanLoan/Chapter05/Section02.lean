@@ -2705,7 +2705,7 @@ theorem algorithm_5_2_6_eq_classicalGramSchmidt (A : Matrix (Fin m) (Fin n) ℝ)
 theorem isThinQR_col_dotProduct_col {A Q : Matrix (Fin m) (Fin n) ℝ} {R : Matrix (Fin n) (Fin n) ℝ}
     (h : IsThinQR A Q R) (i j : Fin n) : Q.col i ⬝ᵥ Q.col j = if i = j then 1 else 0 := by
   have := congrFun (congrFun h.conjTranspose_mul_self i) j
-  simp only [Matrix.mul_apply, conjTranspose_apply, star_trivial, one_apply] at this
+  simp only [Matrix.mul_apply, conjTranspose_apply, star_trivial, Matrix.one_apply] at this
   rw [← this]
   rfl
 
@@ -3270,7 +3270,7 @@ def colMix (τ : ℕ) (X Y : Matrix (Fin m) (Fin n) ℝ) : Matrix (Fin m) (Fin n
 theorem mul_apply_eq_of_col_eq {p : ℕ} (N : Matrix (Fin m) (Fin m) ℝ)
     {X Y : Matrix (Fin m) (Fin p) ℝ} {q : Fin p} (h : ∀ r, X r q = Y r q) (i : Fin m) :
     (N * X) i q = (N * Y) i q := by
-  simp only [mul_apply, h]
+  simp only [Matrix.mul_apply, h]
 
 /-- **One full step against one panel step**: on an array whose columns `< τ` are `B_p` and the
 others `Pᵀ C`, a step `j < τ` of Algorithm 5.2.1 (on all columns from `j`) equals the panel step

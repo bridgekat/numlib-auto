@@ -162,17 +162,17 @@ end ARpCCParams
 /-! ### Model measures and the algorithm -/
 
 /-- `𝓜⁰_k(s) = 𝒞(x_k + s)` (6.2.1) of [cartis2022evaluation]. -/
-def modelSteps₀ (C : Set ℝⁿ) (x s : ℝⁿ) : Set ℝⁿ := feasibleSteps C (x + s)
+noncomputable def modelSteps₀ (C : Set ℝⁿ) (x s : ℝⁿ) : Set ℝⁿ := feasibleSteps C (x + s)
 
 /-- `𝓜¹_k(s) = {d ∈ 𝓜⁰_k(s) | |∇_s m_k(s)[d]| ≤ θ₁ε₁}` (6.2.1) of [cartis2022evaluation], for
 the model `m_k = regularizedModel (ftaylorSeries ℝ f x) p σ`. -/
-def modelSteps₁ (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (p : ℕ) (θ₁ ε₁ : ℝ) (x : ℝⁿ) (σ : ℝ) (s : ℝⁿ) :
-    Set ℝⁿ :=
+noncomputable def modelSteps₁ (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (p : ℕ) (θ₁ ε₁ : ℝ) (x : ℝⁿ) (σ : ℝ)
+    (s : ℝⁿ) : Set ℝⁿ :=
   restrictedSteps (iteratedFDeriv ℝ 1 (regularizedModel (ftaylorSeries ℝ f x) p σ) s) (θ₁ * ε₁)
     (modelSteps₀ C x s)
 
 /-- `𝓜²_k(s) = {d ∈ 𝓜¹_k(s) | |∇²_s m_k(s)[d]²| ≤ θ₂ε₂}` (6.2.2) of [cartis2022evaluation]. -/
-def modelSteps₂ (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (p : ℕ) (θ₁ θ₂ ε₁ ε₂ : ℝ) (x : ℝⁿ) (σ : ℝ)
+noncomputable def modelSteps₂ (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (p : ℕ) (θ₁ θ₂ ε₁ ε₂ : ℝ) (x : ℝⁿ) (σ : ℝ)
     (s : ℝⁿ) : Set ℝⁿ :=
   restrictedSteps (iteratedFDeriv ℝ 2 (regularizedModel (ftaylorSeries ℝ f x) p σ) s) (θ₂ * ε₂)
     (modelSteps₁ f C p θ₁ ε₁ x σ s)

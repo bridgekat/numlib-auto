@@ -903,8 +903,8 @@ theorem equation_11_1_8 {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDe
     simp [this]
   · simpa using hdiag i i.2
   · ext i j
-    rw [conjTranspose_eq_transpose_of_trivial, transpose_transpose, mul_apply, submatrix_apply,
-      heq i j]
+    rw [conjTranspose_eq_transpose_of_trivial, transpose_transpose, Matrix.mul_apply,
+      submatrix_apply, heq i j]
     have hlast : ¬ (n ≤ (i : ℕ) ∧ n ≤ (j : ℕ)) := fun h => by have := i.2; omega
     rw [ite_eq_right hlast, add_zero]
     refine Finset.sum_congr rfl fun l _ => ?_

@@ -1074,9 +1074,10 @@ theorem tikhonov_deleteRow_residual_eq (A : Matrix m n ℝ) (b : m → ℝ) {α 
     0 < (1 - A * (Aᵀ * A + α • 1)⁻¹ * Aᵀ : Matrix m m ℝ) k k := by
   set M := Aᵀ * A + α • (1 : Matrix n n ℝ) with hM
   have hkk : (1 - A * M⁻¹ * Aᵀ : Matrix m m ℝ) k k = 1 - A k ⬝ᵥ (M⁻¹ *ᵥ A k) := by
-    rw [sub_apply, one_apply_eq]
+    rw [Matrix.sub_apply, one_apply_eq]
     congr 1
-    simp only [mul_apply, mulVec, dotProduct, transpose_apply, Finset.sum_mul, Finset.mul_sum]
+    simp only [Matrix.mul_apply, mulVec, dotProduct, transpose_apply, Finset.sum_mul,
+        Finset.mul_sum]
     rw [Finset.sum_comm]
     exact Finset.sum_congr rfl fun j _ => Finset.sum_congr rfl fun l _ => by ring
   have hpos : 0 < 1 - A k ⬝ᵥ (M⁻¹ *ᵥ A k) := one_sub_dotProduct_inv_gram_pos A hα k

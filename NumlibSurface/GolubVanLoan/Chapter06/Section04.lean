@@ -544,7 +544,7 @@ private theorem orthonormal_toLp_col {k : ℕ} {N : Matrix (Fin m) (Fin k) ℝ} 
   rw [orthonormal_iff_ite]
   intro i j
   have h := congrFun (congrFun hN i) j
-  rw [mul_apply, one_apply] at h
+  rw [Matrix.mul_apply, Matrix.one_apply] at h
   rw [← h, PiLp.inner_apply]
   refine Finset.sum_congr rfl fun r _ => ?_
   simp [col_apply, mul_comm]

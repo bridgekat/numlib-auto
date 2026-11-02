@@ -24,7 +24,7 @@ variable {m n R : Type*} [Fintype m] [PartialOrder R] [NonUnitalRing R] [StarRin
 theorem apply_eq_zero_of_conjTranspose_mul_self_apply_self_eq_zero {A : Matrix m n R} {j : n}
     (h : (Aᴴ * A) j j = 0) (k : m) : A k j = 0 := by
   have h0 : star (fun k => A k j) ⬝ᵥ (fun k => A k j) = 0 := by
-    rw [← h, mul_apply]
+    rw [← h, Matrix.mul_apply]
     rfl
   exact congrFun (dotProduct_star_self_eq_zero.1 h0) k
 

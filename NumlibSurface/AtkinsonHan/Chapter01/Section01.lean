@@ -179,7 +179,7 @@ theorem example_1_1_6 {d : ℕ} (x : Fin d → EuclideanSpace ℝ (Fin d)) :
   have hmap := (WithLp.linearEquiv 2 ℝ (Fin d → ℝ)).toLinearMap.linearIndependent_iff hker
     (v := x)
   rw [← hmap, ← isUnit_iff_ne_zero, ← Matrix.isUnit_iff_isUnit_det,
-    ← Matrix.linearIndependent_cols_iff_isUnit]
+    ← Matrix.linearIndependent_col_iff_isUnit]
   rfl
 
 /-- **Example 1.1.7.** Within `C[0, 1]` the vectors `1, x, x², …, xⁿ` are linearly independent: a

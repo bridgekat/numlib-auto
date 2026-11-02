@@ -326,8 +326,9 @@ theorem saddleMonotoneRel_eq_setOf_hasSaddleGradientAt
       = {r : (U × X) × (U × X) | HasSaddleGradientAt K (-r.2.1, r.2.2) r.1} := by
   ext r
   obtain ⟨q, hq⟩ := (differentiableAt_iff_exists_hasSaddleGradientAt K r.1).1 (hdiff r.1)
-  rw [Set.mem_ofPred_eq, mem_saddleMonotoneRel, flip_eq_self,
-    saddleSubdifferential_eq_singleton_of_hasSaddleGradientAt hK hq, Set.mem_singleton_iff]
+  rw [mem_saddleMonotoneRel, flip_eq_self,
+    saddleSubdifferential_eq_singleton_of_hasSaddleGradientAt hK hq, Set.mem_singleton_iff,
+    Set.mem_ofPred_eq]
   refine ⟨fun h => h ▸ hq, fun h => ?_⟩
   have hsing := saddleSubdifferential_eq_singleton_of_hasSaddleGradientAt hK h
   rw [saddleSubdifferential_eq_singleton_of_hasSaddleGradientAt hK hq] at hsing

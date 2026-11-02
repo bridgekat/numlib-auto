@@ -84,7 +84,7 @@ variable {m n k l : Type*} [Fintype m] [Fintype n] [Fintype k] [Fintype l] [Deci
 private noncomputable def extendByZeroIsometry (e : k ↪ n) :
     EuclideanSpace 𝕜 k →ₗᵢ[𝕜] EuclideanSpace 𝕜 n where
   toLinearMap := (WithLp.linearEquiv 2 𝕜 (n → 𝕜)).symm.toLinearMap ∘ₗ
-    Function.ExtendByZero.linearMap 𝕜 e ∘ₗ (WithLp.linearEquiv 2 𝕜 (k → 𝕜)).toLinearMap
+    Function.ExtendByZero.linearMap 𝕜 𝕜 e ∘ₗ (WithLp.linearEquiv 2 𝕜 (k → 𝕜)).toLinearMap
   norm_map' x := PiLp.norm_toLp_extend 2 e.injective (WithLp.ofLp x)
 
 /-- Deleting columns: the selected columns act as `A` composed with the isometric extension by
@@ -275,7 +275,7 @@ theorem frobenius_norm_hermitianDilation_sq [Fintype m] [Fintype n] (A : Matrix 
     ‖hermitianDilation A‖ ^ 2 = 2 * ‖A‖ ^ 2 := by
   rw [frobenius_norm_sq_eq_sum_sq, frobenius_norm_sq_eq_sum_sq]
   simp only [hermitianDilation, Fintype.sum_sum_type, fromBlocks_apply₁₁, fromBlocks_apply₁₂,
-    fromBlocks_apply₂₁, fromBlocks_apply₂₂, zero_apply, norm_zero, conjTranspose_apply,
+    fromBlocks_apply₂₁, fromBlocks_apply₂₂, Matrix.zero_apply, norm_zero, conjTranspose_apply,
     norm_star, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow, Finset.sum_const_zero,
     zero_add, add_zero]
   rw [Finset.sum_comm]
@@ -470,7 +470,7 @@ theorem IsSVD.sub_svdTruncation (h : IsSVD A U σ V) (k : ℕ) :
   rw [svdTruncation, ← Matrix.sub_mul, ← Matrix.mul_sub]
   congr 2
   ext i j
-  simp only [sub_apply, rectDiagonal_apply]
+  simp only [Matrix.sub_apply, rectDiagonal_apply]
   split_ifs <;> simp
 
 open scoped Matrix.Norms.L2Operator in
@@ -668,7 +668,7 @@ theorem isGreatest_frobenius_norm_sq_conjTranspose_mul (A : Matrix m n 𝕜) {r 
     have hQ : Qᴴ * Q = 1 := by
       ext i j
       have h := orthonormal_iff_ite.1 (v.orthonormal.comp _ (Fin.castLE_injective hr)) i j
-      rw [mul_apply, one_apply, ← h, EuclideanSpace.inner_eq_star_dotProduct]
+      rw [Matrix.mul_apply, Matrix.one_apply, ← h, EuclideanSpace.inner_eq_star_dotProduct]
       simp only [dotProduct, conjTranspose_apply, hQdef, of_apply, Pi.star_apply,
         Function.comp_apply]
       exact Finset.sum_congr rfl fun k _ => mul_comm _ _
@@ -1506,10 +1506,10 @@ private theorem norm_col_mul_mul_rectDiagonal_sq (M : Matrix (Fin n) (Fin n) �
         (rectDiagonal fun i => ((σ i : ℝ) : 𝕜) : Matrix (Fin n) (Fin m) 𝕜)) k j) =
         ((σ j : ℝ) : 𝕜) • WithLp.ofLp (toEuclideanLin M (WithLp.toLp 2 (Vᵀ ⟨j, h⟩))) := by
       funext k
-      rw [mul_apply, Finset.sum_eq_single ⟨j, h⟩]
+      rw [Matrix.mul_apply, Finset.sum_eq_single ⟨j, h⟩]
       · rw [rectDiagonal_apply, ite_eq_left rfl]
         simp only [ofLp_toEuclideanLin, Pi.smul_apply, smul_eq_mul, mulVec, dotProduct,
-          mul_apply, transpose_apply]
+          Matrix.mul_apply, transpose_apply]
         ring
       · intro l _ hl
         rw [rectDiagonal_apply, ite_eq_right (fun hlj => hl (Fin.ext hlj)), mul_zero]
@@ -1518,7 +1518,7 @@ private theorem norm_col_mul_mul_rectDiagonal_sq (M : Matrix (Fin n) (Fin n) �
   · have hv : (fun k => (M * V *
         (rectDiagonal fun i => ((σ i : ℝ) : 𝕜) : Matrix (Fin n) (Fin m) 𝕜)) k j) = 0 := by
       funext k
-      rw [mul_apply]
+      rw [Matrix.mul_apply]
       refine Finset.sum_eq_zero fun l _ => ?_
       rw [rectDiagonal_apply, ite_eq_right (fun hlj => h (by rw [← hlj]; exact l.isLt)),
         mul_zero]
@@ -2115,13 +2115,14 @@ private def pairSylvester (B₁ : Matrix k k 𝕜) (B₂ : Matrix q p 𝕜) :
     have h₂ : (x + y).toRows₂ = x.toRows₂ + y.toRows₂ := rfl
     rw [h₁, h₂, Matrix.mul_add, Matrix.add_mul, Matrix.mul_add, Matrix.add_mul]
     ext (i | i) j <;>
-      simp only [fromRows_apply_inl, fromRows_apply_inr, add_apply, sub_apply] <;> abel
+      simp only [fromRows_apply_inl, fromRows_apply_inr, Matrix.add_apply,
+          Matrix.sub_apply] <;> abel
   map_smul' c x := by
     have h₁ : (c • x).toRows₁ = c • x.toRows₁ := rfl
     have h₂ : (c • x).toRows₂ = c • x.toRows₂ := rfl
     rw [h₁, h₂, Matrix.mul_smul, Matrix.smul_mul, Matrix.mul_smul, Matrix.smul_mul]
     ext (i | i) j <;>
-      simp only [fromRows_apply_inl, fromRows_apply_inr, smul_apply, sub_apply,
+      simp only [fromRows_apply_inl, fromRows_apply_inr, Matrix.smul_apply, Matrix.sub_apply,
         RingHom.id_apply, smul_sub]
 
 private theorem pairSylvester_fromRows (B₁ : Matrix k k 𝕜) (B₂ : Matrix q p 𝕜)

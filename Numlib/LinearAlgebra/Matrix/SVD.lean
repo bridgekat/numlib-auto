@@ -1087,7 +1087,7 @@ theorem rectDiagonal_mulVec_of_le (σ : ℕ → α) (x : Fin n → α) (i : Fin 
 theorem rectDiagonal_mul_apply {o : Type*} (σ : ℕ → α) (M : Matrix (Fin n) o α)
     (i : Fin m) (j : o) (h : (i : ℕ) < n) :
     ((rectDiagonal σ : Matrix (Fin m) (Fin n) α) * M) i j = σ i * M ⟨i, h⟩ j := by
-  rw [mul_apply, Finset.sum_eq_single ⟨i, h⟩]
+  rw [Matrix.mul_apply, Finset.sum_eq_single ⟨i, h⟩]
   · rw [rectDiagonal_apply, ite_eq_left rfl]
   · intro k _ hk
     rw [rectDiagonal_apply, ite_eq_right (fun hik => hk (Fin.ext hik.symm)), zero_mul]
@@ -1099,7 +1099,7 @@ theorem mul_rectDiagonal_apply {o : Type*} (M : Matrix o (Fin m) α) (σ : ℕ �
     (j : Fin n) :
     (M * (rectDiagonal σ : Matrix (Fin m) (Fin n) α)) i j
       = if h : (j : ℕ) < m then M i ⟨j, h⟩ * σ j else 0 := by
-  rw [mul_apply]
+  rw [Matrix.mul_apply]
   split_ifs with h
   · rw [Finset.sum_eq_single ⟨j, h⟩]
     · rw [rectDiagonal_apply, ite_eq_left rfl]
@@ -1126,7 +1126,7 @@ theorem rectDiagonal_mul_rectDiagonal (σ τ : ℕ → α) :
     (rectDiagonal σ : Matrix (Fin l) (Fin m) α) * (rectDiagonal τ : Matrix (Fin m) (Fin n) α)
       = rectDiagonal fun i => if i < m then σ i * τ i else 0 := by
   ext i j
-  rw [mul_apply, rectDiagonal_apply]
+  rw [Matrix.mul_apply, rectDiagonal_apply]
   by_cases hm : (i : ℕ) < m
   · rw [Finset.sum_eq_single ⟨i, hm⟩]
     · simp only [rectDiagonal_apply, ite_eq_left hm]
@@ -1162,7 +1162,7 @@ theorem conjTranspose_shiftedRectDiagonal_mul_self (k : ℕ) (σ : ℕ → 𝕜)
     (shiftedRectDiagonal k σ : Matrix (Fin m) (Fin n) 𝕜)ᴴ * shiftedRectDiagonal k σ
       = diagonal fun j : Fin n => if k ≤ j ∧ (j : ℕ) < m + k then star (σ j) * σ j else 0 := by
   ext j l
-  rw [mul_apply, diagonal_apply]
+  rw [Matrix.mul_apply, diagonal_apply]
   simp only [conjTranspose_apply, shiftedRectDiagonal_apply]
   by_cases hjl : j = l
   · subst hjl
@@ -1192,7 +1192,7 @@ theorem conjTranspose_shiftedRectDiagonal_mul_apply {o : Type*} (k : ℕ) (σ : 
     (M : Matrix (Fin m) o 𝕜) (a : Fin n) (b : o) :
     ((shiftedRectDiagonal k σ : Matrix (Fin m) (Fin n) 𝕜)ᴴ * M) a b
       = if h : k ≤ (a : ℕ) ∧ (a : ℕ) - k < m then star (σ a) * M ⟨a - k, h.2⟩ b else 0 := by
-  rw [mul_apply]
+  rw [Matrix.mul_apply]
   split_ifs with h
   · rw [Finset.sum_eq_single ⟨a - k, h.2⟩]
     · rw [conjTranspose_apply, shiftedRectDiagonal_apply, ite_eq_left (by simp only; omega)]
@@ -1229,7 +1229,8 @@ theorem mul_rectDiagonal_eq_submatrix_mul_diagonal (hnm : n ≤ m) (W : Matrix (
     W * (rectDiagonal σ : Matrix (Fin m) (Fin n) 𝕜)
       = W.submatrix id (Fin.castLE hnm) * diagonal fun i : Fin n => σ i := by
   ext i j
-  rw [mul_apply, mul_apply, Finset.sum_eq_single (Fin.castLE hnm j), Finset.sum_eq_single j]
+  rw [Matrix.mul_apply, Matrix.mul_apply, Finset.sum_eq_single (Fin.castLE hnm j),
+      Finset.sum_eq_single j]
   · simp [rectDiagonal_apply, submatrix_apply]
   · intro l _ hl
     simp [hl]
@@ -1247,7 +1248,8 @@ theorem rectDiagonal_mul_eq_diagonal_mul_submatrix (hmn : m ≤ n) (σ : ℕ →
     (rectDiagonal σ : Matrix (Fin m) (Fin n) 𝕜) * W
       = (diagonal fun i : Fin m => σ i) * W.submatrix (Fin.castLE hmn) id := by
   ext i j
-  rw [mul_apply, mul_apply, Finset.sum_eq_single (Fin.castLE hmn i), Finset.sum_eq_single i]
+  rw [Matrix.mul_apply, Matrix.mul_apply, Finset.sum_eq_single (Fin.castLE hmn i),
+      Finset.sum_eq_single i]
   · simp [rectDiagonal_apply, submatrix_apply]
   · intro l _ hl
     simp [Ne.symm hl]
@@ -1385,7 +1387,7 @@ theorem star_mul_mul_apply (U : Matrix (Fin m) (Fin m) 𝕜) (A : Matrix (Fin m)
     (star U * A * V) i j = inner 𝕜 (WithLp.toLp 2 (Uᵀ i) : EuclideanSpace 𝕜 (Fin m))
       (toEuclideanLin A (WithLp.toLp 2 (Vᵀ j))) := by
   simp only [EuclideanSpace.inner_eq_star_dotProduct, ofLp_toEuclideanLin, dotProduct, mulVec,
-    mul_apply, star_apply, transpose_apply, Pi.star_apply, Finset.sum_mul]
+    Matrix.mul_apply, star_apply, transpose_apply, Pi.star_apply, Finset.sum_mul]
   rw [Finset.sum_comm]
   refine Finset.sum_congr rfl fun k _ => Finset.sum_congr rfl fun l _ => ?_
   ring
@@ -1546,7 +1548,7 @@ theorem exists_thin_svd (A : Matrix (Fin m) (Fin n) 𝕜) (hnm : n ≤ m) :
   · conv_lhs => rw [eq_mul_mul_star_of_star_mul_mul_eq hU hV h]
     congr 1
     ext i j
-    rw [mul_apply, mul_apply, Finset.sum_eq_single (Fin.castLE hnm j),
+    rw [Matrix.mul_apply, Matrix.mul_apply, Finset.sum_eq_single (Fin.castLE hnm j),
       Finset.sum_eq_single j]
     · simp [rectDiagonal_apply, submatrix_apply, sortedSingularValues]
     · intro l _ hl
@@ -2029,8 +2031,8 @@ theorem exists_eq_sum_sortedSingularValues_smul_vecMulVec {p q : Type*} [Fintype
       have hU := M.rightSingularUnitary_mul_star
       ext x y
       conv_lhs => rw [← Matrix.mul_one M, ← hU]
-      simp only [mul_apply, star_apply, Matrix.sum_apply, vecMulVec_apply, ofLp_toEuclideanLin,
-        mulVec, dotProduct, Pi.star_apply, rightSingularUnitary,
+      simp only [Matrix.mul_apply, star_apply, Matrix.sum_apply, vecMulVec_apply,
+        ofLp_toEuclideanLin, mulVec, dotProduct, Pi.star_apply, rightSingularUnitary,
         IsHermitian.eigenvectorUnitary_apply, hb, rightSingularBasis, Finset.mul_sum,
         Finset.sum_mul]
       rw [Finset.sum_comm]
@@ -2048,7 +2050,7 @@ theorem exists_eq_sum_sortedSingularValues_smul_vecMulVec {p q : Type*} [Fintype
       ext
       simp
     · ext x y
-      simp only [smul_apply, vecMulVec_apply, smul_eq_mul, WithLp.ofLp_smul, Pi.smul_apply]
+      simp only [Matrix.smul_apply, vecMulVec_apply, smul_eq_mul, WithLp.ofLp_smul, Pi.smul_apply]
       have := hne k
       field_simp
       rfl
@@ -2223,7 +2225,7 @@ theorem mem_span_toLp_transpose_iff (hV : V ∈ unitaryGroup (Fin n) 𝕜) (r : 
       obtain ⟨k, hk, rfl⟩ := hy
       intro j hj
       have := congrFun (congrFun (mem_unitaryGroup_iff'.1 hV) j) k
-      rw [mul_apply, one_apply_ne (fun e => by rw [e] at hj; exact absurd hk (not_le.2 hj))]
+      rw [Matrix.mul_apply, one_apply_ne (fun e => by rw [e] at hj; exact absurd hk (not_le.2 hj))]
         at this
       rw [← this]
       rfl
@@ -2268,7 +2270,7 @@ theorem svdTruncation_eq_sum (U : Matrix (Fin m) (Fin m) 𝕜) (σ : ℕ → ℝ
     svdTruncation U σ V k = ∑ i : Fin k,
       (σ i : 𝕜) • vecMulVec (U.col (Fin.castLE hkm i)) (star (V.col (Fin.castLE hkn i))) := by
   ext a b
-  rw [svdTruncation, mul_apply, Matrix.sum_apply]
+  rw [svdTruncation, Matrix.mul_apply, Matrix.sum_apply]
   have hg : ∀ j : Fin n,
       (U * (rectDiagonal (fun i => if i < k then (σ i : 𝕜) else 0) :
         Matrix (Fin m) (Fin n) 𝕜)) a j * star V j b =

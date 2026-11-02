@@ -1047,7 +1047,7 @@ theorem equation_11_5_9_cholesky {n : ℕ} {A : Matrix (Fin (n + 1)) (Fin (n + 1
   · have hH := h₁.conjTranspose_mul_self
     rw [conjTranspose_eq_transpose_of_trivial] at hH
     ext i j
-    rw [conjTranspose_eq_transpose_of_trivial, mul_apply, Fin.sum_univ_succ]
+    rw [conjTranspose_eq_transpose_of_trivial, Matrix.mul_apply, Fin.sum_univ_succ]
     induction i using Fin.cases with
     | zero =>
       induction j using Fin.cases with
@@ -1065,7 +1065,7 @@ theorem equation_11_5_9_cholesky {n : ℕ} {A : Matrix (Fin (n + 1)) (Fin (n + 1
         field_simp
       | succ j =>
         have := congrFun (congrFun hH i) j
-        simp only [mul_apply, transpose_apply, of_apply] at this
+        simp only [Matrix.mul_apply, transpose_apply, of_apply] at this
         simp only [transpose_apply, of_apply, Fin.cases_succ, Fin.cases_zero, this]
         ring
 
@@ -1237,7 +1237,7 @@ theorem incChol_spec : ∀ {n : ℕ} {A Z : Matrix (Fin (n + 1)) (Fin (n + 1)) �
     · rw [hs i, hs j] at hij
       exact absurd hij (hZd 0)
     · rw [hs i, hs j]
-      simp [mul_apply, Real.mul_self_sqrt ha.le]
+      simp [Matrix.mul_apply, Real.mul_self_sqrt ha.le]
     · simpa using Real.sqrt_pos.2 ha
   | n + 1, A, Z, hA, hZs, hZd => by
     classical
@@ -1310,7 +1310,7 @@ theorem incChol_spec : ∀ {n : ℕ} {A Z : Matrix (Fin (n + 1)) (Fin (n + 1)) �
         | succ j => simpa using hIC.l_eq_zero_of_mem i j hij
     · -- agreement off the pattern
       simp only [Set.mem_ofPred_eq] at hij
-      rw [mul_apply, Fin.sum_univ_succ]
+      rw [Matrix.mul_apply, Fin.sum_univ_succ]
       induction i using Fin.cases with
       | zero =>
         induction j using Fin.cases with

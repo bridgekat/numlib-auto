@@ -235,7 +235,7 @@ theorem diagonalizable_of_linearIndependent_eigenvectors (A : Matrix (Fin n) (Fi
     (x : Fin n → Fin n → ℂ) (μ : Fin n → ℂ) (hx : LinearIndependent ℂ x)
     (hAx : ∀ i, A *ᵥ x i = μ i • x i) :
     IsUnit (Matrix.of x)ᵀ ∧ ((Matrix.of x)ᵀ)⁻¹ * A * (Matrix.of x)ᵀ = diagonal μ := by
-  have hX : IsUnit (Matrix.of x)ᵀ := Matrix.linearIndependent_cols_iff_isUnit.1 hx
+  have hX : IsUnit (Matrix.of x)ᵀ := Matrix.linearIndependent_col_iff_isUnit.1 hx
   have hd : IsUnit ((Matrix.of x)ᵀ).det := (isUnit_iff_isUnit_det _).1 hX
   have hAX : A * (Matrix.of x)ᵀ = (Matrix.of x)ᵀ * diagonal μ := by
     ext i j

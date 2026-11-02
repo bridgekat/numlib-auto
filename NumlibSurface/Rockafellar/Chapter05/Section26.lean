@@ -640,7 +640,7 @@ same for every `x` with `∇f x = x*`, which is Theorem 26.4's first clause. -/
 
 /-- **Rockafellar, §26 (p. 256).** Rockafellar's `D`: the image of `C = int (dom f)` under the
 gradient mapping. -/
-def legendreDomain (f : Rn n → EReal) : Set (Rn n) :=
+noncomputable def legendreDomain (f : Rn n → EReal) : Set (Rn n) :=
   gradient (fun w => (f w).toReal) '' interior (convexDom f)
 
 /-- **The bridge to the backbone's `gradientRange`**, valid as soon as condition (b) holds:

@@ -96,8 +96,8 @@ theorem gaussTransformation_mul {r : ℕ} (τ : Fin n → ℝ) (k : Fin n)
       ((∀ i, i ≤ k → τ i = 0) → ∀ i, i ≤ k → (gaussTransformation τ k * C) i = C i) := by
   have h : gaussTransformation τ k * C = C - vecMulVec τ (C k) := by
     ext i j
-    simp [gaussTransformation, mul_apply, vecMulVec_apply, Pi.single_apply, sub_mul,
-      Finset.sum_sub_distrib, one_apply, ite_mul]
+    simp [gaussTransformation, Matrix.mul_apply, vecMulVec_apply, Pi.single_apply, sub_mul,
+      Finset.sum_sub_distrib, Matrix.one_apply, ite_mul]
   refine ⟨h, fun hτ i hi => ?_⟩
   rw [h]
   ext j
@@ -108,7 +108,7 @@ theorem gaussTransformation_mulVec (τ : Fin n → ℝ) (k : Fin n) (v : Fin n �
     gaussTransformation τ k *ᵥ v = fun i => v i - τ i * v k := by
   ext i
   simp [gaussTransformation, mulVec, dotProduct, vecMulVec_apply, Pi.single_apply, sub_mul,
-    Finset.sum_sub_distrib, one_apply, ite_mul]
+    Finset.sum_sub_distrib, Matrix.one_apply, ite_mul]
 
 /-- §3.2.1, the display after (3.2.2): if `v_k ≠ 0`, the Gauss transformation of the Gauss vector
 of `v` zeroes the components of `v` below `k` and keeps the others. -/
@@ -145,7 +145,7 @@ theorem gaussTransformation_inv {τ : Fin n → ℝ} {k : Fin n} (hτ : τ k = 0
     rw [(gaussTransformation_mul τ k _).1]
     ext i j
     by_cases hij : i = j <;> by_cases hjk : j = k <;>
-      simp [gaussTransformation, vecMulVec_apply, one_apply, hτ, hij, hjk, eq_comm (a := k)]
+      simp [gaussTransformation, vecMulVec_apply, Matrix.one_apply, hτ, hij, hjk, eq_comm (a := k)]
   exact ⟨h, inv_eq_right_inv h⟩
 
 /-- **The book's `M_k` built from column `k` of `M` is the backbone's Gaussian transformation**
@@ -876,13 +876,13 @@ theorem outerProduct_decomposition {α : ℝ} (hα : α ≠ 0) (w z : Fin s → 
   have h₂₁ : (of fun i _ => z i : Matrix (Fin s) (Fin 1) ℝ) =
       (of fun i _ => z i / α) * (of fun _ _ => α : Matrix (Fin 1) (Fin 1) ℝ) := by
     ext i j
-    simp [mul_apply, div_mul_cancel₀ _ hα]
+    simp [Matrix.mul_apply, div_mul_cancel₀ _ hα]
   have h₁₂ : (1 : Matrix (Fin 1) (Fin 1) ℝ) * (of fun _ j => w j : Matrix (Fin 1) (Fin s) ℝ) =
       of fun _ j => w j := Matrix.one_mul _
   have hmul : (of fun i (_ : Fin 1) => z i / α) * (of fun (_ : Fin 1) j => w j) =
       (of fun i j => z i * w j / α : Matrix (Fin s) (Fin s) ℝ) := by
     ext i j
-    simp [mul_apply]
+    simp [Matrix.mul_apply]
     ring
   refine ⟨?_, fun L₁ U₁ h => ?_⟩
   · have := (equation_3_2_9 B h₁₁ h₂₁ h₁₂).1
@@ -1069,7 +1069,8 @@ def GaxpyInv (fp : RoundingModel ℝ) (A : Matrix (Fin n) (Fin n) ℝ) (j : ℕ)
 /-- Before the first column the invariant holds: `(L, U) = (I, 0)`. -/
 theorem gaxpyInv_zero (A : Matrix (Fin n) (Fin n) ℝ) : GaxpyInv fp A 0 (1, 0) :=
   ⟨fun _ _ h => absurd h (Nat.not_lt_zero _), fun _ _ h => absurd h (Nat.not_lt_zero _),
-    fun i c _ => by simp [one_apply], fun _ _ _ => rfl, fun i c h => by simp [one_apply, h.ne],
+    fun i c _ => by simp [Matrix.one_apply], fun _ _ _ => rfl,
+    fun i c h => by simp [h.ne],
     fun i => by simp, fun _ _ _ => rfl⟩
 
 /-- A new entry `l_ij`, `j < i`, of the gaxpy: its running difference `v(i)` is over `r < j`. -/
@@ -1485,7 +1486,7 @@ private theorem tallBorder_det_ne_zero (hrn : r ≤ n) {A : Matrix (Fin n) (Fin 
       ext a b
       simp only [toBlocks₂₂, submatrix_apply, strictLeadingPrincipalSubmatrix, toBlock_apply,
         tallBorder, e, e₂, Equiv.coe_fn_mk, of_apply, Equiv.trans_apply,
-        finSumFinEquiv_apply_right, finCongr_apply, one_apply]
+        finSumFinEquiv_apply_right, finCongr_apply, Matrix.one_apply]
       rw [dite_eq_right (by simp)]
       by_cases hab : a = b
       · subst hab; simp
@@ -1545,8 +1546,8 @@ theorem equation_3_2_8 (hrn : r ≤ n) {A : Matrix (Fin n) (Fin r) ℝ}
     rw [ite_eq_right (by rw [Fin.le_def]; omega)]
   · ext i j
     have h := congrFun (congrFun hLU.mul_eq i) (Fin.castLE hrn j)
-    rw [hBA, mul_apply] at h
-    rw [mul_apply, ← h]
+    rw [hBA, Matrix.mul_apply] at h
+    rw [Matrix.mul_apply, ← h]
     refine Fintype.sum_of_injective (Fin.castLE hrn) (Fin.castLE_injective hrn) _ _
       (fun t ht => ?_) (fun t => ?_)
     · have htr : r ≤ (t : ℕ) := by
@@ -1664,7 +1665,7 @@ theorem algorithm_3_2_3_spec (r : ℕ) (hr : 0 < r) {n : ℕ} {A : Matrix (Fin n
   rw [← hF] at hRect
   have hmul : ∀ i j, A i (e (Sum.inl j)) =
       ∑ t, tallPackedL F i t * tallPackedU hrn F t j := fun i j => by
-    rw [← mul_apply, hRect.mul_eq]
+    rw [← Matrix.mul_apply, hRect.mul_eq]
   have hL₁₁' : ∀ i t, L₁₁ i t = tallPackedL F (e (Sum.inl i)) t := fun i t => by
     simp only [hL₁₁, tallPackedL, of_apply, hval_l, Fin.lt_def, Fin.ext_iff]
   have hL₂₁' : ∀ i t, L₂₁ i t = tallPackedL F (e (Sum.inr i)) t := fun i t => by
@@ -1676,11 +1677,13 @@ theorem algorithm_3_2_3_spec (r : ℕ) (hr : 0 < r) {n : ℕ} {A : Matrix (Fin n
     congr 2
   have h₁₁mul : A₁₁ = L₁₁ * U₁₁ := by
     ext i j
-    rw [hA₁₁, submatrix_apply, Function.comp_apply, Function.comp_apply, hmul, mul_apply, hU₁₁']
+    rw [hA₁₁, submatrix_apply, Function.comp_apply, Function.comp_apply, hmul, Matrix.mul_apply,
+        hU₁₁']
     simp only [hL₁₁']
   have h₂₁ : A₂₁ = L₂₁ * U₁₁ := by
     ext i j
-    rw [hA₂₁, submatrix_apply, Function.comp_apply, Function.comp_apply, hmul, mul_apply, hU₁₁']
+    rw [hA₂₁, submatrix_apply, Function.comp_apply, Function.comp_apply, hmul, Matrix.mul_apply,
+        hU₁₁']
     simp only [hL₂₁']
   have hL₁₁unit : L₁₁.IsUnitLowerTriangular := by
     refine ⟨fun i j hij => ?_, fun i => ?_⟩
@@ -1709,7 +1712,7 @@ theorem algorithm_3_2_3_spec (r : ℕ) (hr : 0 < r) {n : ℕ} {A : Matrix (Fin n
       (fun i => A (e (Sum.inl i)) (e (Sum.inr c)))
     have := congrFun hsol i
     rw [mulVec, dotProduct] at this
-    rw [mul_apply, hA₁₂, submatrix_apply, Function.comp_apply, Function.comp_apply, ← this]
+    rw [Matrix.mul_apply, hA₁₂, submatrix_apply, Function.comp_apply, Function.comp_apply, ← this]
     simp only [hU₁₂']
   -- the Schur complement
   have hÃ' : Ã = A₂₂ - L₂₁ * U₁₂ := by
@@ -1719,7 +1722,7 @@ theorem algorithm_3_2_3_spec (r : ℕ) (hr : 0 < r) {n : ℕ} {A : Matrix (Fin n
     rw [foldl_foldl_updateEntry_const (fun i j => A (e (Sum.inr i)) (e (Sum.inr j)) -
       ((List.finRange r).map fun k => L₂₁ i k * U₁₂ k j).sum),
       ite_eq_left ⟨List.mem_finRange i, List.mem_finRange j⟩]
-    simp [hA₂₂, mul_apply, Fin.sum_univ_def]
+    simp [hA₂₂, Matrix.mul_apply, Fin.sum_univ_def]
   -- the strict leading blocks of `Ã`
   have hdetU : U₁₁.det ≠ 0 := by
     have h1 := hA ⟨r, by omega⟩
@@ -1755,7 +1758,7 @@ theorem algorithm_3_2_3_spec (r : ℕ) (hr : 0 < r) {n : ℕ} {A : Matrix (Fin n
         Ã.submatrix (Fin.castLE k.isLt.le) (Fin.castLE k.isLt.le) := by
       rw [hÃ']
       ext a b
-      simp [mul_apply, hc]
+      simp [Matrix.mul_apply, hc]
     rw [h3] at h1
     rw [det_strictLeadingPrincipalSubmatrix_castLE]
     exact left_ne_zero_of_mul h1
@@ -1856,7 +1859,7 @@ include hLU
 
 private theorem schurRest_eq (P : ℕ) (i j : Fin n) :
     schurRest A L U P i j = ∑ t : Fin n, if P ≤ (t : ℕ) then L i t * U t j else 0 := by
-  rw [schurRest, ← hLU.mul_eq, mul_apply, sub_eq_iff_eq_add, ← Finset.sum_add_distrib]
+  rw [schurRest, ← hLU.mul_eq, Matrix.mul_apply, sub_eq_iff_eq_add, ← Finset.sum_add_distrib]
   refine Finset.sum_congr rfl fun t _ => ?_
   by_cases h : (t : ℕ) < P
   · rw [ite_eq_right (by omega), ite_eq_left h, zero_add]

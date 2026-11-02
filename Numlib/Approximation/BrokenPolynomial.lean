@@ -705,7 +705,8 @@ theorem stepFun_smul (c : ℝ) (v : BrokenPolynomial x r) : stepFun (c • v) = 
 theorem memLp_stepFun (v : BrokenPolynomial x r) :
     MemLp (stepFun v) 2 (volume.restrict (Ioo (x 0) (x (Fin.last n)))) :=
   memLp_finsetSum' _ fun i _ =>
-    ((v i).continuous.continuousOn.memLp_two_restrict_Ioo).indicator measurableSet_Ico
+    ((v i).continuous.continuousOn.memLp_two_restrict_Ioo).indicator
+      measurableSet_Ico.nullMeasurableSet
 
 /-- The squared `L²(x 0, x n)` norm of the step function is the sum of the panel integrals. -/
 theorem integral_stepFun_sq (hx : StrictMono x) (v : BrokenPolynomial x r) :

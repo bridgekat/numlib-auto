@@ -1684,7 +1684,7 @@ theorem _root_.MeasureTheory.LocallyMemLpOn.memLp_mul_of_tsupport_subset {p : �
       ((norm_nonneg _).trans (hC 0))]
     exact mul_le_mul_of_nonneg_right ((Real.norm_eq_abs _).symm.trans_le (hC x)) (abs_nonneg _)
   have h2 : MemLp ((tsupport θ).indicator fun x ↦ θ x * u x) p μ :=
-    (memLp_indicator_iff_restrict (isClosed_tsupport θ).measurableSet).2 h1
+    (memLp_indicator_iff_restrict (isClosed_tsupport θ).measurableSet.nullMeasurableSet).2 h1
   have h3 : (tsupport θ).indicator (fun x ↦ θ x * u x) = fun x ↦ θ x * u x := by
     funext x
     by_cases hx : x ∈ tsupport θ
@@ -1700,7 +1700,7 @@ theorem _root_.MeasureTheory.LocallyMemLpOn.memLp_indicator_mul_of_tsupport_subs
     (hp : p ≠ ⊤) {u : E → ℝ} (hu : LocallyMemLpOn u p Ω μ) {θ : E → ℝ} (hθ : Continuous θ)
     (hθc : HasCompactSupport θ) (hθΩ : tsupport θ ⊆ Ω) :
     MemLp ((Ω : Set E).indicator fun x ↦ θ x * u x) p μ :=
-  (memLp_indicator_iff_restrict Ω.isOpen.measurableSet).2
+  (memLp_indicator_iff_restrict Ω.isOpen.measurableSet.nullMeasurableSet).2
     (hu.memLp_mul_of_tsupport_subset hp hθ hθc hθΩ)
 
 omit [BorelSpace E] in
@@ -4496,7 +4496,8 @@ theorem memSobolevMultiIndex_two_of_tangential_of_compact
   -- the extended datum
   have hgmem : MemLp ((Ω' : Set (EuclideanSpace ℝ (Fin (d + 1)))).indicator fun y ↦ χ y * g y) 2
       (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) := by
-    rw [memLp_indicator_iff_restrict hΩ'm, Measure.restrict_restrict hΩ'm, inter_eq_left.2 hΩ']
+    rw [memLp_indicator_iff_restrict hΩ'm.nullMeasurableSet, Measure.restrict_restrict hΩ'm,
+        inter_eq_left.2 hΩ']
     refine MemLp.mul_of_forall_abs_le hχ.continuous.aestronglyMeasurable (C := 1)
       (fun y _ ↦ ?_) (Lp.memLp g)
     rw [abs_le]
@@ -4764,7 +4765,7 @@ theorem memSobolevMultiIndex_two_interior_piece {θ : EuclideanSpace ℝ (Fin N)
         (EuclideanSpace.single i 1)) * fn u x) 2
       (volume.restrict
         ((⊤ : Opens (EuclideanSpace ℝ (Fin N))) : Set (EuclideanSpace ℝ (Fin N)))) := by
-    rw [Opens.coe_top, Measure.restrict_univ, memLp_indicator_iff_restrict hΩm]
+    rw [Opens.coe_top, Measure.restrict_univ, memLp_indicator_iff_restrict hΩm.nullMeasurableSet]
     exact hG
   -- the equation on `ℝ^N`
   have heqV : ∀ Φ ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2

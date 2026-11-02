@@ -267,7 +267,7 @@ theorem IsUpperBidiagonalRect.isTridiagonal_conjTranspose_mul_self {R : Type*}
   intro i j hij
   have hij' : (j : ℕ) + 1 < i ∨ (i : ℕ) + 1 < j := by
     rcases hij with ⟨l, h1, h2⟩ | ⟨l, h1, h2⟩ <;> rw [Fin.lt_def] at h1 h2 <;> omega
-  rw [mul_apply]
+  rw [Matrix.mul_apply]
   refine Finset.sum_eq_zero fun k _ => ?_
   rw [conjTranspose_apply]
   by_cases hk : (i : ℕ) = k ∨ (i : ℕ) = k + 1
@@ -300,7 +300,7 @@ theorem padRows_apply [Zero α] (B : Matrix (Fin N) n' α) (h : N ≤ M) (i : Fi
   rw [padRows, submatrix_apply, id]
   split_ifs with hi
   · rw [blockEquiv_symm_apply_of_lt h hi, fromRows_apply_inl]
-  · rw [blockEquiv_symm_apply_of_le h (not_lt.1 hi), fromRows_apply_inr, zero_apply]
+  · rw [blockEquiv_symm_apply_of_le h (not_lt.1 hi), fromRows_apply_inr, Matrix.zero_apply]
 
 /-- `Matrix.padRows` is a right inverse of `Matrix.firstRows`. -/
 @[simp]
@@ -313,8 +313,8 @@ theorem firstRows_padRows [Zero α] (B : Matrix (Fin N) n' α) (h : N ≤ M) :
 theorem padRows_eq_mul [NonAssocSemiring α] (B : Matrix (Fin N) n' α)
     (h : N ≤ M) : padRows B h = (1 : Matrix (Fin M) (Fin M) α).submatrix id (Fin.castLE h) * B := by
   ext i j
-  rw [padRows_apply, mul_apply]
-  simp only [submatrix_apply, id_eq, one_apply, ite_mul, one_mul, zero_mul]
+  rw [padRows_apply, Matrix.mul_apply]
+  simp only [submatrix_apply, id_eq, Matrix.one_apply, ite_mul, one_mul, zero_mul]
   split_ifs with hi
   · rw [Finset.sum_eq_single ⟨i, hi⟩]
     · simp
@@ -338,10 +338,10 @@ theorem padRows_mul [Fintype n'] [NonUnitalNonAssocSemiring α] {p : Type*}
     (B : Matrix (Fin N) n' α) (C : Matrix n' p α) (h : N ≤ M) :
     padRows B h * C = padRows (B * C) h := by
   ext i j
-  rw [mul_apply, padRows_apply]
+  rw [Matrix.mul_apply, padRows_apply]
   simp_rw [padRows_apply]
   split_ifs with hi
-  · simp [mul_apply]
+  · simp [Matrix.mul_apply]
   · simp
 
 /-- `diag(U, I) [B; 0] = [U B; 0]`. -/

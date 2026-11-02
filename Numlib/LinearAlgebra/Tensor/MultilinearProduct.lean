@@ -92,8 +92,9 @@ theorem multilinearProd_smul (M : ∀ i, Matrix (μ i) (κ i) R) (c : R) (S : Te
 theorem multilinearProd_eq_sum_rankOne (M : ∀ i, Matrix (μ i) (κ i) R) (S : Tensor κ R) :
     multilinearProd M S = ∑ b, S b • rankOne fun i x => M i x (b i) := by
   ext a
-  rw [multilinearProd_apply, sum_apply]
-  exact Finset.sum_congr rfl fun b _ => by rw [smul_apply, rankOne_apply, smul_eq_mul, mul_comm]
+  rw [multilinearProd_apply, Tensor.sum_apply]
+  exact Finset.sum_congr rfl fun b _ => by rw [Tensor.smul_apply, rankOne_apply, smul_eq_mul,
+      mul_comm]
 
 /-- The multilinear product by diagonal matrices scales each entry by the product of the
 diagonal entries. -/
@@ -159,7 +160,8 @@ private theorem of_multilinearProd_eq_mul {α β α' β' : Type*} [Fintype α] [
     (Matrix.of fun r c => multilinearProd M S (e'.symm (r, c)) : Matrix α' β' R)
       = P * Matrix.of (fun y z => S (e.symm (y, z))) * Qᵀ := by
   ext r c
-  simp only [Matrix.of_apply, multilinearProd, mulVec, dotProduct, mul_apply, transpose_apply]
+  simp only [Matrix.of_apply, multilinearProd, mulVec, dotProduct, Matrix.mul_apply,
+      transpose_apply]
   rw [← e.symm.sum_comp, Fintype.sum_prod_type, Finset.sum_comm]
   simp only [hPQ, Finset.sum_mul]
   exact Finset.sum_congr rfl fun z _ => Finset.sum_congr rfl fun y _ => by ring
@@ -229,7 +231,7 @@ private theorem modeUnfold_apply_update (S : Tensor κ R) (k : ι) (a : ∀ i, �
 /-- The entries of a mode product: `(𝒮 ×_k M)(a) = ∑_y M(a_k, y) 𝒮(a with a_k := y)`. -/
 theorem modeProd_apply (S : Tensor κ R) (k : ι) (M : Matrix (κ k) (κ k) R) (a : ∀ i, κ i) :
     S.modeProd k M a = ∑ y, M (a k) y * S (Function.update a k y) := by
-  rw [← modeUnfold_apply (S.modeProd k M) k a, modeUnfold_modeProd, mul_apply]
+  rw [← modeUnfold_apply (S.modeProd k M) k a, modeUnfold_modeProd, Matrix.mul_apply]
   simp only [modeUnfold_apply_update]
 
 /-- [golub2013matrix] (12.4.17), corrected: `(𝒮 ×_k F) ×_k G = 𝒮 ×_k (G F)` (the book prints
@@ -335,13 +337,13 @@ theorem rectModeProd_refl (S : Tensor κ R) (k : ι) (M : Matrix (κ k) (κ k) R
 private theorem one_submatrix_mul {α β γ : Type*} [Fintype β] [DecidableEq β] (e : α ≃ β)
     (N : Matrix β γ R) : (1 : Matrix β β R).submatrix e id * N = N.submatrix e id := by
   ext x z
-  simp [mul_apply, one_apply]
+  simp [Matrix.mul_apply, Matrix.one_apply]
 
 /-- `N * (1 : Matrix κ κ R).submatrix e id` reads the columns of `N` through `e.symm`. -/
 private theorem mul_one_submatrix {α β γ : Type*} [Fintype α] [DecidableEq β] (e : α ≃ β)
     (N : Matrix γ α R) : N * (1 : Matrix β β R).submatrix e id = N.submatrix id e.symm := by
   ext x z
-  simp only [mul_apply, submatrix_apply, id, one_apply]
+  simp only [Matrix.mul_apply, submatrix_apply, id, Matrix.one_apply]
   rw [Finset.sum_eq_single (e.symm z)]
   · simp
   · intro y _ hy
@@ -364,7 +366,7 @@ theorem rectModeProd_rectModeProd [∀ i, Fintype (μ i)] [∀ i, DecidableEq (�
     simp only [modeFactors_self]
   · rw [modeFactors_of_ne h, modeFactors_of_ne h, modeFactors_of_ne h, one_submatrix_mul]
     ext x z
-    simp [one_apply]
+    simp [Matrix.one_apply]
 
 /-- **Mode products in distinct modes commute** ([golub2013matrix] (12.4.16), rectangular):
 `(𝒮 ×_k F) ×_j G = (𝒮 ×_j G') ×_k F'` for `j ≠ k`, where the two routes `κ → μ → ν` (along `e`,
@@ -416,7 +418,7 @@ theorem modeUnfold_rectModeProd (S : Tensor κ R) (k : ι) (e : ∀ i, i ≠ k �
         = if (fun j : {j // j ≠ k} => e j j.2 (c j)) = c' then 1 else 0 := by
     intro c'
     rw [Finset.prod_congr rfl fun j _ => by
-      rw [modeFactors_of_ne j.2, submatrix_apply, id, one_apply], Fintype.prod_boole]
+      rw [modeFactors_of_ne j.2, submatrix_apply, id, Matrix.one_apply], Fintype.prod_boole]
     exact if_congr funext_iff.symm rfl rfl
   simp only [hprod, mul_ite, mul_one, mul_zero, Finset.sum_ite_eq, Finset.mem_univ, ite_true]
 
@@ -568,7 +570,7 @@ theorem piKronecker_reindex_finPiFinEquiv_eq_kroneckerFin (k : Fin d)
   obtain ⟨b, rfl⟩ := finPiFinEquiv.surjective J
   rw [reindex_apply, submatrix_apply, submatrix_apply, Equiv.symm_apply_apply,
     Equiv.symm_apply_apply, piKronecker_apply, hsplit hmn a, hsplit (fun _ _ => rfl) b,
-    kroneckerFin_apply, kroneckerFin_apply, one_apply, one_apply,
+    kroneckerFin_apply, kroneckerFin_apply, Matrix.one_apply, Matrix.one_apply,
     Fintype.prod_eq_mul_prod_subtype_ne _ k,
     Finset.prod_congr rfl fun (i : {i // i ≠ k}) _ => hM i i.2 (a i) (b i), Fintype.prod_boole]
   have hiff : (∀ i : {i // i ≠ k}, ((a i : Fin (m i)) : ℕ) = (b i : Fin (n i))) ↔
@@ -612,7 +614,7 @@ theorem vecFin_rectModeProd
         (finCongr (prod_eq_upper_mul_mul_lower k fun _ _ => rfl)) *ᵥ vecFin S := by
   rw [rectModeProd, vecFin_multilinearProd,
     piKronecker_reindex_finPiFinEquiv_eq_kroneckerFin k _ hmn fun i hi x y => by
-      rw [modeFactors_of_ne hi, submatrix_apply, id, one_apply]
+      rw [modeFactors_of_ne hi, submatrix_apply, id, Matrix.one_apply]
       simp [Fin.ext_iff], modeFactors_self]
 
 end VecFin

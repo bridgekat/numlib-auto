@@ -522,7 +522,7 @@ private theorem eqOn_zero_of_integral_rpow_eq_zero {p a b : ℝ} (hp : 0 < p) (h
       MeasureTheory.measure_mono_null hsub hnull
     rwa [MeasureTheory.Measure.restrict_apply hUopen.measurableSet,
       Set.inter_eq_self_of_subset_left
-        (fun y hy => Set.Ioo_subset_Ioc_self hy.1)] at h1
+        (fun y (hy : y ∈ U) => Set.Ioo_subset_Ioc_self hy.1)] at h1
   exact absurd hUnull (ne_of_gt (hUopen.measure_pos volume hUne))
 
 /-- Continuity on `[0, 1]` transported along a sequence inside `[0, 1]`. -/

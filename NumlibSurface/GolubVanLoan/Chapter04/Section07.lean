@@ -164,17 +164,17 @@ theorem durbin_denominator_pos {r : ℕ → ℝ} (hr : r 0 = 1) {k : ℕ} {y : F
       · simp
       · simp
       · ext a j
-        simp only [Matrix.add_apply, Matrix.one_mul, mul_apply, replicateRow_apply,
+        simp only [Matrix.add_apply, Matrix.one_mul, Matrix.mul_apply, replicateRow_apply,
           Matrix.zero_apply]
         rw [hsym j, hTE]
         simp
       · ext a b
-        simp [mul_apply, dotProduct, add_comm]
+        simp [Matrix.mul_apply, dotProduct, add_comm]
     rw [h1, fromBlocks_multiply]
     congr 1
     · simp
     · ext i a
-      simp only [Matrix.add_apply, Matrix.mul_one, mul_apply, replicateCol_apply,
+      simp only [Matrix.add_apply, Matrix.mul_one, Matrix.mul_apply, replicateCol_apply,
         Matrix.zero_apply]
       have := congrFun hTE i
       simp only [mulVec, dotProduct, Pi.neg_apply] at this
@@ -1083,7 +1083,7 @@ private theorem symmToeplitz_sub_smul_one {r : ℕ → ℝ} (hr : r 0 = 1) {t : 
       (1 - t) • symmToeplitz k (shiftedToeplitzSeq r t) := by
   have ht' : (1 - t) ≠ 0 := by linarith
   ext i j
-  simp only [Matrix.sub_apply, Matrix.smul_apply, symmToeplitz_apply, one_apply, smul_eq_mul,
+  simp only [Matrix.sub_apply, Matrix.smul_apply, symmToeplitz_apply, Matrix.one_apply, smul_eq_mul,
     shiftedToeplitzSeq]
   by_cases hij : i = j
   · subst hij
@@ -1181,7 +1181,7 @@ private theorem symmToeplitz_sub_smul_one_submatrix (r : ℕ → ℝ) (t : ℝ) 
     (symmToeplitz N r - t • (1 : Matrix (Fin N) (Fin N) ℝ)).submatrix (Fin.castLE h)
         (Fin.castLE h) = symmToeplitz k r - t • (1 : Matrix (Fin k) (Fin k) ℝ) := by
   ext i j
-  simp only [submatrix_apply, Matrix.sub_apply, Matrix.smul_apply, one_apply,
+  simp only [submatrix_apply, Matrix.sub_apply, Matrix.smul_apply, Matrix.one_apply,
     symmToeplitz_apply, Fin.val_castLE, Fin.castLE_inj]
 
 /-- **§4.7.7, the initial bracket of (4.7.11)**: for a symmetric positive definite Toeplitz

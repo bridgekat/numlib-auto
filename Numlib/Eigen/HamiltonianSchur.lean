@@ -197,7 +197,7 @@ theorem planeRotation_inl_inr_mem_orthoSymplecticGroup (i : l) {c s : ℝ}
   refine ⟨hO, (mem_symplecticGroup_iff_commute_J_of_mem_orthogonalGroup hO).2 ?_⟩
   refine (commute_J_iff).2 ⟨1 + (c - 1) • single i i 1, (-s) • single i i 1, ?_⟩
   ext (a | a) (b | b) <;> by_cases ha : a = i <;> by_cases hb : b = i <;>
-    simp [planeRotation_apply hne, one_apply, ha, hb, @eq_comm _ i]
+    simp [planeRotation_apply hne, Matrix.one_apply, ha, hb, @eq_comm _ i]
 
 /-- **The stable invariant subspace of a Hamiltonian matrix is isotropic** (the key lemma of the
 real Hamiltonian–Schur form, [golub2013matrix] §7.8.1; Paige–Van Loan 1981): if `M` is
@@ -748,7 +748,7 @@ private theorem J_eq_submatrix_headTail :
     J (Fin (m + 1)) ℝ
       = (fromBlocks (J (Fin 1) ℝ) 0 0 (J (Fin m) ℝ)).submatrix (headTail m) (headTail m) := by
   ext (i | i) (j | j) <;> cases i using Fin.cases <;> cases j using Fin.cases <;>
-    simp [J, headTail, one_apply, Fin.succ_ne_zero, (Fin.succ_ne_zero _).symm]
+    simp [J, headTail, Matrix.one_apply, Fin.succ_ne_zero, (Fin.succ_ne_zero _).symm]
 
 private theorem liftOS_mem {V : Matrix (Fin m ⊕ Fin m) (Fin m ⊕ Fin m) ℝ}
     (hV : V ∈ orthoSymplecticGroup (Fin m) ℝ) :
@@ -796,7 +796,7 @@ private theorem liftOS_conj_trail_inl_zero (V : Matrix (Fin m ⊕ Fin m) (Fin m 
   rw [liftOS_conj, submatrix_apply, headTail_trail, h0, fromBlocks_multiply, fromBlocks_multiply,
     fromBlocks_apply₂₁]
   simp only [Matrix.zero_mul, zero_add, Matrix.mul_one, Matrix.mul_zero, add_zero]
-  simp only [mul_apply, mulVec, dotProduct, transpose_apply, toBlocks₂₁_submatrix_headTail]
+  simp only [Matrix.mul_apply, mulVec, dotProduct, transpose_apply, toBlocks₂₁_submatrix_headTail]
 
 /-- `liftOS V` fixes the first coordinate vector. -/
 private theorem liftOS_mulVec_single (V : Matrix (Fin m ⊕ Fin m) (Fin m ⊕ Fin m) ℝ) (c : ℝ) :
@@ -849,7 +849,7 @@ private theorem apply_inr_inl_eq_zero {K : Matrix (l ⊕ l) (l ⊕ l) ℝ}
     simp only [transpose_apply, toBlocks₂₁, of_apply] at this
     rw [this, h]
   · have := congrFun (congrFun hF j) i
-    simp only [transpose_apply, toBlocks₂₁, of_apply, neg_apply] at this
+    simp only [transpose_apply, toBlocks₂₁, of_apply, Matrix.neg_apply] at this
     rw [this, h, neg_zero]
 
 /-- The condensed shape, entrywise: the `(1,1)` block upper Hessenberg and the `(2,1)` block
@@ -984,8 +984,8 @@ theorem IsSkewHamiltonian.exists_orthogonalSymplectic_hessenberg
     by_cases hij : i = j
     · subst hij
       have := congrFun (congrFun hS.2.1 i) i
-      rw [transpose_apply, neg_apply] at this
-      simp only [zero_apply]
+      rw [transpose_apply, Matrix.neg_apply] at this
+      simp only [Matrix.zero_apply]
       linarith
     · exact hD hij
   refine ⟨V, hV, (Vᵀ * N * V).toBlocks₁₁, (Vᵀ * N * V).toBlocks₁₂, ?_, hH⟩

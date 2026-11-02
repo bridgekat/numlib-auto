@@ -85,7 +85,7 @@ theorem hasSum_principalLog {A : Matrix n n ℂ} (hA : ∀ μ ∈ spectrum ℂ A
 /-- `(e^z - 1)/z`, completed by `1` at `0`, is analytic at `0`. -/
 private theorem contDiffAt_dslope_exp : ContDiffAt ℂ ⊤ (dslope Complex.exp 0) 0 := by
   obtain ⟨p, hp⟩ := (analyticAt_cexp (z := 0))
-  exact (hp.has_fpower_series_dslope_fslope).analyticAt.contDiffAt
+  exact hp.dslope_fslope.analyticAt.contDiffAt
 
 /-- **A nilpotent matrix with exponential `1` is `0`**: if the spectrum of `N` is in `{0}` and
 `e^N = 1`, then `N = 0`, since `e^N - 1 = N u` with `u = pfc ((e^z - 1)/z) N` invertible. -/

@@ -268,7 +268,7 @@ theorem contDiff_eval (q : MvPolynomial ι ℝ) : ContDiff ℝ ∞ (fun x : ι �
   induction q using MvPolynomial.induction_on with
   | C a => simpa using contDiff_const (c := a)
   | add p q hp hq => simpa [map_add] using hp.add hq
-  | mul_X p i hp => simpa [map_mul, eval_X] using hp.mul (contDiff_apply ℝ ℝ i)
+  | mul_X p i hp => simpa [map_mul, eval_X] using hp.mul (contDiff_apply ℝ (fun _ => ℝ) i)
 
 /-- **The derivative of a polynomial function**: `D(eval · q)(x) = ∑ i, eval x (∂_i q) • proj i`,
 so that the derivative in the direction `e_i` is `eval x (pderiv i q)`. -/

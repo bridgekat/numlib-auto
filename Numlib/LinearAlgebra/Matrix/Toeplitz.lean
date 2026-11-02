@@ -378,8 +378,8 @@ theorem isToeplitz_circulant [Zero R] (v : Fin n → R) : (circulant v).IsToepli
 theorem circulant_eq_sum_downshift_pow [Semiring R] [NeZero n] (z : Fin n → R) :
     circulant z = ∑ k : Fin n, z k • (downshift n : Matrix (Fin n) (Fin n) R) ^ (k : ℕ) := by
   ext i j
-  simp only [downshift_pow, Fin.cast_val_eq_self, sum_apply, smul_apply, circulant_apply,
-    Pi.single_apply, smul_eq_mul, mul_ite, mul_one, mul_zero, Finset.sum_ite_eq,
+  simp only [downshift_pow, Fin.cast_val_eq_self, Matrix.sum_apply, Matrix.smul_apply,
+    circulant_apply, Pi.single_apply, smul_eq_mul, mul_ite, mul_one, mul_zero, Finset.sum_ite_eq,
     Finset.mem_univ, ite_true]
 
 /-- The value of a difference in `Fin n`: `i - j` if `j ≤ i`, `n + i - j` otherwise. -/
@@ -398,7 +398,7 @@ theorem secondDifferencePeriodic_eq_circulant (hn : 3 ≤ n) :
   ext i j
   have hi := i.isLt
   have hj := j.isLt
-  rw [secondDifferencePeriodic, sub_apply, of_apply, symmTridiagonalToeplitz_apply',
+  rw [secondDifferencePeriodic, Matrix.sub_apply, of_apply, symmTridiagonalToeplitz_apply',
     circulant_apply, val_sub_fin]
   split_ifs <;> first | (exfalso; omega) | ring
 

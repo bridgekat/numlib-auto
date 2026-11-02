@@ -144,8 +144,8 @@ theorem sassenfeld_eq {A : Matrix n n 𝕜} (h : IsUnit (diagPart A)) (i : n) :
 private theorem diagPart_add_strictLower_mulVec_apply (A : Matrix n n 𝕜) (v : n → 𝕜) (i : n) :
     ((diagPart A + strictLower A) *ᵥ v) i =
       A i i * v i + ∑ j ∈ Finset.univ.filter (· < i), A i j * v j := by
-  simp only [mulVec, dotProduct, add_apply, diagPart_apply, strictLower_apply, add_mul, ite_mul,
-    zero_mul, Finset.sum_add_distrib, Finset.sum_ite_eq, Finset.mem_univ, ite_true,
+  simp only [mulVec, dotProduct, Matrix.add_apply, diagPart_apply, strictLower_apply, add_mul,
+    ite_mul, zero_mul, Finset.sum_add_distrib, Finset.sum_ite_eq, Finset.mem_univ, ite_true,
     ← Finset.sum_filter]
 
 omit [Fintype n] [DecidableEq n] [LinearOrder n] in

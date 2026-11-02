@@ -267,7 +267,7 @@ theorem conjTranspose_mul_self_eq_one_iff_orthonormal [DecidableEq m] {Q : Matri
     Qᴴ * Q = 1 ↔ Orthonormal 𝕜 fun j => WithLp.toLp 2 (Q.col j) := by
   rw [orthonormal_iff_ite, ← Matrix.ext_iff]
   refine forall_congr' fun i => forall_congr' fun j => ?_
-  rw [EuclideanSpace.inner_toLp_toLp, dotProduct_comm, one_apply, mul_apply]
+  rw [EuclideanSpace.inner_toLp_toLp, dotProduct_comm, Matrix.one_apply, Matrix.mul_apply]
   rfl
 
 omit [DecidableEq n] in

@@ -203,7 +203,7 @@ theorem isSimilar_diagonal_iff_exists_basis_eigenvectors (A : Matrix n n K) :
     have hAC : A * C = C * Matrix.diagonal d := by
       rw [hA, ← Matrix.mul_assoc, ← Matrix.mul_assoc, Matrix.mul_nonsing_inv C hd,
         Matrix.one_mul]
-    refine ⟨d, C.col, Matrix.linearIndependent_cols_iff_isUnit.2 hC, fun j => ?_⟩
+    refine ⟨d, C.col, Matrix.linearIndependent_col_iff_isUnit.2 hC, fun j => ?_⟩
     funext i
     have h := congrFun (congrFun hAC i) j
     rw [Matrix.mul_apply, Matrix.mul_apply] at h
@@ -213,7 +213,7 @@ theorem isSimilar_diagonal_iff_exists_basis_eigenvectors (A : Matrix n n K) :
     rw [h]
     exact mul_comm _ _
   · rintro ⟨d, v, hv, hvA⟩
-    have hC : IsUnit ((Matrix.of v)ᵀ) := Matrix.linearIndependent_cols_iff_isUnit.1 hv
+    have hC : IsUnit ((Matrix.of v)ᵀ) := Matrix.linearIndependent_col_iff_isUnit.1 hv
     have hd : IsUnit ((Matrix.of v)ᵀ).det := (Matrix.isUnit_iff_isUnit_det _).1 hC
     have hAC : A * (Matrix.of v)ᵀ = (Matrix.of v)ᵀ * Matrix.diagonal d := by
       ext i j

@@ -103,7 +103,8 @@ theorem MeasureTheory.MemLp.exists_isCompact_eLpNorm_indicator_compl_le
   rw [eLpNorm_congr_ae hcongr]
   refine le_trans (eLpNorm_add_le hp1) ?_
   have h2 : eLpNorm (((s ∩ Ω) \ K).indicator f) p (μ.restrict Ω) ≤ ε / 2 :=
-    hδ _ (hA.diff hKc.measurableSet) (le_trans (Measure.restrict_apply_le _ _) hKlt.le)
+    hδ _ (hA.diff hKc.measurableSet).nullMeasurableSet
+      (le_trans (Measure.restrict_apply_le _ _) hKlt.le)
   exact le_trans (add_le_add hs.le h2) (by rw [ENNReal.add_halves])
 
 /-- **Smooth functions compactly supported inside an open set `Ω` approximate every `Lᵖ(Ω)`
@@ -120,7 +121,8 @@ theorem MeasureTheory.MemLp.exists_contDiff_tsupport_subset
   have hε2 : (0 : ℝ) < ε / 2 := by linarith
   obtain ⟨K, hKc, hKΩ, hK⟩ := hf.exists_isCompact_eLpNorm_indicator_compl_le hΩ.measurableSet hp1 hp
     (ε := ENNReal.ofReal (ε / 2)) (ENNReal.ofReal_pos.2 hε2).ne'
-  have hf₁mem : MemLp (K.indicator f) p (μ.restrict Ω) := hf.indicator hKc.measurableSet
+  have hf₁mem : MemLp (K.indicator f) p (μ.restrict Ω) :=
+    hf.indicator hKc.measurableSet.nullMeasurableSet
   obtain ⟨g, hg1, hg2, hg3⟩ := hf₁mem.exist_eLpNorm_sub_le hp hp1 hε2
   obtain ⟨η, hη1, hη2, hη3, hη4, hη5⟩ := exists_contDiff_one_on_of_isCompact_of_isOpen hKc hΩ hKΩ
   have hsupp : Function.support (fun x => η x • g x) ⊆ Function.support η := by

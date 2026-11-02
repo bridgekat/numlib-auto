@@ -79,7 +79,7 @@ after (12.5.21)): `𝒳_(k) = F_k diag(c) (⊙_{j ≠ k} F_j)ᵀ`. -/
 theorem modeUnfold_cp [DecidableEq ρ] (c : ρ → R) (F : ∀ i, Matrix (κ i) ρ R) (k : ι) :
     (cp c F).modeUnfold k = F k * diagonal c * (piKhatriRao fun j : {j // j ≠ k} => F j)ᵀ := by
   ext x col
-  rw [mul_apply]
+  rw [Matrix.mul_apply]
   simp only [mul_diagonal, transpose_apply, piKhatriRao_apply, modeUnfold, Matrix.of_apply,
     cp_apply]
   refine Finset.sum_congr rfl fun j _ => ?_

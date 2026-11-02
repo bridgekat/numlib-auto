@@ -388,7 +388,7 @@ theorem blockDiagonal_conj_blockCyclic {R : Type*} [CommRing R] {m : Type*} [Fin
       blockCyclic fun i => (U (i + 1))ᵀ * A i * U i := by
   classical
   ext ⟨r, b⟩ ⟨c, d⟩
-  simp only [mul_apply, Fintype.sum_prod_type, blockDiagonal_transpose, blockDiagonal_apply,
+  simp only [Matrix.mul_apply, Fintype.sum_prod_type, blockDiagonal_transpose, blockDiagonal_apply,
     blockCyclic, of_apply, transpose_apply]
   simp only [ite_mul, zero_mul, mul_ite, mul_zero, Finset.sum_ite_eq', Finset.mem_univ,
     ite_true]

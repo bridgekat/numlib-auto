@@ -184,8 +184,9 @@ theorem eLpNorm_le_of_piecewise {F : Type*} [NormedAddCommGroup F] {p : ℝ≥0�
         add_le_add (eLpNorm_mono_measure _ Measure.restrict_le_self)
           (eLpNorm_mono_measure _ Measure.restrict_le_self)
     _ = _ := by
-        rw [eLpNorm_indicator_eq_eLpNorm_restrict (posHalf _ V).isOpen.measurableSet,
-          eLpNorm_indicator_eq_eLpNorm_restrict isOpen_negHalf'.measurableSet]
+        rw [eLpNorm_indicator_eq_eLpNorm_restrict
+            (posHalf _ V).isOpen.measurableSet.nullMeasurableSet,
+          eLpNorm_indicator_eq_eLpNorm_restrict isOpen_negHalf'.measurableSet.nullMeasurableSet]
 
 /-- `scaleLast l`, `l < 0`, maps the negative half of `V` into the positive half, when it maps it
 into `V`. -/

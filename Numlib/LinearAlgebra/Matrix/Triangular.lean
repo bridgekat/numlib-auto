@@ -440,8 +440,8 @@ theorem isLowerTriangular_iff_fin [Zero R] {N : ℕ} {A : Matrix (Fin N) (Fin N)
 theorem col_zero_eq_smul_of_eq_mul [CommRing R] {N : ℕ} {M Z T : Matrix (Fin (N + 1))
     (Fin (N + 1)) R} (hM : M = Z * T) (hT : T.IsUpperTriangular) : M.col 0 = T 0 0 • Z.col 0 := by
   ext i
-  rw [hM, col_apply, mul_apply, Finset.sum_eq_single 0, Pi.smul_apply, col_apply, smul_eq_mul,
-    mul_comm]
+  rw [hM, col_apply, Matrix.mul_apply, Finset.sum_eq_single 0, Pi.smul_apply, col_apply,
+    smul_eq_mul, mul_comm]
   · intro l _ hl
     rw [hT (Fin.pos_iff_ne_zero.2 hl), mul_zero]
   · simp
@@ -461,7 +461,7 @@ theorem BlockTriangular.toBlock_mul {M N : Matrix m m R} (hM : M.BlockTriangular
   classical
   rw [toBlock_mul_eq_add _ (b · = k), add_eq_left]
   ext i j
-  simp only [mul_apply, toBlock_apply, zero_apply]
+  simp only [Matrix.mul_apply, toBlock_apply, Matrix.zero_apply]
   refine Finset.sum_eq_zero fun l _ => ?_
   have hl : b l ≠ k := l.2
   rcases lt_or_gt_of_ne hl with h | h
@@ -473,7 +473,7 @@ theorem BlockTriangular.toBlock_pow [DecidableEq m] {M : Matrix m m R} (hM : M.B
     (k : α) (p : ℕ) :
     (M ^ p).toBlock (b · = k) (b · = k) = M.toBlock (b · = k) (b · = k) ^ p := by
   induction p with
-  | zero => ext i j; simp [one_apply, Subtype.ext_iff]
+  | zero => ext i j; simp [Matrix.one_apply, Subtype.ext_iff]
   | succ p ih => rw [pow_succ, (hM.pow p).toBlock_mul hM, ih, pow_succ]
 
 /-- A block of a product, summed over the block index. -/
@@ -497,7 +497,7 @@ theorem BlockTriangular.toBlock_mul_eq_sum_Icc [Finite α] [LocallyFiniteOrder �
   refine (Finset.sum_subset (Finset.subset_univ _) fun r _ hr => ?_).symm
   rw [Finset.mem_Icc, not_and_or, not_le, not_le] at hr
   ext i j
-  simp only [Matrix.mul_apply, toBlock_apply, zero_apply]
+  simp only [Matrix.mul_apply, toBlock_apply, Matrix.zero_apply]
   refine Finset.sum_eq_zero fun x _ => ?_
   rcases hr with hr | hr
   · rw [hM (by rw [x.2, i.2]; exact hr), zero_mul]

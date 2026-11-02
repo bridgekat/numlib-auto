@@ -85,9 +85,9 @@ theorem isClosed_normalDomain {a b : ℝ} {φ₁ φ₂ : ℝ → ℝ} (h₁ : Co
     (h₂ : ContinuousOn φ₂ (Icc a b)) : IsClosed (normalDomain a b φ₁ φ₂) := by
   have hs : IsClosed (Icc a b ×ˢ (univ : Set ℝ)) := isClosed_Icc.prod isClosed_univ
   have hc₁ : ContinuousOn (fun p : ℝ × ℝ => (φ₁ p.1, p.2)) (Icc a b ×ˢ univ) :=
-    (h₁.comp continuousOn_fst fun p hp => hp.1).prodMk continuousOn_snd
+    (h₁.comp continuousOn_fst fun p (hp : p ∈ Icc a b ×ˢ univ) => hp.1).prodMk continuousOn_snd
   have hc₂ : ContinuousOn (fun p : ℝ × ℝ => (p.2, φ₂ p.1)) (Icc a b ×ˢ univ) :=
-    continuousOn_snd.prodMk (h₂.comp continuousOn_fst fun p hp => hp.1)
+    continuousOn_snd.prodMk (h₂.comp continuousOn_fst fun p (hp : p ∈ Icc a b ×ˢ univ) => hp.1)
   have e : normalDomain a b φ₁ φ₂
       = (Icc a b ×ˢ univ ∩ (fun p : ℝ × ℝ => (φ₁ p.1, p.2)) ⁻¹' {q : ℝ × ℝ | q.1 ≤ q.2})
         ∩ (Icc a b ×ˢ univ ∩ (fun p : ℝ × ℝ => (p.2, φ₂ p.1)) ⁻¹' {q : ℝ × ℝ | q.1 ≤ q.2}) := by
@@ -159,7 +159,7 @@ noncomputable def triangleMap (v : Fin 3 → Fin 2 → ℝ) (x : Fin 2 → ℝ) 
   triangleLinear v x + v 0
 
 /-- **The triangle** `T = F_T(T̂)` with vertices `v 0, v 1, v 2`. -/
-def triangle (v : Fin 3 → Fin 2 → ℝ) : Set (Fin 2 → ℝ) :=
+noncomputable def triangle (v : Fin 3 → Fin 2 → ℝ) : Set (Fin 2 → ℝ) :=
   triangleMap v '' refTriangle
 
 /-- **The area `|T|`** of the triangle with vertices `v 0, v 1, v 2`. -/

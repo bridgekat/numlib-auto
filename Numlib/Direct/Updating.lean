@@ -297,8 +297,8 @@ theorem exists_isQR_rankOne_update {A Q R : Matrix (Fin n) (Fin n) ℝ} (h : IsQ
   have hH : ((adjacentRotationProd 0 (n - 1) c s : Matrix (Fin n) (Fin n) ℝ) *
       (R + vecMulVec (Qᵀ *ᵥ u) v)).HasLowerBandwidthRect 1 := by
     intro i l hil
-    rw [Matrix.mul_add, add_apply, mul_vecMulVec, vecMulVec_apply, hz' i (by omega), zero_mul,
-      add_zero]
+    rw [Matrix.mul_add, Matrix.add_apply, mul_vecMulVec, vecMulVec_apply, hz' i (by omega),
+      zero_mul, add_zero]
     rw [adjacentRotationProd_eq_prodFwd]
     exact prodFwd_adjacentEmbed_mul_apply_eq_zero h.hasLowerBandwidthRect
       (fun j => !![c j, -s j; s j, c j]) 0 (n - 1) (Or.inl hil)
@@ -338,7 +338,7 @@ theorem IsQR.conjTranspose_mul_deleteColumn {A : Matrix (Fin m) (Fin (n + 1)) �
     fun i j hij hjk => h.apply_eq_zero i (k.succAbove j) ?_⟩
   · rw [← h.conjTranspose_mul_eq]
     ext i j
-    simp [mul_apply]
+    simp [Matrix.mul_apply]
   · have := Fin.val_succAbove_le k j
     omega
   · rw [Fin.val_succAbove_of_lt hjk]
@@ -511,17 +511,17 @@ theorem IsQR.exists_deleteFirstRow {A : Matrix (Fin (m + 1)) (Fin n) ℝ} {Q R} 
   set X := Q * (adjacentRotationProd 0 m c s)ᵀ with hXdef
   have hrow : ∀ j : Fin m, X 0 j.succ = 0 := fun j => by
     have e : X 0 j.succ = (adjacentRotationProd 0 m c s *ᵥ fun r => Q 0 r) j.succ := by
-      simp [hXdef, mul_apply, mulVec, dotProduct, mul_comm]
+      simp [hXdef, Matrix.mul_apply, mulVec, dotProduct, mul_comm]
     rw [e]
     exact hz j.succ (by simp) (by simp)
   have hXX := (mem_orthogonalGroup_iff _ ℝ).1 hX
   have hXX' := (mem_orthogonalGroup_iff' _ ℝ).1 hX
   have ha : X 0 0 ^ 2 = 1 := by
     have := congrFun (congrFun hXX 0) 0
-    simpa [mul_apply, Fin.sum_univ_succ, hrow, sq] using this
+    simpa [Matrix.mul_apply, Fin.sum_univ_succ, hrow, sq] using this
   have hcol : ∀ i : Fin m, X i.succ 0 = 0 := by
     have h1 := congrFun (congrFun hXX' 0) 0
-    simp only [mul_apply, transpose_apply, Fin.sum_univ_succ, one_apply_eq] at h1
+    simp only [Matrix.mul_apply, transpose_apply, Fin.sum_univ_succ, one_apply_eq] at h1
     have h2 : ∑ i : Fin m, X i.succ 0 * X i.succ 0 = 0 := by nlinarith
     intro i
     have := (Finset.sum_eq_zero_iff_of_nonneg (fun i _ => mul_self_nonneg (X i.succ 0))).1 h2 i
@@ -552,7 +552,7 @@ theorem IsQR.exists_deleteFirstRow {A : Matrix (Fin (m + 1)) (Fin n) ℝ} {Q R} 
       (mem_orthogonalGroup_iff' _ ℝ).1 hP, Matrix.one_mul, h.mul_eq]
   rw [hA]
   ext i j
-  simp [mul_apply, Fin.sum_univ_succ, hcol]
+  simp [Matrix.mul_apply, Fin.sum_univ_succ, hcol]
 
 /-- **QR after deleting any row** ([golub2013matrix] §6.5.3, "the procedure is similar when an
 arbitrary row is deleted"): if `A = Q R` with `A : Matrix (Fin (m + 1)) (Fin n) ℝ`, `k` a row, and
@@ -587,7 +587,7 @@ variable {α : Type*} [CommRing α] {m n p : Type*} [Fintype m]
 private theorem transpose_replicateRow_mul_self (z : n → α) :
     (replicateRow Unit z)ᵀ * replicateRow Unit z = vecMulVec z z := by
   ext i j
-  simp [mul_apply, vecMulVec_apply]
+  simp [Matrix.mul_apply, vecMulVec_apply]
 
 /-- **The stacked Gram matrix** ([golub2013matrix] (6.5.6)): appending the row `zᵀ` to `H` adds
 `z zᵀ` to its Gram matrix, `[H; zᵀ]ᵀ [H; zᵀ] = Hᵀ H + z zᵀ`. -/
@@ -840,12 +840,12 @@ theorem sq_lt_sq_of_posDef_transpose_mul_self_sub {n : Type*} [Fintype n] [Linea
   have hRx : R *ᵥ x = Pi.single k 1 := by
     ext i
     have := congrFun (congrFun (mul_nonsing_inv R hU) i) k
-    rw [mul_apply] at this
-    rw [Pi.single_apply, ← one_apply, ← this]
+    rw [Matrix.mul_apply] at this
+    rw [Pi.single_apply, ← Matrix.one_apply, ← this]
     rfl
   have hkk : R⁻¹ k k * R k k = 1 := by
     have := congrFun (congrFun (nonsing_inv_mul R hU) k) k
-    rw [mul_apply, one_apply_eq, Finset.sum_eq_single k] at this
+    rw [Matrix.mul_apply, one_apply_eq, Finset.sum_eq_single k] at this
     · exact this
     · intro j _ hjk
       rcases lt_or_gt_of_ne hjk with h | h
@@ -986,7 +986,7 @@ theorem hyperbolicDowndate_step {n : ℕ} {A H : Matrix (Fin (n + 1)) (Fin (n + 
   have hA' : Hᵀ * H = A := by
     rw [← conjTranspose_eq_transpose_of_trivial, hH.conjTranspose_mul_self]
   have h00 : A 0 0 = H 0 0 ^ 2 := by
-    rw [← hA', mul_apply, Finset.sum_eq_single 0]
+    rw [← hA', Matrix.mul_apply, Finset.sum_eq_single 0]
     · simp [sq]
     · intro j _ hj
       rw [transpose_apply, hH.isUpperTriangular (Fin.pos_iff_ne_zero.2 hj), zero_mul]

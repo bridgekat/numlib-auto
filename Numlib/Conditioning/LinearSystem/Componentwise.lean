@@ -399,7 +399,7 @@ theorem exists_perturbation_iff_abs_residual_le (A E : Matrix m p ℝ) (b f : m 
       rw [add_mulVec, Pi.add_apply, hrow, Pi.add_apply]
       simp only [hr, Pi.sub_apply, Pi.abs_apply] at hi
       linarith
-    · rw [abs_apply, of_apply, smul_apply, abs_apply, smul_eq_mul, abs_mul, abs_mul, abs_abs]
+    · rw [abs_apply, of_apply, Matrix.smul_apply, abs_apply, smul_eq_mul, abs_mul, abs_mul, abs_abs]
       calc |c i| * |E i j| * |(SignType.sign (x j) : ℝ)| ≤ ω * |E i j| * 1 := by
             gcongr
             · exact hcω i

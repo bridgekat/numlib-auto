@@ -85,7 +85,7 @@ theorem exists_subseq_tendsto_ae_ae_le_of_tendsto_eLpNorm [Fact (1 ≤ p)] {f : 
       eLpNorm_norm _ ((hf (ns k)).sub hg).aestronglyMeasurable]
   have hd_sum : ∑' k, ‖d k‖ₑ ≠ ∞ := by
     refine ne_top_of_le_ne_top (ENNReal.tsum_geometric_two ▸ ENNReal.ofNat_ne_top)
-      (ENNReal.tsum_le_tsum fun k => ?_)
+      (tsum_le_tsum fun k => ?_)
     rw [hd_enorm]
     exact hle k
   -- the series converges pointwise almost everywhere

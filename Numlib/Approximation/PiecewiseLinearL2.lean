@@ -105,7 +105,7 @@ discontinuous trial space is spanned by such classes: the pieces of a piecewise 
 continuous, and it is the cutting alone that makes the whole discontinuous. -/
 noncomputable def iccIndicatorLp (a b : ℝ) {s : Set (Set.Icc a b)} (hs : MeasurableSet s)
     (g : C(Set.Icc a b, ℝ)) : Lp ℝ 2 (iccMeasure a b) :=
-  ((memLp_iccToLp g).indicator hs).toLp _
+  ((memLp_iccToLp g).indicator hs.nullMeasurableSet).toLp _
 
 /-- The defining formula of `IntegralOperator.iccIndicatorLp`, almost everywhere. -/
 theorem coeFn_iccIndicatorLp {s : Set (Set.Icc a b)} (hs : MeasurableSet s)

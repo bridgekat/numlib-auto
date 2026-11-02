@@ -1178,7 +1178,7 @@ theorem exists_norm_indicator_bound (hN : 3 ≤ N) :
       (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))
       ≤ ENNReal.ofReal (C * gradNorm v)
         * (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))) s) ^ ((N : ℝ)⁻¹) := by
-    rw [eLpNorm_indicator_eq_eLpNorm_restrict hs]
+    rw [eLpNorm_indicator_eq_eLpNorm_restrict hs.nullMeasurableSet]
     have hmeas : AEStronglyMeasurable (fn v)
         ((volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))).restrict s) :=
       (SobolevMultiIndex.memLp _).aestronglyMeasurable.mono_measure Measure.restrict_le_self
@@ -1241,7 +1241,7 @@ theorem gradNorm_sq_le_of_posPart (hA : IsUniformlyElliptic Ω A α)
   have hEm := measurableSet_levelGradSet u l
   have hgLp : MemLp ((levelGradSet u l).indicator (fn v)) 2
       (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
-    (SobolevMultiIndex.memLp v).indicator hEm
+    (SobolevMultiIndex.memLp v).indicator hEm.nullMeasurableSet
   have hvi : ∀ i, (weakDeriv v (MultiIndexLE.single i) : EuclideanSpace ℝ (Fin N) → ℝ)
       =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
         {x | l < fn u x}.indicator (weakDeriv u (MultiIndexLE.single i)) := fun i ↦

@@ -87,8 +87,8 @@ theorem mul_of_insertNth {l : Type*} [NonUnitalNonAssocSemiring R] {m n : ℕ}
       of fun i => Fin.insertNth k ((P *ᵥ z) i) ((P * A) i) := by
   ext i j
   obtain rfl | ⟨j, rfl⟩ := Fin.eq_self_or_eq_succAbove k j
-  · simp [mul_apply, mulVec, dotProduct]
-  · simp [mul_apply]
+  · simp [Matrix.mul_apply, mulVec, dotProduct]
+  · simp [Matrix.mul_apply]
 
 /-- Selecting rows of a left factor selects the rows of the product: the rewriting form of
 Mathlib's `Matrix.submatrix_mul` with `e₂ = e₃ = id`. -/

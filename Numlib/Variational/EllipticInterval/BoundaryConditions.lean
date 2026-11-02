@@ -1868,7 +1868,7 @@ theorem abs_inner_translateLp_le {ψ : ℝ → ℝ} {R : ℝ} (hR : ∀ x, R ≤
     linarith [neg_le_abs (x + -h)]
   -- `⟪g, τ_{-h} ψ⟫ = ⟪1_S g, τ_{-h} ψ⟫`
   have hgS : MemLp (S.indicator g) 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ)) :=
-    (Lp.memLp g).indicator hS
+    (Lp.memLp g).indicator hS.nullMeasurableSet
   have e : ⟪g, translateLp (-h) (hψL.toLp ψ)⟫_ℝ
       = ⟪hgS.toLp _, translateLp (-h) (hψL.toLp ψ)⟫_ℝ := by
     rw [L2.inner_def, L2.inner_def]
@@ -1882,8 +1882,8 @@ theorem abs_inner_translateLp_le {ψ : ℝ → ℝ} {R : ℝ} (hR : ∀ x, R ≤
   calc |⟪hgS.toLp _, translateLp (-h) (hψL.toLp ψ)⟫_ℝ|
       ≤ ‖hgS.toLp _‖ * ‖translateLp (-h) (hψL.toLp ψ)‖ := abs_real_inner_le_norm _ _
     _ = _ := by
-      rw [LinearIsometry.norm_map, Lp.norm_toLp, eLpNorm_indicator_eq_eLpNorm_restrict hS,
-        mul_comm]
+      rw [LinearIsometry.norm_map, Lp.norm_toLp,
+        eLpNorm_indicator_eq_eLpNorm_restrict hS.nullMeasurableSet, mul_comm]
 
 /-- The pairing of a compactly supported `ψ ∈ L²(ℝ)` with the translates `τ_{r k} g`, `r k → ∞`,
 tends to `0`. -/

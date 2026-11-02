@@ -152,7 +152,7 @@ theorem gramLower_pure (A : Matrix (Fin m) (Fin n) ℝ) :
   simp only [of_apply, List.mem_finRange, ↓reduceIte, List.foldl_update_eq_ite, List.mem_filter,
     decide_eq_true_eq, true_and]
   split_ifs
-  · simp [mul_apply, dotProduct]
+  · simp [Matrix.mul_apply, dotProduct]
   · rfl
 
 /-- In exact arithmetic `transposeMulVec` computes `Aᵀb`. -/
@@ -375,13 +375,13 @@ theorem mgs_augmented {A : Matrix (Fin m) (Fin n) ℝ} {b : Fin m → ℝ}
   have hAe : A = Q₁ * R₁ := by
     ext p j
     have := congrFun (congrFun hQR.mul_eq p) j.castSucc
-    rw [mul_apply, Fin.sum_univ_castSucc, hup, mul_zero, add_zero] at this
+    rw [Matrix.mul_apply, Fin.sum_univ_castSucc, hup, mul_zero, add_zero] at this
     have h2 : augmentCol A b p j.castSucc = A p j := by simp [augmentCol]
     exact (this.trans h2).symm
   have hbe : b = Q₁ *ᵥ z + ρ • q := by
     ext p
     have := congrFun (congrFun hQR.mul_eq p) (Fin.last n)
-    rw [mul_apply, Fin.sum_univ_castSucc] at this
+    rw [Matrix.mul_apply, Fin.sum_univ_castSucc] at this
     simp only [augmentCol, of_apply, Fin.snoc_last] at this
     rw [← this]
     simp [mulVec, dotProduct, hQ₁, hz, hq, hρ, mul_comm]
@@ -389,7 +389,7 @@ theorem mgs_augmented {A : Matrix (Fin m) (Fin n) ℝ} {b : Fin m → ℝ}
     ext i j
     have := hon i.castSucc j.castSucc
     simp only [Fin.castSucc_inj] at this
-    simpa [mul_apply, one_apply, hQ₁, dotProduct] using this
+    simpa [Matrix.mul_apply, Matrix.one_apply, hQ₁, dotProduct] using this
   have hQ₁q : Q₁ᵀ *ᵥ q = 0 := by
     ext i
     have := hon i.castSucc (Fin.last n)
@@ -637,7 +637,7 @@ private theorem algorithm_5_2_1_one {k : ℕ} :
     Id.run (algorithm_5_2_1 pure (1 : Matrix (Fin k) (Fin k) ℝ)) = (1, 0) := by
   rw [algorithm_5_2_1, List.idRun_foldlM]
   refine List.foldl_fixed' (fun j => ?_) _
-  rw [householderQRStep_of_col_zero _ _ j j.isLt (fun i hi => ?_) (by simp [one_apply])]
+  rw [householderQRStep_of_col_zero _ _ j j.isLt (fun i hi => ?_) (by simp)]
   · simp
   · exact one_apply_ne fun e => by rw [e] at hi; exact lt_irrefl _ hi
 
@@ -659,10 +659,10 @@ theorem algorithm_5_3_2_counterexample :
       ext i
       fin_cases i <;>
         norm_num [mulVec, dotProduct, Fin.sum_univ_two, vecMulVec_apply, storedHouseholderVec,
-          recomputedBeta, one_apply]
+          recomputedBeta, Matrix.one_apply]
     have hR : (upperPart (1 : Matrix (Fin 2) (Fin 2) ℝ)).firstRows le_rfl = 1 := by
       ext i j
-      fin_cases i <;> fin_cases j <;> simp [upperPart, firstRows, one_apply]
+      fin_cases i <;> fin_cases j <;> simp [upperPart, firstRows, Matrix.one_apply]
     simp only [algorithm_5_3_2, householderLSSolve, Id.run_bind, List.idRun_foldlM,
       algorithm_5_2_1_one]
     rw [hloop, hR]
@@ -1571,7 +1571,7 @@ theorem storedQTransposeMulVec_pure (A : Matrix (Fin m) (Fin n) ℝ) (β : Fin n
   rw [foldl_mul_eq_transpose_prod_mul _ (fun j => transpose_one_sub_smul_vecMulVec _ _),
     ← factoredQ_eq_prod]
   funext i
-  simp [mul_apply, mulVec, dotProduct]
+  simp [Matrix.mul_apply, mulVec, dotProduct]
 
 /-- **Algorithm 5.3.2 with the returned `β`** (convention 13; the corrected reading of
 book-errata Ch. 5 #2): Algorithm 5.2.1, then `Qᵀb` from the stored vectors and the `β` that
@@ -1612,7 +1612,7 @@ theorem storedQMulVec_pure (A : Matrix (Fin m) (Fin n) ℝ) (β : Fin n → ℝ)
         List.map_cons, List.prod_cons, Matrix.mul_assoc]
   rw [key, ← factoredQ_eq_prod]
   funext i
-  simp [mul_apply, mulVec, dotProduct]
+  simp [Matrix.mul_apply, mulVec, dotProduct]
 
 /-- One exact step of the iterative improvement lands on the solution of the augmented system
 (5.3.20): whatever the current iterate, `r + A x = b` and `Aᵀ r = 0` afterwards. -/

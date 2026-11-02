@@ -117,7 +117,7 @@ theorem lowerConj_le_upperConj (K : Rn m × Rn n → EReal) : lowerConj K ≤ up
   lowerConjSaddle_le_upperConjSaddle (pairing m) (pairing n) K
 
 /-- Rockafellar's `dom ∂K = {(u, v) | ∂K (u, v) ≠ ∅}`. -/
-abbrev domSubdiff (K : Rn m × Rn n → EReal) : Set (Rn m × Rn n) :=
+noncomputable abbrev domSubdiff (K : Rn m × Rn n → EReal) : Set (Rn m × Rn n) :=
   domSaddleSubdifferential (pairing m) (pairing n) K
 
 theorem mem_domSubdiff {K : Rn m × Rn n → EReal} {p : Rn m × Rn n} :

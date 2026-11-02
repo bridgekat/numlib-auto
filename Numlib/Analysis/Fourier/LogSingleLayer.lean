@@ -6,7 +6,7 @@ coefficients of `log ∘ sin`, and `Mathlib.Analysis.Fourier.AddCircle` for the 
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
-import Mathlib.Analysis.SpecialFunctions.Integrals.LogTrigonometric
+import Mathlib.Analysis.SpecialFunctions.Integrals.Log
 import Mathlib.Analysis.SpecialFunctions.Log.NegMulLog
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Periodic
 import Numlib.Analysis.SpecialFunctions.Integrals.Basic

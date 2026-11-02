@@ -371,7 +371,7 @@ theorem eq_lobattoNodal_of_eval_eq_zero (hw : IsWeight μ) (hsupp : μ (Icc (-1 
     have := monic_X_pow_sub_C (1 : ℝ) two_ne_zero
     rwa [C_1] at this
   have hquadnat : (X ^ 2 - 1 : ℝ[X]).natDegree = 2 := by
-    have := natDegree_X_pow_sub_C (n := 2) (r := (1 : ℝ))
+    have := natDegree_X_pow_sub_C (n := 2) (1 : ℝ)
     rwa [C_1] at this
   have hr0 : r ≠ 0 := fun h => hgmonic.ne_zero (by rw [hgr, h, mul_zero])
   have hrnat : r.natDegree = n - 1 := by
@@ -1153,7 +1153,7 @@ Reference: [quarteroni2000numerical] (10.21). -/
 theorem integral_eq_sumExtrema {n : ℕ} {P : ℝ[X]} (hn : n ≠ 0) (hP : P.degree < 2 * n) :
     ∫ x, P.eval x ∂measureT = sumExtrema n P := by
   have hmem : P ∈ degreeLT ℝ (2 * n) := by rwa [mem_degreeLT]
-  rw [← Sequence.span_degreeLT (chebyshevTsequence ℝ) (by simp),
+  rw [← Sequence.span_degreeLT (chebyshevTSequence ℝ) (by simp),
     show Set.Iio (2 * n) = Finset.range (2 * n) by simp,
     Submodule.mem_span_image_finset_iff_exists_fun'] at hmem
   obtain ⟨c, rfl⟩ := hmem
@@ -1161,7 +1161,7 @@ theorem integral_eq_sumExtrema {n : ℕ} {P : ℝ[X]} (hn : n ≠ 0) (hP : P.deg
   rw [MeasureTheory.integral_finsetSum, sumExtrema_sum]
   · simp_rw [sumExtrema_smul, smul_eq_mul, MeasureTheory.integral_const_mul]
     refine Finset.sum_congr rfl fun i hi => ?_
-    simp only [chebyshevTsequence]
+    simp only [chebyshevTSequence]
     rcases eq_or_ne i 0 with rfl | hi0
     · rw [Nat.cast_zero, integral_eval_T_real_measureT_zero, sumExtrema_T_zero hn]
     · rw [integral_eval_T_real_measureT_of_ne_zero (by exact_mod_cast hi0),

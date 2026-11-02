@@ -181,7 +181,7 @@ theorem imgsHat_mem_span (i : ℕ) :
 /-- The rows of a nonsingular matrix, read as vectors of `𝕜ⁿ`, are linearly independent. -/
 theorem linearIndependent_rowVec {A : Matrix (Fin n) (Fin n) 𝕜} (hA : IsUnit A) :
     LinearIndependent 𝕜 fun i : Fin n => rowVec A (i : ℕ) := by
-  have hrows : LinearIndependent 𝕜 A.row := Matrix.linearIndependent_rows_iff_isUnit.2 hA
+  have hrows : LinearIndependent 𝕜 A.row := Matrix.linearIndependent_row_iff_isUnit.2 hA
   have hmap := hrows.map' (WithLp.linearEquiv 2 𝕜 (Fin n → 𝕜)).symm.toLinearMap
     (LinearEquiv.ker _)
   have heq : (fun i : Fin n => rowVec A (i : ℕ)) =

@@ -66,7 +66,7 @@ variable {c d : ℝ}
 /-- Multiplication by a nonzero constant is quasi-measure-preserving for the Lebesgue measure on
 `ℝ`. -/
 private theorem qmp_const_mul (hc : c ≠ 0) :
-    Measure.QuasiMeasurePreserving (fun x : ℝ => c * x) volume volume := by
+    QuasiMeasurePreserving (fun x : ℝ => c * x) volume volume := by
   refine ⟨measurable_const_mul c, ?_⟩
   rw [Real.map_volume_mul_left hc]
   exact Measure.smul_absolutelyContinuous

@@ -600,7 +600,7 @@ private theorem IsIrreducible.mulVec_eq_smul_of_mem_eigenspace [Nonempty n] (hA 
   have hxne : (⟨x, hxmem⟩ : Module.End.eigenspace A.mulVecLin ρ) ≠ 0 := fun h => by
     have := congrArg Subtype.val h
     exact (hxpos (Classical.arbitrary n)).ne' (congrFun this (Classical.arbitrary n))
-  obtain ⟨c, hc⟩ := (finrank_eq_one_iff_of_nonzero' (⟨x, hxmem⟩ :
+  obtain ⟨c, hc⟩ := (finrank_eq_one_iff_of_ne_zero' (⟨x, hxmem⟩ :
       Module.End.eigenspace A.mulVecLin ρ) hxne).1
     hA.finrank_eigenspace_complexSpectralRadius_eq_one ⟨w, hwmem⟩
   have hcx : c • x = w := congrArg Subtype.val hc

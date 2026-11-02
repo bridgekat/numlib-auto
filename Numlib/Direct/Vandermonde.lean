@@ -319,7 +319,7 @@ theorem inv_vandermonde_eq {x : Fin (n + 1) → K} (hx : Function.Injective x) :
     intro l
     rw [hg, mulVec_single_one]
     rfl
-  simp only [mul_apply, of_apply, hcol, upperFactorT_mulVec_eq_newtonOn hx]
+  simp only [Matrix.mul_apply, of_apply, hcol, upperFactorT_mulVec_eq_newtonOn hx]
   -- Newton's formula evaluated at the node `x i`
   have hN := DividedDifference.interpolate_eq_sum_newtonOn_mul_nodal
     (s := (univ : Finset (Fin (n + 1)))) (hx.injOn) g
@@ -327,7 +327,7 @@ theorem inv_vandermonde_eq {x : Fin (n + 1) → K} (hx : Function.Injective x) :
   rw [Lagrange.eval_interpolate_at_node _ hx.injOn (mem_univ i), eval_finsetSum] at hv
   simp only [eval_mul, eval_C, Lagrange.eval_nodal] at hv
   have h1 : g (x i) = (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) K) i j := by
-    rw [congrFun hg i, one_apply]
+    rw [congrFun hg i, Matrix.one_apply]
     simp [f, Pi.single_apply]
   rw [← h1, hv]
   refine sum_congr rfl fun l _ => ?_

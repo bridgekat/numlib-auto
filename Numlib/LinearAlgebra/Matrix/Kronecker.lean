@@ -492,7 +492,7 @@ variable [CommSemiring R]
 theorem piKronecker_one [∀ i, DecidableEq (μ i)] :
     piKronecker (fun i => (1 : Matrix (μ i) (μ i) R)) = 1 := by
   ext a b
-  simp [one_apply, Finset.prod_boole, funext_iff]
+  simp [Matrix.one_apply, Finset.prod_boole, funext_iff]
 
 variable [DecidableEq ι]
 
@@ -501,7 +501,7 @@ theorem piKronecker_mul_piKronecker [∀ i, Fintype (κ i)] (N : ∀ i, Matrix (
     (M : ∀ i, Matrix (κ i) (ν i) R) :
     piKronecker N * piKronecker M = piKronecker fun i => N i * M i := by
   ext a b
-  simp only [mul_apply, piKronecker_apply, Fintype.prod_sum, Finset.prod_mul_distrib]
+  simp only [Matrix.mul_apply, piKronecker_apply, Fintype.prod_sum, Finset.prod_mul_distrib]
 
 /-- The family Kronecker product acts on an elementary tensor factor by factor:
 `(⊗ᵢ Mᵢ)(⊗ᵢ zᵢ) = ⊗ᵢ (Mᵢ zᵢ)`. -/
@@ -662,8 +662,8 @@ theorem khatriRao_transpose_mul_self [CommSemiring R] [Fintype m₁] [Fintype m�
     (B : Matrix m₁ r R) (C : Matrix m₂ r R) :
     (khatriRao B C)ᵀ * khatriRao B C = (Bᵀ * B) ⊙ (Cᵀ * C) := by
   ext j k
-  simp only [mul_apply, transpose_apply, khatriRao_apply, hadamard_apply, Fintype.sum_prod_type,
-    Fintype.sum_mul_sum]
+  simp only [Matrix.mul_apply, transpose_apply, khatriRao_apply, hadamard_apply,
+    Fintype.sum_prod_type, Fintype.sum_mul_sum]
   exact Finset.sum_congr rfl fun _ _ => Finset.sum_congr rfl fun _ _ => by ring
 
 /-- The conjugate-transpose twin of `Matrix.khatriRao_transpose_mul_self`. -/
@@ -671,7 +671,7 @@ theorem khatriRao_conjTranspose_mul_self [CommSemiring R] [StarRing R] [Fintype 
     (B : Matrix m₁ r R) (C : Matrix m₂ r R) :
     (khatriRao B C)ᴴ * khatriRao B C = (Bᴴ * B) ⊙ (Cᴴ * C) := by
   ext j k
-  simp only [mul_apply, conjTranspose_apply, khatriRao_apply, hadamard_apply,
+  simp only [Matrix.mul_apply, conjTranspose_apply, khatriRao_apply, hadamard_apply,
     Fintype.sum_prod_type, Fintype.sum_mul_sum, star_mul']
   exact Finset.sum_congr rfl fun _ _ => Finset.sum_congr rfl fun _ _ => by ring
 

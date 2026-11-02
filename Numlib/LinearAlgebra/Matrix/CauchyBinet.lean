@@ -46,8 +46,8 @@ takes the columns `r` of `P`. The first step of Mathlib's `Matrix.det_mul`, for 
 factors. -/
 theorem det_mul_eq_sum_prod_mul_det_submatrix (P : Matrix p m R) (Q : Matrix m p R) :
     (P * Q).det = ∑ r : p → m, (∏ i, Q (r i) i) * (P.submatrix id r).det := by
-  simp only [det_apply', mul_apply, Finset.prod_univ_sum, Finset.mul_sum, Fintype.piFinset_univ,
-    submatrix_apply, id]
+  simp only [det_apply', Matrix.mul_apply, Finset.prod_univ_sum, Finset.mul_sum,
+    Fintype.piFinset_univ, submatrix_apply, id]
   rw [Finset.sum_comm]
   refine Finset.sum_congr rfl fun r _ => Finset.sum_congr rfl fun σ _ => ?_
   rw [Finset.prod_mul_distrib]

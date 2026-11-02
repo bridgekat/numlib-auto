@@ -639,7 +639,8 @@ theorem integrableOn_Ioc_and_integral_eq_of_hasDerivAt_neg {φ g : ℝ → ℝ} 
   have hgi : IntegrableOn g (Ioc 0 T) := by
     have hIoc : ∀ n : ℕ, IntegrableOn g (Ioc (T / (n + 1)) T) := fun n ↦ by
       have hpos : 0 < T / (n + 1) := by positivity
-      exact (hgc.mono fun t ht ↦ hpos.trans_le ht.1).integrableOn_Icc.mono_set Ioc_subset_Icc_self
+      exact (hgc.mono fun t (ht : t ∈ Icc _ T) ↦ hpos.trans_le ht.1).integrableOn_Icc.mono_set
+        Ioc_subset_Icc_self
     have ha : Tendsto (fun n : ℕ ↦ T / (n + 1)) atTop (𝓝 0) := by
       have := tendsto_one_div_add_atTop_nhds_zero_nat.const_mul T
       rw [mul_zero] at this

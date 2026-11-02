@@ -1157,7 +1157,7 @@ theorem epsSubdifferential_convexConj_zero (hf : ConvexFn f) (hc : ClosedConvex 
   have hc0 : convexConj B f 0 = ((-μ : ℝ) : EReal) := by
     rw [convexConj_apply_zero, hμ, EReal.coe_neg]
   ext z
-  rw [Set.mem_ofPred_eq, mem_epsSubdifferential]
+  rw [mem_epsSubdifferential, Set.mem_ofPred_eq]
   have hstep : ∀ y : F, (convexConj B f 0 + ((B.flip (y - 0) z : ℝ) : EReal)
         ≤ convexConj B f y + (ε : EReal))
       ↔ (((B.flip y z : ℝ) : EReal) - convexConj B f y ≤ ((μ + ε : ℝ) : EReal)) := fun y => by

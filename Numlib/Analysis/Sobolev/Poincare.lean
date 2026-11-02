@@ -289,14 +289,14 @@ theorem norm_fnL_le_of_mem_testFunctions (hp' : p ≠ ⊤) {a b : ℝ} (hab : a 
   -- both functions vanish outside `Ω`, so the norms over `Ω` are the norms over `ℝ^{d+1}`
   have hφΩ : eLpNorm (φ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) p (volume.restrict (Ω : Set _))
       = eLpNorm (φ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) p volume := by
-    rw [← eLpNorm_indicator_eq_eLpNorm_restrict hmeas]
+    rw [← eLpNorm_indicator_eq_eLpNorm_restrict hmeas.nullMeasurableSet]
     congr 1
     exact Set.indicator_eq_self.2 (Function.support_subset_iff'.2 fun x hx ↦
       φ.eq_zero_of_notMem hx)
   have hdΩ : eLpNorm (fun x ↦ fderiv ℝ φ x (EuclideanSpace.single (Fin.last d) 1)) p
       (volume.restrict (Ω : Set _))
       = eLpNorm (fun x ↦ fderiv ℝ φ x (EuclideanSpace.single (Fin.last d) 1)) p volume := by
-    rw [← eLpNorm_indicator_eq_eLpNorm_restrict hmeas]
+    rw [← eLpNorm_indicator_eq_eLpNorm_restrict hmeas.nullMeasurableSet]
     congr 1
     exact Set.indicator_eq_self.2 (Function.support_subset_iff'.2 fun x hx ↦
       (φ.fderivApply (EuclideanSpace.single (Fin.last d) 1)).eq_zero_of_notMem hx)

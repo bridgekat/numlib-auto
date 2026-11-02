@@ -453,8 +453,9 @@ theorem eLpNorm_le_of_reflected {p : ℝ≥0∞} (hp : 1 ≤ p)
           (eLpNorm_mono_measure _ Measure.restrict_le_self)
     _ = eLpNorm A p (volume.restrict (posHalf v V : Set E))
         + eLpNorm B p (volume.restrict (posHalf v V : Set E)) := by
-        rw [eLpNorm_indicator_eq_eLpNorm_restrict (posHalf v V).isOpen.measurableSet,
-          eLpNorm_indicator_eq_eLpNorm_restrict isOpen_negHalf.measurableSet,
+        rw [eLpNorm_indicator_eq_eLpNorm_restrict
+            (posHalf v V).isOpen.measurableSet.nullMeasurableSet,
+          eLpNorm_indicator_eq_eLpNorm_restrict isOpen_negHalf.measurableSet.nullMeasurableSet,
           ← preimage_posHalf hV, eLpNorm_comp_measurePreserving hBm
             ((measurePreserving_hyperplaneReflection v).restrict_preimage_emb
               (measurableEmbedding_hyperplaneReflection v) _)]

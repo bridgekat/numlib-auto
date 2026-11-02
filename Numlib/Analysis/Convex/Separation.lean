@@ -818,7 +818,8 @@ theorem closure_convexHull_eq_iInter_halfspaces (s : Set E) :
       (∀ y ∈ s, f y ≤ c) ↔ ∀ y ∈ closure (convexHull ℝ s), f y ≤ c := by
     refine fun f c => ⟨fun h y hy => ?_, fun h y hy =>
       h y (subset_closure (subset_convexHull ℝ s hy))⟩
-    exact closure_minimal (convexHull_min h (convex_halfSpace_le f.toLinearMap.isLinear c))
+    exact closure_minimal
+      (convexHull_min (fun y hy => h y hy) (convex_halfSpace_le f.toLinearMap.isLinear c))
       (isClosed_le f.continuous continuous_const) hy
   rw [← RCLike.iInter_halfSpaces_eq' (𝕜 := ℝ) (convex_convexHull ℝ s).closure isClosed_closure]
   ext x

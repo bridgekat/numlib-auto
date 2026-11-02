@@ -243,7 +243,7 @@ theorem orthogonalIteration_range {r : ℕ} {A : Matrix (Fin n) (Fin n) 𝕜}
   have hcol : A ^ k *ᵥ (Q 0)ᵀ j = S j j • (Q k)ᵀ j := by
     ext i
     have h2 : (Q k * S) i j = Q k i j * S j j := by
-      rw [mul_apply, Finset.sum_eq_single j]
+      rw [Matrix.mul_apply, Finset.sum_eq_single j]
       · intro l _ hl
         rw [hSt (show j < l by
           rw [Fin.lt_def]
@@ -338,7 +338,7 @@ theorem span_leading_schurVectors_eq {p q : ℕ} {A Q : Matrix (Fin (p + q)) (Fi
   simp only [Equiv.symm_symm, finSumFinEquiv_apply_left] at hspan
   refine ⟨hspan, fun S hS hdim hΛ => ?_⟩
   have hli : LinearIndependent ℂ (fun i : Fin p => Q.col (Fin.castAdd q i)) :=
-    (linearIndependent_cols_iff_isUnit.2 hQu).comp _ (Fin.castAdd_injective p q)
+    (linearIndependent_col_iff_isUnit.2 hQu).comp _ (Fin.castAdd_injective p q)
   have hfin : Module.finrank ℂ
       (Submodule.span ℂ (Set.range fun i : Fin p => Q.col (Fin.castAdd q i))) = p := by
     rw [finrank_span_eq_card hli, Fintype.card_fin]
@@ -732,7 +732,7 @@ theorem theorem_7_3_1_counterexample {Q : ℕ → Matrix (Fin 2) (Fin 1) ℂ}
   -- `A Q₀ = Q₀`, hence `A^k Q₀ = Q₀`
   have hAQ : A * Q₀ = Q₀ := by
     ext i j
-    fin_cases i <;> fin_cases j <;> simp [A, Q₀, mul_apply, Fin.sum_univ_two]
+    fin_cases i <;> fin_cases j <;> simp [A, Q₀, Matrix.mul_apply, Fin.sum_univ_two]
     ring
   have hpow : ∀ k, A ^ k * Q₀ = Q₀ := by
     intro k
@@ -897,7 +897,7 @@ private theorem mul_submatrix_castLE {m : ℕ} (P : Matrix (Fin m) (Fin n) ℂ)
     (P * R).submatrix id (Fin.castLE h) =
       P.submatrix id (Fin.castLE h) * R.submatrix (Fin.castLE h) (Fin.castLE h) := by
   ext p l
-  simp only [submatrix_apply, id, mul_apply]
+  simp only [submatrix_apply, id, Matrix.mul_apply]
   symm
   refine Fintype.sum_of_injective (Fin.castLE h) (Fin.castLE_injective h) _ _ ?_ fun _ => rfl
   intro j hj
@@ -917,7 +917,7 @@ private theorem orthogonalIteration_castLE {A : Matrix (Fin n) (Fin n) ℂ}
     intro M hM
     rw [conjTranspose_submatrix, ← submatrix_mul _ _ _ _ _ Function.bijective_id, hM]
     ext i j
-    simp [one_apply, Fin.ext_iff]
+    simp [Matrix.one_apply, Fin.ext_iff]
   refine ⟨hsub _ hQk.1, fun k => ?_⟩
   obtain ⟨R, hR⟩ := hQk.2 k
   refine ⟨R.submatrix (Fin.castLE h) (Fin.castLE h), ⟨?_, hsub _ hR.conjTranspose_mul_self, ?_⟩⟩
@@ -941,13 +941,13 @@ private theorem mul_fromRows_one_zero_submatrix (Q : Matrix (Fin n) (Fin n) ℂ)
     · have hja : j = Fin.castLE h a := by
         rw [← schurSplit_symm_inl h a, ← hj, Equiv.symm_apply_apply]
       subst hja
-      simp [one_apply, Fin.ext_iff]
+      simp [Matrix.one_apply, Fin.ext_iff]
     · have hjb : (j : ℕ) = r + b := by
         rw [← schurSplit_symm_inr h b, ← hj, Equiv.symm_apply_apply]
       have hne : j ≠ Fin.castLE h l := fun h' => by
         rw [h', Fin.val_castLE] at hjb
         omega
-      simp [one_apply, hne]
+      simp [hne]
   rw [e1]
   exact mul_submatrix_one (Equiv.refl _) (Fin.castLE h) Q
 
@@ -1242,7 +1242,7 @@ theorem equation_7_3_11 {A Q : Matrix (Fin n) (Fin n) ℂ} (hQ : Q ∈ unitaryGr
           rw [hf, Fin.val_castLE] at this
           have := Fin.lt_def.1 hlj
           omega
-        simp [toEuclideanLin_apply, one_apply, hne]
+        simp [toEuclideanLin_apply, hne]
       rw [h0', inner_zero_right]
     have hnv : ‖v‖ ≤ 1 := by
       rw [hv, norm_toEuclideanLin_apply_of_conjTranspose_mul_self_eq_one (hunit k)]

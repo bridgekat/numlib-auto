@@ -116,7 +116,7 @@ theorem inv_sub_smul_one_apply_eq_sum (hQ : Q ∈ unitaryGroup n K)
       rw [diagonal_mul_diagonal, ← diagonal_one]
       exact congrArg diagonal (funext fun i => mul_inv_cancel₀ (sub_ne_zero.mpr (hc i))))
   rw [sub_smul_one_eq_mul_diagonal_mul_star hQ hQA, inv_mul_mul_star_of_mem_unitaryGroup hQ,
-    hinv, mul_apply]
+    hinv, Matrix.mul_apply]
   refine Finset.sum_congr rfl fun i _ => ?_
   rw [mul_diagonal, star_apply, div_eq_mul_inv]
   ring
@@ -128,7 +128,7 @@ theorem adjugate_sub_smul_one_apply_eq_sum (hQ : Q ∈ unitaryGroup n K)
     (hQA : star Q * A * Q = diagonal d) (c : K) (j k : n) :
     adjugate (A - c • 1) j k = ∑ i, Q j i * star (Q k i) * ∏ l ∈ univ.erase i, (d l - c) := by
   rw [sub_smul_one_eq_mul_diagonal_mul_star hQ hQA, adjugate_mul_mul_star_of_mem_unitaryGroup hQ,
-    adjugate_diagonal, mul_apply]
+    adjugate_diagonal, Matrix.mul_apply]
   refine Finset.sum_congr rfl fun i _ => ?_
   rw [mul_diagonal, star_apply]
   ring
@@ -143,7 +143,7 @@ variable {K : Type*} [Field K] {N : ℕ}
 theorem submatrix_succ_sub_smul_one (A : Matrix (Fin (N + 1)) (Fin (N + 1)) K) (c : K) :
     (A - c • 1).submatrix Fin.succ Fin.succ = A.submatrix Fin.succ Fin.succ - c • 1 := by
   ext i j
-  simp [one_apply, Fin.succ_inj]
+  simp [Matrix.one_apply, Fin.succ_inj]
 
 /-- **Cramer's rule at the corner** ([golub2013matrix] §8.4.6): the `(0, 0)` entry of the resolvent
 is a ratio of characteristic determinants,
@@ -152,7 +152,7 @@ eigenvalue both sides are `0` (`Matrix.inv_def` and `x / 0 = 0`). The `(0, 0)` c
 trailing principal minor (`Matrix.adjugate_fin_succ_eq_det_submatrix`). -/
 theorem inv_sub_apply_zero_zero_eq_det_div (A : Matrix (Fin (N + 1)) (Fin (N + 1)) K) (c : K) :
     (A - c • 1)⁻¹ 0 0 = det (A.submatrix Fin.succ Fin.succ - c • 1) / det (A - c • 1) := by
-  rw [inv_def, smul_apply, adjugate_fin_succ_eq_det_submatrix, Ring.inverse_eq_inv',
+  rw [inv_def, Matrix.smul_apply, adjugate_fin_succ_eq_det_submatrix, Ring.inverse_eq_inv',
     Fin.succAbove_zero, submatrix_succ_sub_smul_one, smul_eq_mul, div_eq_inv_mul]
   simp
 
@@ -335,7 +335,7 @@ theorem exists_isTridiagonal_eigenvalues_eq_of_strictInterlace {N : ℕ} {l : Fi
     rw [hessenbergReduce_eq_conj, hQ, star_mul, star_star, ← star_eq_conjTranspose]
     simp only [Matrix.mul_assoc, hQ₁', hWA]
   have hQ0 : ∀ i, Q 0 i = W 0 i := fun i => by
-    rw [hQ, mul_apply, Finset.sum_eq_single 0]
+    rw [hQ, Matrix.mul_apply, Finset.sum_eq_single 0]
     · rw [star_apply, hessenbergQ_apply_zero, one_apply_eq, star_one, one_mul]
     · intro k _ hk
       rw [star_apply, hessenbergQ_apply_zero, one_apply_ne hk, star_zero, zero_mul]

@@ -235,7 +235,7 @@ theorem exercise_5_14 :
       ext i j
       fin_cases i <;> fin_cases j <;> simp [A, companion_apply, coeff_X_pow, coeff_one]
     have hmonic : (X ^ 3 - 1 : ℂ[X]).Monic := monic_X_pow_sub_C 1 (by norm_num)
-    have hdeg : (X ^ 3 - 1 : ℂ[X]).natDegree = 3 := natDegree_X_pow_sub_C
+    have hdeg : (X ^ 3 - 1 : ℂ[X]).natDegree = 3 := natDegree_X_pow_sub_C 1
     intro z
     rw [hmap, spectrum_companion hmonic hdeg, mem_rootSet_of_ne hmonic.ne_zero, aeval_sub,
       aeval_X_pow, aeval_one, sub_eq_zero]

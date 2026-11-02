@@ -707,7 +707,7 @@ namespace MeasureTheory.Lp
 /-- The map `(s, x) ↦ x + s • y` is quasi-measure-preserving from `volume ⊗ μ` to `μ` (the
 whole space): its fibres are the translations, which preserve `μ`. -/
 theorem quasiMeasurePreserving_add_smul (y : E) :
-    Measure.QuasiMeasurePreserving (fun z : ℝ × E ↦ z.2 + z.1 • y)
+    QuasiMeasurePreserving (fun z : ℝ × E ↦ z.2 + z.1 • y)
       (volume.prod (μ.restrict ((⊤ : Opens E) : Set E))) (μ.restrict ((⊤ : Opens E) : Set E)) := by
   have hm : Measurable (fun z : ℝ × E ↦ z.2 + z.1 • y) := by fun_prop
   refine ⟨hm, Measure.AbsolutelyContinuous.mk fun A hA hA0 ↦ ?_⟩

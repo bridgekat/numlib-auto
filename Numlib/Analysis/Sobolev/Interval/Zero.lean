@@ -924,7 +924,8 @@ theorem tendsto_cutoff_smul (hI : (I : Set ℝ).OrdConnected) (hp : p ≠ ⊤)
         fn_ae_eq_rep hI u] with x hx1 hx2 hx3
       rw [hx1, Pi.sub_apply, deriv_zero, hx2, deriv_zero, hx3]
       ring
-    rw [eLpNorm_congr_ae e, ← eLpNorm_indicator_eq_eLpNorm_restrict measurableSet_Icc.compl]
+    rw [eLpNorm_congr_ae e,
+        ← eLpNorm_indicator_eq_eLpNorm_restrict measurableSet_Icc.compl.nullMeasurableSet]
     exact eLpNorm_mono_ae (((contDiff_cutoffFn n).continuous.sub continuous_const)
       |>.aestronglyMeasurable.mul (memLp_rep hI u).aestronglyMeasurable)
       (Eventually.of_forall (hpt _))
@@ -953,7 +954,7 @@ theorem tendsto_cutoff_smul (hI : (I : Set ℝ).OrdConnected) (hp : p ≠ ⊤)
             exact mul_le_mul_of_nonneg_right (hC n x) (abs_nonneg _)
         _ = ENNReal.ofReal (C / ((n : ℝ) + 1)) * eLpNorm (rep u) p (volume.restrict I) := by
             rw [eLpNorm_const_smul, Real.enorm_of_nonneg (by positivity)]
-    · rw [← eLpNorm_indicator_eq_eLpNorm_restrict measurableSet_Icc.compl]
+    · rw [← eLpNorm_indicator_eq_eLpNorm_restrict measurableSet_Icc.compl.nullMeasurableSet]
       exact eLpNorm_mono_ae (((contDiff_cutoffFn n).continuous.sub continuous_const)
         |>.aestronglyMeasurable.mul (Lp.aestronglyMeasurable _)) (Eventually.of_forall (hpt _))
   calc ‖cutoff hI n u - u‖
@@ -1050,8 +1051,8 @@ theorem _root_.MeasureTheory.eLpNorm_restrict_eq_of_ae_eq_zero_off {μ : Measure
     by_cases hxs : x ∈ s
     · rw [indicator_of_mem hxs]
     · rw [indicator_of_notMem hxs, hx hxs]
-  rw [eLpNorm_congr_ae e, eLpNorm_indicator_eq_eLpNorm_restrict hs, Measure.restrict_restrict hs,
-    inter_eq_left.2 hst]
+  rw [eLpNorm_congr_ae e, eLpNorm_indicator_eq_eLpNorm_restrict hs.nullMeasurableSet,
+    Measure.restrict_restrict hs, inter_eq_left.2 hst]
 
 end SobolevIntervalLp
 
@@ -1294,7 +1295,7 @@ omit [Fact (1 ≤ p)] in
 `L^p(I)` distance to `g`. -/
 theorem eLpNorm_sub_indicator (f g : ℝ → ℝ) (hf : ∀ x, x ∉ (I : Set ℝ) → f x = 0) :
     eLpNorm (f - (I : Set ℝ).indicator g) p volume = eLpNorm (f - g) p (volume.restrict I) := by
-  rw [← eLpNorm_indicator_eq_eLpNorm_restrict I.isOpen.measurableSet]
+  rw [← eLpNorm_indicator_eq_eLpNorm_restrict I.isOpen.measurableSet.nullMeasurableSet]
   congr 1
   funext x
   by_cases hx : x ∈ (I : Set ℝ)
@@ -1317,7 +1318,7 @@ omit [Fact (1 ≤ p)] in
 theorem memLp_indicator_deriv (u : SobolevIntervalLp 1 p I) (j : Fin 2) :
     MemLp ((I : Set ℝ).indicator (deriv u j)) p volume :=
   memLp_iff.2 (by
-    rw [eLpNorm_indicator_eq_eLpNorm_restrict I.isOpen.measurableSet]
+    rw [eLpNorm_indicator_eq_eLpNorm_restrict I.isOpen.measurableSet.nullMeasurableSet]
     exact Lp.eLpNorm_lt_top _)
 
 end SobolevIntervalLp
@@ -2078,7 +2079,7 @@ theorem exists_cutoff_tendsto (hp : p ≠ ⊤) (u : SobolevIntervalLp m p I) :
     · have hk : (j : ℕ) - i ≠ 0 := by have := i.isLt; omega
       rw [hTdef]
       dsimp only
-      rw [← eLpNorm_indicator_eq_eLpNorm_restrict measurableSet_Ioo.compl]
+      rw [← eLpNorm_indicator_eq_eLpNorm_restrict measurableSet_Ioo.compl.nullMeasurableSet]
       have hm : AEStronglyMeasurable (fun x ↦ ((j : ℕ).choose i : ℝ)
           * iteratedDeriv (j - i) (cutoffFn n) x * deriv u ⟨i, by omega⟩ x) (volume.restrict I) :=
         (continuous_const.mul ((contDiff_cutoffFn n).continuous_iteratedDeriv _
@@ -2093,7 +2094,7 @@ theorem exists_cutoff_tendsto (hp : p ≠ ⊤) (u : SobolevIntervalLp m p I) :
         (Nat.cast_nonneg _)
     · rw [hTdef]
       dsimp only
-      rw [← eLpNorm_indicator_eq_eLpNorm_restrict measurableSet_Ioo.compl]
+      rw [← eLpNorm_indicator_eq_eLpNorm_restrict measurableSet_Ioo.compl.nullMeasurableSet]
       exact eLpNorm_mono_ae (((contDiff_cutoffFn n).continuous.sub
         continuous_const).aestronglyMeasurable.mul (Lp.aestronglyMeasurable _))
         (Eventually.of_forall (norm_cutoffFn_sub_one_mul_le n _))

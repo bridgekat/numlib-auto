@@ -295,7 +295,8 @@ omit [FiniteDimensional ℝ E] [CompleteSpace F] [Fact (1 ≤ p)] [μ.IsAddHaarM
 space. -/
 theorem memLp_indicator_fn {k : ℕ} (u : SobolevMultiIndex F b k p Ω μ) :
     MemLp ((Ω : Set E).indicator (SobolevMultiIndex.fn u)) p μ :=
-  (memLp_indicator_iff_restrict Ω.isOpen.measurableSet).2 (SobolevMultiIndex.memLp u)
+  (memLp_indicator_iff_restrict Ω.isOpen.measurableSet.nullMeasurableSet).2
+    (SobolevMultiIndex.memLp u)
 
 omit [FiniteDimensional ℝ E] [CompleteSpace F] [Fact (1 ≤ p)] [μ.IsAddHaarMeasure] in
 /-- The zero extension of a weak derivative of an element of `W^{k,p}(Ω)` lies in `L^p` of the
@@ -303,7 +304,7 @@ whole space. -/
 theorem memLp_indicator_weakDeriv {k : ℕ} (u : SobolevMultiIndex F b k p Ω μ)
     (α : MultiIndexLE ι k) :
     MemLp ((Ω : Set E).indicator (SobolevMultiIndex.weakDeriv u α)) p μ :=
-  (memLp_indicator_iff_restrict Ω.isOpen.measurableSet).2 (Lp.memLp _)
+  (memLp_indicator_iff_restrict Ω.isOpen.measurableSet.nullMeasurableSet).2 (Lp.memLp _)
 
 omit [FiniteDimensional ℝ E] [CompleteSpace F] [μ.IsAddHaarMeasure] in
 /-- An element of `W_0^{k,p}(Ω)` is the limit of a sequence of elements of `W^{k,p}(Ω)` whose
@@ -380,7 +381,8 @@ theorem hasWeakIteratedLineDerivOn_indicator {u : SobolevMultiIndex F b 1 p Ω �
         - (Ω : Set E).indicator (SobolevMultiIndex.weakDeriv u α)) p μ) atTop (𝓝 0) := by
     intro α
     refine (SobolevMultiIndex.tendsto_eLpNorm_weakDeriv_sub hw α).congr fun n ↦ ?_
-    rw [← eLpNorm_indicator_eq_eLpNorm_restrict Ω.isOpen.measurableSet, ← Set.indicator_sub']
+    rw [← eLpNorm_indicator_eq_eLpNorm_restrict Ω.isOpen.measurableSet.nullMeasurableSet,
+        ← Set.indicator_sub']
   refine hasWeakIteratedLineDerivOn_of_tendsto_eLpNorm hμ hp (g := fun n ↦ (φ n : E → F))
     (u := fun n x ↦ fderiv ℝ (φ n) x (b i)) (fun n ↦ ?_) ?_ ?_ ?_ ?_
   · have h := (ContDiffOn.hasWeakIteratedFDerivOn (Ω := ⊤) (μ := μ) (φ n).contDiff.contDiffOn
@@ -455,7 +457,7 @@ theorem fn_extendZero_restrict (u : SobolevEuclideanZero N 1 p Ω) :
     SobolevMultiIndex.fn (extendZero u) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
       SobolevMultiIndex.fn (u : SobolevEuclidean N 1 p Ω) :=
   Filter.EventuallyEq.trans (ae_restrict_of_ae (fn_extendZero u))
-    (indicator_ae_eq_restrict Ω.isOpen.measurableSet)
+    (indicator_ae_eq_restrict Ω.isOpen.measurableSet.nullMeasurableSet)
 
 /-- The partial derivative of the extension by zero is the extension by zero of the partial
 derivative: `∂_i ū = \overline{∂_i u}` ([brezis2011functional] Proposition 9.18 (iii)). -/
@@ -528,12 +530,13 @@ theorem norm_weakDeriv_extendZero (u : SobolevEuclideanZero N 1 p Ω)
   · rw [Lp.norm_def, Lp.norm_def]
     simp only [Measure.restrict_coe_top]
     rw [eLpNorm_congr_ae (f := (SobolevMultiIndex.weakDeriv (extendZero u) 0 : _ → ℝ))
-      (fn_extendZero u), eLpNorm_indicator_eq_eLpNorm_restrict Ω.isOpen.measurableSet]
+      (fn_extendZero u),
+      eLpNorm_indicator_eq_eLpNorm_restrict Ω.isOpen.measurableSet.nullMeasurableSet]
     rfl
   · rw [Lp.norm_def, Lp.norm_def]
     simp only [Measure.restrict_coe_top]
     rw [eLpNorm_congr_ae (weakDeriv_extendZero_single u i),
-      eLpNorm_indicator_eq_eLpNorm_restrict Ω.isOpen.measurableSet]
+      eLpNorm_indicator_eq_eLpNorm_restrict Ω.isOpen.measurableSet.nullMeasurableSet]
 
 /-- **The extension by zero is an isometry** `W_0^{1,p}(Ω) → W^{1,p}(ℝ^N)`: the norm of the
 type is the `ℓ^p` sum of the `L^p` norms of the components, each of which is unchanged. -/
@@ -643,7 +646,7 @@ theorem eLpNorm_fn_le_sum_of_eq (hpN : p < N) (hp' : (p' : ℝ)⁻¹ = p⁻¹ - 
           (MultiIndexLE.single i)‖ := by
   have h := SobolevEuclidean.eLpNorm_fn_le_of_eq hpN hp' (extendZeroL N p Ω u)
   rw [eLpNorm_congr_ae (fn_extendZeroL u),
-    eLpNorm_indicator_eq_eLpNorm_restrict Ω.isOpen.measurableSet] at h
+    eLpNorm_indicator_eq_eLpNorm_restrict Ω.isOpen.measurableSet.nullMeasurableSet] at h
   simp only [extendZeroL_apply, norm_weakDeriv_extendZero] at h
   exact h
 
@@ -838,15 +841,15 @@ theorem exists_eLpNorm_fn_le_sum_of_measure_ne_top (hp' : p ≠ ⊤) (hN : 2 ≤
   -- memberships at the exponent `q`
   have hūq : MemLp ((Ω : Set (EuclideanSpace ℝ (Fin N))).indicator
       (fn (u : SobolevEuclidean N 1 p Ω))) q volume :=
-    (memLp_indicator_iff_restrict hΩm).2 ((memLp _).mono_exponent hqp)
+    (memLp_indicator_iff_restrict hΩm.nullMeasurableSet).2 ((memLp _).mono_exponent hqp)
   have hwq : MemLp w q volume := by
-    refine ((memLp_indicator_iff_restrict hΩm).2 ?_).ae_eq hwae.symm
+    refine ((memLp_indicator_iff_restrict hΩm.nullMeasurableSet).2 ?_).ae_eq hwae.symm
     exact (hwp.restrict _).mono_exponent hqp
   -- Theorem 9.9 at the exponent `q`
   have hN' : finrank ℝ (EuclideanSpace ℝ (Fin N)) = N := finrank_euclideanSpace_fin
   have hGNS := hw.eLpNorm_le_eLpNorm_weakFDeriv_of_eq hq1 (by rw [hN']; exact_mod_cast hqN)
     (by rw [hN']; exact hqq') hūq hwq
-  rw [eLpNorm_indicator_eq_eLpNorm_restrict hΩm] at hGNS
+  rw [eLpNorm_indicator_eq_eLpNorm_restrict hΩm.nullMeasurableSet] at hGNS
   -- the two Hölder steps on the finite-measure set `Ω`
   have hH1 : eLpNorm (fn (u : SobolevEuclidean N 1 p Ω)) p (volume.restrict (Ω : Set _))
       ≤ eLpNorm (fn (u : SobolevEuclidean N 1 p Ω)) (q' : ℝ≥0∞) (volume.restrict (Ω : Set _))
@@ -857,10 +860,10 @@ theorem exists_eLpNorm_fn_le_sum_of_measure_ne_top (hp' : p ≠ ⊤) (hN : 2 ≤
       ≤ eLpNorm w p volume * B := by
     have e1 : eLpNorm w (q : ℝ≥0∞) volume
         = eLpNorm w q (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) := by
-      rw [eLpNorm_congr_ae hwae, eLpNorm_indicator_eq_eLpNorm_restrict hΩm]
+      rw [eLpNorm_congr_ae hwae, eLpNorm_indicator_eq_eLpNorm_restrict hΩm.nullMeasurableSet]
     have e2 : eLpNorm w p volume
         = eLpNorm w p (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) := by
-      rw [eLpNorm_congr_ae hwae, eLpNorm_indicator_eq_eLpNorm_restrict hΩm]
+      rw [eLpNorm_congr_ae hwae, eLpNorm_indicator_eq_eLpNorm_restrict hΩm.nullMeasurableSet]
     rw [e1, e2, hB,
       ← Measure.restrict_apply_univ (μ := volume) (Ω : Set (EuclideanSpace ℝ (Fin N)))]
     exact eLpNorm_le_eLpNorm_mul_rpow_measure_univ hqp (hwp.restrict _).aestronglyMeasurable
@@ -1083,7 +1086,8 @@ theorem SobolevEuclidean.indicator_memSobolev_of_forall_abs_integral_le [p.Holde
   refine MemSobolev.memSobolevMultiIndex (MemSobolev.of_forall_enorm_integral_smul_fderiv_basis_le
     hq ?_ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis (C := fun _ ↦ ENNReal.ofReal (max C 0))
     (fun _ ↦ ENNReal.ofReal_ne_top) fun φ i ↦ ?_)
-  · simpa only [Measure.restrict_coe_top] using (memLp_indicator_iff_restrict hΩm).2 hu
+  · simpa only [Measure.restrict_coe_top] using
+      (memLp_indicator_iff_restrict hΩm.nullMeasurableSet).2 hu
   · have hφq : eLpNorm φ q (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) ≠ ⊤ :=
       ((φ.memLp q volume).restrict _).eLpNorm_ne_top
     have hint : ∫ x in ((⊤ : Opens (EuclideanSpace ℝ (Fin N))) : Set _),
@@ -1775,7 +1779,8 @@ theorem _root_.MeasureTheory.eLpNorm_sub_restrict_eq_of_eq_zero_compl {g f : E �
     by_cases hxΩ' : x ∈ (Ω' : Set E)
     · rw [Set.indicator_of_mem hxΩ']
     · rw [Set.indicator_of_notMem hxΩ', Pi.sub_apply, hg x hxΩ', hx hxΩ', sub_zero]
-  rw [eLpNorm_congr_ae e, eLpNorm_indicator_eq_eLpNorm_restrict Ω'.isOpen.measurableSet,
+  rw [eLpNorm_congr_ae e,
+    eLpNorm_indicator_eq_eLpNorm_restrict Ω'.isOpen.measurableSet.nullMeasurableSet,
     Measure.restrict_restrict Ω'.isOpen.measurableSet, inter_eq_left.2 h]
 
 omit [Fact (1 ≤ p)] [μ.IsAddHaarMeasure] in
@@ -2416,7 +2421,7 @@ theorem exists_mem_zero_unitChartCubePos_of_indicator_memSobolev (hp' : p ≠ �
       (fun y ↦ θ (c.toFun y) * u (c.toFun y)) 1 p (unitChartCubePosOpens d) volume :=
     ((c.indicator_comp_toFun_memSobolevMultiIndex hθ hθc hu).mono_set
       unitChartCubePosOpens_le).congr_ae
-      (indicator_ae_eq_restrict isOpen_unitChartCubePos.measurableSet)
+      (indicator_ae_eq_restrict isOpen_unitChartCubePos.measurableSet.nullMeasurableSet)
   obtain ⟨Z, hZ⟩ := hmem.exists_sobolevMultiIndex
   exact ⟨Z, c.mem_zero_unitChartCubePos_of_indicator_memSobolev hp' hθ hθc hθU hu hZ, hZ⟩
 
@@ -2542,7 +2547,7 @@ theorem mem_of_indicator_memSobolev_of_forall_eq_zero (hp' : p ≠ ⊤)
   -- `u ∈ W^{1,p}(Ω)`, and the elements `θ_i u`
   have huΩ : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis u 1 p Ω
       volume :=
-    (hu.mono_set le_top).congr_ae (indicator_ae_eq_restrict hΩm)
+    (hu.mono_set le_top).congr_ae (indicator_ae_eq_restrict hΩm.nullMeasurableSet)
   have hθu : ∀ i, MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
       (fun x ↦ θ i x * u x) 1 p Ω volume := fun i ↦ by
     obtain ⟨M, hM⟩ := (IsSobolevCutoff.of_hasCompactSupport (Ω := ⊤) (hθs i) (hθc i)
@@ -2607,7 +2612,7 @@ theorem mem_of_indicator_memSobolev (hp' : p ≠ ⊤)
   have hΩm := Ω.isOpen.measurableSet
   have huΩ : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis u 1 p Ω
       volume :=
-    (hu.mono_set le_top).congr_ae (indicator_ae_eq_restrict hΩm)
+    (hu.mono_set le_top).congr_ae (indicator_ae_eq_restrict hΩm.nullMeasurableSet)
   obtain ⟨U, hU⟩ := huΩ.exists_sobolevMultiIndex
   refine ⟨U, ?_, hU⟩
   -- the cut-off sequence `ζ_n U → U`

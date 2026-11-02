@@ -249,7 +249,7 @@ variable [Semiring R] {A L U : Matrix n n R}
 because `L` vanishes to the right of the diagonal and `U` below it. -/
 theorem IsLU.apply_eq_sum (h : IsLU A L U) (i j : n) :
     A i j = ∑ r ∈ univ.filter (· ≤ min i j), L i r * U r j := by
-  rw [← h.mul_eq, mul_apply]
+  rw [← h.mul_eq, Matrix.mul_apply]
   refine (Finset.sum_filter_of_ne fun r _ hr => ?_).symm
   rw [le_min_iff]
   by_contra hcon
@@ -353,7 +353,7 @@ theorem BlockTriangular.mul_apply_of_eq [NonUnitalNonAssocSemiring R] {M N : Mat
     (hM : M.BlockTriangular (OrderDual.toDual ∘ b)) (hN : N.BlockTriangular (OrderDual.toDual ∘ b))
     {i j : n} (hij : b i = b j) :
     (M * N) i j = ∑ r ∈ univ.filter (fun r => b r = b i), M i r * N r j := by
-  rw [mul_apply]
+  rw [Matrix.mul_apply]
   refine (Finset.sum_filter_of_ne fun r _ hr => ?_).symm
   by_contra hne
   rcases lt_or_gt_of_ne hne with hlt | hlt
@@ -410,7 +410,7 @@ theorem toBlock_mul_eq_add' [NonUnitalNonAssocSemiring R] (p : n → Prop) (q : 
       A.toBlock p q * B.toBlock q r +
         (A.toBlock p fun i => ¬q i) * B.toBlock (fun i => ¬q i) r := by
   ext i k
-  simp only [toBlock_apply, mul_apply, add_apply]
+  simp only [toBlock_apply, Matrix.mul_apply, Matrix.add_apply]
   exact (Fintype.sum_subtype_add_sum_subtype q fun x => A (↑i) x * B x ↑k).symm
 
 variable {p : n → Prop} [DecidablePred p]
@@ -422,7 +422,7 @@ theorem BlockTriangular.toBlock_not_eq_zero [Zero R] {L : Matrix n n R}
     (hL : L.BlockTriangular (OrderDual.toDual ∘ b)) (hp : ∀ i j, p i → b j ≤ b i → p j) :
     L.toBlock p (fun i => ¬p i) = 0 := by
   ext i j
-  rw [toBlock_apply, zero_apply]
+  rw [toBlock_apply, Matrix.zero_apply]
   refine hL (OrderDual.toDual_lt_toDual.2 (lt_of_not_ge fun h => ?_))
   exact j.2 (hp i.1 j.1 i.2 h)
 
@@ -432,7 +432,7 @@ decreasing the label. -/
 theorem BlockTriangular.not_toBlock_eq_zero [Zero R] {U : Matrix n n R} (hU : U.BlockTriangular b)
     (hp : ∀ i j, p i → b j ≤ b i → p j) : U.toBlock (fun i => ¬p i) p = 0 := by
   ext i j
-  rw [toBlock_apply, zero_apply]
+  rw [toBlock_apply, Matrix.zero_apply]
   refine hU (lt_of_not_ge fun h => ?_)
   exact i.2 (hp j.1 i.1 j.2 h)
 
@@ -640,7 +640,7 @@ theorem IsBlockLU.blockBidiagonal_of_blockTridiagonal {N m : ℕ} {b : Fin N →
         mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).1 hUp), Matrix.mul_one]
     have hi : ¬ b i ≤ b j := not_le.2 (Fin.lt_def.2 (by omega))
     have hentry := congrFun (congrFun hLeq ⟨i, hi⟩) ⟨j, le_rfl⟩
-    rw [toBlock_apply, mul_apply] at hentry
+    rw [toBlock_apply, Matrix.mul_apply] at hentry
     rw [hentry]
     refine Finset.sum_eq_zero fun x _ => ?_
     rw [toBlock_apply, htriL i x.1 (by omega), zero_mul]
@@ -655,7 +655,7 @@ theorem IsBlockLU.blockBidiagonal_of_blockTridiagonal {N m : ℕ} {b : Fin N →
         nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).1 hLp), Matrix.one_mul]
     have hj : ¬ b j ≤ b i := not_le.2 (Fin.lt_def.2 (by omega))
     have hentry := congrFun (congrFun hUeq ⟨i, le_rfl⟩) ⟨j, hj⟩
-    rw [toBlock_apply, mul_apply] at hentry
+    rw [toBlock_apply, Matrix.mul_apply] at hentry
     rw [hentry]
     refine Finset.sum_eq_zero fun x _ => ?_
     rw [toBlock_apply, htriU x.1 j (by omega), mul_zero]
@@ -743,10 +743,10 @@ theorem isBlockLU_fromBlocks {c : m ⊕ n → α} (hc : ∀ x y, c (Sum.inl x) <
       · exact absurd (hc' i j ▸ hij') (lt_irrefl _)
     · rcases i with i | i <;> rcases j with j | j
       · rw [fromBlocks_apply₁₁, h.isBlockUnitLowerTriangular.apply_eq_one_of_eq i j hij]
-        simp [one_apply]
+        simp [Matrix.one_apply]
       · exact absurd (hij ▸ hc i j) (lt_irrefl _)
       · exact absurd (hij ▸ hc j i) (lt_irrefl _)
-      · simp [one_apply]
+      · simp [Matrix.one_apply]
   blockTriangular := by
     intro i j hij
     rcases i with i | i <;> rcases j with j | j
@@ -915,7 +915,7 @@ theorem IsBlockLU.exists_ne_of_not_isUnit {b : n → α} {A L U : Matrix n n K}
     with hE
   have hEE : E * E = 0 := by
     ext i j
-    rw [mul_apply, zero_apply]
+    rw [Matrix.mul_apply, Matrix.zero_apply]
     refine Finset.sum_eq_zero fun r _ => ?_
     by_cases hr : r = i₀
     · subst hr
@@ -925,23 +925,23 @@ theorem IsBlockLU.exists_ne_of_not_isUnit {b : n → α} {A L U : Matrix n n K}
   have hEU : ∀ j, p j → (E * U) i₀ j = 0 := fun j hj => by
     have := congrFun hyU ⟨j, hj⟩
     rw [vecMul, dotProduct, Pi.zero_apply] at this
-    rw [mul_apply, ← Fintype.sum_subtype_add_sum_subtype p,
+    rw [Matrix.mul_apply, ← Fintype.sum_subtype_add_sum_subtype p,
       Finset.sum_eq_zero (s := (univ : Finset {x // ¬p x})) (fun r _ => by simp [hE, r.2]),
       add_zero, ← this]
     exact Finset.sum_congr rfl fun r _ => by simp [hE, r.2]
   have hEU' : ∀ i j, i ≠ i₀ → (E * U) i j = 0 := fun i j hi => by
-    rw [mul_apply]
+    rw [Matrix.mul_apply]
     exact Finset.sum_eq_zero fun r _ => by simp [hE, hi]
   refine ⟨L * (1 + E), (1 - E) * U, ⟨?_, ?_, ?_⟩, ?_⟩
   · refine h.isBlockUnitLowerTriangular.mul ⟨fun i j hij => ?_, fun i j hij => ?_⟩
     · have hij' : b i < b j := OrderDual.toDual_lt_toDual.1 hij
-      rw [add_apply, one_apply_ne (ne_of_apply_ne b hij'.ne), zero_add, hE, of_apply]
+      rw [Matrix.add_apply, one_apply_ne (ne_of_apply_ne b hij'.ne), zero_add, hE, of_apply]
       split_ifs with hi hj
       · rw [hi] at hij'
         exact absurd ((hj : b j < b i₀).trans hij') (lt_irrefl _)
       · rfl
       · rfl
-    · rw [add_apply, hE, of_apply]
+    · rw [Matrix.add_apply, hE, of_apply]
       split_ifs with hi hj
       · rw [hi] at hij
         have hj' : b j < b i₀ := hj
@@ -950,7 +950,7 @@ theorem IsBlockLU.exists_ne_of_not_isUnit {b : n → α} {A L U : Matrix n n K}
       · rw [add_zero]
       · rw [add_zero]
   · intro i j hij
-    rw [sub_mul, Matrix.one_mul, sub_apply, h.blockTriangular hij, zero_sub, neg_eq_zero]
+    rw [sub_mul, Matrix.one_mul, Matrix.sub_apply, h.blockTriangular hij, zero_sub, neg_eq_zero]
     by_cases hi : i = i₀
     · subst hi
       exact hEU j hij
@@ -961,7 +961,7 @@ theorem IsBlockLU.exists_ne_of_not_isUnit {b : n → α} {A L U : Matrix n n K}
   · intro hLE
     obtain ⟨j, hj⟩ := Function.ne_iff.1 hy
     have := congrFun (congrFun hLE i₀) j.1
-    rw [Matrix.mul_add, Matrix.mul_one, add_apply, add_eq_left, mul_apply,
+    rw [Matrix.mul_add, Matrix.mul_one, Matrix.add_apply, add_eq_left, Matrix.mul_apply,
       Finset.sum_eq_single i₀ (fun r _ hr => by simp [hE, hr]) (fun h => absurd (mem_univ _) h),
       h.isBlockUnitLowerTriangular.apply_eq_one_of_eq i₀ i₀ rfl, one_apply_eq, one_mul] at this
     exact hj (by simpa [hE, j.2] using this)
@@ -1089,7 +1089,7 @@ theorem isRectLU_submatrix_of_mul_eq [Semiring R] {K : ℕ} {A : Matrix (Fin M) 
   hasLowerBandwidthRect i j hij := hU i j (by simpa using hij)
   mul_eq := by
     ext i j
-    rw [← hA, ← hLU, mul_apply, mul_apply]
+    rw [← hA, ← hLU, Matrix.mul_apply, Matrix.mul_apply]
     refine Fintype.sum_of_injective (Fin.castLE hP) (Fin.castLE_injective hP) _ _
       (fun r hr => hout i j r ?_) fun r => rfl
     by_contra hcon
@@ -1364,7 +1364,7 @@ theorem isLU_luLowerOfSchur_luUpperOfSchur' {A : Matrix n n K} {p : n} (hp : ∀
     have hUxj : ∀ (x : {x // x ≠ p}) j (hj : j ≠ p), luUpperOfSchur A p U' x j = U' x ⟨j, hj⟩ :=
       fun x j hj => by simp [luUpperOfSchur, x.2, hj]
     ext i j
-    rw [mul_apply, sum_eq_add_sum_subtype_ne p]
+    rw [Matrix.mul_apply, sum_eq_add_sum_subtype_ne p]
     rcases eq_or_ne i p with hi | hi
     · subst hi
       simp [hLpp, hLpx, hUpj]
@@ -1375,7 +1375,7 @@ theorem isLU_luLowerOfSchur_luUpperOfSchur' {A : Matrix n n K} {p : n} (hp : ∀
       · subst hj
         simp [hLxp i hi, hUpj, hUxp, div_mul_cancel₀ _ h0]
     have hS := congrFun (congrFun h.mul_eq ⟨i, hi⟩) ⟨j, hj⟩
-    rw [mul_apply, schurComplementSingle_apply] at hS
+    rw [Matrix.mul_apply, schurComplementSingle_apply] at hS
     simp only [hLxp i hi, hUpj, hLxx i hi, hUxj _ j hj]
     rw [hS, div_eq_mul_inv]
     ring
@@ -1580,7 +1580,7 @@ theorem isBlockLU_fromBlocks_schurComplement {B : Matrix m m K} {E : Matrix m o 
     refine ⟨fun i j hij => ?_, fun i j hij => ?_⟩
     · have hij' := OrderDual.toDual_lt_toDual.1 hij
       rcases i with i | i <;> rcases j with j | j <;> first | rfl | (exfalso; simp at hij')
-    · rcases i with i | i <;> rcases j with j | j <;> simp [one_apply] at hij ⊢
+    · rcases i with i | i <;> rcases j with j | j <;> simp [Matrix.one_apply] at hij ⊢
   blockTriangular := by
     intro i j hij
     rcases i with i | i <;> rcases j with j | j <;> first | rfl | (exfalso; simp at hij)
@@ -1732,7 +1732,7 @@ theorem lowerBidiagonalOf_mul_apply [NonAssocSemiring R] {N : ℕ} (β : ℕ →
     (M : Matrix (Fin N) (Fin N) R) (i j : Fin N) :
     (lowerBidiagonalOf β N * M) i j =
       M i j + if h : 0 < (i : ℕ) then β i * M ⟨i - 1, by omega⟩ j else 0 := by
-  rw [mul_apply]
+  rw [Matrix.mul_apply]
   have hterm : ∀ r : Fin N, lowerBidiagonalOf β N i r * M r j =
       (if r = i then M i j else 0) + if _h : (r : ℕ) + 1 = i then β i * M r j else 0 := by
     intro r
@@ -1786,8 +1786,8 @@ theorem isLU_tridiagonal_thomas {N : ℕ} (hα : ∀ i, i + 1 < N → thomasAlph
   isUpperTriangular := (isUpperBidiagonal_thomasUpper a b c N).isUpperTriangular
   mul_eq := by
     ext i j
-    simp only [mul_apply, thomasLower_apply_mul_eq, Finset.sum_add_distrib, Finset.sum_ite_eq',
-      Finset.mem_univ, ite_true, sum_dite_val_add_one_eq]
+    simp only [Matrix.mul_apply, thomasLower_apply_mul_eq, Finset.sum_add_distrib,
+      Finset.sum_ite_eq', Finset.mem_univ, ite_true, sum_dite_val_add_one_eq]
     rcases Nat.eq_zero_or_pos (i : ℕ) with hi | hi
     · simp only [show ¬ (0 < (i : ℕ)) by omega, dite_false, add_zero]
       simp only [thomasUpper, tridiagonalOfNat, of_apply, Fin.ext_iff, hi]

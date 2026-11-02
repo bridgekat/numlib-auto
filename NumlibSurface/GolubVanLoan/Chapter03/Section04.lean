@@ -668,7 +668,7 @@ theorem equation_3_4_12 {p : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit 
       pure (X.updateCol k x)) B) = B
     rw [List.idRun_foldlM]
     ext i k
-    rw [mul_apply]
+    rw [Matrix.mul_apply]
     have hcol : ∀ j, (List.finRange p).foldl (fun X k => Id.run (do
         let x ← solvePLU pure out.1 out.2 (fun i => B i k)
         pure (X.updateCol k x) : Id _)) B j k =
@@ -2414,7 +2414,7 @@ theorem growthExample_isLU :
     have hjn : (j : ℕ) ≠ n - 1 := by have := Fin.lt_def.1 hij; have := i.2; omega
     simp [growthExampleU, hjn, (ne_of_lt hij).symm]
   · ext i j
-    rw [mul_apply]
+    rw [Matrix.mul_apply]
     by_cases hj : (j : ℕ) = n - 1
     · have hA : growthExample n i j = 1 := by simp [growthExample, hj]
       rw [hA]
@@ -2608,7 +2608,7 @@ theorem equation_3_4_11 (A : Matrix (Fin m) (Fin (m + p)) ℝ) (hA : A.rank = m)
     simp [e, Equiv.ofInjective_symm_apply]
   let B : Matrix (Fin m) (Fin m) ℝ := of fun i k => A i (c k)
   have hcol : B.col = A.col ∘ c := by funext k i; rfl
-  have hB : IsUnit B := linearIndependent_cols_iff_isUnit.1 (hcol ▸ hc)
+  have hB : IsUnit B := linearIndependent_col_iff_isUnit.1 (hcol ▸ hc)
   obtain ⟨σ, L, U₁, hLU, -⟩ := exists_permMatrix_mul_isLU B
   have hU₁ : IsUnit U₁ := by
     have hPB : IsUnit (L * U₁) := hLU.mul_eq ▸ (isUnit_permMatrix σ).mul hB
@@ -2624,18 +2624,18 @@ theorem equation_3_4_11 (A : Matrix (Fin m) (Fin (m + p)) ℝ) (hA : A.rank = m)
   | left k =>
     have h := congrFun (congrFun hLU.mul_eq i) k
     rw [Equiv.Perm.permMatrix, PEquiv.toMatrix_toPEquiv_mul] at h
-    simp only [submatrix_apply, id, hρ, mul_apply, finSumFinEquiv_symm_apply_castAdd,
+    simp only [submatrix_apply, id, hρ, Matrix.mul_apply, finSumFinEquiv_symm_apply_castAdd,
       fromCols_apply_inl]
-    rw [← mul_apply, h]
+    rw [← Matrix.mul_apply, h]
     rfl
   | right k =>
     have hX : L * (L⁻¹ * of fun i k => A (σ i) (ρ (Fin.natAdd m k))) =
         of fun i k => A (σ i) (ρ (Fin.natAdd m k)) := by
       rw [← Matrix.mul_assoc, mul_nonsing_inv _ hLd, Matrix.one_mul]
     have h := congrFun (congrFun hX i) k
-    simp only [submatrix_apply, id, mul_apply, finSumFinEquiv_symm_apply_natAdd,
+    simp only [submatrix_apply, id, Matrix.mul_apply, finSumFinEquiv_symm_apply_natAdd,
       fromCols_apply_inr]
-    simp only [mul_apply] at h
+    simp only [Matrix.mul_apply] at h
     rw [h]
     rfl
 

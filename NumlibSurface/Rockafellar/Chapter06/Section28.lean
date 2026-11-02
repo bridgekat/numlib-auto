@@ -242,7 +242,7 @@ theorem optimalValue_le {x : Rn n} (hx : x ∈ P.feasibleSet) : P.optimalValue �
 infimum. The book adds the proviso "provided that `f` is not identically `+∞`"; where that fails —
 no feasible solution at all — `argmin` is all of `ℝⁿ` rather than empty, and every theorem below
 that speaks of optimal solutions carries a hypothesis ruling the degenerate case out. -/
-def optimalSolutions : Set (Rn n) := argmin P.objective
+noncomputable def optimalSolutions : Set (Rn n) := argmin P.objective
 
 theorem mem_optimalSolutions_iff {x : Rn n} :
     x ∈ P.optimalSolutions ↔ P.objective x = P.optimalValue :=

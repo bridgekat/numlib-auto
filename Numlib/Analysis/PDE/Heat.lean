@@ -1079,12 +1079,12 @@ theorem isBackwardSolution_iff :
       · rw [neg_neg]
         exact congrArg (fun z ↦ dirichletLaplacian Ω z) e2
     · have := h.continuousOn.comp (continuousOn_const.sub continuousOn_id)
-        (fun t (ht : t ≤ T) ↦ show T - t ∈ Ici (0 : ℝ) from sub_nonneg.2 ht)
+        (fun t (ht : t ∈ Iic T) ↦ show T - t ∈ Ici (0 : ℝ) from mem_Ici.2 (sub_nonneg.2 ht))
       refine this.congr fun t _ ↦ ?_
       change u t = u (T - (T - t))
       rw [sub_sub_cancel]
     · have := h.contDiffOn.comp (contDiffOn_const.sub contDiffOn_id)
-        (fun t (ht : t < T) ↦ show T - t ∈ Ioi (0 : ℝ) from sub_pos.2 ht)
+        (fun t (ht : t ∈ Iio T) ↦ show T - t ∈ Ioi (0 : ℝ) from mem_Ioi.2 (sub_pos.2 ht))
       refine this.congr fun t _ ↦ ?_
       change u t = u (T - (T - t))
       rw [sub_sub_cancel]

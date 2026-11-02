@@ -334,7 +334,7 @@ theorem IsExtreme.mem_convexHull_inter {C C' P : Set E} (h : IsExtreme ℝ C C')
       rintro z ⟨hzP, hzC'⟩
       exact ⟨subset_convexHull ℝ P hzP, fun hcon => hzC' hcon.1⟩
     have haA : a ∈ convexHull ℝ P :=
-      convexHull_min (fun z hz => subset_convexHull ℝ P hz.1) hAconv ha
+      convexHull_min (fun z (hz : z ∈ P ∩ C') => subset_convexHull ℝ P hz.1) hAconv ha
     rw [← insert_endpoints_openSegment, Set.mem_insert_iff, Set.mem_insert_iff] at hseg
     rcases hseg with hua | hub | hopen
     · rw [hua]; exact ha

@@ -626,7 +626,7 @@ theorem haarMatrix_succ_apply (t : ℕ) (i : Fin (2 ^ t)) (a : Fin 2) (j : Fin (
   have hj : Fin.cast (Nat.mul_one (2 ^ t)).symm j = finProdFinEquiv (j, (0 : Fin 1)) := by
     ext; simp
   simp only [haarMatrix, of_apply, Equiv.symm_apply_apply, Sum.elim_inl, Sum.elim_inr, hj,
-    Fin.cast_cast, Fin.cast_eq_self, kroneckerFin_apply, one_apply]
+    Fin.cast_cast, Fin.cast_eq_self, kroneckerFin_apply, Matrix.one_apply]
   obtain rfl | rfl : a = 0 ∨ a = 1 := by fin_cases a <;> simp
   · constructor
     · simp
@@ -679,9 +679,10 @@ theorem equation_1_4_13 (t : ℕ) :
       obtain rfl | rfl : a = 0 ∨ a = 1 := by fin_cases a <;> simp
     · rw [(haarMatrix_succ_apply t i 0 c).1, hrows0, fromBlocks_apply₁₁]
     · rw [(haarMatrix_succ_apply t i 1 c).1, hrows1, fromBlocks_apply₂₁]
-    · rw [(haarMatrix_succ_apply t i 0 c).2, hrows0, fromBlocks_apply₁₂, one_apply]
+    · rw [(haarMatrix_succ_apply t i 0 c).2, hrows0, fromBlocks_apply₁₂, Matrix.one_apply]
       simp
-    · rw [(haarMatrix_succ_apply t i 1 c).2, hrows1, fromBlocks_apply₂₂, neg_apply, one_apply]
+    · rw [(haarMatrix_succ_apply t i 1 c).2, hrows1, fromBlocks_apply₂₂, Matrix.neg_apply,
+        Matrix.one_apply]
       split_ifs <;> simp
   have hK : kroneckerFin !![1, 1; 1, -1] (1 : Matrix (Fin (2 ^ t)) (Fin (2 ^ t)) ℝ) =
       (fromBlocks 1 1 1 (-1)).submatrix rows rows := by

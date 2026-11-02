@@ -133,7 +133,7 @@ theorem equation_5_4_1 {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin
   have hUD : ∀ b : Fin n, (U * (rectDiagonal σ : Matrix (Fin m) (Fin n) ℝ)) p b =
       if hb : (b : ℕ) < m then U p ⟨b, hb⟩ * σ b else 0 := by
     intro b
-    simp only [mul_apply, rectDiagonal_apply, mul_ite, mul_zero]
+    simp only [Matrix.mul_apply, rectDiagonal_apply, mul_ite, mul_zero]
     split_ifs with hb
     · rw [Finset.sum_eq_single ⟨b, hb⟩ (fun a _ ha => by
         rw [ite_eq_right (fun e => (ha (Fin.ext e)).elim)]) (by simp)]
@@ -143,7 +143,7 @@ theorem equation_5_4_1 {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin
   have hlhs : A p q =
       ∑ b : Fin n, (if hb : (b : ℕ) < m then U p ⟨b, hb⟩ * σ b else 0) * V q b := by
     conv_lhs => rw [hA]
-    rw [mul_apply]
+    rw [Matrix.mul_apply]
     refine Finset.sum_congr rfl fun b _ => ?_
     rw [hUD b, star_apply, star_trivial]
   rw [hlhs, Matrix.sum_apply]
@@ -1581,11 +1581,11 @@ theorem completeOrthogonalDecomposition_spec (hnm : n ≤ m) (A : Matrix (Fin m)
     intro i j
     rw [← Matrix.mul_assoc, Matrix.mul_assoc Q₁ᵀ, mul_pivotMatrix, hRA]
     split_ifs with hi
-    · rw [← hST, mul_apply, mul_apply]
+    · rw [← hST, Matrix.mul_apply, Matrix.mul_apply]
       refine Finset.sum_congr rfl fun l _ => ?_
       rw [transpose_apply, hTR, mul_comm]
       rfl
-    · rw [mul_apply]
+    · rw [Matrix.mul_apply]
       exact Finset.sum_eq_zero fun l _ => by rw [h1.apply_eq_zero i l (by omega), zero_mul]
   -- `T` has independent columns
   have hTli : LinearIndependent ℝ Tᵀ := by

@@ -76,7 +76,7 @@ private theorem mulVec_transpose_eq_of_mul_eq_mul_diagonal {k : ℕ} {M V : Matr
   have := congrFun (congrFun h r) j
   rw [mul_diagonal] at this
   simp only [mulVec, dotProduct, transpose_apply, Pi.smul_apply, smul_eq_mul]
-  rw [← mul_apply, this, mul_comm]
+  rw [← Matrix.mul_apply, this, mul_comm]
 
 /-- **(1.10).** `σᵢ(A) = √λᵢ(Aᴴ A)`, `i = 1, …, n`: the backbone's `Matrix.colSingularValues A i` is
 by definition the square root of the `i`-th eigenvalue of the Hermitian matrix `Aᴴ A`, so

@@ -5,7 +5,7 @@ Natural home: `Mathlib.LinearAlgebra.Matrix`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Mathlib.Algebra.Polynomial.AlgebraMap
-import Mathlib.Data.Nat.SuccPred
+import Mathlib.Order.SuccPred.Nat
 import Mathlib.LinearAlgebra.Eigenspace.Basic
 import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
@@ -131,14 +131,14 @@ variable {n R : Type*} [LinearOrder n] [DecidableEq n] [NonAssocRing R] {H : Mat
 theorem IsUnreducedUpperHessenberg.sub_smul_one (h : H.IsUnreducedUpperHessenberg) (μ : R) :
     (H - μ • 1).IsUnreducedUpperHessenberg := by
   refine ⟨h.1.sub_smul_one μ, fun i j hij => ?_⟩
-  rw [sub_apply, smul_apply, one_apply_ne hij.lt.ne', smul_zero, sub_zero]
+  rw [Matrix.sub_apply, Matrix.smul_apply, one_apply_ne hij.lt.ne', smul_zero, sub_zero]
   exact h.2 i j hij
 
 /-- Adding a multiple of the identity keeps unreducedness. -/
 theorem IsUnreducedUpperHessenberg.add_smul_one (h : H.IsUnreducedUpperHessenberg) (μ : R) :
     (H + μ • 1).IsUnreducedUpperHessenberg := by
   refine ⟨h.1.add_smul_one μ, fun i j hij => ?_⟩
-  rw [add_apply, smul_apply, one_apply_ne hij.lt.ne', smul_zero, add_zero]
+  rw [Matrix.add_apply, Matrix.smul_apply, one_apply_ne hij.lt.ne', smul_zero, add_zero]
   exact h.2 i j hij
 
 end Shift
@@ -367,7 +367,7 @@ theorem isUnreducedUpperHessenberg_iff_krylovMatrix :
   have hHess : H.IsUpperHessenberg := by
     rw [isUpperHessenberg_iff_fin]
     intro i j hji
-    rw [← mul_nonsing_inv_cancel_right Kr H hu, mul_apply]
+    rw [← mul_nonsing_inv_cancel_right Kr H hu, Matrix.mul_apply]
     refine Finset.sum_eq_zero fun l _ => ?_
     rcases le_or_gt l j with hl | hl
     · have hl' : (l : ℕ) + 1 < N + 1 := by have : (l : ℕ) ≤ j := hl; omega
@@ -407,8 +407,8 @@ theorem IsUnreducedUpperHessenberg.mul_mul_inv_of_isUpperTriangular {n : Type*} 
   have hinv : R⁻¹ j j * R j j = 1 := by
     rw [← hRi.mul_apply_self hR, nonsing_inv_mul R ((isUnit_iff_isUnit_det R).1 hRu), one_apply_eq]
   have hentry : (R * H * R⁻¹) i j = R i i * H i j * R⁻¹ j j := by
-    rw [mul_apply, Finset.sum_eq_single j]
-    · rw [mul_apply, Finset.sum_eq_single i]
+    rw [Matrix.mul_apply, Finset.sum_eq_single j]
+    · rw [Matrix.mul_apply, Finset.sum_eq_single i]
       · intro a _ ha
         rcases lt_or_gt_of_ne ha with ha | ha
         · rw [hR ha, zero_mul]
@@ -416,7 +416,7 @@ theorem IsUnreducedUpperHessenberg.mul_mul_inv_of_isUpperTriangular {n : Type*} 
       · simp
     · intro b _ hb
       rcases lt_or_gt_of_ne hb with hb | hb
-      · rw [mul_apply, Finset.sum_eq_zero, zero_mul]
+      · rw [Matrix.mul_apply, Finset.sum_eq_zero, zero_mul]
         intro a _
         rcases lt_or_ge a i with ha | ha
         · rw [hR ha, zero_mul]
@@ -460,7 +460,7 @@ theorem IsUnreducedUpperHessenberg.isUpperTriangular_star_mul_aeval [StarRing K]
   refine BlockTriangular.mul ?_ (IsUpperTriangular.inv
     h.1.isUpperTriangular_krylovMatrix)
   intro i j hji
-  rw [smul_apply, hG.isUpperTriangular_krylovMatrix hji, smul_zero]
+  rw [Matrix.smul_apply, hG.isUpperTriangular_krylovMatrix hji, smul_zero]
 
 end HessenbergKrylov
 

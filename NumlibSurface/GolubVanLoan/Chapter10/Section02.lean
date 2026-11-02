@@ -358,13 +358,13 @@ theorem heavisideStieltjes_measure (c : ℝ) :
   change ENNReal.ofReal ((if c ≤ b then 1 else 0) - if c ≤ a then 1 else 0) = _
   by_cases h1 : c ≤ a
   · rw [ite_eq_left (h1.trans hab.le), ite_eq_left h1, sub_self, ENNReal.ofReal_zero,
-      Set.indicator_of_notMem (fun h => not_lt.2 h1 h.1)]
+      Set.indicator_of_notMem (fun (h : c ∈ Set.Ioc a b) => not_lt.2 h1 h.1)]
   · by_cases h2 : c ≤ b
     · rw [ite_eq_left h2, ite_eq_right h1, sub_zero, ENNReal.ofReal_one,
         Set.indicator_of_mem (show c ∈ Set.Ioc a b from ⟨not_le.1 h1, h2⟩)]
       rfl
     · rw [ite_eq_right h2, ite_eq_right h1, sub_self, ENNReal.ofReal_zero,
-        Set.indicator_of_notMem (fun h => h2 h.2)]
+        Set.indicator_of_notMem (fun (h : c ∈ Set.Ioc a b) => h2 h.2)]
 
 private theorem measure_finset_sum {ι : Type*} (s : Finset ι) (g : ι → StieltjesFunction ℝ) :
     (∑ i ∈ s, g i).measure = ∑ i ∈ s, (g i).measure := by

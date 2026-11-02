@@ -269,7 +269,7 @@ structure IsPivotedQR.IsRankRevealing (A : Matrix (Fin M) (Fin N) 𝕜)
 theorem one_submatrix_mulVec (σ : Equiv.Perm (Fin N)) (v : Fin N → 𝕜) :
     (1 : Matrix (Fin N) (Fin N) 𝕜).submatrix σ id *ᵥ v = v ∘ σ := by
   funext k
-  simp [mulVec, dotProduct, one_apply]
+  simp [mulVec, dotProduct, Matrix.one_apply]
 
 /-- The inverse permutation matrix `Πᵀ` is invertible. -/
 theorem isUnit_one_submatrix (σ : Equiv.Perm (Fin N)) :
@@ -743,7 +743,7 @@ theorem gap_le_of_urv {A : Matrix (Fin M) (Fin N) 𝕜} {U : Matrix (Fin M) (Fin
       ext (i | i) (j | j)
       · rfl
       · rfl
-      · rw [submatrix_apply, blockEquiv_inr, blockEquiv_inl, fromBlocks_apply₂₁, zero_apply]
+      · rw [submatrix_apply, blockEquiv_inr, blockEquiv_inl, fromBlocks_apply₂₁, Matrix.zero_apply]
         exact h.apply_eq_zero _ _ (by simp only [val_tailIdx, Fin.val_castLE]; omega)
       · rfl
     have := sortedSingularValues_le_l2_opNorm_trailing R₁₁ R₁₂ R₂₂
@@ -845,7 +845,7 @@ theorem gap_le_of_ulv {A : Matrix (Fin M) (Fin N) 𝕜} {U : Matrix (Fin M) (Fin
     have hblk : L.submatrix (blockEquiv hkM) (blockEquiv hkN) = fromBlocks L₁₁ 0 L₂₁ L₂₂ := by
       ext (i | i) (j | j)
       · rfl
-      · rw [submatrix_apply, blockEquiv_inl, blockEquiv_inr, fromBlocks_apply₁₂, zero_apply]
+      · rw [submatrix_apply, blockEquiv_inl, blockEquiv_inr, fromBlocks_apply₁₂, Matrix.zero_apply]
         exact h.apply_eq_zero _ _ (by simp only [val_tailIdx, Fin.val_castLE]; omega)
       · rfl
       · rfl
@@ -1142,7 +1142,7 @@ private theorem mul_conjTranspose_mul_eq_svdTruncation (h : IsSVD A U σ V) (hrM
       U * diagonal fun i : Fin M => if (i : ℕ) < r then (1 : 𝕜) else 0 := by
     rw [Matrix.mul_assoc, hUU]
     ext a j
-    rw [mul_diagonal, mul_apply]
+    rw [mul_diagonal, Matrix.mul_apply]
     change ∑ x : Fin r, U a (Fin.castLE hrM x) *
       (1 : Matrix (Fin M) (Fin M) 𝕜) (Fin.castLE hrM x) j = _
     rw [Fin.sum_castLE_eq_sum_ite hrM (fun i => U a i * (1 : Matrix (Fin M) (Fin M) 𝕜) i j),

@@ -191,7 +191,7 @@ theorem thomas_backward_error {m : RoundingModel ℝ} (hu : 2 * m.u < 1) {α β 
   refine ⟨δA, hδA.trans fun i j => ?_, hLU⟩
   rw [gamma_one_eq]
   have hM : 0 ≤ ((lowerBidiagonalOf β n).abs * (upperBidiagonalOf α c n).abs) i j := by
-    rw [mul_apply]
+    rw [Matrix.mul_apply]
     exact Finset.sum_nonneg fun k _ => mul_nonneg (abs_nonneg _) (abs_nonneg _)
   refine mul_le_mul_of_nonneg_right ?_ hM
   rw [div_le_iff₀ (by linarith)]

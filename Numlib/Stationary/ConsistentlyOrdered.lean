@@ -75,12 +75,12 @@ theorem jacobiLower_add_jacobiUpper (A : Matrix n n 𝕜) (h : IsUnit (diagPart 
 /-- Entries of `L`: the strictly lower triangle of `A`, scaled row by row. -/
 theorem jacobiLower_apply {A : Matrix n n 𝕜} (h : IsUnit (diagPart A)) (i j : n) :
     jacobiLower A i j = -((A i i)⁻¹ * strictLower A i j) := by
-  rw [jacobiLower, inv_diagPart h, neg_mul, neg_apply, diagonal_mul]
+  rw [jacobiLower, inv_diagPart h, neg_mul, Matrix.neg_apply, diagonal_mul]
 
 /-- Entries of `U`: the strictly upper triangle of `A`, scaled row by row. -/
 theorem jacobiUpper_apply {A : Matrix n n 𝕜} (h : IsUnit (diagPart A)) (i j : n) :
     jacobiUpper A i j = -((A i i)⁻¹ * strictUpper A i j) := by
-  rw [jacobiUpper, inv_diagPart h, neg_mul, neg_apply, diagonal_mul]
+  rw [jacobiUpper, inv_diagPart h, neg_mul, Matrix.neg_apply, diagonal_mul]
 
 /-- `L` vanishes outside the strict lower triangle of the nonzero pattern of `A`. -/
 theorem jacobiLower_eq_zero {A : Matrix n n 𝕜} (h : IsUnit (diagPart A)) {i j : n}
@@ -176,8 +176,8 @@ theorem isConsistentlyOrdered_of_labelling {A : Matrix n n ℂ} (h : IsUnit (dia
   refine ⟨u, ?_⟩
   rw [hval, hinv, mul_assoc]
   ext i j
-  rw [diagonal_mul, mul_diagonal, add_apply, add_apply, smul_apply, smul_apply, smul_eq_mul,
-    smul_eq_mul]
+  rw [diagonal_mul, mul_diagonal, Matrix.add_apply, Matrix.add_apply, Matrix.smul_apply,
+    Matrix.smul_apply, smul_eq_mul, smul_eq_mul]
   rcases lt_trichotomy i j with hij | rfl | hij
   · rw [jacobiLower_eq_zero h (asymm hij)]
     rcases eq_or_ne (A i j) 0 with hA | hA

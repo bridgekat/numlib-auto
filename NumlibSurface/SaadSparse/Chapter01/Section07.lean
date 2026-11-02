@@ -306,7 +306,7 @@ there are rows. -/
 theorem conjTranspose_stdCols_mul_self {m : ℕ} (hmn : m ≤ n) :
     (stdCols 𝕜 n m)ᴴ * stdCols 𝕜 n m = 1 := by
   ext i j
-  rw [mul_apply, Finset.sum_eq_single (Fin.castLE hmn i), one_apply]
+  rw [Matrix.mul_apply, Finset.sum_eq_single (Fin.castLE hmn i), Matrix.one_apply]
   · rw [conjTranspose_apply, stdCols_apply, stdCols_apply]
     simp [Fin.ext_iff]
   · intro k _ hk
@@ -318,7 +318,7 @@ theorem conjTranspose_stdCols_mul_self {m : ℕ} (hmn : m ≤ n) :
 /-- `E_mᴴ` selects the first `m` rows. -/
 theorem conjTranspose_stdCols_mul_apply {m k : ℕ} (hmn : m ≤ n) (M : Matrix (Fin n) (Fin k) 𝕜)
     (i : Fin m) (j : Fin k) : ((stdCols 𝕜 n m)ᴴ * M) i j = M (Fin.castLE hmn i) j := by
-  rw [mul_apply, Finset.sum_eq_single (Fin.castLE hmn i)]
+  rw [Matrix.mul_apply, Finset.sum_eq_single (Fin.castLE hmn i)]
   · rw [conjTranspose_apply, stdCols_apply]
     simp
   · intro k' _ hk'
@@ -332,7 +332,7 @@ theorem stdCols_mul_conjTranspose_stdCols_mul {m k : ℕ} (hmn : m ≤ n)
     {M : Matrix (Fin n) (Fin k) 𝕜} (hM : ∀ (i : Fin n) (j : Fin k), m ≤ (i : ℕ) → M i j = 0) :
     stdCols 𝕜 n m * ((stdCols 𝕜 n m)ᴴ * M) = M := by
   ext i j
-  rw [mul_apply]
+  rw [Matrix.mul_apply]
   by_cases hi : (i : ℕ) < m
   · rw [Finset.sum_eq_single (⟨(i : ℕ), hi⟩ : Fin m)]
     · rw [stdCols_apply, conjTranspose_stdCols_mul_apply hmn]

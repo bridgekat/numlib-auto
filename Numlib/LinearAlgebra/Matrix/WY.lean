@@ -70,7 +70,7 @@ theorem of_snoc_mul_conjTranspose_of_snoc (W Y : Matrix n (Fin r) R) (z v : n �
         (of fun i => Fin.snoc (Y i) (v i) : Matrix n (Fin (r + 1)) R)ᴴ =
       W * Yᴴ + vecMulVec z (star v) := by
   ext i j
-  simp [mul_apply, Fin.sum_univ_castSucc, vecMulVec_apply]
+  simp [Matrix.mul_apply, Fin.sum_univ_castSucc, vecMulVec_apply]
 
 /-- **[golub2013matrix] Lemma 5.1.1.** If `Q = 1 - W Yᴴ` and `P = 1 - β v vᴴ`, then
 `Q P = 1 - [W | z] [Y | v]ᴴ` with `z = β Q v`. (No orthogonality is needed.) -/
@@ -163,7 +163,7 @@ private theorem of_snoc_mul_compactWYStep (Y : Matrix n (Fin r) R) (w : n → R)
       of fun i => Fin.snoc ((Y * T) i) ((Y *ᵥ t + b • w) i) := by
   ext i j
   refine Fin.lastCases ?_ (fun j => ?_) j <;>
-    simp [compactWYStep, mul_apply, Fin.sum_univ_castSucc, mulVec, dotProduct, mul_comm]
+    simp [compactWYStep, Matrix.mul_apply, Fin.sum_univ_castSucc, mulVec, dotProduct, mul_comm]
 
 /-- One step of the compact WY recursion: if `Q = 1 - Y T Yᴴ`, then
 `Q (1 - b w wᴴ) = 1 - [Y | w] [T, t; 0, b] [Y | w]ᴴ` with `t = -b T Yᴴ w`. -/

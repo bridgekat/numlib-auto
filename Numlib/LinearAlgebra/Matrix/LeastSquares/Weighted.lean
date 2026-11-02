@@ -188,7 +188,7 @@ omit [Fintype n] [DecidableEq n] in
 private theorem conjTranspose_mul_diagonal_single_mul (A : Matrix m n ℝ) (k : m) (c : ℝ) :
     Aᴴ * diagonal (Pi.single k c) * A = c • vecMulVec (A k) (A k) := by
   ext i j
-  rw [mul_apply, Finset.sum_eq_single k]
+  rw [Matrix.mul_apply, Finset.sum_eq_single k]
   · simp [mul_diagonal, vecMulVec_apply]
     ring
   · intro x _ hx

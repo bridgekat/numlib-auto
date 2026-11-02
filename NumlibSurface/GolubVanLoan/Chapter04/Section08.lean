@@ -417,7 +417,7 @@ theorem poisson2D_eq_kroneckerSum (N₁ N₂ : ℕ) (h : ℝ) (F G : ℕ → ℕ
         (if (b : ℕ) = 0 then G ((a : ℕ) + 1) 0 else 0) +
         (if (b : ℕ) = N₂ then G ((a : ℕ) + 1) (N₂ + 2) else 0) := by
     rw [← symmTridiagonalToeplitz_mulVec_shift_apply N₂ (fun j => G ((a : ℕ) + 1) j) b,
-      mul_apply, mulVec, dotProduct]
+      Matrix.mul_apply, mulVec, dotProduct]
     exact Finset.sum_congr rfl fun j _ => by rw [of_apply, transpose_apply, mul_comm]
   rw [Matrix.add_apply, r1, r2]
   simp only [fivePointRhs, of_apply]
@@ -720,8 +720,8 @@ private theorem fourierMatrix_row₁_sum (a : Fin (m - 1)) (k : Fin (2 * m)) :
   beta_reduce at hs
   rw [← hs]
   have h := congrFun (congrFun (dft_conjTranspose_mul_self (2 * m)).2 (dftBlockIdx₁ m a)) k
-  rw [mul_apply] at h
-  simpa only [map_apply, Matrix.smul_apply, one_apply, smul_eq_mul, mul_ite, mul_one,
+  rw [Matrix.mul_apply] at h
+  simpa only [map_apply, Matrix.smul_apply, Matrix.one_apply, smul_eq_mul, mul_ite, mul_one,
     mul_zero] using h
 
 /-- **§4.8.5, the block identities.** With `C = C_{m−1}`, `S = S_{m−1}`, `e = (1, …, 1)` and
@@ -857,26 +857,27 @@ theorem dst_block_identities :
     linear_combination fa a
   · ext a b
     have h := fb a b
-    simp only [Matrix.add_apply, Matrix.smul_apply, smul_eq_mul, mul_apply, vecMulVec_apply,
-      one_apply, mul_one, mul_ite, mul_zero]
+    simp only [Matrix.add_apply, Matrix.smul_apply, smul_eq_mul, Matrix.mul_apply, vecMulVec_apply,
+      Matrix.one_apply, mul_one, mul_ite, mul_zero]
     split_ifs at h ⊢ <;> linear_combination h
   · funext a
     simp only [Pi.add_apply, Pi.smul_apply, smul_eq_mul, Pi.zero_apply, mulVec, dotProduct]
     linear_combination fc a
   · ext a b
-    simp only [Matrix.add_apply, Matrix.sub_apply, Matrix.smul_apply, smul_eq_mul, mul_apply,
+    simp only [Matrix.add_apply, Matrix.sub_apply, Matrix.smul_apply, smul_eq_mul, Matrix.mul_apply,
       vecMulVec_apply, Matrix.zero_apply, mul_one]
     linear_combination fd a b
   · ext a b
     have h := fb a b
     have h' := fd a b
-    simp only [Matrix.smul_apply, smul_eq_mul, mul_apply, one_apply, mul_ite, mul_one, mul_zero]
+    simp only [Matrix.smul_apply, smul_eq_mul, Matrix.mul_apply, Matrix.one_apply, mul_ite, mul_one,
+        mul_zero]
     split_ifs at h ⊢ <;> linear_combination (h - h') / 2
   · ext a b
     have h := fb a b
     have h' := fd a b
-    simp only [Matrix.sub_apply, Matrix.smul_apply, smul_eq_mul, mul_apply, one_apply, mul_ite,
-      mul_one, mul_zero, vecMulVec_apply]
+    simp only [Matrix.sub_apply, Matrix.smul_apply, smul_eq_mul, Matrix.mul_apply, Matrix.one_apply,
+      mul_ite, mul_one, mul_zero, vecMulVec_apply]
     split_ifs at h ⊢ <;> linear_combination (h + h') / 2
 
 end DSTBlocks

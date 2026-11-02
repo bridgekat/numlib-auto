@@ -295,7 +295,7 @@ theorem memLp_indicator_boundaryMeasure (hp : p ≠ ⊤) {T : 𝒯.elems} {a : F
   refine memLp_finsetSum_measure hp0 hp fun e he ↦ ?_
   by_cases hea : e = (T, a)
   · subst hea
-    exact hf.indicator (measurableSet_openSegment _ _)
+    exact hf.indicator (measurableSet_openSegment _ _).nullMeasurableSet
   · exact (MemLp.zero (p := p)).ae_eq
       (indicator_ae_eq_zero_of_ne h (mem_boundaryEdges.1 he) (Ne.symm hea) f).symm
 
@@ -310,7 +310,7 @@ theorem eLpNorm_indicator_boundaryMeasure_le (hp : p ≠ ⊤) {T : 𝒯.elems} {
   rw [boundaryMeasure, eLpNorm_finsetSum_measure_of_ae_eq_zero hp0 hp (mem_boundaryEdges.2 h)
     (hf.indicator (measurableSet_openSegment _ _))
     (fun e he hne ↦ indicator_ae_eq_zero_of_ne h (mem_boundaryEdges.1 he) (Ne.symm hne) f)]
-  exact eLpNorm_indicator_le f (measurableSet_openSegment _ _)
+  exact eLpNorm_indicator_le f (measurableSet_openSegment _ _).nullMeasurableSet
 
 variable (p) in
 /-- **Extension by zero from a boundary edge**: the bounded operator
@@ -942,7 +942,7 @@ theorem memLp_glueDeriv (v : ∀ T : 𝒯.elems, SobolevEuclidean 2 1 1 (𝒯.Ko
       (volume.restrict (𝒯.K T))) :
     MemLp (𝒯.glueDeriv v i) p (volume.restrict (Ω : Set 𝔼₂)) := by
   refine memLp_finsetSum Finset.univ fun T _ ↦ ?_
-  rw [memLp_indicator_iff_restrict (𝒯.isOpen_K T).measurableSet,
+  rw [memLp_indicator_iff_restrict (𝒯.isOpen_K T).measurableSet.nullMeasurableSet,
     Measure.restrict_restrict (𝒯.isOpen_K T).measurableSet, inter_eq_left.2 (𝒯.K_subset T)]
   exact hv T
 

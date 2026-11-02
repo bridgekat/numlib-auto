@@ -79,7 +79,7 @@ theorem example_3_5 :
   have hM2 : gaussTransform !![(1 : ℝ), 2, 3; 0, -6, -12; 0, 0, -1] 1 = 1 := by
     ext i j
     fin_cases i <;> fin_cases j <;>
-      norm_num [gaussTransform, elimMultipliers_apply, Fin.lt_def, one_apply]
+      norm_num [gaussTransform, elimMultipliers_apply, Fin.lt_def, Matrix.one_apply]
   have hstage : gemStage !![(1 : ℝ), 2, 3; 2, 4, 5; 7, 8, 9] 1 =
       !![1, 0, 0; -2, 1, 0; -7, 0, 1] * !![(1 : ℝ), 2, 3; 2, 4, 5; 7, 8, 9] := by
     rw [gemStage_succ_eq_gaussTransform_mul _ (by norm_num : 0 < 3), gemStage_zero]
@@ -87,7 +87,7 @@ theorem example_3_5 :
   have hM1inv : (!![(1 : ℝ), 0, 0; -2, 1, 0; -7, 0, 1])⁻¹ = !![1, 0, 0; 2, 1, 0; 7, 0, 1] := by
     refine inv_eq_right_inv ?_
     ext i j
-    fin_cases i <;> fin_cases j <;> simp [Matrix.mul_apply, Fin.sum_univ_three, one_apply]
+    fin_cases i <;> fin_cases j <;> simp [Matrix.mul_apply, Fin.sum_univ_three]
   have hPA : !![(1 : ℝ), 0, 0; 0, 0, 1; 0, 1, 0] * !![(1 : ℝ), 2, 3; 2, 4, 5; 7, 8, 9] =
       !![1, 0, 0; 7, 1, 0; 2, 0, 1] * !![1, 2, 3; 0, -6, -12; 0, 0, -1] := by
     ext i j

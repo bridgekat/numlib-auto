@@ -232,7 +232,7 @@ theorem IsDerivTuple.add {G H : Tuple Ω F j} (hG : IsDerivTuple G) (hH : IsDeri
   obtain ⟨g, hg, hgH⟩ := hH
   refine ⟨f + g, hf.add hg, fun i x hx ↦ ?_⟩
   have hi : ((i : ℕ) : WithTop ℕ∞) ≤ j := by exact_mod_cast Nat.lt_succ_iff.1 i.2
-  rw [Pi.add_apply, BoundedContinuousFunction.add_apply, hfG i x hx, hgH i x hx,
+  rw [Pi.add_apply, add_apply, hfG i x hx, hgH i x hx,
     iteratedFDeriv_add_apply ((hf.contDiffAt (Ω.isOpen.mem_nhds hx)).of_le hi)
       ((hg.contDiffAt (Ω.isOpen.mem_nhds hx)).of_le hi)]
 
@@ -244,7 +244,7 @@ theorem IsDerivTuple.smul (c : ℝ) {G : Tuple Ω F j} (hG : IsDerivTuple G) :
   obtain ⟨f, hf, hfG⟩ := hG
   refine ⟨c • f, hf.const_smul c, fun i x hx ↦ ?_⟩
   have hi : ((i : ℕ) : WithTop ℕ∞) ≤ j := by exact_mod_cast Nat.lt_succ_iff.1 i.2
-  rw [Pi.smul_apply, BoundedContinuousFunction.smul_apply, hfG i x hx,
+  rw [Pi.smul_apply, smul_apply, hfG i x hx,
     iteratedFDeriv_const_smul_apply ((hf.contDiffAt (Ω.isOpen.mem_nhds hx)).of_le hi)]
 
 variable (Ω F j β) in
@@ -323,18 +323,18 @@ theorem deriv_zero (i : Fin (j + 1)) : (0 : HolderSpace Ω F j β).deriv i = 0 :
 
 @[simp]
 theorem coe_add (u v : HolderSpace Ω F j β) (x : closure (Ω : Set E)) : (u + v) x = u x + v x := by
-  rw [coe_def, coe_def, coe_def, deriv_add, BoundedContinuousFunction.add_apply]
+  rw [coe_def, coe_def, coe_def, deriv_add, add_apply]
   exact (continuousMultilinearCurryFin0 ℝ E F).map_add _ _
 
 @[simp]
 theorem coe_smul (c : ℝ) (u : HolderSpace Ω F j β) (x : closure (Ω : Set E)) :
     (c • u) x = c • u x := by
-  rw [coe_def, coe_def, deriv_smul, BoundedContinuousFunction.smul_apply]
+  rw [coe_def, coe_def, deriv_smul, smul_apply]
   exact (continuousMultilinearCurryFin0 ℝ E F).map_smul _ _
 
 @[simp]
 theorem coe_zero (x : closure (Ω : Set E)) : (0 : HolderSpace Ω F j β) x = 0 := by
-  rw [coe_def, deriv_zero, BoundedContinuousFunction.coe_zero, Pi.zero_apply]
+  rw [coe_def, deriv_zero, FunLike.coe_zero, Pi.zero_apply]
   exact (continuousMultilinearCurryFin0 ℝ E F).map_zero
 
 /-! #### The norm -/
@@ -378,7 +378,7 @@ theorem normedSpaceCore : NormedSpace.Core ℝ (HolderSpace Ω F j β) where
       rw [← Finset.sum_add_distrib]
       exact Finset.sum_le_sum fun i _ ↦ norm_add_le _ _
     have h2 := holderSeminorm_add_le (β := β) u.exists_holderWith v.exists_holderWith
-    rw [BoundedContinuousFunction.coe_add]
+    rw [FunLike.coe_add]
     linarith
   norm_eq_zero_iff u := by
     constructor
@@ -804,7 +804,7 @@ instance [CompleteSpace F] : CompleteSpace (HolderSpace Ω F j β) := by
           - ((u n).deriv (Fin.last j) - w.deriv (Fin.last j)) y‖) := by
       have hx := ((continuous_eval_const x).tendsto _).comp (hw ▸ hL (Fin.last j))
       have hy := ((continuous_eval_const y).tendsto _).comp (hw ▸ hL (Fin.last j))
-      simp only [BoundedContinuousFunction.sub_apply]
+      simp only [sub_apply]
       exact ((tendsto_const_nhds.sub hx).sub (tendsto_const_nhds.sub hy)).norm
     refine le_of_tendsto hlim (Filter.eventually_atTop.2 ⟨N₂, fun m hm ↦ ?_⟩)
     have hnm : ‖u n - u m‖ ≤ ε / 2 := by
@@ -949,7 +949,7 @@ theorem exists_subseq_tendsto_toLower (hb : Bornology.IsBounded (Ω : Set E)) (h
   have hint := HolderWith.of_le_of_forall_norm_sub_le hβ0 hβ.le hA hsub
   rw [← ht₁, ← ht₂] at hint
   have := hint.holderSeminorm_le
-  rwa [NNReal.coe_mul, NNReal.coe_rpow, NNReal.coe_rpow, BoundedContinuousFunction.coe_sub] at this
+  rwa [NNReal.coe_mul, NNReal.coe_rpow, NNReal.coe_rpow, FunLike.coe_sub] at this
 
 /-- **The compact embedding `C^{j,β}(Ω̄) ↪↪ C^{j,β'}(Ω̄)` for `0 < β' < β`** on a bounded `Ω`
 (Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 7.3.8 (c), the Hölder-space part), under

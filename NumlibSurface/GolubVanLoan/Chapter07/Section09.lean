@@ -103,11 +103,11 @@ theorem equation_7_9_2 {l₁ l₂ M : ℂ} (hl : l₁ ≠ l₂) :
   have hAX : !![l₁, M; 0, l₂] * X = X * diagonal ![l₁, l₂] := by
     ext i j
     fin_cases i <;> fin_cases j
-    · simp [X, mul_apply, Fin.sum_univ_two]
-    · simpa [X, mul_apply, Fin.sum_univ_two] using
+    · simp [X, Matrix.mul_apply, Fin.sum_univ_two]
+    · simpa [X, Matrix.mul_apply, Fin.sum_univ_two] using
         (show l₁ * (M / (l₂ - l₁)) + M = M / (l₂ - l₁) * l₂ by field_simp; ring)
-    · simp [X, mul_apply, Fin.sum_univ_two]
-    · simp [X, mul_apply, Fin.sum_univ_two]
+    · simp [X, Matrix.mul_apply, Fin.sum_univ_two]
+    · simp [X, Matrix.mul_apply, Fin.sum_univ_two]
   rw [← hAX, Matrix.mul_assoc, mul_nonsing_inv _ hXd, Matrix.mul_one]
 
 /-- **(7.9.3).** `[λ₁ M; 0 λ₂]^k = [λ₁^k, M ∑_{j=0}^{k-1} λ₁^{k-1-j} λ₂^j; 0, λ₂^k]` (no hypothesis
@@ -123,11 +123,11 @@ theorem equation_7_9_3 (l₁ l₂ M : ℂ) (k : ℕ) :
     rw [pow_succ', ih, Nat.add_sub_cancel, geom_sum₂_succ_eq]
     ext i j
     fin_cases i <;> fin_cases j
-    · simp [mul_apply, Fin.sum_univ_two, pow_succ']
-    · simp [mul_apply, Fin.sum_univ_two]
+    · simp [Matrix.mul_apply, Fin.sum_univ_two, pow_succ']
+    · simp [Matrix.mul_apply, Fin.sum_univ_two]
       ring
-    · simp [mul_apply, Fin.sum_univ_two]
-    · simp [mul_apply, Fin.sum_univ_two, pow_succ']
+    · simp [Matrix.mul_apply, Fin.sum_univ_two]
+    · simp [Matrix.mul_apply, Fin.sum_univ_two, pow_succ']
 
 /-- The strictly upper part of the `2 × 2` upper triangular example. -/
 private theorem strictUpper_two_by_two (l₁ l₂ M : ℂ) :

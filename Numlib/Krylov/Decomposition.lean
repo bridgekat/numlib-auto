@@ -291,11 +291,11 @@ theorem isKrylovDecomposition_iff {A : Matrix n n 𝕜} {Q : Matrix n m 𝕜} {B
     refine ⟨fun h j => ?_, fun h x j => ?_⟩
     · ext x
       rw [← col_mul_eq_mulVec_col, col_apply, h]
-      simp [mul_apply, vecMulVec_apply, Finset.sum_apply, mul_comm]
+      simp [Matrix.mul_apply, vecMulVec_apply, Finset.sum_apply, mul_comm]
     · have := congrFun (h j) x
       rw [← col_mul_eq_mulVec_col, col_apply] at this
       rw [this]
-      simp [mul_apply, vecMulVec_apply, Finset.sum_apply, mul_comm]
+      simp [Matrix.mul_apply, vecMulVec_apply, Finset.sum_apply, mul_comm]
   constructor
   · intro h
     refine ⟨conjTranspose_mul_self_eq_one_iff_orthonormal.1 h.conjTranspose_mul_self,
@@ -411,7 +411,7 @@ theorem mul_basisMatrix (k : ℕ) :
   have hx := congrFun this x
   rw [← col_basisMatrix, ← col_mul_eq_mulVec_col, col_apply] at hx
   rw [hx]
-  simp [mul_apply, vecMulVec_apply, Finset.sum_apply, basisMatrix, mul_comm]
+  simp [Matrix.mul_apply, vecMulVec_apply, Finset.sum_apply, basisMatrix, mul_comm]
 
 /-- The Arnoldi process gives an Arnoldi decomposition of the matrix below the grade:
 `Q_{k+1}`, `H_{k+1}`, `w_k` for `k + 1 ≤ grade`. -/
@@ -555,7 +555,7 @@ theorem Matrix.exists_isUpperHessenberg_conj_lastCol {j : ℕ}
         simp only [conjTranspose_mul, conjTranspose_conjTranspose, Matrix.mul_assoc]
       rw [h1, star_eq_conjTranspose, conjTranspose_submatrix]
       ext a b
-      simp only [mul_apply, submatrix_apply, id_eq]
+      simp only [Matrix.mul_apply, submatrix_apply, id_eq]
     rw [hconj, isUpperHessenberg_iff_fin]
     intro a b hab
     rw [submatrix_apply, conjTranspose_apply, (isUpperHessenberg_iff_fin.1 hG) _ _

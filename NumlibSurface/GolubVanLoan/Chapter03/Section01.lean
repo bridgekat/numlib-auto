@@ -763,7 +763,7 @@ theorem equation_3_1_4 {n N q : ℕ} {blk : Fin n → Fin N} (hblk : Monotone bl
     (fun i c => ⟨fun h => absurd h List.not_mem_nil, fun _ => by simp⟩) ?_
   · ext i c
     have := (key i c).1 (List.mem_finRange _)
-    simpa [List.mem_finRange, mul_apply] using this
+    simpa [List.mem_finRange, Matrix.mul_apply] using this
   rintro p x qs hpq S hI
   simp only [hF]
   have hpx : ∀ J ∈ p, J < x := fun J hJ =>

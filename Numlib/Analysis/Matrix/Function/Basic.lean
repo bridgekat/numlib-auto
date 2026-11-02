@@ -168,8 +168,8 @@ theorem pfc_jordanBlock :
 `f(J_k(μ))_{ij} = f⁽ʲ⁻ⁱ⁾(μ)/(j - i)!` for `i ≤ j`. -/
 theorem pfc_jordanBlock_apply (i j : Fin k) :
     pfc f (jordanBlock k μ) i j = if i ≤ j then taylorJet f μ (j - i) else 0 := by
-  rw [pfc_jordanBlock, sum_apply]
-  simp only [smul_apply, jordanBlock_zero_pow_apply, smul_eq_mul, mul_ite, mul_one, mul_zero]
+  rw [pfc_jordanBlock, Matrix.sum_apply]
+  simp only [Matrix.smul_apply, jordanBlock_zero_pow_apply, smul_eq_mul, mul_ite, mul_one, mul_zero]
   split_ifs with h
   · rw [Finset.sum_eq_single ((j : ℕ) - i) (fun b _ hb => ?_) (fun hb => ?_)]
     · rw [ite_eq_left_iff.mpr]; intro h'; exact absurd (by rw [Fin.le_def] at h; omega) h'

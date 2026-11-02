@@ -350,7 +350,8 @@ theorem equation_3_49 [NeZero n] (x : Fin n → EuclideanSpace ℝ (Fin m))
     congr 1
     field_simp [hne i]
   · ext i j
-    rw [gramSchmidtR, of_apply, mul_apply, EuclideanSpace.inner_eq_star_dotProduct, dotProduct]
+    rw [gramSchmidtR, of_apply, Matrix.mul_apply, EuclideanSpace.inner_eq_star_dotProduct,
+        dotProduct]
     exact Finset.sum_congr rfl fun r _ => by simp [gramSchmidtQ, mul_comm]
 
 /-- **§3.4.3, the modified Gram–Schmidt method.** At step `k + 1`, the projections of `a_{k+1}`

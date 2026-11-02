@@ -493,7 +493,7 @@ theorem spectrum_eq_setOf_not_bijective (T : E →L[ℂ] E) :
       {l | Module.End.HasEigenvalue (T : Module.End ℂ E) l} ⊆ spectrum ℂ T := by
   refine ⟨?_, rfl, fun l => ?_, fun l hl => ?_⟩
   · ext l
-    rw [Set.mem_ofPred_eq, spectrum.mem_resolventSet_iff, ← IsUnit.neg_iff, neg_sub,
+    rw [spectrum.mem_resolventSet_iff, Set.mem_ofPred_eq, ← IsUnit.neg_iff, neg_sub,
       Algebra.algebraMap_eq_smul_one, ContinuousLinearMap.isUnit_iff_bijective]
   · rw [← Module.End.eigenspace_def]
     exact Iff.rfl
@@ -747,7 +747,7 @@ theorem selfAdjoint_spectrum_subset_real {T : H →L[ℂ] H} (hT : IsSelfAdjoint
     exact hre u
   refine ⟨hre, hW, fun l hl => ?_⟩
   have hcl : closure (T : H →ₗ[ℂ] H).numericalRange ⊆ {z : ℂ | z.im = 0} :=
-    closure_minimal hW (isClosed_eq Complex.continuous_im continuous_const)
+    closure_minimal (fun z hz => hW z hz) (isClosed_eq Complex.continuous_im continuous_const)
   exact hcl ((proposition_11_33 T).1 hl)
 
 /-- **Proposition 11.34.** Let `H` be a complex Hilbert space and `T` a compact self-adjoint
@@ -876,7 +876,7 @@ theorem skewAdjoint_spectrum_subset_imaginary {T : H →L[ℂ] H}
     rintro _ ⟨u, -, rfl⟩
     exact hre u
   have hcl : ∀ z ∈ closure (T : H →ₗ[ℂ] H).numericalRange, z.re = 0 :=
-    closure_minimal hW (isClosed_eq Complex.continuous_re continuous_const)
+    closure_minimal (fun z hz => hW z hz) (isClosed_eq Complex.continuous_re continuous_const)
   refine ⟨hre, hcl, fun l hl => hcl l ((proposition_11_33 T).1 hl), fun l hl =>
     hcl l ((proposition_11_33 T).1 ((spectrum_eq_setOf_not_bijective T).2.2.2 hl))⟩
 

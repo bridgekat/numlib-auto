@@ -284,7 +284,7 @@ theorem exists_apply_ne_zero_of_mul_apply_ne_zero [NonUnitalNonAssocSemiring R]
     {A B : Matrix n n R} {i j : n} (h : (A * B) i j ≠ 0) : ∃ k, A i k ≠ 0 ∧ B k j ≠ 0 := by
   by_contra! hc
   refine h ?_
-  rw [mul_apply]
+  rw [Matrix.mul_apply]
   refine Finset.sum_eq_zero fun k _ => ?_
   rcases eq_or_ne (A i k) 0 with hk | hk
   · simp [hk]
@@ -298,7 +298,7 @@ B` when both have a nonzero diagonal, is this at `k = j` and at `k = i`. -/
 theorem mul_apply_pos_of_pos_of_pos [Semiring R] [PartialOrder R] [IsStrictOrderedRing R]
     {A B : Matrix n n R} (hA : ∀ i j, 0 ≤ A i j) (hB : ∀ i j, 0 ≤ B i j) {i j k : n}
     (h₁ : 0 < A i k) (h₂ : 0 < B k j) : 0 < (A * B) i j := by
-  rw [mul_apply]
+  rw [Matrix.mul_apply]
   exact Finset.sum_pos' (fun l _ => mul_nonneg (hA i l) (hB l j))
     ⟨k, Finset.mem_univ k, mul_pos h₁ h₂⟩
 

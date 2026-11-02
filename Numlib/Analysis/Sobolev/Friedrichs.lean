@@ -510,8 +510,8 @@ theorem MemSobolev.exists_seq_contDiff_hasCompactSupport_tendsto_aux (hf : MemSo
   -- extension by zero of `f` and of its weak derivative
   set f' : E → F := (Ω : Set E).indicator f with hf'def
   set W' : E → E [×1]→L[ℝ] F := (Ω : Set E).indicator W with hW'def
-  have hf'Lp : MemLp f' p μ := (memLp_indicator_iff_restrict hΩm).2 hf.memLp
-  have hW'Lp : MemLp W' p μ := (memLp_indicator_iff_restrict hΩm).2 hWp
+  have hf'Lp : MemLp f' p μ := (memLp_indicator_iff_restrict hΩm.nullMeasurableSet).2 hf.memLp
+  have hW'Lp : MemLp W' p μ := (memLp_indicator_iff_restrict hΩm.nullMeasurableSet).2 hWp
   have hf'loc : LocallyIntegrable f' μ := hf'Lp.locallyIntegrable hp
   have hint : HasWeakIteratedFDerivOn 1 f' W' Ω μ :=
     hW.congr_ae

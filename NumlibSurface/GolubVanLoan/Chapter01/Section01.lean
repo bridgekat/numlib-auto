@@ -566,7 +566,7 @@ private theorem eq_add_mul_of_forall_mem_run_exact {m r n : ℕ} {A : Matrix (Fi
         (C i j)).run) :
     Ĉ = C + A * B := by
   ext i j
-  rw [mem_run_dotAccum_exact_iff.1 (h i j), add_apply, ← Fin.sum_univ_def]
+  rw [mem_run_dotAccum_exact_iff.1 (h i j), Matrix.add_apply, ← Fin.sum_univ_def]
   rfl
 
 /-- **Algorithm 1.1.5 overwrites `C` with `C + AB`.** -/
@@ -663,6 +663,6 @@ end Bridges
 theorem equation_1_1_4 {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ) (B : Matrix (Fin r) (Fin n) ℝ) :
     A * B = ∑ k, vecMulVec (fun i => A i k) (B k) := by
   ext i j
-  simp [mul_apply, vecMulVec_apply, Matrix.sum_apply]
+  simp [Matrix.mul_apply, vecMulVec_apply, Matrix.sum_apply]
 
 end GolubVanLoan.Chapter01

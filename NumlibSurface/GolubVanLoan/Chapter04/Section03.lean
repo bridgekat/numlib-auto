@@ -1461,7 +1461,7 @@ theorem algorithm_4_3_1_spec {p q : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
     ext i j
     by_cases hji : j < i
     · simp [strictLower, gemLower, hji, key i j, one_apply_ne (ne_of_gt hji)]
-    · simp [strictLower, gemLower, hji, one_apply]
+    · simp [strictLower, gemLower, hji, Matrix.one_apply]
   have hU : (List.finRange n).foldl (bandGEStepId p q) A -
       ((List.finRange n).foldl (bandGEStepId p q) A).strictLower = gemStage A n := by
     ext i j

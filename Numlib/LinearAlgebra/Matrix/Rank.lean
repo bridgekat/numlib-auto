@@ -197,7 +197,7 @@ theorem exists_det_submatrix_ne_zero [Finite m] :
     rw [this, finrank_span_eq_card hc, Fintype.card_fin]
   obtain ⟨r, hr⟩ := exists_linearIndependent_col _ hB
   refine ⟨r, c, ?_⟩
-  rw [← isUnit_iff_ne_zero, ← isUnit_iff_isUnit_det, ← linearIndependent_rows_iff_isUnit]
+  rw [← isUnit_iff_ne_zero, ← isUnit_iff_isUnit_det, ← linearIndependent_row_iff_isUnit]
   exact hr
 
 /-- [quarteroni2000numerical] Definition 1.12 as a theorem: the rank is the largest order of a
@@ -245,15 +245,15 @@ theorem rank_le_iff_exists_mul (A : Matrix m n K) (r : ℕ) :
     let ι : Fin (finrank K V) → Fin r := Fin.castLE hk
     let f : (n → K) →ₗ[K] V := A.mulVecLin.rangeRestrict
     refine ⟨LinearMap.toMatrix' (V.subtype ∘ₗ e.symm.toLinearMap ∘ₗ LinearMap.funLeft K K ι),
-      LinearMap.toMatrix' (Function.ExtendByZero.linearMap K ι ∘ₗ e.toLinearMap ∘ₗ f), ?_⟩
+      LinearMap.toMatrix' (Function.ExtendByZero.linearMap K K ι ∘ₗ e.toLinearMap ∘ₗ f), ?_⟩
     rw [← LinearMap.toMatrix'_comp]
-    have hι : LinearMap.funLeft K K ι ∘ₗ Function.ExtendByZero.linearMap K ι = LinearMap.id := by
+    have hι : LinearMap.funLeft K K ι ∘ₗ Function.ExtendByZero.linearMap K K ι = LinearMap.id := by
       ext x i
       simp only [LinearMap.coe_comp, Function.comp_apply, LinearMap.funLeft_apply,
         Function.ExtendByZero.linearMap_apply, LinearMap.id_coe, id_eq]
       exact (Fin.castLE_injective hk).extend_apply _ _ i
     have hcomp : V.subtype ∘ₗ e.symm.toLinearMap ∘ₗ LinearMap.funLeft K K ι ∘ₗ
-        (Function.ExtendByZero.linearMap K ι ∘ₗ e.toLinearMap ∘ₗ f) = A.mulVecLin := by
+        (Function.ExtendByZero.linearMap K K ι ∘ₗ e.toLinearMap ∘ₗ f) = A.mulVecLin := by
       refine LinearMap.ext fun x => ?_
       have hx := LinearMap.congr_fun hι (e (f x))
       simp only [LinearMap.coe_comp, Function.comp_apply, LinearMap.id_coe, id_eq] at hx
@@ -411,12 +411,12 @@ theorem finrank_ker_toBlock_inv {A : Matrix n n K} (hA : IsUnit A) (p q : n → 
   let φ : LinearMap.ker (A⁻¹.toBlock p q).mulVecLin →ₗ[K]
       LinearMap.ker (A.toBlock (fun i => ¬ q i) (fun j => ¬ p j)).mulVecLin :=
     LinearMap.codRestrict _ (LinearMap.funLeft K K Subtype.val ∘ₗ A⁻¹.mulVecLin ∘ₗ
-      Function.ExtendByZero.linearMap K Subtype.val ∘ₗ Submodule.subtype _) fun x =>
+      Function.ExtendByZero.linearMap K K Subtype.val ∘ₗ Submodule.subtype _) fun x =>
         mem_ker_toBlock_of_mem_ker_toBlock h1 (fun _ => Iff.rfl) (fun _ => Iff.rfl) x.2
   let ψ : LinearMap.ker (A.toBlock (fun i => ¬ q i) (fun j => ¬ p j)).mulVecLin →ₗ[K]
       LinearMap.ker (A⁻¹.toBlock p q).mulVecLin :=
     LinearMap.codRestrict _ (LinearMap.funLeft K K Subtype.val ∘ₗ A.mulVecLin ∘ₗ
-      Function.ExtendByZero.linearMap K Subtype.val ∘ₗ Submodule.subtype _) fun y =>
+      Function.ExtendByZero.linearMap K K Subtype.val ∘ₗ Submodule.subtype _) fun y =>
         mem_ker_toBlock_of_mem_ker_toBlock h2 (fun _ => not_not.symm) (fun _ => not_not.symm) y.2
   refine LinearEquiv.finrank_eq (LinearEquiv.ofLinearMap φ ψ ?_ ?_)
   · ext y : 2

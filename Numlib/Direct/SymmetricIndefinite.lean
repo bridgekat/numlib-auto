@@ -81,7 +81,7 @@ private theorem schurComplement_two_apply (A : Matrix n n ℝ) (p q : n)
       A i j - (A i p * (A q q * A p j - A p q * A q j) + A i q * (A p p * A q j - A q p * A p j))
         / (A p p * A q q - A p q * A q p) := by
   simp only [schurComplement_eq, Matrix.sub_apply, toBlocks₂₂, toBlocks₂₁, toBlocks₁₁,
-    toBlocks₁₂, inv_def, adjugate_fin_two, det_fin_two, Ring.inverse_eq_inv', mul_apply,
+    toBlocks₁₂, inv_def, adjugate_fin_two, det_fin_two, Ring.inverse_eq_inv', Matrix.mul_apply,
     Matrix.smul_apply, smul_eq_mul, Fin.sum_univ_two, of_apply, submatrix_apply, Sum.elim_inl,
     Sum.elim_inr]
   simp only [cons_val_zero, cons_val_one, cons_val_fin_one, Fin.isValue]
@@ -272,11 +272,11 @@ theorem exists_forall_l2_opNorm_weightedLeastSquaresOp_le {n p : Type*} [Fintype
     have hupd : M.updateCol k ((Bᵀ * diagonal d) *ᵥ WithLp.ofLp b) =
         Bᵀ * diagonal d * B.updateCol k (WithLp.ofLp b) := by
       ext i j
-      rw [updateCol_apply, mul_apply]
+      rw [updateCol_apply, Matrix.mul_apply]
       split_ifs with hj
       · subst hj
         simp [mulVec, dotProduct]
-      · simp [hM, mul_apply, hj]
+      · simp [hM, Matrix.mul_apply, hj]
     have hnum : ((Fintype.card p).factorial : ℝ) *
         (M.updateCol k ((Bᵀ * diagonal d) *ᵥ WithLp.ofLp b)).det =
         ∑ r : p → n, (∏ i, d (r i)) * (B.submatrix r id).det ^ 2 * y r k := by

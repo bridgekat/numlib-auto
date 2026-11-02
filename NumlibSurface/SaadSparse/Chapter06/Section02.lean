@@ -85,7 +85,8 @@ noncomputable def grade (A : Matrix (Fin n) (Fin n) 𝕜) (v : 𝔼) : ℕ :=
 /-- The grade is attained: there is a monic annihilator of `v` of degree `grade A v`. -/
 theorem monic_natDegree_eq_grade :
     ∃ p : 𝕜[X], p.Monic ∧ p.natDegree = grade A v ∧ op (aeval A p) v = 0 :=
-  Nat.sInf_mem (exists_monic_natDegree_eq A v)
+  Nat.sInf_mem (s := {d : ℕ | ∃ p : 𝕜[X], p.Monic ∧ p.natDegree = d ∧ op (aeval A p) v = 0})
+    (exists_monic_natDegree_eq A v)
 
 /-- The grade is a lower bound: every monic annihilator of `v` has degree at least the grade. -/
 theorem grade_le_natDegree {p : 𝕜[X]} (hp : p.Monic) (h : op (aeval A p) v = 0) :

@@ -83,7 +83,7 @@ theorem rectDiagonal_mul_transpose_apply (σ : ℕ → ℝ) (i : Fin m) :
     ((rectDiagonal σ : Matrix (Fin m) (Fin n) ℝ) * (rectDiagonal σ)ᵀ : Matrix (Fin m) (Fin m) ℝ)
       i i =
       if (i : ℕ) < n then σ i ^ 2 else 0 := by
-  rw [mul_apply]
+  rw [Matrix.mul_apply]
   split_ifs with hi
   · rw [Finset.sum_eq_single ⟨i, hi⟩]
     · simp [rectDiagonal_apply, sq]
@@ -112,7 +112,7 @@ theorem equation_12_5_1 {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fi
   refine ⟨hA, hUA, hG, ?_⟩
   have hrow : ∀ i, ∑ j, (Uᵀ * A) i j ^ 2 = if (i : ℕ) < n then σ i ^ 2 else 0 := by
     intro i
-    rw [← rectDiagonal_mul_transpose_apply, ← hG, mul_apply]
+    rw [← rectDiagonal_mul_transpose_apply, ← hG, Matrix.mul_apply]
     simp only [transpose_apply, sq]
   intro i i' hii'
   simp only [hrow]
@@ -147,10 +147,10 @@ theorem equation_12_5_3 {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fi
       (1 : Matrix (Fin r) (Fin r) ℝ) *
         ((rectDiagonal σ : Matrix (Fin m) (Fin n) ℝ).submatrix (Fin.castLE hrm) id) * Vᵀ := by
     have hsub : (U.submatrix id (Fin.castLE hrm))ᵀ * A = (Uᵀ * A).submatrix (Fin.castLE hrm) id :=
-      by ext a b; simp [mul_apply]
+      by ext a b; simp [Matrix.mul_apply]
     rw [hsub, hUA, Matrix.one_mul]
     ext a b
-    simp [mul_apply]
+    simp [Matrix.mul_apply]
   have hVT : Vᵀ ∈ unitaryGroup (Fin n) ℝ := by
     have := Unitary.star_mem h.mem_unitaryGroup_right
     rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at this
@@ -216,7 +216,7 @@ theorem hosvd_modeProduct_slices (A : RTensor n) (k : Fin (d + 1))
   rw [gram_modeUnfold_of_isSVD h] at hrow
   refine ⟨hrow, fun i => ?_⟩
   have := congrFun (congrFun hrow i) i
-  rw [mul_apply, diagonal_apply_eq] at this
+  rw [Matrix.mul_apply, diagonal_apply_eq] at this
   simpa [sq] using this
 
 /-- **Theorem 12.5.1** (HOSVD), (12.5.6)–(12.5.9): for `𝒜 ∈ ℝ^{n₁ × ⋯ × n_d}` and, for every mode
@@ -677,7 +677,7 @@ theorem equation_12_5_28 {p m s : ℕ} {N : Type*} [Fintype N] (C : Matrix (Fin 
     (C.rank ≤ s → ∃ (G : Fin m → Matrix (Fin p) (Fin s) ℝ) (C' : Matrix (Fin s) N ℝ),
       ∀ k i c, C (k, i) c = (G i * C') k c) := by
   refine ⟨fun U₃ W hC k i c => ?_, Tensor.exists_ttCore_of_rank C⟩
-  rw [hC, mul_apply, mul_apply]
+  rw [hC, Matrix.mul_apply, Matrix.mul_apply]
   rfl
 
 /-! ### Tensor singular values and eigenvalues, tensor trains -/

@@ -339,7 +339,7 @@ theorem equation_4_2_9 {A G : Matrix (Fin n) (Fin n) ℝ} (hG : G.IsLowerTriangu
       (fun i => A i j) - ∑ k ∈ univ.filter (· < j), G j k • fun i => G i k := by
   ext i
   have hsum : A i j = ∑ k ∈ univ.filter (· ≤ j), G i k * G j k := by
-    rw [hA, mul_apply]
+    rw [hA, Matrix.mul_apply]
     refine (Finset.sum_subset (filter_subset _ _) fun k _ hk => ?_).symm
     have hjk : j < k := not_le.1 fun h => hk (mem_filter.2 ⟨mem_univ _, h⟩)
     rw [transpose_apply, hG (OrderDual.toDual_lt_toDual.2 hjk), mul_zero]
@@ -357,7 +357,7 @@ theorem cholesky_entry_bound {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (i
       ∑ k ∈ univ.filter (· ≤ i), cholesky A i k ^ 2 = A i i := by
   refine ⟨by simpa [Real.norm_eq_abs, sq_abs] using sq_norm_cholesky_apply_le hA i j, ?_⟩
   conv_rhs => rw [← cholesky_mul_transpose hA]
-  rw [mul_apply]
+  rw [Matrix.mul_apply]
   refine Eq.trans ?_ (Finset.sum_subset (filter_subset (· ≤ i) univ) ?_)
   · exact Finset.sum_congr rfl fun k _ => by rw [transpose_apply, sq]
   · intro k _ hk
@@ -793,7 +793,7 @@ theorem equation_4_2_10 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) :
 private theorem mul_diagonal_mul_transpose_apply {ι κ : Type*} [Fintype κ] [DecidableEq κ]
     (X : Matrix ι κ ℝ) (d : κ → ℝ) (a b : ι) :
     (X * diagonal d * Xᵀ) a b = ∑ k, X a k * d k * X b k := by
-  rw [mul_apply]
+  rw [Matrix.mul_apply]
   simp only [mul_diagonal, transpose_apply]
 
 /-- **(4.2.17)**: a symmetric positive semidefinite `A` of rank `r` satisfies
@@ -937,7 +937,7 @@ theorem equation_4_2_19 {N r : ℕ} {A : Matrix (Fin (N * r)) (Fin (N * r)) ℝ}
         ∑ x : Fin N × Fin r, G (finProdFinEquiv (a, p)) (finProdFinEquiv x) *
           G (finProdFinEquiv (b, q)) (finProdFinEquiv x) := by
       conv_lhs => rw [← cholesky_mul_transpose hA]
-      rw [mul_apply, ← Equiv.sum_comp finProdFinEquiv]
+      rw [Matrix.mul_apply, ← Equiv.sum_comp finProdFinEquiv]
       rfl
     rw [blockOf, of_apply, h1, Fintype.sum_prod_type, Matrix.sum_apply]
     refine (Finset.sum_subset (subset_univ (univ.filter (· ≤ b))) fun k _ hk => ?_).symm.trans
@@ -948,7 +948,7 @@ theorem equation_4_2_19 {N r : ℕ} {A : Matrix (Fin (N * r)) (Fin (N * r)) ℝ}
       simp only [blockOf, of_apply, Matrix.zero_apply] at this
       rw [this, mul_zero]
     · refine Finset.sum_congr rfl fun k _ => ?_
-      simp [blockOf, mul_apply]
+      simp [blockOf, Matrix.mul_apply]
   refine ⟨hGl i j, hmul i j, ?_, fun hji => ?_⟩
   · -- the diagonal block is the Cholesky factor of `S`
     have hS : blockOf A j j - ∑ k ∈ univ.filter (· < j), blockOf G j k * (blockOf G j k)ᵀ =
@@ -1151,7 +1151,7 @@ theorem algorithm_4_2_3_spec {r : ℕ} (hr : 0 < r) {A : Matrix (Fin n) (Fin n) 
     have hx : cholesky A'.toBlocks₁₁ *ᵥ G'.toBlocks₂₁ i = A'.toBlocks₂₁ i := by
       ext k
       rw [h21', ← h11]
-      simp only [mulVec, dotProduct, mul_apply, transpose_apply]
+      simp only [mulVec, dotProduct, Matrix.mul_apply, transpose_apply]
       exact Finset.sum_congr rfl fun l _ => mul_comm _ _
     rw [of_apply, forwardSubst_eq_of_mulVec_eq _ (isLowerTriangular_cholesky _)
       (fun k => (cholesky_diag_pos h11pd k).ne') hx]
@@ -1160,7 +1160,7 @@ theorem algorithm_4_2_3_spec {r : ℕ} (hr : 0 < r) {A : Matrix (Fin n) (Fin n) 
       ((List.finRange r).map fun k => G'.toBlocks₂₁ i k * G'.toBlocks₂₁ j k).sum) =
       A'.toBlocks₂₂ - G'.toBlocks₂₁ * G'.toBlocks₂₁ᵀ := by
     ext i j
-    rw [of_apply, ← Fin.sum_univ_def, Matrix.sub_apply, mul_apply]
+    rw [of_apply, ← Fin.sum_univ_def, Matrix.sub_apply, Matrix.mul_apply]
     rfl
   have hsym : A'.toBlocks₁₂ = A'.toBlocks₂₁ᵀ := by
     ext i j
@@ -1369,7 +1369,7 @@ theorem algorithm_4_2_4_spec {N r : ℕ} {A : Matrix (Fin (N * r)) (Fin (N * r))
       congr 1
       refine Finset.sum_congr rfl fun k hk => ?_
       have hkj : k < j := (Finset.mem_filter.1 hk).2
-      rw [mul_apply]
+      rw [Matrix.mul_apply]
       refine Finset.sum_congr rfl fun y _ => ?_
       rw [hG i k hkj hiL a y, hG j k hkj le_rfl b y]
       simp [blockOf]
@@ -1402,7 +1402,7 @@ theorem algorithm_4_2_4_spec {N r : ℕ} {A : Matrix (Fin (N * r)) (Fin (N * r))
             blockOf (cholesky A) i k * (blockOf (cholesky A) j k)ᵀ) a := by
         rw [← (h19 i j).2.2.2 hji]
         ext c
-        simp only [mulVec, dotProduct, mul_apply, transpose_apply]
+        simp only [mulVec, dotProduct, Matrix.mul_apply, transpose_apply]
         exact Finset.sum_congr rfl fun l _ => mul_comm _ _
       rw [of_apply, forwardSubst_eq_of_mulVec_eq _ hlow hdiag hx]
   have hfin : (List.finRange N).foldl (fun s j => ((List.finRange N).filter (j ≤ ·)).foldl
@@ -1574,8 +1574,8 @@ private theorem colOp_mul_apply (k : Fin n) (w : Fin n → ℝ) (X : Matrix (Fin
       · simp [hi, (ne_of_gt hi)]
       · by_cases hia : i = a <;> simp [hi, hia]
     · by_cases hia : i = a <;> simp [hak, hia]
-  rw [mul_apply, Finset.sum_congr rfl fun a _ => h a, Finset.sum_add_distrib, Finset.sum_ite_eq,
-    Finset.sum_ite_eq']
+  rw [Matrix.mul_apply, Finset.sum_congr rfl fun a _ => h a, Finset.sum_add_distrib,
+    Finset.sum_ite_eq, Finset.sum_ite_eq']
   simp
 
 private theorem mul_colOp_transpose_apply (k : Fin n) (w : Fin n → ℝ)
@@ -1593,9 +1593,9 @@ private theorem colOp_neg_mul_colOp (k : Fin n) (w : Fin n → ℝ) :
   by_cases hl : l = k
   · subst hl
     by_cases hi : l < i
-    · simp [colOp, hi, (ne_of_gt hi), one_apply]
-    · simp [colOp, hi, one_apply]
-  · simp [colOp, hl, Ne.symm hl, one_apply]
+    · simp [colOp, hi, (ne_of_gt hi)]
+    · simp [colOp, hi, Matrix.one_apply]
+  · simp [colOp, hl, Ne.symm hl, Matrix.one_apply]
 
 /-- The multipliers of step `k`. -/
 private noncomputable def multipliers (k : Fin n) (A : Matrix (Fin n) (Fin n) ℝ) : Fin n → ℝ :=
@@ -1607,7 +1607,7 @@ private theorem pivotedLower_succ (k : Fin n) (A : Matrix (Fin n) (Fin n) ℝ) :
     pivotedLower ((k : ℕ) + 1) (pivotElim k A) =
       pivotedLower k A * colOp k (multipliers k A) := by
   ext i l
-  rw [mul_apply]
+  rw [Matrix.mul_apply]
   by_cases hl : l = k
   · subst hl
     rw [Finset.sum_eq_single i]
@@ -1754,7 +1754,7 @@ private theorem ldltPivot_invariant {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.Pos
   · refine ⟨?_, ?_, fun i j hi => absurd hi (Nat.not_lt_zero _)⟩
     · have hL : pivotedLower 0 A = 1 := by
         ext i j
-        simp [pivotedLower, one_apply]
+        simp [pivotedLower, Matrix.one_apply]
       have hM : pivotedMiddle 0 A = A := by
         ext i j
         simp [pivotedMiddle]

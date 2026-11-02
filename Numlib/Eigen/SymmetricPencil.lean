@@ -227,8 +227,8 @@ private theorem conjTranspose_mul_mul_apply {k : ℕ} (C : Matrix n n 𝕜) (V :
     (a b : Fin k) :
     (Vᴴ * C * V) a b = inner 𝕜 (WithLp.toLp 2 (V.col a))
       (toEuclideanLin C (WithLp.toLp 2 (V.col b))) := by
-  simp only [EuclideanSpace.inner_toLp_toLp, toEuclideanLin_toLp, mul_apply, conjTranspose_apply,
-    col_apply, dotProduct, mulVec, Finset.sum_mul, Pi.star_apply]
+  simp only [EuclideanSpace.inner_toLp_toLp, toEuclideanLin_toLp, Matrix.mul_apply,
+    conjTranspose_apply, col_apply, dotProduct, mulVec, Finset.sum_mul, Pi.star_apply]
   rw [Finset.sum_comm]
   exact Finset.sum_congr rfl fun c _ => Finset.sum_congr rfl fun d _ => by ring
 
@@ -311,7 +311,7 @@ theorem isLeast_re_trace_conjTranspose_mul_mul {A B : Matrix n n 𝕜} (hA : A.I
       simpa [hTdef, toEuclideanLin_toLp, Matrix.mul_assoc] using h
     have hcol : (W * X).col j = W *ᵥ X.col j := by
       ext r
-      simp [mul_apply, mulVec, dotProduct]
+      simp [Matrix.mul_apply, mulVec, dotProduct]
     have hWT : (W⁻¹)ᴴ * Wᴴ = 1 := by
       rw [← conjTranspose_mul, mul_nonsing_inv _ hdet, conjTranspose_one]
     have hA1 : A *ᵥ (W *ᵥ X.col j) = (W⁻¹)ᴴ *ᵥ ((star W * A * W) *ᵥ X.col j) := by

@@ -178,7 +178,7 @@ theorem isUnisolvent_iff_linearIndependent :
     (v.constr (M' := 𝕜) 𝕜).injective
   have hker : LinearMap.ker (v.constr (M' := 𝕜) 𝕜).toLinearMap = ⊥ :=
     LinearMap.ker_eq_bot_of_injective hinjc
-  rw [isUnisolvent_iff_isUnit v, hrow, ← Matrix.linearIndependent_rows_iff_isUnit]
+  rw [isUnisolvent_iff_isUnit v, hrow, ← Matrix.linearIndependent_row_iff_isUnit]
   exact ⟨fun h => h.map' _ hker, fun h => h.of_comp (v.constr (M' := 𝕜) 𝕜).toLinearMap⟩
 
 /-- **The four equivalent forms of unisolvence**: unique solvability, linear independence of the

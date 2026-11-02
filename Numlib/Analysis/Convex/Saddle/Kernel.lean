@@ -1466,8 +1466,8 @@ theorem kernel_lowerSimpleExt (hCne : C.Nonempty) (hDne : D.Nonempty) :
   by_cases hp : p ∈ ri (C ×ˢ D)
   · have hp' : p ∈ kernelSet (lowerSimpleExt C D K) := by rw [hset]; exact hp
     rw [kernel_of_mem hp', convexRestrict_of_mem hp,
-      lowerSimpleExt_of_mem (intrinsicInterior_subset (hset ▸ hp')).1
-        (intrinsicInterior_subset (hset ▸ hp')).2]
+      lowerSimpleExt_of_mem (intrinsicInterior_subset hp).1
+        (intrinsicInterior_subset hp).2]
   · have hp' : p ∉ kernelSet (lowerSimpleExt C D K) := by rw [hset]; exact hp
     rw [kernel_of_notMem hp', convexRestrict_of_notMem hp]
 

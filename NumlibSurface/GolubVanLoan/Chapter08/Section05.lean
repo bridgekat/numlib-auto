@@ -811,7 +811,7 @@ theorem blockJacobi_off {N r : ℕ} {A : Matrix (Fin N × Fin r) (Fin N × Fin r
     ⟨fun h => hx ⟨Sum.inl x.2, Prod.ext h.symm rfl⟩, fun h => hx ⟨Sum.inr x.2, Prod.ext h.symm rfl⟩⟩
   have hVe' : ∀ i j, (i ∉ Set.range e ∨ j ∉ Set.range e) →
       V i j = (1 : Matrix (Fin N × Fin r) (Fin N × Fin r) ℝ) i j := fun i j h => by
-    rw [hV' i j (h.imp (hrange i) (hrange j)), one_apply]
+    rw [hV' i j (h.imp (hrange i) (hrange j)), Matrix.one_apply]
   have hWW : (fromBlocks Vpp Vpq Vqp Vqq)ᵀ * fromBlocks Vpp Vpq Vqp Vqq = 1 :=
     (mem_orthogonalGroup_iff' _ ℝ).1 hW
   have key := offDiagNormSq_conj_block A he hWW hVe hVe'

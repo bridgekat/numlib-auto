@@ -120,11 +120,11 @@ theorem aeval_apply_eq_zero_of_hasBandwidth (hl : G.HasLowerBandwidth β)
     | succ n ih =>
       rw [pow_succ, mul_add, mul_one]
       exact ⟨ih.1.mul hl, ih.2.mul hu⟩
-  rw [aeval_eq_sum_range, sum_apply]
+  rw [aeval_eq_sum_range, Matrix.sum_apply]
   refine sum_eq_zero fun n hn => ?_
   have hn : n ≤ p.natDegree := Nat.lt_succ_iff.1 (mem_range.1 hn)
   have hb : β * n < ((i : ℤ) - j).natAbs := lt_of_le_of_lt (Nat.mul_le_mul_left β hn) h
-  rw [smul_apply, smul_eq_mul]
+  rw [Matrix.smul_apply, smul_eq_mul]
   rcases le_total (j : ℕ) i with hji | hij
   · rw [(hasLowerBandwidth_iff_fin.1 (hpow n).1) i j (by omega), mul_zero]
   · rw [(hasUpperBandwidth_iff_fin.1 (hpow n).2) i j (by omega), mul_zero]
@@ -145,8 +145,8 @@ theorem abs_conjStarAlgAut_diagonal_apply_le (U : unitary (Matrix n n ℝ)) (d :
   have hM : 0 ≤ M := (abs_nonneg _).trans (hd i)
   have hrow : ∀ i, ∑ k, (U : Matrix n n ℝ) i k * (U : Matrix n n ℝ) i k = 1 := fun i => by
     have := congrFun (congrFun (Unitary.coe_mul_star_self U) i) i
-    simpa [mul_apply, star_apply] using this
-  rw [conjStarAlgAut_apply, mul_apply]
+    simpa [Matrix.mul_apply, star_apply] using this
+  rw [conjStarAlgAut_apply, Matrix.mul_apply]
   simp only [mul_diagonal, star_apply, star_trivial]
   calc |∑ k, (U : Matrix n n ℝ) i k * d k * (U : Matrix n n ℝ) j k|
       ≤ ∑ k, |(U : Matrix n n ℝ) i k * d k * (U : Matrix n n ℝ) j k| := abs_sum_le_sum_abs _ _
@@ -244,7 +244,7 @@ theorem abs_inv_apply_le_of_hasBandwidth_of_mem_Icc (hG : G.PosDef) (hl : G.HasL
   have heq : G⁻¹ i j = conjStarAlgAut ℝ _ hG.1.eigenvectorUnitary
       (diagonal fun k => (hG.1.eigenvalues k)⁻¹ - p.eval (hG.1.eigenvalues k)) i j := by
     calc G⁻¹ i j = G⁻¹ i j - aeval G p i j := by rw [hzero, sub_zero]
-      _ = (G⁻¹ - aeval G p) i j := (sub_apply _ _ _ _).symm
+      _ = (G⁻¹ - aeval G p) i j := (Matrix.sub_apply _ _ _ _).symm
       _ = _ := by rw [hG.1.inv_eq_conj h0, hG.1.aeval_eq_conj p, ← map_sub, diagonal_sub]
   rw [heq]
   refine abs_conjStarAlgAut_diagonal_apply_le _ _ (fun k => ?_) i j

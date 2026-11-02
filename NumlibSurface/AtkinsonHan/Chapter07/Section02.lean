@@ -775,7 +775,7 @@ theorem example_7_2_5_mp_of_forall_exists (hd : 0 < d) {lam : ℝ} {k : ℕ} {c 
   have hΩ'le : Ω' ≤ ⟨ball 0 1, isOpen_ball⟩ := fun x hx ↦ hx.1
   have hcl : HasWeakIteratedFDerivOn k (fun x : 𝔼 ↦ ‖x‖ ^ lam)
       (iteratedFDeriv ℝ k (fun x : 𝔼 ↦ ‖x‖ ^ lam)) Ω' volume :=
-    ((contDiffOn_normRpow lam k).mono fun x hx ↦ hx.2).hasWeakIteratedFDerivOn le_rfl
+    ((contDiffOn_normRpow lam k).mono inter_subset_right).hasWeakIteratedFDerivOn le_rfl
   have hae := (hW.mono hΩ'le).ae_eq hcl
   -- `|x|^{λ-k} ≤ |c|⁻¹ ‖W x‖` almost everywhere on the ball
   have hbound : ∀ᵐ x ∂(volume.restrict (ball (0 : 𝔼) 1)),
@@ -973,7 +973,7 @@ theorem example_7_2_5_mp_dimOne {m : ℕ} (hm : Odd m) {k : ℕ} (hmk : m < k) (
   have hΩ'le : Ω' ≤ ⟨ball 0 1, isOpen_ball⟩ := fun x hx ↦ hx.1
   have hcl : ∀ n, HasWeakIteratedFDerivOn n (fun x : E1 ↦ ‖x‖ ^ (m : ℝ))
       (iteratedFDeriv ℝ n (fun x : E1 ↦ ‖x‖ ^ (m : ℝ))) Ω' volume := fun n ↦
-    ((contDiffOn_normRpow (m : ℝ) n).mono fun x hx ↦ hx.2).hasWeakIteratedFDerivOn le_rfl
+    ((contDiffOn_normRpow (m : ℝ) n).mono inter_subset_right).hasWeakIteratedFDerivOn le_rfl
   have haem := (hWm.mono hΩ'le).ae_eq (hcl m)
   have haem1 := (hWm1.mono hΩ'le).ae_eq (hcl (m + 1))
   have h0 : ∀ᵐ x : E1 ∂volume, x ≠ 0 := by
@@ -1754,8 +1754,8 @@ section Boundary
 
 /-- **The parameter domain `Dᵢ` of the `i`-th patch** of a graph atlas, as an open subset of
 `ℝ^d`: the part of `ℝ^d` that the chart ball `B(xᵢ, rᵢ)` sees through the parametrization. -/
-def definition_7_2_13_domain {Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))} (a : GraphAtlas Ω)
-    (i : Fin a.k) : Opens (EuclideanSpace ℝ (Fin d)) :=
+noncomputable def definition_7_2_13_domain {Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))}
+    (a : GraphAtlas Ω) (i : Fin a.k) : Opens (EuclideanSpace ℝ (Fin d)) :=
   ⟨a.graphDomain i, EuclideanSpace.isOpen_graphDomain (a.contDiff_g i).continuous _ _⟩
 
 /-- **Definition 7.2.13, relative to a patch system**: for a bounded `C¹` domain `Ω ⊆ ℝ^{d+1}`

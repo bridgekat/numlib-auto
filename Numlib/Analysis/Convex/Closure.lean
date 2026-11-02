@@ -559,7 +559,7 @@ theorem isClosed_epi_convexRestrict_coe {s : Set E} {g : E → ℝ} (hs : IsClos
     (hg : ContinuousOn g s) : IsClosed (epi (convexRestrict s fun x => (g x : EReal))) := by
   rw [epi_convexRestrict_coe]
   have hcont : ContinuousOn (fun p : E × ℝ => g p.1 - p.2) (s ×ˢ (Set.univ : Set ℝ)) :=
-    (hg.comp continuousOn_fst fun p hp => hp.1).sub continuousOn_snd
+    (hg.comp continuousOn_fst Set.mapsTo_fst_prod).sub continuousOn_snd
   have h := hcont.preimage_isClosed_of_isClosed (hs.prod isClosed_univ)
     (isClosed_Iic (a := (0 : ℝ)))
   convert h using 1

@@ -1525,7 +1525,7 @@ private theorem det_comp_eq_one
     simp only at ha hb
     subst ha hb
     simp only [toSquareBlock, toSquareBlockProp, toBlock, submatrix_apply, comp_apply, hd,
-      one_apply, Subtype.mk.injEq, Prod.mk.injEq, true_and]
+      Matrix.one_apply, Subtype.mk.injEq, Prod.mk.injEq, true_and]
   rw [h1, det_one]
 
 /-- The constant factor of `T(λ)`: `I` in block `(0, d-1)` and `-I` on the block subdiagonal. -/
@@ -1653,7 +1653,7 @@ theorem equation_7_7_6 (A : Fin (e + 2) → Matrix (Fin n) (Fin n) ℂ) (l : ℂ
         (comp _ _ _ _ ℂ (t0Blocks (n := n) (e := e)))ᵀ := by
       ext ⟨a, i⟩ ⟨b, j⟩
       simp only [comp_apply, of_apply, transpose_apply, t0Blocks]
-      split_ifs <;> simp [one_apply, eq_comm]
+      split_ifs <;> simp [Matrix.one_apply, eq_comm]
     have h1 := congrArg det (congrArg (comp _ _ _ _ ℂ) (t0Blocks_transpose_mul (n := n) (e := e)))
     rw [hmul, htr, det_mul, det_transpose, Matrix.comp_one, det_one] at h1
     exact mul_self_eq_one_iff.1 h1
@@ -2282,7 +2282,7 @@ private theorem hess_mul_tri_apply {M B : Matrix (Fin n) (Fin n) ℝ} (hM : M.Is
     (hB : B.IsUpperTriangular) (i c : Fin n) :
     (M * B) i c =
       ∑ k : Fin n, if (i : ℕ) ≤ (k : ℕ) + 1 ∧ (k : ℕ) ≤ c then M i k * B k c else 0 := by
-  rw [mul_apply]
+  rw [Matrix.mul_apply]
   refine Finset.sum_congr rfl fun k _ => ?_
   split_ifs with h
   · rfl
@@ -2498,7 +2498,7 @@ private theorem qzShift_col {A B : Matrix (Fin (N + 3)) (Fin (N + 3)) ℝ}
   have v1 : (i1 : ℕ) = 1 := rfl
   have v2 : (i2 : ℕ) = 2 := rfl
   have hMM : ∀ i, (M * M) i i0 = M i i0 * M i0 i0 + M i i1 * M i1 i0 := fun i => by
-    rw [mul_apply, Fintype.sum_eq_add i0 i1
+    rw [Matrix.mul_apply, Fintype.sum_eq_add i0 i1
       (fun e => by have := congrArg Fin.val e; rw [v0, v1] at this; omega) fun k hk => by
         have a : (k : ℕ) ≠ 0 := fun e => hk.1 (Fin.ext e)
         have b : (k : ℕ) ≠ 1 := fun e => hk.2 (Fin.ext e)

@@ -1020,7 +1020,7 @@ theorem sorSplitting_m_add_transpose_sub {A : Matrix n n ℝ} (hA : A.IsHermitia
   · have hMii : (A.sorSplitting h hω).m i i = ω⁻¹ * A i i := by simp [hm]
     have hlhs : ((A.sorSplitting h hω).m + ((A.sorSplitting h hω).m)ᵀ - A) i i
         = ω⁻¹ * A i i + ω⁻¹ * A i i - A i i := by
-      rw [sub_apply, add_apply, transpose_apply, hMii]
+      rw [Matrix.sub_apply, Matrix.add_apply, transpose_apply, hMii]
     have hrhs : ((2 / ω - 1) • diagPart A) i i = (2 / ω - 1) * A i i := by simp
     rw [hlhs, hrhs, show (2 / ω - 1) = 2 * ω⁻¹ - 1 from by rw [div_eq_mul_inv]]
     ring

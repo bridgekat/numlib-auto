@@ -274,7 +274,7 @@ theorem diagonal_shifted_iff (lam : ℝ) (s g : EuclideanSpace ℝ (Fin n)) :
     toEuclideanLin (diagonal d + lam • (1 : Matrix (Fin n) (Fin n) ℝ)) s = -g ↔
       ∀ i, (d i + lam) * s i = -g i := by
   have : diagonal d + lam • (1 : Matrix (Fin n) (Fin n) ℝ) = diagonal fun i => d i + lam := by
-    ext i j; by_cases h : i = j <;> simp [h, one_apply]
+    ext i j; by_cases h : i = j <;> simp [h]
   rw [this]
   constructor
   · intro h i
@@ -288,7 +288,7 @@ theorem diagonal_shifted_iff (lam : ℝ) (s g : EuclideanSpace ℝ (Fin n)) :
 theorem diagonal_posSemidef_iff (lam : ℝ) :
     (diagonal d + lam • (1 : Matrix (Fin n) (Fin n) ℝ)).PosSemidef ↔ ∀ i, 0 ≤ d i + lam := by
   have : diagonal d + lam • (1 : Matrix (Fin n) (Fin n) ℝ) = diagonal fun i => d i + lam := by
-    ext i j; by_cases h : i = j <;> simp [h, one_apply]
+    ext i j; by_cases h : i = j <;> simp [h]
   rw [this, posSemidef_diagonal_iff]
 
 /-- The multiplier conditions of Theorem 8.2.7 for the diagonal data `(g, D, I)`. -/

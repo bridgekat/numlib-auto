@@ -134,7 +134,7 @@ private theorem foldl_givensApplyRight_eq {k : ℕ} (cs : Fin k → ℝ × ℝ)
       have hzero : ∀ c : Fin (k + 1), (c : ℕ) ≤ t + 1 →
           (R * hessenbergRotationsProd cs t) r c = 0 := by
         intro c hc
-        rw [mul_apply]
+        rw [Matrix.mul_apply]
         refine Finset.sum_eq_zero fun l _ => ?_
         by_cases hlr : l < r
         · rw [hR hlr, zero_mul]
@@ -196,7 +196,7 @@ theorem equation_7_4_3 {N : ℕ} (A : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ) :
   · have h := isUpperHessenberg_hessenbergReduce (A := A)
     rwa [hessenbergReduce_eq_conj, conjTranspose_eq_transpose_of_trivial] at h
   · ext i
-    rw [mulVec_single_one, col_apply, hessenbergQ_apply_zero, one_apply, Pi.single_apply]
+    rw [mulVec_single_one, col_apply, hessenbergQ_apply_zero, Matrix.one_apply, Pi.single_apply]
 
 /-- **§7.4.3, the array of Algorithm 7.4.2**: the book's reading of an array that holds `H` in its
 upper Hessenberg part and the essential parts of the Householder vectors below the subdiagonal
@@ -275,7 +275,7 @@ private theorem mul_reflector_apply_congr {o : List (Fin n)} {v : Fin n → ℝ}
     (hv : ∀ i, i ∉ o → v i = 0) (β : ℝ) {N₁ N₂ : Matrix (Fin n) (Fin n) ℝ} {i : Fin n}
     (hN : ∀ l ∈ o, N₁ i l = N₂ i l) {j : Fin n} (hj : j ∈ o) :
     (N₁ * (1 - β • vecMulVec v v)) i j = (N₂ * (1 - β • vecMulVec v v)) i j := by
-  rw [mul_apply, mul_apply]
+  rw [Matrix.mul_apply, Matrix.mul_apply]
   refine Finset.sum_congr rfl fun l _ => ?_
   by_cases hl : l ∈ o
   · rw [hN l hl]
@@ -366,7 +366,7 @@ theorem hessenbergReduceStep_inv {A₀ : Matrix (Fin n) (Fin n) ℝ} (k : Fin (n
       rw [of_apply, ite_eq_right (fun h' => hjk'' h'.1), hCeq]
       refine mul_reflector_apply_congr hvout _ (fun l hl => ?_) hjo
       rw [hBeq, of_apply, ite_eq_left (by rw [mem_indexFrom]; have := (hmo l).1 hl; omega)]
-      rw [mul_apply, mul_apply]
+      rw [Matrix.mul_apply, Matrix.mul_apply]
       refine Finset.sum_congr rfl fun r _ => ?_
       rw [hAW r l (by have := (hmo l).1 hl; omega)]
     · -- the column `k`
@@ -776,7 +776,7 @@ theorem equation_7_4_4 {A : Matrix (Fin n) (Fin n) ℝ} {x c : Fin n → ℝ}
     have lhs : (A * K) r j = (A ^ ((j : ℕ) + 1) *ᵥ x) r := by
       rw [pow_succ', ← mulVec_mulVec]
       rfl
-    rw [lhs, mul_apply]
+    rw [lhs, Matrix.mul_apply]
     by_cases hjn : (j : ℕ) + 1 = n
     · have hsum : ∑ i, K r i * companion c i j = -(K *ᵥ c) r := by
         simp only [companion, of_apply, hjn, ↓reduceIte, mulVec, dotProduct,

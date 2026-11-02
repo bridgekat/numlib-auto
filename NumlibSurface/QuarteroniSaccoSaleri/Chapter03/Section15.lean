@@ -183,7 +183,7 @@ theorem exercise_3_2 [NeZero n] :
   -- the product `B C`, entry by entry, as a sum over `ℕ`
   have hBC : B * C = 1 := by
     ext i k
-    rw [mul_apply, one_apply]
+    rw [Matrix.mul_apply, Matrix.one_apply]
     set g : ℕ → ℝ := fun t => (if (i : ℕ) = t then (1 : ℝ) else if (i : ℕ) < t then -1 else 0) *
       (if t = (k : ℕ) then 1 else if t < (k : ℕ) then 2 ^ ((k : ℕ) - t - 1) else 0) with hg
     have hconv : ∀ j : Fin n, B i j * C j k = g j := fun j => by
@@ -400,7 +400,7 @@ theorem exercise_3_5 [NeZero n] :
       simp only [U, of_apply]
       rw [ite_eq_right (ne_top_of_lt hij'), ite_eq_right hij'.ne']
     · ext i k
-      rw [mul_apply]
+      rw [Matrix.mul_apply]
       by_cases hk : k = ⊤
       · subst hk
         have : ∀ j : Fin n, L i j * U j ⊤ =

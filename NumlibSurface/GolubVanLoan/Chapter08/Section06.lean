@@ -110,10 +110,11 @@ private theorem jw_mul_self {n p : ℕ} :
   constructor <;>
   · ext (i | i | i) (j | j | j) <;>
       first
-      | (simp [M, mul_apply, Fintype.sum_sum_type, one_apply, h2]; done)
+      | (simp [M, Matrix.mul_apply, Fintype.sum_sum_type, Matrix.one_apply, h2]; done)
       | (rcases eq_or_ne i j with rfl | h <;>
-          [simp [M, mul_apply, Fintype.sum_sum_type, one_apply, h2];
-           simp [M, mul_apply, Fintype.sum_sum_type, one_apply, h2, h, h.symm]]) <;> norm_num
+          [simp [M, Matrix.mul_apply, Fintype.sum_sum_type, Matrix.one_apply, h2];
+           simp [M, Matrix.mul_apply, Fintype.sum_sum_type, Matrix.one_apply, h2, h,
+               h.symm]]) <;> norm_num
 
 /-- The Jordan–Wielandt sandwich of (8.6.3): `Mᵀ [0 [Σ 0]; [Σ; 0] 0] M = 2 diag(Σ, -Σ, 0)`. -/
 private theorem jw_conj {n p : ℕ} (σ : Fin n → ℝ) :
@@ -124,10 +125,11 @@ private theorem jw_conj {n p : ℕ} (σ : Fin n → ℝ) :
   intro M
   ext (i | i | i) (j | j | j) <;>
     first
-    | (simp [M, mul_apply, Fintype.sum_sum_type, one_apply, diagonal_apply]; done)
+    | (simp [M, Matrix.mul_apply, Fintype.sum_sum_type, Matrix.one_apply, diagonal_apply]; done)
     | (rcases eq_or_ne i j with rfl | h <;>
-        [simp [M, mul_apply, Fintype.sum_sum_type, one_apply, diagonal_apply, two_mul];
-         simp [M, mul_apply, Fintype.sum_sum_type, one_apply, diagonal_apply, h]])
+        [simp [M, Matrix.mul_apply, Fintype.sum_sum_type, Matrix.one_apply, diagonal_apply,
+            two_mul];
+         simp [M, Matrix.mul_apply, Fintype.sum_sum_type, Matrix.one_apply, diagonal_apply, h]])
 
 /-- **(8.6.3).** Let `Uᵀ A V = [Σ; 0]`, `Σ = diag(σ₁, …, σ_n)`, be an SVD of `A ∈ ℝ^{m×n}` with
 `U = [U₁ U₂]` (`n` and `m - n` columns) and `V` orthogonal. Then
@@ -308,7 +310,7 @@ theorem corollary_8_6_3 (A : Matrix (Fin m) (Fin n) ℝ) {r : ℕ} (hr : r + 1 �
     Fin.castSucc
   have hP : Pᴴ * P = 1 := by
     ext i j
-    simp [P, mul_apply, one_apply, Fin.castSucc_inj]
+    simp [P, Matrix.mul_apply, Matrix.one_apply, Fin.castSucc_inj]
   let ι : EuclideanSpace ℝ (Fin r) →ₗᵢ[ℝ] EuclideanSpace ℝ (Fin (r + 1)) :=
     { toLinearMap := toEuclideanLin P
       norm_map' := norm_toEuclideanLin_apply_of_conjTranspose_mul_self_eq_one hP }
@@ -318,7 +320,7 @@ theorem corollary_8_6_3 (A : Matrix (Fin m) (Fin n) ℝ) {r : ℕ} (hr : r + 1 �
     rw [← toEuclideanLin_mul]
     congr 1
     ext i j
-    simp only [P, mul_apply, submatrix_apply, id, one_apply]
+    simp only [P, Matrix.mul_apply, submatrix_apply, id, Matrix.one_apply]
     rw [Finset.sum_eq_single (Fin.castSucc j)]
     · simp [Fin.castLE_castSucc]
     · intro b _ hb; simp [hb]
@@ -375,7 +377,7 @@ theorem gram_bidiagonal {B : Matrix (Fin n) (Fin n) ℝ} (hB : B.IsUpperBidiagon
   have hsymm : (Bᵀ * B).IsSymm := by
     rw [IsSymm, transpose_mul, transpose_transpose]
   have hentry : ∀ i j : Fin n, (Bᵀ * B) i j = ∑ k, B k i * B k j := fun i j => by
-    simp [mul_apply]
+    simp [Matrix.mul_apply]
   have htri : (Bᵀ * B).IsTridiagonal := fun i j hij => by
     rw [hentry]
     refine Finset.sum_eq_zero fun k _ => ?_
@@ -492,7 +494,7 @@ theorem jacobiSVD_twoByTwo :
           (jacobiRotation S 0 1)ᵀ * !![c, s; -s, c] := by
         rw [hJ]
         ext i j
-        fin_cases i <;> fin_cases j <;> simp [mul_apply, Fin.sum_univ_two] <;> ring
+        fin_cases i <;> fin_cases j <;> simp [Matrix.mul_apply, Fin.sum_univ_two] <;> ring
       have hR : !![cJ, -sJ; -(-sJ), cJ] = jacobiRotation S 0 1 := by rw [hJ, neg_neg]
       rw [hL, hR, Matrix.mul_assoc (jacobiRotation S 0 1)ᵀ !![c, s; -s, c] M]
       exact eq_diagonal_of_fin_two hzero hzero'
@@ -518,7 +520,7 @@ theorem jacobiSVD_twoByTwo :
       ((!![c₁, s₁; -s₁, c₁])ᵀ * !![A p p, A p q; A q p, A q q] * !![c₂, s₂; -s₂, c₂]) a b := by
     intro a b
     fin_cases a <;> fin_cases b <;>
-      simp [hB, hAG, hpq.symm, mul_apply, Fin.sum_univ_two] <;> ring
+      simp [hB, hAG, hpq.symm, Matrix.mul_apply, Fin.sum_univ_two] <;> ring
   have hpq0 : B p q = 0 := by
     have := hblock 0 1; rw [hd] at this; simpa using this
   have hqp0 : B q p = 0 := by
@@ -584,7 +586,7 @@ theorem oneSidedJacobi_orthogonal (A : Matrix (Fin m) (Fin n) ℝ) {p q : Fin n}
         ∀ j, (A * V).col j ≠ 0 → U.col j ⬝ᵥ U.col j = 1 := by
   have hdot : ∀ {k : ℕ} (M : Matrix (Fin m) (Fin k) ℝ) (i j : Fin k),
       M.col i ⬝ᵥ M.col j = (Mᵀ * M) i j := fun M i j => by
-    simp [dotProduct, mul_apply, col_apply]
+    simp [dotProduct, Matrix.mul_apply, col_apply]
   have hconj : ∀ c s : ℝ, (A * planeRotation p q c (-s)).col p ⬝ᵥ
       (A * planeRotation p q c (-s)).col q =
         ((planeRotation p q c (-s))ᵀ * (Aᵀ * A) * planeRotation p q c (-s)) p q := fun c s => by
@@ -934,7 +936,7 @@ private theorem bidiagonal_colChase {B : Matrix (Fin n) (Fin n) ℝ} (hB : B.IsU
   obtain ⟨G', hG', hbid, hrow⟩ := bidiagonal_rowChase hB' ⟨0, h⟩ hd'
   have hentry : ∀ i l, (B * G'.submatrix Fin.rev Fin.rev) i l =
       (G'ᵀ * B') (Fin.rev l) (Fin.rev i) := fun i l => by
-    simp only [mul_apply, submatrix_apply, transpose_apply, B', of_apply, Fin.rev_rev]
+    simp only [Matrix.mul_apply, submatrix_apply, transpose_apply, B', of_apply, Fin.rev_rev]
     exact (Fintype.sum_equiv Fin.revPerm _ _ fun m => by simp [mul_comm]).symm
   have hsuppX := support_of_isUpperBidiagonal hbid
   refine ⟨G'.submatrix Fin.rev Fin.rev, ?_, isUpperBidiagonal_of_support fun i l h0 => ?_,
@@ -944,11 +946,11 @@ private theorem bidiagonal_colChase {B : Matrix (Fin n) (Fin n) ℝ} (hB : B.IsU
     have e : (G'.submatrix Fin.rev Fin.rev)ᵀ * G'.submatrix Fin.rev Fin.rev =
         (G'ᵀ * G').submatrix Fin.rev Fin.rev := by
       ext i j
-      simp only [mul_apply, submatrix_apply, transpose_apply]
+      simp only [Matrix.mul_apply, submatrix_apply, transpose_apply]
       exact Fintype.sum_equiv Fin.revPerm _ _ fun m => by simp
     rw [e, hGG]
     ext i j
-    simp [one_apply]
+    simp [Matrix.one_apply]
   · rw [hentry] at h0
     rcases hsuppX _ _ h0 with h1 | h1
     · exact Or.inl (Fin.rev_injective h1).symm
@@ -1678,7 +1680,7 @@ theorem algorithm_8_6_1_spec {N : ℕ} {B : Matrix (Fin (N + 2)) (Fin (N + 2)) �
     simpa using this
   have hT0 : (T - μ • 1).col 0 = (T 0 0 - μ) • Pi.single 0 1 + T 1 0 • Pi.single 1 1 := by
     funext t
-    rw [col_apply, Matrix.sub_apply, Matrix.smul_apply, one_apply]
+    rw [col_apply, Matrix.sub_apply, Matrix.smul_apply, Matrix.one_apply]
     by_cases h0 : t = 0
     · subst h0; simp
     · by_cases h1 : t = 1

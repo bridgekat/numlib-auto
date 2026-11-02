@@ -439,7 +439,7 @@ theorem tendsto_orthogonalIterate [FiniteDimensional 𝕜 E] {ι : Type*} [Finit
       norm_inner_le_of_gap hM hA (hinv (Set.Iic k)) (hmemS ν _ k le_rfl)
         ((hnq ν k).le) (hperp ν _ j (by simpa using hkj)) ((hnq ν j).le)
     refine squeeze_zero_norm hbound ?_
-    simpa using (hgapJ (Set.Iic k) (isLowerSet_Iic k)).const_mul (2 * M)
+    simpa using (hgapJ (Set.Iic k) (IsLowerSet.Iic k)).const_mul (2 * M)
   · intro j
     have hTle : span 𝕜 (x '' Set.Iio j) ≤ span 𝕜 (x '' Set.Iic j) :=
       Submodule.span_mono (Set.image_mono Set.Iio_subset_Iic_self)
@@ -466,7 +466,7 @@ theorem tendsto_orthogonalIterate [FiniteDimensional 𝕜 E] {ι : Type*} [Finit
     refine squeeze_zero (fun ν => norm_nonneg _) hbound ?_
     have hlim : Tendsto (fun ν => (span 𝕜 (x '' Set.Iio j)).gap (span 𝕜 (q ν '' Set.Iio j))
         + (span 𝕜 (x '' Set.Iic j)).gap (span 𝕜 (q ν '' Set.Iic j))) atTop (𝓝 0) := by
-      simpa using (hgapJ (Set.Iio j) (isLowerSet_Iio j)).add (hgapJ (Set.Iic j) (isLowerSet_Iic j))
+      simpa using (hgapJ (Set.Iio j) (IsLowerSet.Iio j)).add (hgapJ (Set.Iic j) (IsLowerSet.Iic j))
     have := ((hlim.const_mul (M + ‖l j‖)).mul ((tendsto_const_nhds (x := (2 : ℝ))).add hlim))
     simpa using this
 
@@ -535,7 +535,7 @@ theorem orthonormal_euclideanCol {U : Matrix n n 𝕜} (hU : Uᴴ * U = 1) :
 theorem linearIndependent_euclideanCol {A : Matrix n n 𝕜} (hA : IsUnit A.det) :
     LinearIndependent 𝕜 (euclideanCol A) := by
   have h : LinearIndependent 𝕜 A.col :=
-    Matrix.linearIndependent_cols_iff_isUnit.2 ((Matrix.isUnit_iff_isUnit_det A).2 hA)
+    Matrix.linearIndependent_col_iff_isUnit.2 ((Matrix.isUnit_iff_isUnit_det A).2 hA)
   exact LinearIndependent.of_comp (WithLp.linearEquiv 2 𝕜 (n → 𝕜)).toLinearMap h
 
 /-- The columns of a nonsingular `n × n` matrix span `EuclideanSpace 𝕜 n`. -/
@@ -554,7 +554,7 @@ theorem toEuclideanLin_euclideanCol_of_conj_eq_diagonal {A X : Matrix n n 𝕜} 
     rw [← hD, ← Matrix.mul_assoc, ← Matrix.mul_assoc, mul_nonsing_inv X hdet, Matrix.one_mul]
   have hcol : euclideanCol (diagonal lam) j = lam j • euclideanCol (1 : Matrix n n 𝕜) j := by
     ext i
-    simp [euclideanCol, diagonal_apply, one_apply]
+    simp [euclideanCol, diagonal_apply, Matrix.one_apply]
   rw [← toEuclideanLin_euclideanCol_one, ← toEuclideanLin_mul_apply, hAX, toEuclideanLin_mul_apply,
     toEuclideanLin_euclideanCol_one, hcol, map_smul, toEuclideanLin_euclideanCol_one]
 
@@ -574,7 +574,7 @@ omit [Fintype n] in
 theorem euclideanCol_one (i : n) :
     euclideanCol (1 : Matrix n n 𝕜) i = EuclideanSpace.single i 1 := by
   ext j
-  simp [euclideanCol, one_apply, PiLp.single_apply, eq_comm]
+  simp [euclideanCol, Matrix.one_apply, PiLp.single_apply, eq_comm]
 
 omit [Fintype n] in
 /-- A vector lies in the span of the standard basis vectors indexed by `S` exactly when it
@@ -732,7 +732,7 @@ theorem IsUnreducedUpperHessenberg.isShiftedQrStep_apply_last {N : ℕ}
   have hS : (H - μ • 1).submatrix Fin.succ Fin.castSucc =
       Q.submatrix Fin.succ Fin.castSucc * R.submatrix Fin.castSucc Fin.castSucc := by
     ext a b
-    rw [hM, submatrix_apply, mul_apply, Fin.sum_univ_castSucc,
+    rw [hM, submatrix_apply, Matrix.mul_apply, Fin.sum_univ_castSucc,
       show R (Fin.last N) b.castSucc = 0 from hR (Fin.castSucc_lt_last b), mul_zero, add_zero]
     rfl
   have hRdet : (R.submatrix Fin.castSucc Fin.castSucc).det ≠ 0 := by
@@ -757,8 +757,9 @@ theorem IsUnreducedUpperHessenberg.isShiftedQrStep_apply_last {N : ℕ}
     rcases eq_or_ne l (Fin.last N) with rfl | hl
     · exact hRNN
     · exact hR (Fin.lt_last_iff_ne_last.2 hl)
-  rw [add_apply, mul_apply, Finset.sum_eq_zero fun l _ => by rw [hrow l, zero_mul], zero_add,
-    smul_apply, smul_eq_mul]
+  rw [Matrix.add_apply, Matrix.mul_apply, Finset.sum_eq_zero fun l _ => by rw [hrow l, zero_mul],
+      zero_add,
+    Matrix.smul_apply, smul_eq_mul]
   by_cases hj : j = Fin.last N
   · subst hj
     simp
@@ -1506,7 +1507,7 @@ theorem exists_abs_qrIterate_apply_le {A : Matrix n n 𝕜} (hA : IsUnit A.det)
         Krylov.subspaceIterate (toEuclideanLin A)
           (Submodule.span 𝕜 (euclideanCol (1 : Matrix n n 𝕜) '' Set.Iic k)) ν := fun ν => by
     rw [← orthogonalIterate_euclideanCol_one_zero A]
-    exact Krylov.span_orthogonalIterate_of_isLowerSet _ _ _ (isLowerSet_Iic k)
+    exact Krylov.span_orthogonalIterate_of_isLowerSet _ _ _ (IsLowerSet.Iic k)
   have hρ : 0 < ‖l k‖ := hr0.trans_lt hrk
   have hJρ : ∀ j' ∈ Set.Iic k, ‖l k‖ ≤ ‖l j'‖ := fun j' hj' => by
     rcases (Set.mem_Iic.1 hj').lt_or_eq with h | h
@@ -1517,7 +1518,7 @@ theorem exists_abs_qrIterate_apply_le {A : Matrix n n 𝕜} (hA : IsUnit A.det)
     (orthonormal_euclideanCol (by simp : (1 : Matrix n n 𝕜)ᴴ * 1 = 1)).linearIndependent hx
     (Set.Iic k)
   obtain ⟨D, hD⟩ := Krylov.exists_gap_subspaceIterate_span_image_le hx hxtop heig hρ hJρ hr0 hrk
-    hJr (hgen _ (isLowerSet_Iic k)) hrank
+    hJr (hgen _ (IsLowerSet.Iic k)) hrank
   set M := ‖LinearMap.toContinuousLinearMap (toEuclideanLin A)‖ with hMdef
   have hM : 0 ≤ M := norm_nonneg _
   have hAb : ∀ y, ‖toEuclideanLin A y‖ ≤ M * ‖y‖ := fun y =>
@@ -1727,8 +1728,8 @@ theorem exists_norm_apply_le_of_isShiftedQrStep {A : Matrix n n 𝕜} {μ : 𝕜
   obtain ⟨C, hC⟩ := exists_abs_qrIterate_apply_le hA hx hxtop heig' hsep hgen hkj hr0 hr hrk
   refine ⟨C, fun ν => ?_⟩
   obtain ⟨d, hd, hν⟩ := exists_eq_diagonal_conj_shiftedQrIterate hA hH0 hH ν
-  rw [hν, norm_diagonal_conj_apply hd, shiftedQrIterate_eq_qrIterate_sub_add, add_apply,
-    smul_apply, one_apply_ne hkj.ne', smul_zero, add_zero]
+  rw [hν, norm_diagonal_conj_apply hd, shiftedQrIterate_eq_qrIterate_sub_add, Matrix.add_apply,
+    Matrix.smul_apply, one_apply_ne hkj.ne', smul_zero, add_zero]
   exact hC ν
 
 /-- **The double-shift step** ([quarteroni2000numerical] (5.55)): two consecutive shifted steps
@@ -1905,7 +1906,7 @@ theorem IsFrancisStep.eq_diagonal_conj {H H' : Matrix (Fin (N + 1)) (Fin (N + 1)
   have hunit : ∀ X : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ, Xᵀ * X = 1 →
       X.col 0 ⬝ᵥ X.col 0 = 1 := fun X hX => by
     have := congrFun (congrFun hX 0) 0
-    rwa [mul_apply, one_apply_eq] at this
+    rwa [Matrix.mul_apply, one_apply_eq] at this
   have hσσ : σ * σ = 1 := by
     have h1 := hunit Z hZZ'
     have hQM : (qrQ M)ᵀ * qrQ M = 1 := by
@@ -1923,7 +1924,7 @@ theorem IsFrancisStep.eq_diagonal_conj {H H' : Matrix (Fin (N + 1)) (Fin (N + 1)
   have hV0 : (σ • Z).col 0 = (qrQ M).col 0 := by
     ext i
     have := congrFun hZcol i
-    simp only [col_apply, smul_apply, Pi.smul_apply, smul_eq_mul] at this ⊢
+    simp only [col_apply, Matrix.smul_apply, Pi.smul_apply, smul_eq_mul] at this ⊢
     rw [this, ← mul_assoc, hσσ, one_mul]
   obtain ⟨d, hd, -, -, hGH⟩ := implicitQ_real (qrQ_mem_unitaryGroup M) hV hG₀
     (by rw [hVHV]; exact hH') hV0

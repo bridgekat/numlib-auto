@@ -327,7 +327,7 @@ private theorem isUpperTriangular_submatrix_castLE_sub {T : Matrix (Fin N) (Fin 
     (hT : T.IsUpperTriangular) {k : ℕ} (hk : k ≤ N) (c : K) :
     (T.submatrix (Fin.castLE hk) (Fin.castLE hk) - c • 1).IsUpperTriangular := by
   intro i j hji
-  rw [sub_apply, submatrix_apply, smul_apply, one_apply,
+  rw [Matrix.sub_apply, submatrix_apply, Matrix.smul_apply, Matrix.one_apply,
     ite_eq_right (fun h : i = j => absurd h (ne_of_gt hji)), smul_zero, sub_zero]
   exact hT (Fin.lt_def.2 (by simp only [id, Fin.val_castLE]; exact Fin.lt_def.1 hji))
 
@@ -354,7 +354,7 @@ theorem mulVec_schurEigenvector {T : Matrix (Fin N) (Fin N) K}
   have hdet : IsUnit (T₁₁ - T k k • 1).det := by
     rw [hT₁₁]
     refine (isUpperTriangular_submatrix_castLE_sub hT hle _).isUnit_det_of_diag_ne_zero fun i => ?_
-    rw [sub_apply, submatrix_apply, smul_apply, one_apply_eq, smul_eq_mul, mul_one]
+    rw [Matrix.sub_apply, submatrix_apply, Matrix.smul_apply, one_apply_eq, smul_eq_mul, mul_one]
     exact sub_ne_zero.2 (hk _ (by simp [Fin.lt_def]))
   have hsys : T₁₁ *ᵥ y₁ = T k k • y₁ - v := by
     have h := congrArg (fun z => (T₁₁ - T k k • 1) *ᵥ z) hy₁
@@ -596,7 +596,7 @@ theorem exists_unitary_conj_fromBlocks_of_mul_eq_mul {A : Matrix (Fin (p + q)) (
   -- the rows of `T Y = Y B` in block form
   have hrow : ∀ (x : Fin p ⊕ Fin q) (j : Fin p),
       ∑ i, T' x (Sum.inl i) * R₁ i j = (Y * B) (e.symm x) j := fun x j => by
-    rw [← hTY, mul_apply, ← e.symm.sum_comp, Fintype.sum_sum_type]
+    rw [← hTY, Matrix.mul_apply, ← e.symm.sum_comp, Fintype.sum_sum_type]
     simp only [e, Equiv.symm_symm, finSumFinEquiv_apply_left, finSumFinEquiv_apply_right, hYlow,
       mul_zero, Finset.sum_const_zero, add_zero]
     rfl
@@ -622,14 +622,14 @@ theorem exists_unitary_conj_fromBlocks_of_mul_eq_mul {A : Matrix (Fin (p + q)) (
   -- the blocks
   have h21 : T'.toBlocks₂₁ * R₁ = 0 := by
     ext k j
-    rw [mul_apply, zero_apply]
+    rw [Matrix.mul_apply, Matrix.zero_apply]
     have := hrow (Sum.inr k) j
     simp only [e, Equiv.symm_symm, finSumFinEquiv_apply_right] at this
-    rw [mul_apply] at this
+    rw [Matrix.mul_apply] at this
     simpa [toBlocks₂₁, hYlow] using this
   have h11 : T'.toBlocks₁₁ * R₁ = R₁ * B := by
     ext i j
-    rw [mul_apply]
+    rw [Matrix.mul_apply]
     have := hrow (Sum.inl i) j
     simp only [e, Equiv.symm_symm, finSumFinEquiv_apply_left] at this
     exact this
@@ -758,7 +758,7 @@ theorem exists_unitary_conj_upperTriangular_diag_eq {N : ℕ} (A : Matrix (Fin N
       | left b =>
         rw [show e (Fin.natAdd 1 k) = Sum.inr k from finSumFinEquiv_symm_apply_natAdd k,
           show e (Fin.castAdd N b) = Sum.inl b from finSumFinEquiv_symm_apply_castAdd b,
-          fromBlocks_apply₂₁, zero_apply]
+          fromBlocks_apply₂₁, Matrix.zero_apply]
       | right l =>
         dsimp only [id] at hji
         rw [show e (Fin.natAdd 1 k) = Sum.inr k from finSumFinEquiv_symm_apply_natAdd k,
@@ -775,7 +775,7 @@ theorem exists_unitary_conj_upperTriangular_diag_eq {N : ℕ} (A : Matrix (Fin N
       have ha : a = 0 := Subsingleton.elim a 0
       subst ha
       rw [show e (Fin.castAdd N 0) = Sum.inl 0 from finSumFinEquiv_symm_apply_castAdd 0,
-        fromBlocks_apply₁₁, hT₁₁', smul_apply, one_apply_eq, smul_eq_mul, mul_one, h0]
+        fromBlocks_apply₁₁, hT₁₁', Matrix.smul_apply, one_apply_eq, smul_eq_mul, mul_one, h0]
     | right k =>
       rw [show e (Fin.natAdd 1 k) = Sum.inr k from finSumFinEquiv_symm_apply_natAdd k,
         fromBlocks_apply₂₂]

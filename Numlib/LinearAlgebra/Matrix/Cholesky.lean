@@ -393,7 +393,7 @@ theorem isHermitian : A.IsHermitian := h.posDef.isHermitian
 diagonal. -/
 theorem apply_eq_sum (i j : n) :
     A i j = ∑ k ∈ univ.filter (· ≤ min i j), star (H k i) * H k j := by
-  rw [← h.conjTranspose_mul_self, mul_apply]
+  rw [← h.conjTranspose_mul_self, Matrix.mul_apply]
   simp only [conjTranspose_apply]
   refine (Finset.sum_filter_of_ne fun k _ hk => ?_).symm
   rw [le_min_iff]
@@ -689,7 +689,7 @@ include hS
 combination of the earlier ones, which vanish at the coordinate `i`. -/
 theorem LDL.lowerInv_apply_self (i : n) : LDL.lowerInv hS i i = 1 := by
   have h := congrFun (@gramSchmidt_def'' 𝕜 (n → 𝕜) _ (Sᵀ.toNormedAddCommGroup hS.transpose)
-    (Sᵀ.toInnerProductSpace hS.transpose.posSemidef) n _ _ _ (Pi.basisFun 𝕜 n) i) i
+    (Sᵀ.toInnerProductSpace hS.transpose.posSemidef) n _ _ (Pi.basisFun 𝕜 n) i) i
   rw [Pi.add_apply, Finset.sum_apply, Finset.sum_eq_zero (fun k hk => ?_), add_zero,
     Pi.basisFun_apply, Pi.single_eq_same] at h
   · exact h.symm
@@ -765,7 +765,7 @@ theorem exists_isLU_of_posDef_hermitianPart {A : Matrix n n 𝕜}
     have := congrFun h0 i
     simp [hy, hLi.diag_eq_one] at this
   have e1 : (U * (L⁻¹)ᴴ) i i = U i i := by
-    rw [mul_apply, Finset.sum_eq_single i]
+    rw [Matrix.mul_apply, Finset.sum_eq_single i]
     · rw [conjTranspose_apply, hLi.diag_eq_one, star_one, mul_one]
     · intro b _ hbi
       rcases lt_or_gt_of_ne hbi with hb | hb
@@ -775,8 +775,8 @@ theorem exists_isLU_of_posDef_hermitianPart {A : Matrix n n 𝕜}
     · simp
   have key : U i i = star y ⬝ᵥ (A *ᵥ y) := by
     rw [← e1, hUeq]
-    simp only [mul_apply, conjTranspose_apply, dotProduct, mulVec, hy, star_star, Pi.star_apply,
-      Finset.sum_mul, Finset.mul_sum]
+    simp only [Matrix.mul_apply, conjTranspose_apply, dotProduct, mulVec, hy, star_star,
+      Pi.star_apply, Finset.sum_mul, Finset.mul_sum]
     rw [Finset.sum_comm]
     exact Finset.sum_congr rfl fun a _ => Finset.sum_congr rfl fun b _ => by ring
   rw [key]
@@ -932,7 +932,7 @@ theorem sq_norm_cholesky_apply_le (hA : A.PosDef) (i j : n) :
   have hc := isCholesky_cholesky hA
   have hsum : RCLike.re (A i i) = ∑ k, ‖cholesky A i k‖ ^ 2 := by
     conv_lhs => rw [← hc.conjTranspose_mul_self]
-    rw [conjTranspose_conjTranspose, mul_apply, map_sum]
+    rw [conjTranspose_conjTranspose, Matrix.mul_apply, map_sum]
     refine Finset.sum_congr rfl fun k _ => ?_
     rw [conjTranspose_apply, RCLike.star_def, RCLike.mul_conj, ← RCLike.ofReal_pow,
       RCLike.ofReal_re]
@@ -958,7 +958,7 @@ section PivotedLDL
 private theorem mul_diagonal_mul_conjTranspose_apply_of_isBot {n : ℕ}
     {L : Matrix (Fin n) (Fin n) 𝕜} (hL : L.IsUnitLowerTriangular) (d : Fin n → 𝕜) {i : Fin n}
     (hi : IsBot i) : (L * diagonal d * Lᴴ) i i = d i := by
-  rw [mul_apply, Finset.sum_eq_single i]
+  rw [Matrix.mul_apply, Finset.sum_eq_single i]
   · rw [mul_diagonal, conjTranspose_apply, hL.diag_eq_one, star_one, mul_one, one_mul]
   · intro k _ hki
     rw [mul_diagonal, hL.isLowerTriangular (OrderDual.toDual_lt_toDual.2
@@ -1038,7 +1038,7 @@ theorem PosSemidef.exists_perm_ldl_antitone :
       | zero => simp [hLd]
       | succ i' => simp [hLd, hL'.diag_eq_one]
     · ext i j
-      rw [mul_apply, Fin.sum_univ_succ]
+      rw [Matrix.mul_apply, Fin.sum_univ_succ]
       simp only [submatrix_apply, conjTranspose_apply, mul_diagonal, Fin.cons_zero, Fin.cons_succ]
       induction i using Fin.cases with
       | zero =>
@@ -1066,7 +1066,7 @@ theorem PosSemidef.exists_perm_ldl_antitone :
           field_simp
         | succ j' =>
           have e1 := congrFun (congrFun heq i') j'
-          rw [mul_apply] at e1
+          rw [Matrix.mul_apply] at e1
           simp only [conjTranspose_apply, mul_diagonal] at e1
           simp only [hLd, of_apply, Fin.cases_succ, Fin.cases_zero,
             Equiv.Perm.decomposeFin_symm_apply_succ, hc]
@@ -1214,7 +1214,7 @@ theorem cholesky_finSumFin {r s : ℕ} {A : Matrix (Fin (r + s)) (Fin (r + s)) �
       · rw [hK, fromBlocks_apply₁₁, hG₁, isLowerTriangular_cholesky _
           (OrderDual.toDual_lt_toDual.2 (Fin.lt_def.2 (by simpa using hij'))), star_zero]
       · omega
-      · rw [hK, fromBlocks_apply₁₂, zero_apply, star_zero]
+      · rw [hK, fromBlocks_apply₁₂, Matrix.zero_apply, star_zero]
       · rw [hK, fromBlocks_apply₂₂, hG₂, isLowerTriangular_cholesky _
           (OrderDual.toDual_lt_toDual.2 (Fin.lt_def.2 (by simp; omega))), star_zero]
     · intro i
@@ -1286,7 +1286,7 @@ private theorem growth_aux {A : Matrix n n ℝ} (hT : (hermitianPart A).PosDef) 
   have hAT : Aᵀ = T - S := by
     rw [hSdef, hTdef, hermitianPart, conjTranspose_eq_transpose_of_trivial]
     ext i j
-    simp only [transpose_apply, sub_apply, smul_apply, add_apply, smul_eq_mul]
+    simp only [transpose_apply, Matrix.sub_apply, Matrix.smul_apply, Matrix.add_apply, smul_eq_mul]
     ring
   have hSt : Sᵀ = -S := by
     have e : Sᵀ = Aᵀ - Tᵀ := by rw [hSdef, transpose_sub]
@@ -1385,7 +1385,7 @@ theorem IsLU.frobenius_norm_abs_mul_abs_le {A L U : Matrix n n ℝ}
   -- the pivots `u_kk = yᵀ A y` with `y` the `k`-th row of `L⁻¹`
   have hyA : ∀ k, (fun j => L⁻¹ k j) ᵥ* A = fun j => U k j := fun k => by
     funext j
-    rw [← hLU, mul_apply]
+    rw [← hLU, Matrix.mul_apply]
     rfl
   have hyAy : ∀ k, (fun j => L⁻¹ k j) ⬝ᵥ (A *ᵥ fun j => L⁻¹ k j) = U k k := fun k => by
     rw [dotProduct_mulVec, hyA k, dotProduct, Finset.sum_eq_single k]
@@ -1428,10 +1428,10 @@ theorem IsLU.frobenius_norm_abs_mul_abs_le {A L U : Matrix n n ℝ}
     rw [← h.mul_eq, ← mulVec_mulVec]
     have hUx : U *ᵥ (fun i => U⁻¹ i k) = fun i => (1 : Matrix n n ℝ) i k := by
       funext i'
-      rw [← hUU, mul_apply]
+      rw [← hUU, Matrix.mul_apply]
       rfl
     rw [hUx]
-    simp [mulVec, dotProduct, one_apply]
+    simp [mulVec, dotProduct, Matrix.one_apply]
   have hxAx : ∀ k, (fun i => U⁻¹ i k) ⬝ᵥ (A *ᵥ fun i => U⁻¹ i k) = (U k k)⁻¹ := fun k => by
     rw [hAx k, dotProduct, Finset.sum_eq_single k]
     · rw [hL.diag_eq_one, mul_one, hUkk]
@@ -1461,7 +1461,7 @@ theorem IsLU.frobenius_norm_abs_mul_abs_le {A L U : Matrix n n ℝ}
   -- the outer-product expansion of `|L| |U|`
   have hsum : L.abs * U.abs = ∑ k, vecMulVec (fun i => |L i k|) (fun j => |U k j|) := by
     ext i j
-    simp [mul_apply, Matrix.abs, vecMulVec_apply, Matrix.sum_apply]
+    simp [Matrix.mul_apply, Matrix.abs, vecMulVec_apply, Matrix.sum_apply]
   have hvmv : ∀ u v : n → ℝ, ‖vecMulVec u v‖ ≤ ‖WithLp.toLp 2 u‖ * ‖WithLp.toLp 2 v‖ :=
     fun u v => by
       rw [vecMulVec_eq Unit]

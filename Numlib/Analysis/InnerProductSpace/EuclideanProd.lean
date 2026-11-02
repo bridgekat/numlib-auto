@@ -5,6 +5,7 @@ Natural home: `Mathlib.Analysis.InnerProductSpace.PiL2`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Mathlib.Analysis.InnerProductSpace.PiL2
+import Mathlib.Topology.Algebra.Module.Equiv.Prod
 
 /-!
 # Concatenating coordinates: `ℝᵐ × ℝⁿ` and `ℝᵐ⁺ⁿ`

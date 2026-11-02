@@ -285,7 +285,7 @@ theorem repeated_eigenvalue_example (a : ℂ) :
       spectrum ℂ (!![1, a; 0, 1] + ε • !![0, 0; 1, 0]) = {z | (z - 1) ^ 2 = ε * a} := by
     intro ε
     ext z
-    rw [Set.mem_ofPred_eq, spectrum.mem_iff, Algebra.algebraMap_eq_smul_one,
+    rw [spectrum.mem_iff, Set.mem_ofPred_eq, Algebra.algebraMap_eq_smul_one,
       isUnit_iff_isUnit_det, isUnit_iff_ne_zero, not_not, det_fin_two]
     simp only [Matrix.sub_apply, Matrix.add_apply, Matrix.smul_apply, one_apply_eq,
       one_apply_ne (show (0 : Fin 2) ≠ 1 by decide), one_apply_ne (show (1 : Fin 2) ≠ 0 by decide),
@@ -553,7 +553,7 @@ private theorem mulVec_eq_smul_of_mul_replicateCol {κ : Type*} [Fintype κ] {X 
     X *ᵥ w = M () () • w := by
   ext i
   have := congrFun (congrFun h i) ()
-  simpa [mul_apply, replicateCol_apply, mulVec, dotProduct, mul_comm] using this
+  simpa [Matrix.mul_apply, replicateCol_apply, mulVec, dotProduct, mul_comm] using this
 
 /-- **The book's `q̃₁ = (q₁ + Q₂ p)/√(1 + pᴴ p)`** of Corollary 7.2.6, for `Q = [q₁ | Q₂]`
 (`q₁ + Q₂ p = Q [1; p]`). -/
@@ -609,7 +609,7 @@ theorem corollary_7_2_6 {A E Q : Matrix (Unit ⊕ Fin s) (Unit ⊕ Fin s) ℂ}
   set w : Unit ⊕ Fin s → ℂ := Q *ᵥ Sum.elim (fun _ => 1) p with hwdef
   have hQw : Q * fromRows (1 : Matrix Unit Unit ℂ) P = replicateCol Unit w := by
     ext i u
-    rw [replicateCol_apply, hwdef, mulVec, dotProduct, mul_apply]
+    rw [replicateCol_apply, hwdef, mulVec, dotProduct, Matrix.mul_apply]
     refine Finset.sum_congr rfl fun j _ => ?_
     rcases j with j | j
     · simp
@@ -617,7 +617,7 @@ theorem corollary_7_2_6 {A E Q : Matrix (Unit ⊕ Fin s) (Unit ⊕ Fin s) ℂ}
   have hq₁ : Q * fromRows (1 : Matrix Unit Unit ℂ) (0 : Matrix (Fin s) Unit ℂ) =
       replicateCol Unit fun i => Q i (Sum.inl ()) := by
     ext i u
-    rw [replicateCol_apply, mul_apply, Fintype.sum_sum_type]
+    rw [replicateCol_apply, Matrix.mul_apply, Fintype.sum_sum_type]
     simp
   -- the norm of `w`
   have hwn : ‖WithLp.toLp 2 w‖ = √(1 + ‖WithLp.toLp 2 p‖ ^ 2) := by

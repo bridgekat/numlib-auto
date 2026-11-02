@@ -66,7 +66,7 @@ private theorem rank_onesCol (hn : n ≠ 0) :
   have hG : eᵀ * e = (n : ℝ) • (1 : Matrix (Fin 1) (Fin 1) ℝ) := by
     ext a b
     rw [Subsingleton.elim a b]
-    simp [e, mul_apply]
+    simp [e, Matrix.mul_apply]
   have hu : IsUnit (eᵀ * e) := by
     rw [hG, isUnit_iff_isUnit_det]
     simp [hn]
@@ -87,7 +87,7 @@ theorem cauchy_displacement {ω ν : Fin n → ℝ} (h : ∀ k j, ω k ≠ ν j)
     sylvesterMap_diagonal_cauchy h
   rw [h1]
   ext i j
-  simp [mul_apply, vecMulVec_apply]
+  simp [Matrix.mul_apply, vecMulVec_apply]
 
 /-- **(12.1.4)** and the display after it: if `ω_k ≠ ν_j` for all `k, j`, then `Ω A − A Λ = R Sᵀ`
 holds exactly when `a_kj = r_kᵀ s_j / (ω_k − ν_j)` (`r_k`, `s_j` the rows of `R`, `S`): a
@@ -225,11 +225,11 @@ private theorem isLU_apply_zero_succ {N : ℕ} {A L U : Matrix (Fin (N + 2)) (Fi
     fun k => h.isUnitLowerTriangular.isLowerTriangular (Fin.succ_pos k)
   have hU : ∀ k : Fin (N + 1), U k.succ 0 = 0 := fun k => h.isUpperTriangular (Fin.succ_pos k)
   refine ⟨fun j => ?_, fun i => ?_, fun i j => ?_⟩
-  · rw [← h.mul_eq, mul_apply, Fin.sum_univ_succ, h.isUnitLowerTriangular.diag_eq_one]
+  · rw [← h.mul_eq, Matrix.mul_apply, Fin.sum_univ_succ, h.isUnitLowerTriangular.diag_eq_one]
     simp [hL]
-  · rw [← h.mul_eq, mul_apply, Fin.sum_univ_succ]
+  · rw [← h.mul_eq, Matrix.mul_apply, Fin.sum_univ_succ]
     simp [hU]
-  · rw [← h.mul_eq, mul_apply, Fin.sum_univ_succ]
+  · rw [← h.mul_eq, Matrix.mul_apply, Fin.sum_univ_succ]
 
 /-- Bordering a unit lower triangular `L₁` by the column `l` gives the unit lower triangular
 `[1 0; l L₁]`. -/
@@ -275,8 +275,8 @@ private theorem isLU_schur {N : ℕ} {A L U : Matrix (Fin (N + 2)) (Fin (N + 2))
     fun i => h.isUnitLowerTriangular.diag_eq_one _⟩,
     fun i j hij' => h.isUpperTriangular (Fin.succ_lt_succ_iff.2 hij'), ?_⟩
   ext i j
-  rw [mul_apply, Matrix.sub_apply, submatrix_apply, Matrix.smul_apply, vecMulVec_apply, hij, hi0,
-    h0j, h0j]
+  rw [Matrix.mul_apply, Matrix.sub_apply, submatrix_apply, Matrix.smul_apply, vecMulVec_apply, hij,
+    hi0, h0j, h0j]
   simp only [submatrix_apply, smul_eq_mul]
   field_simp
   ring
@@ -337,11 +337,11 @@ private theorem algorithm_12_1_1_spec_aux : ∀ (N : ℕ) {ω ν : Fin (N + 1) �
         isUpperTriangular_bordered _ _ hrec.isUpperTriangular, ?_⟩
       · ext i j
         refine Fin.cases ?_ (fun i => ?_) i <;> refine Fin.cases ?_ (fun j => ?_) j <;>
-          simp only [mul_apply, Fin.sum_univ_succ, of_apply, Fin.cases_zero, Fin.cases_succ,
+          simp only [Matrix.mul_apply, Fin.sum_univ_succ, of_apply, Fin.cases_zero, Fin.cases_succ,
             one_mul, zero_mul, Finset.sum_const_zero, add_zero, mul_zero]
         · rw [div_mul_cancel₀ _ hα]
         · have := congrFun (congrFun hrec.mul_eq i) j
-          rw [mul_apply, Fin.sum_univ_succ] at this
+          rw [Matrix.mul_apply, Fin.sum_univ_succ] at this
           rw [this, hA₁, Matrix.sub_apply, submatrix_apply, Matrix.smul_apply, vecMulVec_apply,
             smul_eq_mul]
           field_simp
@@ -608,14 +608,14 @@ private theorem algorithm_12_1_2_spec_aux : ∀ (N : ℕ) {ω ν : Fin (N + 1) �
         rw [Equiv.Perm.permMatrix, PEquiv.toMatrix_toPEquiv_mul] at hmul
         ext i j
         refine Fin.cases ?_ (fun i => ?_) i <;> refine Fin.cases ?_ (fun j => ?_) j <;>
-          simp only [mul_apply, Fin.sum_univ_succ, of_apply, Fin.cases_zero, Fin.cases_succ,
+          simp only [Matrix.mul_apply, Fin.sum_univ_succ, of_apply, Fin.cases_zero, Fin.cases_succ,
             one_mul, zero_mul, Finset.sum_const_zero, add_zero, mul_zero, hcol]
         · rfl
         · exact hg j
         · rw [div_mul_cancel₀ _ hα]
           rfl
         · have := congrFun (congrFun hmul i) j
-          rw [mul_apply, Fin.sum_univ_succ] at this
+          rw [Matrix.mul_apply, Fin.sum_univ_succ] at this
           rw [this, hg, hA₁, submatrix_apply, Matrix.sub_apply, submatrix_apply, Matrix.smul_apply,
             vecMulVec_apply, smul_eq_mul]
           have hα'' : ∀ x, A (σ x) 0 = A' x 0 := fun _ => rfl
@@ -713,18 +713,18 @@ private theorem disjoint_spectrum_of_injective {F G : Matrix (Fin n) (Fin n) ℝ
     have hre : sylvesterMap F G (X.map Complex.re) = 0 := by
       ext i j
       have := congrArg Complex.re (congrFun (congrFun hX i) j)
-      simp only [mul_apply, complexify_apply, Complex.re_sum, Complex.mul_re, Complex.ofReal_re,
-        Complex.ofReal_im, zero_mul, mul_zero, sub_zero] at this
-      simp only [sylvesterMap_apply, Matrix.sub_apply, mul_apply, map_apply, Matrix.zero_apply,
-        sub_eq_zero]
+      simp only [Matrix.mul_apply, complexify_apply, Complex.re_sum, Complex.mul_re,
+        Complex.ofReal_re, Complex.ofReal_im, zero_mul, mul_zero, sub_zero] at this
+      simp only [sylvesterMap_apply, Matrix.sub_apply, Matrix.mul_apply, map_apply,
+        Matrix.zero_apply, sub_eq_zero]
       exact this
     have him : sylvesterMap F G (X.map Complex.im) = 0 := by
       ext i j
       have := congrArg Complex.im (congrFun (congrFun hX i) j)
-      simp only [mul_apply, complexify_apply, Complex.im_sum, Complex.mul_im,
+      simp only [Matrix.mul_apply, complexify_apply, Complex.im_sum, Complex.mul_im,
         Complex.ofReal_re, Complex.ofReal_im, zero_mul, add_zero, mul_zero, zero_add] at this
-      simp only [sylvesterMap_apply, Matrix.sub_apply, mul_apply, map_apply, Matrix.zero_apply,
-        sub_eq_zero]
+      simp only [sylvesterMap_apply, Matrix.sub_apply, Matrix.mul_apply, map_apply,
+        Matrix.zero_apply, sub_eq_zero]
       exact this
     have h1 := h (hre.trans (map_zero _).symm)
     have h2 := h (him.trans (map_zero _).symm)
@@ -831,7 +831,7 @@ theorem equation_12_1_12 :
         ((n : ℝ) + 1)) := by
     ext i j
     have h := congrFun (symmTridiagonalToeplitz_mulVec_sineVec (n := n) (a := (1 : ℝ)) (b := 0) j) i
-    rw [mul_diagonal, dst1_apply_eq_sineVec, cornerTridiagonal_zero_zero, mul_apply]
+    rw [mul_diagonal, dst1_apply_eq_sineVec, cornerTridiagonal_zero_zero, Matrix.mul_apply]
     simp only [dst1_apply_eq_sineVec]
     rw [show ∑ k, symmTridiagonalToeplitz n (1 : ℝ) 0 i k * sineVec n j k =
       (symmTridiagonalToeplitz n (1 : ℝ) 0 *ᵥ sineVec n j) i from rfl, h, Pi.smul_apply,

@@ -342,7 +342,7 @@ theorem IsBoundaryOfClass.hasSegmentProperty (hV : V ⊆ {g | Continuous g})
     have h1 : z ∈ closure (Ω ∩ ball x₀ r) :=
       isOpen_ball.closure_inter ⟨hz, ball_subset_ball (half_le_self hr.le) hzx⟩
     rw [hgraph] at h1
-    exact closure_minimal (fun x hx ↦ le_of_lt hx.2) hclosed h1
+    exact closure_minimal (by intro x hx; exact le_of_lt hx.2) hclosed h1
   -- the coordinates of the translate
   have hT : T (z + t • (r / 4) • T.linearIsometryEquiv.symm
       (EuclideanSpace.single (Fin.last d) (1 : ℝ)))
@@ -381,7 +381,8 @@ theorem IsContDiffDomain.hasSegmentProperty {n : WithTop ℕ∞} (hΩ : IsContDi
 /-- A Lipschitz graph domain has the segment property. -/
 theorem IsLipschitzDomain.hasSegmentProperty (hΩ : IsLipschitzDomain Ω) :
     HasSegmentProperty Ω :=
-  hΩ.isBoundaryOfClass.hasSegmentProperty fun _ hg ↦ hg.choose_spec.continuous
+  hΩ.isBoundaryOfClass.hasSegmentProperty fun _ (hg : _ ∈ {g | ∃ K, LipschitzWith K g}) ↦
+    hg.choose_spec.continuous
 
 end Graph
 

@@ -67,7 +67,7 @@ variable {n : ℕ} {g : EuclideanSpace ℝ (Fin n)} {H M : Matrix (Fin n) (Fin n
 /-! ### The sets `𝓝`, `𝓛`, `𝓖` -/
 
 /-- The set `𝓝 = (-∞, λₛ]` of [cartis2022evaluation] §8.3. -/
-def setN (hH : H.IsHermitian) (hM : M.PosDef) : Set ℝ := Iic (lambdaS hH hM)
+noncomputable def setN (hH : H.IsHermitian) (hM : M.PosDef) : Set ℝ := Iic (lambdaS hH hM)
 
 /-- The set `𝓛` of [cartis2022evaluation] §8.3.1 for the regularization subproblem (8.1.3):
 `λ > λₛ` with `‖s(λ)‖_M ≥ (λ/σ)^{1/(r-2)}`; it is `(λₛ, λ*]` (`setL_reg_eq_Ioc`). -/

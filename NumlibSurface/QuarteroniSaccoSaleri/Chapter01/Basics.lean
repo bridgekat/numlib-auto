@@ -125,7 +125,7 @@ theorem definition_1_6 (A B : Matrix (Fin n) (Fin n) 𝕜) :
 independent (`Matrix.linearIndependent_cols_iff_isUnit`). -/
 theorem property_1_2 (A : Matrix (Fin n) (Fin n) 𝕜) :
     IsUnit A ↔ LinearIndependent 𝕜 A.col :=
-  linearIndependent_cols_iff_isUnit.symm
+  linearIndependent_col_iff_isUnit.symm
 
 end Inverse
 
@@ -334,7 +334,7 @@ theorem nonsingular_tfae (A : Matrix (Fin n) (Fin n) ℂ) :
     rw [Fintype.card_fin, h] at hk
     exact Submodule.finrank_eq_zero.1 (by omega)
   tfae_have 1 ↔ 5 := by
-    rw [linearIndependent_rows_iff_isUnit, linearIndependent_cols_iff_isUnit, and_self]
+    rw [linearIndependent_row_iff_isUnit, linearIndependent_col_iff_isUnit, and_self]
   tfae_have 1 ↔ 6 := by rw [spectrum.zero_notMem_iff]
   tfae_finish
 

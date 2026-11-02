@@ -263,7 +263,7 @@ theorem unitBidiagonal_apply (r : ℕ → K) (i j : Fin n) :
 private theorem unitBidiagonal_eq_one_sub (r : ℕ → K) :
     unitBidiagonal n r = 1 - of fun i j : Fin n => if (j : ℕ) = i + 1 then r i else 0 := by
   ext i j
-  rw [unitBidiagonal_apply, sub_apply, of_apply]
+  rw [unitBidiagonal_apply, Matrix.sub_apply, of_apply]
   by_cases hij : i = j
   · subst hij
     simp
@@ -277,7 +277,7 @@ private theorem unitBidiagonal_mul_prod (r : ℕ → K) :
       (of fun (i j : Fin n) => if i ≤ j then ∏ l ∈ Finset.Ico (i : ℕ) j, r l else 0) = 1 := by
   rw [unitBidiagonal_eq_one_sub, Matrix.sub_mul, Matrix.one_mul]
   ext i j
-  rw [sub_apply, mul_apply]
+  rw [Matrix.sub_apply, Matrix.mul_apply]
   simp_rw [of_apply, ite_mul, zero_mul]
   have hs := sum_dite_val_eq_add_one i fun k (_ : (k : ℕ) = i + 1) =>
     r i * if k ≤ j then ∏ l ∈ Finset.Ico (k : ℕ) j, r l else 0
@@ -462,7 +462,7 @@ theorem quasiseparableOf_eq (u v : Fin n → K) (t : ℕ → K) (d p q : Fin n �
         strictUpper (vecMulVec p q) ⊙ (unitBidiagonal n r)⁻¹ := by
   rw [inv_unitBidiagonal, inv_unitBidiagonal]
   ext i j
-  simp only [quasiseparableOf_apply, add_apply, hadamard_apply, strictLower_apply,
+  simp only [quasiseparableOf_apply, Matrix.add_apply, hadamard_apply, strictLower_apply,
     strictUpper_apply, transpose_apply, of_apply, diagonal_apply, vecMulVec_apply]
   rcases lt_trichotomy i j with h | rfl | h
   · simp [h, lt_asymm h, h.ne, h.le]
@@ -477,7 +477,7 @@ theorem quasiseparableOf_one_one (u v d p q : Fin n → K) :
     quasiseparableOf u v 1 d p q 1 =
       strictLower (vecMulVec u v) + diagonal d + strictUpper (vecMulVec p q) := by
   ext i j
-  simp only [quasiseparableOf_apply, add_apply, strictLower_apply, strictUpper_apply,
+  simp only [quasiseparableOf_apply, Matrix.add_apply, strictLower_apply, strictUpper_apply,
     diagonal_apply, vecMulVec_apply, Pi.one_apply, prod_const_one, mul_one]
   rcases lt_trichotomy i j with h | rfl | h
   · simp [h, lt_asymm h, h.ne]
@@ -782,7 +782,7 @@ private theorem transpose_unitBidiagonal_mul_quasiseparableOf (u v p q p' : Fin 
   rw [unitBidiagonal_eq_one_sub, transpose_sub, transpose_one, Matrix.sub_mul, Matrix.one_mul,
     inv_unitBidiagonal]
   ext i j
-  rw [sub_apply, mul_apply]
+  rw [Matrix.sub_apply, Matrix.mul_apply]
   simp_rw [transpose_apply, of_apply, ite_mul, zero_mul]
   have hs := sum_dite_val_add_one_eq i fun k (_ : (k : ℕ) + 1 = i) =>
     τ k * quasiseparableOf u v t (u * v) p q r k j
@@ -911,7 +911,7 @@ private theorem prodFwd_givensFactor_apply {m : ℕ} (hm : m ≤ N) (i j : Fin (
       else if (i : ℕ) = j then 1 else 0 := by
   induction m generalizing i j with
   | zero =>
-    rw [prodFwd_zero, one_apply]
+    rw [prodFwd_zero, Matrix.one_apply]
     simp only [Nat.not_lt_zero, ↓reduceIte, Fin.ext_iff]
     by_cases hj : (j : ℕ) = 0
     · by_cases hi : (i : ℕ) = 0
@@ -1079,7 +1079,7 @@ theorem IsLU.isSemiseparable_upper {A L U : Matrix n n K} (h : IsLU A L U)
   have hblock : U.toBlock (· ≤ k) (k ≤ ·) =
       L⁻¹.toBlock (· ≤ k) (· ≤ k) * A.toBlock (· ≤ k) (k ≤ ·) := by
     ext ⟨i, hi⟩ ⟨j, hj⟩
-    rw [hU, toBlock_apply, mul_apply, mul_apply,
+    rw [hU, toBlock_apply, Matrix.mul_apply, Matrix.mul_apply,
       sum_eq_sum_subtype_of_eq_zero (p := (· ≤ k)) _ fun l hl => ?_]
     · rfl
     · exact mul_eq_zero_of_left
@@ -1109,7 +1109,7 @@ theorem IsLU.isSemiseparable_lower {A L U : Matrix n n K} (h : IsLU A L U)
     have hblock : L.toBlock (k ≤ ·) (· < k') * U.strictLeadingPrincipalSubmatrix k' =
         A.toBlock (k ≤ ·) (· < k') := by
       ext ⟨i, hi⟩ ⟨j, hj⟩
-      rw [toBlock_apply, ← h.mul_eq, mul_apply, mul_apply,
+      rw [toBlock_apply, ← h.mul_eq, Matrix.mul_apply, Matrix.mul_apply,
         sum_eq_sum_subtype_of_eq_zero (p := (· < k')) _ fun l hl => ?_]
       · rfl
       · exact mul_eq_zero_of_right _ (h.isUpperTriangular (lt_of_lt_of_le hj (not_lt.1 hl)))
@@ -1359,7 +1359,7 @@ private theorem rank_toBlock_inv_one_add_sub_one_le {T : Matrix n n K} (hT : T.I
   have hTij : ∀ i j (hi : k ≤ i) (hj : j ≤ k), T i j = X ⟨i, hi⟩ 0 * Y ⟨j, hj⟩ 0 := by
     intro i j hi hj
     have := congrFun (congrFun hXY ⟨i, hi⟩) ⟨j, hj⟩
-    simpa [toBlock_apply, mul_apply] using this
+    simpa [toBlock_apply, Matrix.mul_apply] using this
   let s : Finset {x // ¬ q x} :=
     (univ : Finset {i // i < k}).image fun i => ⟨Sum.inl i.1, by simp [hq]⟩
   let t : Finset {y // ¬ p y} :=
@@ -1560,7 +1560,7 @@ private theorem apply_eq_zero_of_mul_transpose {X : Matrix (Fin (N + 1)) (Fin (N
     (hX : X * Xᵀ = 1) {j : Fin (N + 1)} (hj : X j j = 1) {l : Fin (N + 1)} (hl : l ≠ j) :
     X j l = 0 := by
   have h := congrFun (congrFun hX j) j
-  rw [mul_apply, one_apply_eq, ← Finset.add_sum_erase _ _ (mem_univ j)] at h
+  rw [Matrix.mul_apply, one_apply_eq, ← Finset.add_sum_erase _ _ (mem_univ j)] at h
   simp only [transpose_apply, hj, mul_one] at h
   have h0 : ∑ x ∈ univ.erase j, X j x * X j x = 0 := by linarith
   exact mul_self_eq_zero.1 ((Finset.sum_eq_zero_iff_of_nonneg
@@ -1628,7 +1628,7 @@ private theorem ohInv_step {k : ℕ} (hk : k < N) {X : Matrix (Fin (N + 1)) (Fin
       exact hH i kk (show k + 1 < (i : ℕ) by omega)
   have hnorm : X kk kk ^ 2 + X k1 kk ^ 2 = 1 := by
     have h := congrFun (congrFun h2 kk) kk
-    rw [mul_apply, one_apply_eq, ← Finset.sum_subset (Finset.subset_univ {kk, k1})
+    rw [Matrix.mul_apply, one_apply_eq, ← Finset.sum_subset (Finset.subset_univ {kk, k1})
       (fun i _ hi => by simp only [mem_insert, mem_singleton, not_or] at hi
                         simp [transpose_apply, hsupp i hi.1 hi.2]),
       Finset.sum_pair hne] at h
@@ -1988,7 +1988,7 @@ private theorem givensChain_mul_apply (M : ℕ → Matrix (Fin 2) (Fin 2) K)
     (L : Matrix (Fin (N + 1)) (Fin (N + 1)) K) (F : ℕ → K) (i j : Fin (N + 1))
     (hF : ∀ k : Fin (N + 1), givensChain N M i k * L k j = F k) :
     (givensChain N M * L) i j = ∑ k ∈ Finset.range (N + 1), F k := by
-  rw [mul_apply, ← Fin.sum_univ_eq_sum_range]
+  rw [Matrix.mul_apply, ← Fin.sum_univ_eq_sum_range]
   exact Finset.sum_congr rfl fun k _ => hF k
 
 /-- **The QR factorization of a lower triangular semiseparable matrix** ([golub2013matrix]
@@ -2014,7 +2014,7 @@ theorem givensChain_mul_strictLower_add_diagPart
   · ext i j
     have hL : ∀ k : Fin (N + 1), (strictLower A + diagPart A) k j =
         if (j : ℕ) ≤ k then gvCos N c k * P j k * v j else 0 := fun k => by
-      rw [add_apply, strictLower_apply, diagPart_apply]
+      rw [Matrix.add_apply, strictLower_apply, diagPart_apply]
       rcases lt_trichotomy j k with hjk | hjk | hjk
       · rw [ite_eq_left hjk, ite_eq_right hjk.ne', add_zero, hA k j hjk.le,
           ite_eq_left (Fin.le_def.1 hjk.le)]
@@ -2078,7 +2078,7 @@ theorem givensChain_mul_strictLower_add_diagPart
         Nat.add_one_ne_zero]
       rw [Finset.prod_Ico_succ_top (by omega : (j : ℕ) ≤ m)]
       ring
-  · rw [mul_apply]
+  · rw [Matrix.mul_apply]
     refine Finset.sum_eq_zero fun k _ => ?_
     rw [strictUpper_apply]
     by_cases hkj : k < j
@@ -2318,7 +2318,7 @@ private theorem reflectorFactor_sub_one_apply_eq_zero (φ : ℕ → ℝ) {k : �
     {p q : Fin (N + 1)}
     (h : ¬((k ≤ (p : ℕ) ∧ (p : ℕ) ≤ k + 1) ∧ (k ≤ (q : ℕ) ∧ (q : ℕ) ≤ k + 1))) :
     (reflectorFactor N φ k - 1) p q = 0 := by
-  rw [sub_apply, one_apply]
+  rw [Matrix.sub_apply, Matrix.one_apply]
   rcases hk.lt_or_eq with hk | rfl
   · rw [reflectorFactor, ite_eq_left hk, givensFactor, dite_eq_left hk]
     by_cases hp : k ≤ (p : ℕ) ∧ (p : ℕ) ≤ k + 1
@@ -2335,7 +2335,8 @@ private theorem reflectorFactor_sub_one_mul_sub_one (φ : ℕ → ℝ) {k l : �
     (hl : l ≤ N) :
     (reflectorFactor N φ k - 1) * (reflectorFactor N φ l - 1) = 0 ∧
       (reflectorFactor N φ l - 1) * (reflectorFactor N φ k - 1) = 0 := by
-  constructor <;> ext p q <;> rw [mul_apply, zero_apply] <;> refine sum_eq_zero fun r _ => ?_
+  constructor <;> ext p q <;> rw [Matrix.mul_apply,
+      Matrix.zero_apply] <;> refine sum_eq_zero fun r _ => ?_
   · by_cases hr : (r : ℕ) ≤ k + 1
     · rw [reflectorFactor_sub_one_apply_eq_zero (k := l) (p := r) (q := q) φ hl (by omega),
         mul_zero]
@@ -2424,8 +2425,8 @@ private theorem prodFwd_mask_apply_eq_zero (φ : ℕ → ℝ) (P : ℕ → Prop)
     (hP : ∀ k l, P k → P l → k < l → k + 2 ≤ l) {i j : Fin (N + 1)}
     (hij : (j : ℕ) + 1 < i ∨ (i : ℕ) + 1 < j) :
     prodFwd (fun k => if P k then reflectorFactor N φ k else 1) (N + 1) i j = 0 := by
-  rw [prodFwd_mask_eq φ P hP, add_apply, one_apply_ne (fun h => by subst h; omega), zero_add,
-    sum_apply]
+  rw [prodFwd_mask_eq φ P hP, Matrix.add_apply, one_apply_ne (fun h => by subst h; omega), zero_add,
+    Matrix.sum_apply]
   refine sum_eq_zero fun k hk => ?_
   split_ifs
   · exact reflectorFactor_sub_one_apply_eq_zero (k := k) φ (by have := mem_range.1 hk; omega)
@@ -2517,14 +2518,14 @@ of `H_o`, `H_e` is the identity plus the departures of its factors, which live i
 diagonal blocks (`Matrix.prodFwd_eq_one_add_sum_sub_one`). -/
 theorem isTridiagonal_oddEvenHalfSum (φ : ℕ → ℝ) : (oddEvenHalfSum N φ).IsTridiagonal := by
   refine isTridiagonal_iff_fin.2 fun i j hij => ?_
-  rw [oddEvenHalfSum, smul_apply, add_apply, prodFwdEven, prodFwdOdd,
+  rw [oddEvenHalfSum, Matrix.smul_apply, Matrix.add_apply, prodFwdEven, prodFwdOdd,
     prodFwd_mask_apply_eq_zero φ Even (fun _ _ => even_add_two_le) hij,
     prodFwd_mask_apply_eq_zero φ Odd (fun _ _ => odd_add_two_le) hij, add_zero, smul_zero]
 
 /-- **Fact 2 of [golub2013matrix] §12.2.10, the shape**: `S = (H_o − H_e)/2` is tridiagonal. -/
 theorem isTridiagonal_oddEvenHalfDiff (φ : ℕ → ℝ) : (oddEvenHalfDiff N φ).IsTridiagonal := by
   refine isTridiagonal_iff_fin.2 fun i j hij => ?_
-  rw [oddEvenHalfDiff, smul_apply, sub_apply, prodFwdEven, prodFwdOdd,
+  rw [oddEvenHalfDiff, Matrix.smul_apply, Matrix.sub_apply, prodFwdEven, prodFwdOdd,
     prodFwd_mask_apply_eq_zero φ Even (fun _ _ => even_add_two_le) hij,
     prodFwd_mask_apply_eq_zero φ Odd (fun _ _ => odd_add_two_le) hij, sub_zero, smul_zero]
 

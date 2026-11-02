@@ -115,7 +115,7 @@ theorem exists_blockLUPivoting {r : ℕ} (hr : 0 < r) :
   set L₁₁ : Matrix (Fin r) (Fin r) ℝ := of fun i k => L (finSumFinEquiv (Sum.inl i)) k with hL₁₁
   set L₂₁ : Matrix (Fin s) (Fin r) ℝ := of fun i k => L (finSumFinEquiv (Sum.inr i)) k with hL₂₁
   have hcol : ∀ i k, Ã i (finSumFinEquiv (Sum.inl k)) = ∑ t, L i t * U₁₁ t k := fun i k => by
-    rw [← mul_apply, hRect.mul_eq, hÃ, mul_apply]
+    rw [← Matrix.mul_apply, hRect.mul_eq, hÃ, Matrix.mul_apply]
     rfl
   have hL₁₁unit : L₁₁.IsUnitLowerTriangular := by
     refine ⟨fun i j hij => ?_, fun i => ?_⟩
@@ -126,9 +126,9 @@ theorem exists_blockLUPivoting {r : ℕ} (hr : 0 < r) :
   have hU₁₁upper : U₁₁.IsUpperTriangular := fun i j hij =>
     hRect.hasLowerBandwidthRect i j (by have := Fin.lt_def.1 (show j < i from hij); omega)
   have h₁₁ : IsLU Ã₁₁ L₁₁ U₁₁ := ⟨hL₁₁unit, hU₁₁upper, by
-    ext i j; rw [mul_apply, hÃ₁₁, of_apply, hcol]; rfl⟩
+    ext i j; rw [Matrix.mul_apply, hÃ₁₁, of_apply, hcol]; rfl⟩
   have h₂₁ : Ã₂₁ = L₂₁ * U₁₁ := by
-    ext i j; rw [mul_apply, hÃ₂₁, of_apply, hcol]; rfl
+    ext i j; rw [Matrix.mul_apply, hÃ₂₁, of_apply, hcol]; rfl
   -- (3.6.4): the multiple right-hand side solve
   have hdetL : IsUnit L₁₁.det := by rw [hL₁₁unit.det_eq_one]; exact isUnit_one
   set U₁₂ := L₁₁⁻¹ * Ã₁₂ with hU₁₂

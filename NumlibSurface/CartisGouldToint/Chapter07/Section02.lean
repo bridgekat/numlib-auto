@@ -790,6 +790,7 @@ theorem decrease_of_not_targetCrit (hC : Chapter06.AssumptionCNe C) (hp : 1 ≤ 
     refine le_trans ?_ hdec
     rw [Chapter06.kappa1CC_def]
     gcongr
+    · exact hκ.le
     · exact mul_nonneg Constrained.targetResidual_nonneg he₁.le
     rw [mul_comm]
     exact hω.le
@@ -1156,6 +1157,7 @@ theorem exists_innerRun (hC : Chapter06.AssumptionCNe C) (hμ : AssumptionMu2DpL
       refine le_trans ?_ hdec
       rw [Chapter06.kappa1CC_def]
       gcongr
+      · exact (Chapter06.kappa1CC_pos (P := P.toARpCCParams) (p := p) hdpl.nonneg).le
       exact hω.le)
   have he' : IsFirstHit (fun i => innerStop f c C P.θ ε₀ ε₁ τ (xs i)) e :=
     ⟨he.1.resolve_right id, fun j hj h' => he.2 j hj (Or.inl h')⟩

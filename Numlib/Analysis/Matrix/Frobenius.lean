@@ -41,7 +41,7 @@ theorem frobenius_norm_sq_eq_trace (A : Matrix m n 𝕜) :
   rw [frobenius_norm_sq_eq_sum_sq, trace, Finset.sum_comm]
   push_cast
   refine Finset.sum_congr rfl fun j _ => ?_
-  rw [diag_apply, mul_apply]
+  rw [diag_apply, Matrix.mul_apply]
   refine Finset.sum_congr rfl fun i _ => ?_
   rw [conjTranspose_apply, RCLike.star_def, RCLike.conj_mul]
 

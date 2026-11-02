@@ -72,7 +72,7 @@ theorem equation_8_3_1 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) :
     · rw [mulVec_single_one]
       ext i
       rw [col_apply, show (⟨0, h⟩ : Fin (M + 1)) = 0 from rfl, hessenbergQ_apply_zero A i]
-      by_cases hi : i = 0 <;> simp [hi, one_apply]
+      by_cases hi : i = 0 <;> simp [hi, Matrix.one_apply]
 
 /-- **§8.3.1, the symmetric Householder update.** For symmetric `B`, `P = I - β v vᵀ`,
 `p = β B v` and `w = p - (β pᵀv / 2) v`: `P B P = B - v wᵀ - w vᵀ`. -/
@@ -998,16 +998,16 @@ theorem perfect_shift {N : ℕ} {T : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ} (hT
     ext i
     refine Fin.lastCases ?_ (fun i => ?_) i
     · have h0 : R (Fin.last N) j.castSucc = 0 := hR (Fin.castSucc_lt_last j)
-      simp [P, R', col_apply, mulVec, dotProduct, one_apply, h0,
+      simp [P, R', col_apply, mulVec, dotProduct, h0,
         (Fin.castSucc_ne_last _).symm]
-    · simp [P, R', col_apply, mulVec, dotProduct, one_apply, Fin.castSucc_inj]
+    · simp [P, R', col_apply, mulVec, dotProduct, Matrix.one_apply, Fin.castSucc_inj]
   have hliR' : LinearIndependent ℝ (fun j : Fin N => R'.col j) := by
     refine LinearIndependent.of_comp P.mulVecLin ?_
     convert hliR using 1
     funext j
     simp [hcolR]
   have hR'det : R'.det ≠ 0 :=
-    ((isUnit_iff_isUnit_det _).1 (linearIndependent_cols_iff_isUnit.1 hliR')).ne_zero
+    ((isUnit_iff_isUnit_det _).1 (linearIndependent_col_iff_isUnit.1 hliR')).ne_zero
   have hRtri : R'.IsUpperTriangular := fun i j hij => hR (Fin.castSucc_lt_castSucc_iff.2 hij)
   have hlast : R (Fin.last N) (Fin.last N) = 0 := by
     rw [det_of_isUpperTriangular hR, Fin.prod_univ_castSucc] at hRdet
@@ -1028,8 +1028,8 @@ theorem perfect_shift {N : ℕ} {T : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ} (hT
   rw [← hsym.apply]
   by_cases hi : i = Fin.last N
   · subst hi
-    simp [Matrix.add_apply, mul_apply, hrow]
-  · simp [Matrix.add_apply, mul_apply, hrow, one_apply, hi, Ne.symm hi]
+    simp [Matrix.add_apply, Matrix.mul_apply, hrow]
+  · simp [Matrix.add_apply, Matrix.mul_apply, hrow, hi, Ne.symm hi]
 
 /-! ### §8.3.4 Explicit single-shift QR iteration -/
 
@@ -1369,7 +1369,7 @@ private theorem isBlockSupported_givensRotation {p m : ℕ} {a b : Fin n}
       have hia : i ≠ a := fun e => hi (e ▸ ha)
       have hib : i ≠ j := fun e => hi (e ▸ hb)
       simp [hj, hia, hib, one_apply_ne hib]
-    · simp only [hj, hj', ↓reduceIte, one_apply]
+    · simp only [hj, hj', ↓reduceIte, Matrix.one_apply]
 
 /-- A block similarity of a symmetric matrix is symmetric. -/
 private theorem isSymm_blockConj {p m : ℕ} {X : Matrix (Fin n) (Fin n) ℝ} (hX : X.IsSymm)
@@ -1398,13 +1398,13 @@ private theorem blockConj_eq_of_isBlockSupported {p m : ℕ} {P X : Matrix (Fin 
       blockConj p m P X := by
   -- `P` is the identity off the window
   have hPo : ∀ t q : Fin n, ¬ (p ≤ (q : ℕ) ∧ (q : ℕ) < m) → P t q = if t = q then 1 else 0 :=
-    fun t q hq => by rw [hP t q (fun h => hq h.2), one_apply]
+    fun t q hq => by rw [hP t q (fun h => hq h.2), Matrix.one_apply]
   have hPo' : ∀ t q : Fin n, ¬ (p ≤ (t : ℕ) ∧ (t : ℕ) < m) → P t q = if t = q then 1 else 0 :=
-    fun t q ht => by rw [hP t q (fun h => ht h.1), one_apply]
+    fun t q ht => by rw [hP t q (fun h => ht h.1), Matrix.one_apply]
   -- `Pᵀ X` agrees with `X` on the rows off the window
   have hPX : ∀ r q : Fin n, ¬ (p ≤ (r : ℕ) ∧ (r : ℕ) < m) → (Pᵀ * X) r q = X r q := by
     intro r q hr
-    rw [mul_apply, Finset.sum_eq_single r]
+    rw [Matrix.mul_apply, Finset.sum_eq_single r]
     · rw [transpose_apply, hPo' r r hr, ite_eq_left rfl, one_mul]
     · intro t _ htr
       rw [transpose_apply, hPo t r hr, ite_eq_right htr, zero_mul]
@@ -1414,7 +1414,7 @@ private theorem blockConj_eq_of_isBlockSupported {p m : ℕ} {P X : Matrix (Fin 
   by_cases hr : p ≤ (r : ℕ) ∧ (r : ℕ) < m
   · rw [ite_eq_left hr]
     by_cases hq : p ≤ (q : ℕ) ∧ (q : ℕ) < m
-    · rw [ite_eq_left ⟨hr, hq⟩, mul_apply, mul_apply]
+    · rw [ite_eq_left ⟨hr, hq⟩, Matrix.mul_apply, Matrix.mul_apply]
       refine Finset.sum_congr rfl fun t _ => ?_
       rw [of_apply]
       by_cases ht : p ≤ (t : ℕ) ∧ (t : ℕ) < m
@@ -1423,7 +1423,7 @@ private theorem blockConj_eq_of_isBlockSupported {p m : ℕ} {P X : Matrix (Fin 
           mul_zero]
     · rw [ite_eq_right
         (fun h : (p ≤ (r : ℕ) ∧ (r : ℕ) < m) ∧ (p ≤ (q : ℕ) ∧ (q : ℕ) < m) => hq h.2),
-        mul_apply, Finset.sum_eq_single q]
+        Matrix.mul_apply, Finset.sum_eq_single q]
       · rw [of_apply, ite_eq_right hq, hPo q q hq, ite_eq_left rfl, mul_one]
       · intro t _ htq
         rw [hPo t q hq, ite_eq_right htq, mul_zero]
@@ -1756,7 +1756,7 @@ theorem algorithm_8_3_2_spec {N : ℕ} {T : Matrix (Fin (N + 2)) (Fin (N + 2)) �
     simpa using this
   have hT0 : (T - μ • 1).col 0 = (T 0 0 - μ) • Pi.single 0 1 + T 1 0 • Pi.single 1 1 := by
     funext t
-    rw [col_apply, Matrix.sub_apply, Matrix.smul_apply, one_apply]
+    rw [col_apply, Matrix.sub_apply, Matrix.smul_apply, Matrix.one_apply]
     by_cases h0 : t = 0
     · subst h0; simp
     · by_cases h1 : t = 1

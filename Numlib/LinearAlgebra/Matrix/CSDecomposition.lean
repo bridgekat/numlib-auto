@@ -256,7 +256,7 @@ theorem exists_isThinCSD (Q₁ : Matrix (Fin m₁) (Fin n₁) 𝕜) (Q₂ : Matr
     exact rectDiagonal_congr fun i _ hi => by rw [hcos i hi]
   · rw [Matrix.mul_assoc, ← hW]
     ext i j
-    rw [mul_apply, shiftedRectDiagonal_apply, hsin j j.isLt]
+    rw [Matrix.mul_apply, shiftedRectDiagonal_apply, hsin j j.isLt]
     by_cases hj : c j = 1
     · have hsj : s j = 0 := by rw [hsdef]; simp [hj]
       rw [hsj, RCLike.ofReal_zero, ite_self]
@@ -270,9 +270,9 @@ theorem exists_isThinCSD (Q₁ : Matrix (Fin m₁) (Fin n₁) 𝕜) (Q₂ : Matr
       simp only [hWk, star_apply]
       have hsum : ∑ k, star (U₂ k i) * (((s j : ℝ) : 𝕜) * U₂ k (f jr))
           = ((s j : ℝ) : 𝕜) * (star U₂ * U₂) i (f jr) := by
-        rw [mul_apply, Finset.mul_sum]
+        rw [Matrix.mul_apply, Finset.mul_sum]
         exact Finset.sum_congr rfl fun k _ => by rw [star_apply]; ring
-      rw [hsum, mem_unitaryGroup_iff'.1 hU₂, one_apply]
+      rw [hsum, mem_unitaryGroup_iff'.1 hU₂, Matrix.one_apply]
       have hpj' := hpj j hj
       have hf : ((f jr : Fin m₂) : ℕ) = j - p := rfl
       by_cases hij : (j : ℕ) = i + p
@@ -398,8 +398,8 @@ theorem exists_isCSD (hmn : m₁ + m₂ = n₁ + n₂)
   -- the target columns are orthogonal to `[C; S]` and orthonormal
   have t1 : Cᴴ * T₁ + Sᴴ * T₂ = 0 := by
     ext a b
-    rw [add_apply, rectDiagonal_conjTranspose, rectDiagonal_mul_apply _ _ _ _
-      (lt_of_lt_of_le a.isLt hn₁), conjTranspose_shiftedRectDiagonal_mul_apply, zero_apply]
+    rw [Matrix.add_apply, rectDiagonal_conjTranspose, rectDiagonal_mul_apply _ _ _ _
+      (lt_of_lt_of_le a.isLt hn₁), conjTranspose_shiftedRectDiagonal_mul_apply, Matrix.zero_apply]
     simp only [hT₁, hT₂, csdUpperRight, of_apply, rectDiagonal_apply, Function.comp_apply,
       hσdef]
     by_cases hpa : p ≤ (a : ℕ)
@@ -431,7 +431,7 @@ theorem exists_isCSD (hmn : m₁ + m₂ = n₁ + n₂)
     have hsum : ∀ b b' : Fin n₂, (T₁ᴴ * T₁) b b'
         = if ρ b < m₁ ∧ ρ b = ρ b' then star (τ b) * τ b' else 0 := by
       intro b b'
-      rw [mul_apply]
+      rw [Matrix.mul_apply]
       simp only [conjTranspose_apply, hcol]
       split_ifs with h
       · rw [Finset.sum_eq_single ⟨ρ b, h.1⟩]
@@ -447,7 +447,7 @@ theorem exists_isCSD (hmn : m₁ + m₂ = n₁ + n₂)
         · rw [ite_eq_right h1, star_zero, zero_mul]
     rw [hT₂, conjTranspose_rectDiagonal_mul_self]
     ext b b'
-    rw [add_apply, hsum, diagonal_apply, one_apply]
+    rw [Matrix.add_apply, hsum, diagonal_apply, Matrix.one_apply]
     by_cases hbb : b = b'
     · subst hbb
       rw [ite_eq_left rfl, ite_eq_left rfl]

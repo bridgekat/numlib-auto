@@ -166,7 +166,8 @@ theorem ker_eq_span (h : IsCompleteOrthogonal A U V r) :
     have hVe : Vᴴ *ᵥ V.col (tailIdx h.le_cols j) = Pi.single (tailIdx h.le_cols j) 1 := by
       funext k
       have := congrFun (congrFun hVV' k) (tailIdx h.le_cols j)
-      simpa [mulVec, dotProduct, mul_apply, Matrix.col, Pi.single_apply, one_apply] using this
+      simpa [mulVec, dotProduct, Matrix.mul_apply, Matrix.col, Pi.single_apply,
+          Matrix.one_apply] using this
     change toEuclideanLin A _ = 0
     rw [toEuclideanLin_toLp, hA, hVe]
     have : T *ᵥ Pi.single (tailIdx h.le_cols j) 1 = 0 := by

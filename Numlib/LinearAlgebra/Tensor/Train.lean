@@ -67,7 +67,7 @@ theorem ttPartial_succ_apply (d : ℕ) (i : ∀ k : Fin (d + 1), Fin (n k)) (p :
     (q : Fin (r (d + 1))) :
     ttPartial G (d + 1) i p q
       = ∑ s, ttPartial G d (fun k => i k.castSucc) p s * G d (i (Fin.last d)) s q :=
-  mul_apply
+  Matrix.mul_apply
 
 /-- The tensor train ([golub2013matrix] (12.5.25)) with boundary ranks `r 0 = r d = 1`:
 `𝒯(i) = 𝒢₁(i₁) 𝒢₂(i₂) ⋯ 𝒢_d(i_d)`, a `1 × 1` product. -/
@@ -89,7 +89,7 @@ theorem exists_ttCore_of_rank {K : Type*} [Field K] {p m s : ℕ} {N : Type*} [F
       ∀ k i c, C (k, i) c = (G i * C') k c := by
   obtain ⟨G', C', h⟩ := (Matrix.rank_le_iff_exists_mul C s).1 hC
   refine ⟨fun i => Matrix.of fun k k' => G' (k, i) k', C', fun k i c => ?_⟩
-  rw [h, mul_apply, mul_apply]
+  rw [h, Matrix.mul_apply, Matrix.mul_apply]
   rfl
 
 /-! ### Existence: the TT-SVD -/

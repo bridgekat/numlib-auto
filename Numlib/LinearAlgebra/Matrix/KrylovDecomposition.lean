@@ -89,7 +89,7 @@ variable {A : Matrix n n 𝕜} {Q : Matrix n m 𝕜} {B : Matrix m m 𝕜} {r : 
 /-- The columns of `Q` are orthonormal, entrywise: `⟪q_i, q_j⟫ = δ_ij`. -/
 theorem star_col_dotProduct_col (h : IsKrylovDecomposition A Q B r b) (i j : m) :
     star (Q.col i) ⬝ᵥ Q.col j = (1 : Matrix m m 𝕜) i j := by
-  rw [← h.conjTranspose_mul_self, mul_apply]
+  rw [← h.conjTranspose_mul_self, Matrix.mul_apply]
   rfl
 
 /-- The residual is orthogonal to every column of `Q`. -/
@@ -104,14 +104,14 @@ theorem mulVec_col (h : IsKrylovDecomposition A Q B r b) (j : m) :
   simp only [col_mul_eq_mulVec_col] at hc
   rw [hc]
   ext x
-  simp [mul_apply, vecMulVec_apply, Finset.sum_apply, mul_comm]
+  simp [Matrix.mul_apply, vecMulVec_apply, Finset.sum_apply, mul_comm]
 
 /-- The entries of `B` are those of the compression: `B i j = ⟪q_i, A q_j⟫`. -/
 theorem apply_eq_star_col_dotProduct (h : IsKrylovDecomposition A Q B r b) (i j : m) :
     B i j = star (Q.col i) ⬝ᵥ (A *ᵥ Q.col j) := by
   rw [h.mulVec_col, dotProduct_add, dotProduct_sum, dotProduct_smul,
     h.star_col_dotProduct_residual]
-  simp [dotProduct_smul, h.star_col_dotProduct_col, one_apply]
+  simp [dotProduct_smul, h.star_col_dotProduct_col, Matrix.one_apply]
 
 /-- `B = Qᴴ A Q`: the matrix of a Krylov decomposition is the compression of `A`. -/
 theorem conjTranspose_mul_mul (h : IsKrylovDecomposition A Q B r b) : Qᴴ * A * Q = B := by
@@ -162,7 +162,7 @@ theorem leading {k : ℕ} {Q : Matrix n (Fin k) 𝕜} {B : Matrix (Fin k) (Fin k
   mul_eq := by
     ext x a
     have hcol := congrFun (congrFun h.mul_eq x) (Fin.castLE j.isLt a)
-    simp only [mul_apply, add_apply, vecMulVec_apply, submatrix_apply, id] at hcol ⊢
+    simp only [Matrix.mul_apply, Matrix.add_apply, vecMulVec_apply, submatrix_apply, id] at hcol ⊢
     rw [hcol, Fin.sum_eq_sum_castLE_add_sum_Ioi j (fun i => Q x i * B i (Fin.castLE j.isLt a)),
       add_assoc]
     congr 1
@@ -197,7 +197,7 @@ theorem leading_of_apply_eq_zero {k : ℕ} {Q : Matrix n (Fin k) 𝕜} {B : Matr
     have ha : Fin.castLE j.isLt a ≤ j := by
       rw [Fin.le_def, Fin.val_castLE]
       exact Nat.lt_succ_iff.1 a.isLt
-    simp only [mul_apply, add_apply, vecMulVec_apply, submatrix_apply, id,
+    simp only [Matrix.mul_apply, Matrix.add_apply, vecMulVec_apply, submatrix_apply, id,
       Function.comp_apply] at hcol ⊢
     have hz : ∑ i ∈ Ioi j, Q x i * B i (Fin.castLE j.isLt a) = 0 :=
       sum_eq_zero fun i hi => by rw [hB i _ ha (mem_Ioi.1 hi), mul_zero]
@@ -518,7 +518,7 @@ theorem implicitQ_of_apply_eq_zero (hQ : Q ∈ unitaryGroup (Fin (N + 1)) 𝕜)
     rw [hrQ, smul_zero] at hr
     have hdot := congrArg (star (V.col i.succ) ⬝ᵥ ·) hr
     simp only [dotProduct_sum, dotProduct_smul, smul_eq_mul, hKV.star_col_dotProduct_col,
-      hKV.star_col_dotProduct_residual, mul_zero, add_zero, one_apply] at hdot
+      hKV.star_col_dotProduct_residual, mul_zero, add_zero, Matrix.one_apply] at hdot
     rw [sum_eq_single_of_mem i.succ (mem_Ioi.2 (by rw [hjc]; exact Fin.castSucc_lt_succ))
       (fun l _ hne => by rw [ite_eq_right_iff.2 fun h' => absurd h'.symm hne, mul_zero]),
       hjc] at hdot

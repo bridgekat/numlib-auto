@@ -567,7 +567,7 @@ private theorem isThinQR_leading {m : Type*} [Fintype m] {p i : ℕ} (hi : i ≤
       (R.submatrix (Fin.castLE hi) (Fin.castLE hi)) := by
   refine ⟨?_, ?_, fun a b hab => h.isUpperTriangular ((Fin.castLE_lt_castLE_iff hi).2 hab)⟩
   · ext a l
-    rw [← h.mul_eq, submatrix_apply, mul_apply, mul_apply]
+    rw [← h.mul_eq, submatrix_apply, Matrix.mul_apply, Matrix.mul_apply]
     refine Fintype.sum_of_injective (Fin.castLE hi) (Fin.castLE_injective hi) _ _ ?_ (fun j => rfl)
     intro j hj
     have hjl : Fin.castLE hi l < j := by
@@ -577,10 +577,10 @@ private theorem isThinQR_leading {m : Type*} [Fintype m] {p i : ℕ} (hi : i ≤
     exact mul_eq_zero_of_right _ (h.isUpperTriangular hjl)
   · ext a b
     have e := congrFun (congrFun h.conjTranspose_mul_self (Fin.castLE hi a)) (Fin.castLE hi b)
-    rw [mul_apply] at e
-    rw [mul_apply]
+    rw [Matrix.mul_apply] at e
+    rw [Matrix.mul_apply]
     simp only [conjTranspose_apply, submatrix_apply, id] at e ⊢
-    rw [e, one_apply, one_apply]
+    rw [e, Matrix.one_apply, Matrix.one_apply]
     simp only [(Fin.castLE_injective hi).eq_iff]
 
 /-- **§8.2.5, (8.2.15).** For `Qᵀ A Q = diag(λ)` with `Q` orthogonal and
@@ -617,7 +617,7 @@ theorem orthogonalIteration_gap_le_of_forall {A Q : Matrix (Fin n) (Fin n) ℝ}
     refine ⟨R.submatrix (Fin.castLE hi.le) (Fin.castLE hi.le), ?_⟩
     have := isThinQR_leading hi.le hR
     rwa [show (A * Qk k).submatrix id (Fin.castLE hi.le) =
-      A * (Qk k).submatrix id (Fin.castLE hi.le) by ext; simp [mul_apply]] at this
+      A * (Qk k).submatrix id (Fin.castLE hi.le) by ext; simp [Matrix.mul_apply]] at this
   have hgap : |lam ⟨i, hi⟩| < |lam ⟨i - 1, by omega⟩| :=
     hlam (show (⟨i - 1, by omega⟩ : Fin n) < ⟨i, hi⟩ from Fin.lt_def.2 (by change i - 1 < i; omega))
   unfold Chapter02.subspaceDist

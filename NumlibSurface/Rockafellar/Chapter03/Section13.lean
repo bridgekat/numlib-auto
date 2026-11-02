@@ -77,7 +77,7 @@ theorem supportFn_apply_rn (C : Set (Rn n)) (y : Rn n) :
 
 /-- **Rockafellar's barrier cone** (§13, p. 112): the effective domain of `δ*(· | C)`, the set of
 directions in which a linear function is bounded above on `C`. -/
-def barrierCone (C : Set (Rn n)) : Set (Rn n) := convexDom (supportFn (pairing n) C)
+noncomputable def barrierCone (C : Set (Rn n)) : Set (Rn n) := convexDom (supportFn (pairing n) C)
 
 /-- The bridge: the barrier cone *is* `dom δ*(· | C)`. -/
 theorem barrierCone_eq_convexDom_supportFn (C : Set (Rn n)) :

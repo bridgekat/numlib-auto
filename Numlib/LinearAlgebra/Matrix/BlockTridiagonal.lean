@@ -479,7 +479,7 @@ theorem IsStrictBlockColDiagDominant.lpOpNorm_tridiagonalLUPivot_le
     calc ∑ k, ‖tridiagonalLUPivot E D F (i' + 1) k c‖
         ≤ ∑ k, (‖D (i' + 1) k c‖ + ‖(tridiagonalLUMultiplier E D F i' * F i') k c‖) := by
           refine Finset.sum_le_sum fun k _ => ?_
-          rw [tridiagonalLUPivot_succ, sub_apply]
+          rw [tridiagonalLUPivot_succ, Matrix.sub_apply]
           exact norm_sub_le _ _
       _ ≤ ∑ k, ‖D (i' + 1) k c‖ + ∑ k, ‖F i' k c‖ := by
           rw [Finset.sum_add_distrib]
@@ -524,7 +524,7 @@ private theorem toBlock_mul_toBlock_apply (k : Fin m) {p r : Fin N → Prop}
     (X Y : Matrix (Fin N) (Fin N) K) (i : {x : Fin N // p x}) (j : {x : Fin N // r x}) :
     (X.toBlock p (fun x => b x = k) * Y.toBlock (fun x => b x = k) r) i j =
       ∑ j' ∈ univ.filter fun x => b x = k, X i.1 j' * Y j' j.1 := by
-  rw [mul_apply]
+  rw [Matrix.mul_apply]
   exact (Finset.sum_subtype _ (fun x => by simp) fun j' => X i.1 j' * Y j' j.1).symm
 
 /-- A row of `U` agrees with the corresponding row of `A` as soon as the entries of `U` in the
@@ -533,7 +533,7 @@ block LU factorization, and the superdiagonal blocks of a block bidiagonal one. 
 private theorem upper_apply_eq (h : IsBlockLU b A L U) {i j : Fin N}
     (hlow : ∀ j', b j' < b i → U j' j = 0) : U i j = A i j := by
   have key : (L * U) i j = ((1 : Matrix (Fin N) (Fin N) K) * U) i j := by
-    rw [mul_apply, mul_apply]
+    rw [Matrix.mul_apply, Matrix.mul_apply]
     refine Finset.sum_congr rfl fun j' _ => ?_
     rcases lt_trichotomy (b j') (b i) with hb | hb | hb
     · rw [hlow j' hb, mul_zero, mul_zero]
@@ -579,7 +579,7 @@ theorem IsBlockLU.toBlock_recurrence_of_blockTridiagonal (h : IsBlockLU b A L U)
   · ext i j
     exact hsuper (Or.inl (by rw [i.2, j.2]; exact hkl))
   · ext i j
-    rw [toBlock_mul_toBlock_apply, toBlock_apply, ← h.mul_eq, mul_apply]
+    rw [toBlock_mul_toBlock_apply, toBlock_apply, ← h.mul_eq, Matrix.mul_apply]
     refine Finset.sum_subset (filter_subset _ _) fun x _ hx => ?_
     have hxk : b x ≠ k := by simpa using hx
     rcases lt_or_gt_of_ne hxk with hlt | hgt
@@ -618,9 +618,10 @@ theorem IsBlockLU.toBlock_recurrence_of_blockTridiagonal (h : IsBlockLU b A L U)
           ∑ x ∈ univ.filter fun x => ¬ b x = k,
             (1 : Matrix (Fin N) (Fin N) K) i.1 x * U x j.1 = U i.1 j.1 := by
         rw [Finset.sum_filter_add_sum_filter_not univ (fun x => b x = k)
-          fun x => (1 : Matrix (Fin N) (Fin N) K) i.1 x * U x j.1, ← mul_apply, Matrix.one_mul]
+          fun x => (1 : Matrix (Fin N) (Fin N) K) i.1 x * U x j.1, ← Matrix.mul_apply,
+          Matrix.one_mul]
       rw [Finset.sum_eq_zero hone, zero_add] at hall
-      rw [← h.mul_eq, mul_apply,
+      rw [← h.mul_eq, Matrix.mul_apply,
         ← Finset.sum_filter_add_sum_filter_not univ (fun x => b x = k)
           fun x => L i.1 x * U x j.1, Finset.sum_congr rfl hrest, hall]
     have hAU : ∀ x ∈ univ.filter fun x => b x = k, L i.1 x * A x j.1 = L i.1 x * U x j.1 := by

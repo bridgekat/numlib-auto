@@ -1975,6 +1975,9 @@ theorem memLaplacianDomain_operator_apply_iff (k : ℕ) (U : (operator Ω).domai
   rw [fnL_operator_apply_fst, memLaplacianDomain_neg_iff]
   exact Iff.rfl
 
+set_option maxHeartbeats 400000 in
+-- The `k + 1` step checks `MemLaplacianDomain Ω (k + 1 + 1) _` by unfolding its structural
+-- recursion, which needs about twice the default budget since the v4.36.0-rc2 bump.
 /-- **`D(A^k) = D_{k+1} × D_k`** ([brezis2011functional] §10.3, the display in the proof of
 Theorem 10.8 read on the weak domains): `(u, v)` is the base point of an element of
 `D(A^k)` (`LinearPMap.PowDomain`) iff `fnL u ∈ D_{k+1}` and `v ∈ D_k`. Induction on `k`

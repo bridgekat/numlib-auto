@@ -267,19 +267,19 @@ variable {m n : ℕ}
 /-- Rockafellar's `∂₁K (u, v) = ∂_u K (u, v)`: the `u*` with `K (u′, v) ≤ K (u, v) + ⟨u*, u′ - u⟩`
 for every `u′`, i.e. the **super**gradients at `u` of the concave slice `K (·, v)`. An `abbrev` for
 `superdifferential` at the Euclidean pairing. -/
-abbrev subdiff₁ (K : Rn m × Rn n → EReal) (p : Rn m × Rn n) : Set (Rn m) :=
+noncomputable abbrev subdiff₁ (K : Rn m × Rn n → EReal) (p : Rn m × Rn n) : Set (Rn m) :=
   superdifferential (pairing m) (fun u => K (u, p.2)) p.1
 
 /-- Rockafellar's `∂₂K (u, v) = ∂_v K (u, v)`: the `v*` with `K (u, v) + ⟨v*, v′ - v⟩ ≤ K (u, v′)`
 for every `v′`, i.e. the **sub**gradients at `v` of the convex slice `K (u, ·)`. The inequality
 points the other way from `subdiff₁`'s; that asymmetry is the whole sign convention. -/
-abbrev subdiff₂ (K : Rn m × Rn n → EReal) (p : Rn m × Rn n) : Set (Rn n) :=
+noncomputable abbrev subdiff₂ (K : Rn m × Rn n → EReal) (p : Rn m × Rn n) : Set (Rn n) :=
   subdifferential (pairing n) (fun v => K (p.1, v)) p.2
 
 /-- Rockafellar's `∂K (u, v) = ∂₁K (u, v) × ∂₂K (u, v)`. It is a **product**, not a set of joint
 subgradients, and its two factors carry opposite inequalities, so it is not the subdifferential of
 `K` read as a function on `ℝᵐ⁺ⁿ`. -/
-abbrev subdiff (K : Rn m × Rn n → EReal) (p : Rn m × Rn n) : Set (Rn m × Rn n) :=
+noncomputable abbrev subdiff (K : Rn m × Rn n → EReal) (p : Rn m × Rn n) : Set (Rn m × Rn n) :=
   saddleSubdifferential (pairing m) (pairing n) K p
 
 variable {K : Rn m × Rn n → EReal} {p : Rn m × Rn n}

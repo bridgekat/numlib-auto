@@ -371,7 +371,7 @@ theorem diag_mul_inv_apply_of_isUpperTriangular (hU : U.IsUpperTriangular) (hd :
     U i i * U⁻¹ i k = -∑ j ∈ univ.filter (fun j => i < j ∧ j ≤ k), U i j * U⁻¹ j k := by
   have hUd : IsUnit U.det := hU.isUnit_det_of_diag_ne_zero hd
   have h := congrFun (congrFun (mul_nonsing_inv U hUd) i) k
-  rw [mul_apply, one_apply_ne hik.ne,
+  rw [Matrix.mul_apply, one_apply_ne hik.ne,
     ← Finset.sum_filter_of_ne (p := fun j => i ≤ j ∧ j ≤ k) fun j _ hj => ?_,
     show univ.filter (fun j => i ≤ j ∧ j ≤ k) = insert i (univ.filter fun j => i < j ∧ j ≤ k)
       from ?_, Finset.sum_insert (by simp)] at h
@@ -428,7 +428,7 @@ theorem abs_diag_mul_abs_inv_apply_le (hU : U.IsUpperTriangular) (hd : ∀ i, U 
 /-- The entrywise product `(|U⁻¹| |U|)_ij` vanishes below the diagonal. -/
 theorem abs_inv_mul_abs_apply_of_lt (hU : U.IsUpperTriangular) {i j : n} (hji : j < i) :
     (U⁻¹.abs * U.abs) i j = 0 := by
-  rw [mul_apply]
+  rw [Matrix.mul_apply]
   refine Finset.sum_eq_zero fun k _ => ?_
   rcases lt_or_ge k i with hki | hik
   · rw [abs_apply, hU.inv hki, abs_zero, zero_mul]
@@ -437,7 +437,7 @@ theorem abs_inv_mul_abs_apply_of_lt (hU : U.IsUpperTriangular) {i j : n} (hji : 
 /-- On and above the diagonal, `(|U⁻¹| |U|)_ij` is the sum over the indices `i ≤ k ≤ j`. -/
 theorem abs_inv_mul_abs_apply_eq_sum (hU : U.IsUpperTriangular) (i j : n) :
     (U⁻¹.abs * U.abs) i j = ∑ k ∈ univ.filter (fun k => i ≤ k ∧ k ≤ j), |U⁻¹ i k| * |U k j| := by
-  rw [mul_apply]
+  rw [Matrix.mul_apply]
   refine (Finset.sum_filter_of_ne fun k _ hk => ?_).symm
   by_contra hcon
   rw [not_and_or, not_le, not_le] at hcon
@@ -668,7 +668,7 @@ theorem sum_abs_inv_mul_abs_apply_le_of_isDiagDominant (hU : U.IsUpperTriangular
   -- the sum as `∑_k |(U⁻¹)_ik| ∑_j |u_kj|`, restricted to `k ≥ i`
   have h1 : ∑ j, (U⁻¹.abs * U.abs) i j =
       ∑ k ∈ univ.filter (i ≤ ·), |U⁻¹ i k| * ∑ j, |U k j| := by
-    simp only [mul_apply, abs_apply, Finset.mul_sum]
+    simp only [Matrix.mul_apply, abs_apply, Finset.mul_sum]
     rw [Finset.sum_comm]
     refine (Finset.sum_filter_of_ne fun k _ hk => ?_).symm
     by_contra h

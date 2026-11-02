@@ -104,11 +104,11 @@ theorem dst1_mul_self (r : ℕ) :
     dst1 r * dst1 r = (((r : ℝ) + 1) / 2) • (1 : Matrix (Fin r) (Fin r) ℝ) := by
   ext k l
   have h : (dst1 r * dst1 r) k l = sineVec r k ⬝ᵥ sineVec r l := by
-    rw [mul_apply, dotProduct]
+    rw [Matrix.mul_apply, dotProduct]
     refine Finset.sum_congr rfl fun j _ => ?_
     rw [dst1_apply, dst1_apply, sineVec_apply, sineVec_apply]
     congr 2 <;> ring
-  rw [h, dotProduct_sineVec, smul_apply, one_apply, smul_eq_mul]
+  rw [h, dotProduct_sineVec, Matrix.smul_apply, Matrix.one_apply, smul_eq_mul]
   split_ifs <;> simp
 
 /-- The DST-II matrix `DST2(n)` of [golub2013matrix] §1.4.2 (the `V^{(DN)}_n` of §4.8.6),
@@ -447,7 +447,7 @@ theorem dct1_mul_self (hm : 0 < m) :
   have hentry : (dct1 m * dct1 m) k l = w l / 2 *
       ((∑ j : Fin (m + 1), w j * Real.cos (((k : ℤ) - l : ℤ) * (j : ℕ) * π / m))
         + ∑ j : Fin (m + 1), w j * Real.cos (((k : ℤ) + l : ℤ) * (j : ℕ) * π / m)) := by
-    rw [mul_apply, ← Finset.sum_add_distrib, Finset.mul_sum]
+    rw [Matrix.mul_apply, ← Finset.sum_add_distrib, Finset.mul_sum]
     refine Finset.sum_congr rfl fun j _ => ?_
     rw [dct1_apply, dct1_apply]
     have hc : Real.cos ((k : ℕ) * (j : ℕ) * π / m) * Real.cos ((j : ℕ) * (l : ℕ) * π / m)
@@ -463,8 +463,8 @@ theorem dct1_mul_self (hm : 0 < m) :
     simp only [hw]
     linear_combination (if (j : ℕ) = 0 ∨ (j : ℕ) = m then (1 / 2 : ℝ) else 1)
       * (if (l : ℕ) = 0 ∨ (l : ℕ) = m then (1 / 2 : ℝ) else 1) * hc
-  rw [hentry, sum_dct1Weight_mul_cos hm, sum_dct1Weight_mul_cos hm, smul_apply, one_apply,
-    smul_eq_mul]
+  rw [hentry, sum_dct1Weight_mul_cos hm, sum_dct1Weight_mul_cos hm, Matrix.smul_apply,
+    Matrix.one_apply, smul_eq_mul]
   have hk := k.isLt
   have hl := l.isLt
   -- `2 m ∣ k − l` exactly when `k = l`, and `2 m ∣ k + l` exactly when `k = l ∈ {0, m}`
@@ -569,14 +569,14 @@ theorem transpose_dst2_mul_dst2 (n : ℕ) :
         simp only [A, B]; push_cast; field_simp; ring,
       Real.cos_sub, Real.cos_add]
     ring
-  rw [mul_apply, Finset.sum_congr rfl fun k _ => hterm k, ← Finset.sum_div,
+  rw [Matrix.mul_apply, Finset.sum_congr rfl fun k _ => hterm k, ← Finset.sum_div,
     Finset.sum_sub_distrib,
     Fin.sum_univ_eq_sum_range (fun k => Real.cos (((k : ℝ) + 1) *
       ((((j : ℕ) : ℝ) - (l : ℕ)) * π / n))) n,
     Fin.sum_univ_eq_sum_range (fun k => Real.cos (((k : ℝ) + 1) *
       ((((j : ℕ) + (l : ℕ) + 1 : ℕ) : ℝ) * π / n))) n,
-    sum_cos_succ_mul_nat (by omega) (by omega), add_apply, smul_apply, smul_apply, one_apply,
-    vecMulVec_apply, smul_eq_mul, smul_eq_mul]
+    sum_cos_succ_mul_nat (by omega) (by omega), Matrix.add_apply, Matrix.smul_apply,
+    Matrix.smul_apply, Matrix.one_apply, vecMulVec_apply, smul_eq_mul, smul_eq_mul]
   by_cases hjl : j = l
   · subst hjl
     have hzero : ∀ k ∈ range n, Real.cos (((k : ℝ) + 1) * ((((j : ℕ) : ℝ) - (j : ℕ)) * π / n))
@@ -621,7 +621,7 @@ theorem dct2_mul_transpose (n : ℕ) :
     dct2 n * (dct2 n)ᵀ = diagonal fun k : Fin n => if (k : ℕ) = 0 then (n : ℝ) else n / 2 := by
   ext k l
   have h : (dct2 n * (dct2 n)ᵀ) k l = cosineIIVec n k ⬝ᵥ cosineIIVec n l := by
-    rw [mul_apply, dotProduct]
+    rw [Matrix.mul_apply, dotProduct]
     refine Finset.sum_congr rfl fun j _ => ?_
     rw [transpose_apply, dct2_apply, dct2_apply]
   rw [h, dotProduct_cosineIIVec, diagonal_apply]

@@ -2,6 +2,8 @@ name = "numlib"
 version = "0.1.0"
 keywords = ["math"]
 defaultTargets = ["Numlib", "NumlibSurface"]
+# Mathlib now requires the module system; this project knowingly stays on non-module files.
+allowNonModules = true
 
 [leanOptions]
 pp.unicode.fun = true                 # pretty-prints `fun a ↦ b`
@@ -14,7 +16,7 @@ maxSynthPendingDepth = 3
 [[require]]
 name = "mathlib"
 scope = "leanprover-community"
-rev = "v4.35.0-rc2"
+rev = "v4.36.0-rc2"
 
 [[require]]
 name = "tracker"

@@ -361,7 +361,7 @@ theorem nodal_eq_lobattoNodal_of_isExactOnMeasure (hw : IsWeight μ)
     have := monic_X_pow_sub_C (1 : ℝ) two_ne_zero
     rwa [C_1] at this
   have hquadnat : (X ^ 2 - 1 : ℝ[X]).natDegree = 2 := by
-    have := natDegree_X_pow_sub_C (n := 2) (r := (1 : ℝ))
+    have := natDegree_X_pow_sub_C (n := 2) (1 : ℝ)
     rwa [C_1] at this
   have hddeg : d.degree < ((n + 1 : ℕ) : WithBot ℕ) := by
     have := degree_sub_lt_left (p := g) (q := lobattoNodal μ n)

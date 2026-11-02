@@ -117,7 +117,7 @@ theorem maxAbs_not_consistent :
   have hA : ‖(!![1, 1; 1, 1] : Matrix (Fin 2) (Fin 2) ℝ)‖ = 1 := by
     refine le_antisymm ((norm_le_iff zero_le_one).2 fun i j => ?_) ?_
     · fin_cases i <;> fin_cases j <;> simp
-    · simpa using norm_entry_le_entrywise_sup_norm (!![1, 1; 1, 1] : Matrix (Fin 2) (Fin 2) ℝ)
+    · simpa using norm_apply_le_norm (!![1, 1; 1, 1] : Matrix (Fin 2) (Fin 2) ℝ)
         (i := 0) (j := 0)
   have hmul : (!![1, 1; 1, 1] : Matrix (Fin 2) (Fin 2) ℝ) * !![1, 1; 1, 1] = !![2, 2; 2, 2] := by
     ext i j
@@ -126,7 +126,7 @@ theorem maxAbs_not_consistent :
     rw [hmul]
     refine le_antisymm ((norm_le_iff zero_le_two).2 fun i j => ?_) ?_
     · fin_cases i <;> fin_cases j <;> simp
-    · simpa using norm_entry_le_entrywise_sup_norm (!![2, 2; 2, 2] : Matrix (Fin 2) (Fin 2) ℝ)
+    · simpa using norm_apply_le_norm (!![2, 2; 2, 2] : Matrix (Fin 2) (Fin 2) ℝ)
         (i := 0) (j := 0)
   refine ⟨isVectorNorm_norm, hAA, hA, ?_⟩
   rw [hAA, hA]

@@ -23,5 +23,5 @@ of Mathlib's `affineSpan_insert_zero`. -/
 theorem vectorSpan_eq_span_of_zero_mem {C : Set E} (h0 : (0 : E) ∈ C) :
     vectorSpan K C = Submodule.span K C := by
   have h : affineSpan K C = (Submodule.span K C).toAffineSubspace := AffineSubspace.coe_injective
-    (by rw [← Set.insert_eq_of_mem h0, affineSpan_insert_zero, Submodule.span_insert_zero]; rfl)
+    (by rw [← Set.insert_eq_of_mem h0, affineSpan_insert_zero, Submodule.span_insert_zero])
   rw [← direction_affineSpan, h, Submodule.toAffineSubspace_direction]

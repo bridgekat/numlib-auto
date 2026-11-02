@@ -175,7 +175,7 @@ omit [Fintype n] in
 /-- The entries of a Householder reflector. -/
 theorem householder_apply (w : n → 𝕜) (i j : n) :
     householder w i j = (if i = j then 1 else 0) - 2 * (w i * star (w j)) := by
-  simp [householder, one_apply, vecMulVec_apply]
+  simp [householder, Matrix.one_apply, vecMulVec_apply]
 
 omit [Fintype n] in
 /-- The reflector of the zero axis is the identity. -/
@@ -572,8 +572,8 @@ theorem householder_mul_apply_of_apply_eq_zero {w : n → 𝕜} {i : n} (hw : w 
 /-- Right multiplication by a reflector leaves the columns where its axis vanishes alone. -/
 theorem mul_householder_apply_of_apply_eq_zero {w : n → 𝕜} {j : n} (hw : w j = 0)
     (M : Matrix m n 𝕜) (i : m) : (M * householder w) i j = M i j := by
-  rw [mul_householder_eq_sub_vecMulVec, sub_apply, smul_apply, vecMulVec_apply, Pi.star_apply, hw,
-    star_zero, mul_zero, smul_zero, sub_zero]
+  rw [mul_householder_eq_sub_vecMulVec, Matrix.sub_apply, Matrix.smul_apply, vecMulVec_apply,
+    Pi.star_apply, hw, star_zero, mul_zero, smul_zero, sub_zero]
 
 /-- A row vector against the reflector of the conjugate axis is the reflector applied to it:
 `x P̄ = P x` for `P = householder u`, which is how a reflector acts on the rows of a matrix. -/
@@ -633,8 +633,9 @@ theorem conj_one_sub_smul_vecMulVec_eq_sub (h2 : (2 : R) ≠ 0) {B : Matrix n n 
   rw [hexp]
   subst hw hp
   ext i j
-  simp only [sub_apply, add_apply, smul_apply, vecMulVec_apply, Pi.star_apply, Pi.sub_apply,
-    Pi.smul_apply, smul_eq_mul, star_sub, star_mul', hβ, dotProduct_smul, ← hs, star_div₀,
+  simp only [Matrix.sub_apply, Matrix.add_apply, Matrix.smul_apply, vecMulVec_apply, Pi.star_apply,
+    Pi.sub_apply, Pi.smul_apply, smul_eq_mul, star_sub, star_mul', hβ, dotProduct_smul, ← hs,
+    star_div₀,
     star_ofNat, hss]
   field_simp
   ring
@@ -1026,7 +1027,7 @@ theorem IsUpperTriangular.eq_one_of_conjTranspose_mul_self_eq_one {S : Matrix (F
       have habove : ∀ i : Fin N, (i : ℕ) < (j : ℕ) → S i j = 0 := by
         intro i hi
         have h1 : (Sᴴ * S) i j = 0 := by
-          rw [hu, one_apply, ite_eq_right fun h => by rw [h] at hi; omega]
+          rw [hu, Matrix.one_apply, ite_eq_right fun h => by rw [h] at hi; omega]
         rw [Matrix.mul_apply] at h1
         have h2 : ∀ r : Fin N, Sᴴ i r * S r j = if r = i then S i j else 0 := by
           intro r
@@ -1043,7 +1044,7 @@ theorem IsUpperTriangular.eq_one_of_conjTranspose_mul_self_eq_one {S : Matrix (F
         · exact habove r h
         · exact hS h
       have hdiag : star (S j j) * S j j = 1 := by
-        have h1 : (Sᴴ * S) j j = 1 := by rw [hu, one_apply, ite_eq_left rfl]
+        have h1 : (Sᴴ * S) j j = 1 := by rw [hu, Matrix.one_apply, ite_eq_left rfl]
         rw [Matrix.mul_apply] at h1
         have h2 : ∀ r : Fin N, Sᴴ j r * S r j = if r = j then star (S j j) * S j j else 0 := by
           intro r
@@ -1069,7 +1070,7 @@ theorem IsUpperTriangular.eq_one_of_conjTranspose_mul_self_eq_one {S : Matrix (F
       · rw [ite_eq_right hij]
         exact hcol i hij
   ext i j
-  rw [key (j : ℕ) j rfl i, one_apply]
+  rw [key (j : ℕ) j rfl i, Matrix.one_apply]
 
 /-- **Uniqueness of the thin QR factorization** with a positive diagonal ([golub2013matrix]
 Theorem 5.2.3): this is what identifies the reflector product of
@@ -1279,7 +1280,7 @@ theorem isThinQR_gramSchmidtQ (hA : LinearIndependent 𝕜 Aᵀ) :
         * WithLp.ofLp (gramSchmidtNormed 𝕜 f i) r := by
       have h0 := congrArg (fun z : EuclideanSpace 𝕜 m => WithLp.ofLp z r) (hexp j)
       simpa [hf_def] using h0
-    rw [mul_apply, h]
+    rw [Matrix.mul_apply, h]
     exact Finset.sum_congr rfl fun i _ => by
       rw [gramSchmidtQ, gramSchmidtR, Matrix.of_apply, Matrix.of_apply, mul_comm]
   · ext i j
@@ -1288,9 +1289,9 @@ theorem isThinQR_gramSchmidtQ (hA : LinearIndependent 𝕜 Aᵀ) :
         = inner 𝕜 (gramSchmidtNormed 𝕜 f i) (gramSchmidtNormed 𝕜 f j) := by
       rw [EuclideanSpace.inner_eq_star_dotProduct, dotProduct]
       exact Finset.sum_congr rfl fun r _ => by simp [mul_comm]
-    rw [mul_apply]
+    rw [Matrix.mul_apply]
     simp only [gramSchmidtQ, conjTranspose_apply, Matrix.of_apply, RCLike.star_def]
-    rw [h, orthonormal_iff_ite.1 hon i j, one_apply]
+    rw [h, orthonormal_iff_ite.1 hon i j, Matrix.one_apply]
 
 /-- For linearly independent columns the Gram–Schmidt triangular factor has a positive
 diagonal. -/
@@ -1429,8 +1430,8 @@ theorem firstColumns_mul_firstRows_add_lastColumns_mul_lastRows [NonUnitalNonAss
   ext i j
   have e : ∀ k : Fin K, (⟨N + K - K + k, by omega⟩ : Fin (N + K)) = Fin.natAdd N k :=
     fun k => Fin.ext (by simp)
-  simp only [add_apply, mul_apply, Fin.sum_univ_add, firstColumns_apply, firstRows_apply,
-    lastColumns_apply, lastRows_apply, e]
+  simp only [Matrix.add_apply, Matrix.mul_apply, Fin.sum_univ_add, firstColumns_apply,
+    firstRows_apply, lastColumns_apply, lastRows_apply, e]
   rfl
 
 variable [Fintype m'] {Q : Matrix m' (Fin M) 𝕜}
@@ -1440,17 +1441,18 @@ theorem conjTranspose_firstColumns_mul_firstColumns (hQ : Qᴴ * Q = 1) (h : N �
     (firstColumns Q h)ᴴ * firstColumns Q h = 1 := by
   ext i j
   have := congrFun (congrFun hQ (Fin.castLE h i)) (Fin.castLE h j)
-  simp only [mul_apply, conjTranspose_apply] at this
-  simp only [mul_apply, conjTranspose_apply, firstColumns_apply, this, one_apply, Fin.castLE_inj]
+  simp only [Matrix.mul_apply, conjTranspose_apply] at this
+  simp only [Matrix.mul_apply, conjTranspose_apply, firstColumns_apply, this, Matrix.one_apply,
+      Fin.castLE_inj]
 
 /-- The trailing columns of a matrix with orthonormal columns are orthonormal. -/
 theorem conjTranspose_lastColumns_mul_lastColumns (hQ : Qᴴ * Q = 1) (h : K ≤ M) :
     (lastColumns Q h)ᴴ * lastColumns Q h = 1 := by
   ext i j
   have := congrFun (congrFun hQ ⟨M - K + i, by omega⟩) ⟨M - K + j, by omega⟩
-  simp only [mul_apply, conjTranspose_apply] at this
-  simp only [mul_apply, conjTranspose_apply, lastColumns_apply, this, one_apply, Fin.mk.injEq,
-    Nat.add_left_cancel_iff, Fin.val_inj]
+  simp only [Matrix.mul_apply, conjTranspose_apply] at this
+  simp only [Matrix.mul_apply, conjTranspose_apply, lastColumns_apply, this, Matrix.one_apply,
+    Fin.mk.injEq, Nat.add_left_cancel_iff, Fin.val_inj]
 
 /-- Disjoint leading and trailing columns of a matrix with orthonormal columns are orthogonal to
 each other. -/
@@ -1462,8 +1464,8 @@ theorem conjTranspose_lastColumns_mul_firstColumns (hQ : Qᴴ * Q = 1) (hN : N �
     have := congrArg Fin.val he
     simp only [Fin.val_castLE] at this
     omega] at this
-  simpa only [mul_apply, conjTranspose_apply, lastColumns_apply, firstColumns_apply, zero_apply]
-    using this
+  simpa only [Matrix.mul_apply, conjTranspose_apply, lastColumns_apply, firstColumns_apply,
+    Matrix.zero_apply] using this
 
 /-- Disjoint leading and trailing columns of a matrix with orthonormal columns are orthogonal to
 each other. -/
@@ -1609,7 +1611,7 @@ theorem IsQR.span_col_prefix_eq (h : IsQR A Q R) (hA : LinearIndependent 𝕜 A�
       rw [Finset.sum_apply]
       simp only [Pi.smul_apply, smul_eq_mul]
       change A r _ = ∑ i, R i _ * Q r i
-      rw [← h.mul_eq, mul_apply]
+      rw [← h.mul_eq, Matrix.mul_apply]
       exact Finset.sum_congr rfl fun i _ => mul_comm _ _
     change A.col (Fin.castLE hk c) ∈ _
     rw [hcol]

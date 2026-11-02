@@ -200,7 +200,7 @@ private theorem re_ne_zero_of_mem_spectrum_fromBlocks {A : Matrix n n ℂ}
     · rw [fromBlocks_multiply]; simp [fromBlocks_one]
     · rw [fromBlocks_multiply]; simp [fromBlocks_one]
     · simp only [hu, Algebra.algebraMap_eq_smul_one]
-      ext (i | i) (j | j) <;> simp [fromBlocks, one_apply]
+      ext (i | i) (j | j) <;> simp [fromBlocks, Matrix.one_apply]
   have hneg : μ ^ 2 = ((-(μ.im ^ 2) : ℝ) : ℂ) := by
     apply Complex.ext <;> simp [sq, hre]
   have := hA hμA

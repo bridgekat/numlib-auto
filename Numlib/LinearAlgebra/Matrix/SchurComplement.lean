@@ -238,7 +238,7 @@ theorem mul_blockDiagonal'_mul {n : Type*} (F : Matrix n (Σ i, m' i) R)
       = ∑ i, F.submatrix id (Sigma.mk i) * M i * E.submatrix (Sigma.mk i) id := by
   ext a b
   rw [Matrix.sum_apply]
-  simp only [mul_apply, submatrix_apply, id_eq, ← Finset.univ_sigma_univ, Finset.sum_sigma]
+  simp only [Matrix.mul_apply, submatrix_apply, id_eq, ← Finset.univ_sigma_univ, Finset.sum_sigma]
   refine Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun l _ => ?_
   refine congrArg₂ _ ?_ rfl
   refine (Fintype.sum_eq_single i fun j hj => Finset.sum_eq_zero fun k _ => ?_).trans

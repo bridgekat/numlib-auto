@@ -199,7 +199,7 @@ theorem algorithm_5_6_1_spec (hmn : m ≤ n) {A : Matrix (Fin m) (Fin n) ℝ}
   have hEA : Matrix.padRows A hmn = E * A := Matrix.padRows_eq_mul A hmn
   have hFA : F * Matrix.padRows A hmn = A := by
     ext k j
-    simp only [Matrix.padRows_apply, hF, of_apply, mul_apply, ite_mul, one_mul, zero_mul]
+    simp only [Matrix.padRows_apply, hF, of_apply, Matrix.mul_apply, ite_mul, one_mul, zero_mul]
     rw [Finset.sum_eq_single (Fin.castLE hmn k) (fun i _ hi => by
       have : ¬ ((i : ℕ) = k) := fun e => hi (Fin.ext (by simpa using e))
       simp [this]) (by simp)]

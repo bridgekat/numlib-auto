@@ -174,7 +174,7 @@ variable {N : ℕ}
 /-- The entrywise modulus `|N|` of the strictly upper triangular part of `T`. -/
 private theorem absStrictUpper_apply (T : Matrix (Fin N) (Fin N) ℂ) (p q : Fin N) :
     ((T - diagonal T.diag).map fun z => ‖z‖) p q = if p = q then 0 else ‖T p q‖ := by
-  rw [map_apply, sub_apply]
+  rw [map_apply, Matrix.sub_apply]
   split_ifs with h
   · subst h
     rw [diagonal_apply_eq, diag_apply, sub_self, norm_zero]
@@ -200,10 +200,10 @@ private theorem norm_pfc_apply_le {T : Matrix (Fin N) (Fin N) ℂ} (hT : T.IsUpp
   have hUnonneg : ∀ r p q, 0 ≤ (U ^ r) p q := by
     intro r
     induction r with
-    | zero => intro p q; rw [pow_zero, one_apply]; split_ifs <;> norm_num
+    | zero => intro p q; rw [pow_zero, Matrix.one_apply]; split_ifs <;> norm_num
     | succ r ih =>
       intro p q
-      rw [pow_succ, mul_apply]
+      rw [pow_succ, Matrix.mul_apply]
       refine Finset.sum_nonneg fun k _ => mul_nonneg (ih p k) ?_
       rw [hUdef, absStrictUpper_apply]
       split_ifs
@@ -271,7 +271,7 @@ private theorem frobenius_norm_pfc_le {T : Matrix (Fin N) (Fin N) ℂ} (hT : T.I
       ≤ (∑ r ∈ Finset.range N, (δ r / r.factorial) • U ^ r) i j := fun i j => by
     refine (norm_pfc_apply_le hT hΩ hTΩ hh hδ i j).trans_eq ?_
     rw [Matrix.sum_apply]
-    simp only [smul_apply, smul_eq_mul]
+    simp only [Matrix.smul_apply, smul_eq_mul]
     rfl
   refine (frobenius_norm_le_of_forall_norm_le fun i j =>
       (hE i j).trans (Real.le_norm_self _)).trans

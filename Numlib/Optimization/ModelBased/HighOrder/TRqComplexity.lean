@@ -275,7 +275,8 @@ theorem IsTRqRun.complexity {X C A : Set E} {flow : ℝ} (hb : ∀ y ∈ X, flow
         (fun j hj => by
           have hj' : ∀ i ≤ j, ¬ trqTest (𝒥 f x) P q ε ϑ Δ d i := fun i hi => hk i (hi.trans hj)
           have hpos : 0 < (ftaylorSeries ℝ f (x j)).taylorDecrement (jk j) (s j) :=
-            lt_of_lt_of_le (by have := P.ς_pos; positivity) (hdec j hj').1
+            lt_of_lt_of_le (by have := P.ς_pos; positivity :
+              0 < (P.ς * κ) ^ (q + 1) / q ! * εm ^ (q + 1)) (hdec j hj').1
           exact (h.accept j hj').le trqRatio_eq hpos)
         (fun j hj => by
           rw [mem_successSet] at hj

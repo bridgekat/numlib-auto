@@ -117,8 +117,8 @@ theorem pencilPoly_eval (A B : Matrix n n R) (μ : R) :
   rw [pencilPoly, ← coe_evalRingHom, RingHom.map_det]
   congr 1
   ext i j
-  simp only [RingHom.mapMatrix_apply, map_apply, sub_apply, smul_apply, coe_evalRingHom,
-    eval_sub, eval_C, eval_mul, eval_X, smul_eq_mul, Matrix.smul_apply]
+  simp only [RingHom.mapMatrix_apply, map_apply, Matrix.sub_apply, Matrix.smul_apply,
+    coe_evalRingHom, eval_sub, eval_C, eval_mul, eval_X, smul_eq_mul, Matrix.smul_apply]
 
 /-- For `B = 1` the characteristic polynomial of the pencil is `(-1)^n` times the characteristic
 polynomial of `A`, since `det (A - X) = (-1)^n det (X - A)`. -/
@@ -576,7 +576,7 @@ eigenvector of the pencil `P − λ Q` for `λ = a_k / b_k`. -/
 theorem hasPencilEigenvector_col_of_conj_diagonal (hX : IsUnit X)
     (hP : Xᴴ * P * X = diagonal a) (hQ : Xᴴ * Q * X = diagonal b) {k : n} (hk : b k ≠ 0) :
     HasPencilEigenvector P Q (a k / b k) (X.col k) := by
-  refine ⟨(linearIndependent_cols_iff_isUnit.2 hX).ne_zero k, ?_⟩
+  refine ⟨(linearIndependent_col_iff_isUnit.2 hX).ne_zero k, ?_⟩
   have h := smul_mulVec_col_eq_of_conj_diagonal hX hP hQ k
   rw [div_eq_inv_mul, mul_smul, ← h, smul_smul, inv_mul_cancel₀ hk, one_smul]
 
@@ -636,7 +636,7 @@ theorem star_col_dotProduct_mulVec_col_of_conj_eq_one {B M : Matrix n n 𝕜}
     (hB : star M * B * M = 1) (i j : n) :
     star (M.col i) ⬝ᵥ (B *ᵥ M.col j) = if i = j then 1 else 0 := by
   have := congrFun (congrFun hB i) j
-  rw [one_apply] at this
+  rw [Matrix.one_apply] at this
   rw [← this, dotProduct_mulVec]
   simp [Matrix.mul_apply, vecMul, dotProduct, col, Finset.sum_mul, mul_assoc]
 
@@ -763,7 +763,7 @@ theorem isDeflatingSubspace_span_cols_of_isUpperTriangular {A B U Z : Matrix n n
     have hcolj : M *ᵥ Z.col j = ∑ i, T i j • U.col i := by
       ext r
       have := congrFun (congrFun hMZ r) j
-      simp only [mul_apply] at this
+      simp only [Matrix.mul_apply] at this
       simp only [mulVec, dotProduct, col_apply, Finset.sum_apply, Pi.smul_apply, smul_eq_mul]
       rw [this]
       exact Finset.sum_congr rfl fun i _ => mul_comm _ _

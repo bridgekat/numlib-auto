@@ -111,7 +111,7 @@ theorem kroneckerRearrange_sum_kronecker [CommSemiring R] {r : Type*} [Fintype r
   rw [← kroneckerRearrangeLinearEquiv_apply, map_sum]
   ext x y
   simp only [kroneckerRearrangeLinearEquiv_apply, kroneckerRearrange_kronecker, Matrix.sum_apply,
-    vecMulVec_apply, mul_apply, of_apply]
+    vecMulVec_apply, Matrix.mul_apply, of_apply]
 
 /-- **The Kronecker product rank counts Kronecker terms** ([golub2013matrix] §12.3.6):
 `kroneckerRank A ≤ r` iff `A` is a sum of `r` Kronecker products. The rank factorization of `𝓡(A)`
@@ -246,7 +246,7 @@ theorem norm_sub_smul_vecMulVec_self_sq (M : Matrix n n ℝ) {x : n → ℝ} (hx
     simp only [dotProduct, mulVec, Finset.mul_sum, mul_assoc]
   rw [frobenius_norm_sq_real, frobenius_norm_sq_real, hM]
   conv_rhs => rw [← mul_one (α ^ 2), ← hxx]
-  simp only [sub_apply, smul_apply, vecMulVec_apply, smul_eq_mul, Finset.mul_sum,
+  simp only [Matrix.sub_apply, Matrix.smul_apply, vecMulVec_apply, smul_eq_mul, Finset.mul_sum,
     ← Finset.sum_sub_distrib, ← Finset.sum_add_distrib]
   exact Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun j _ => by ring
 
@@ -274,7 +274,7 @@ theorem norm_sub_skew_sq (M : Matrix n n ℝ) (x y : n → ℝ) :
     simp only [dotProduct, mulVec, Finset.mul_sum]
     exact Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun j _ => by ring
   rw [frobenius_norm_sq_real, frobenius_norm_sq_real, h1, h2, h3, h4]
-  simp only [sub_apply, vecMulVec_apply, Finset.mul_sum, ← Finset.sum_sub_distrib,
+  simp only [Matrix.sub_apply, vecMulVec_apply, Finset.mul_sum, ← Finset.sum_sub_distrib,
     ← Finset.sum_add_distrib]
   refine Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun j _ => ?_
   ring
@@ -368,7 +368,7 @@ theorem exists_eq_vecMulVec_sub_vecMulVec_of_rank_le_two {K : Type*} [Field K] [
     omega
   refine ⟨(Z i j)⁻¹ • fun l => Z l i, fun l => Z l j, ?_⟩
   ext l k
-  simp only [sub_apply, vecMulVec_apply, Pi.smul_apply, smul_eq_mul]
+  simp only [Matrix.sub_apply, vecMulVec_apply, Pi.smul_apply, smul_eq_mul]
   field_simp
   linear_combination key l k + Z l j * hs i k - Z l i * hs j k
 

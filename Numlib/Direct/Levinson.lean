@@ -463,12 +463,12 @@ theorem det_symmToeplitz_succ (hr : r 0 = 1) {k : ℕ} (hβ : ∀ j < k, beta r 
   have hcol : ∀ i : Fin (k + 1), (T * P) i (Fin.last k) =
       if (i : ℕ) = k then beta r k else 0 := by
     intro i
-    rw [← sum_symmToeplitz_revSol hr hβ i (Fin.is_le i), mul_apply]
+    rw [← sum_symmToeplitz_revSol hr hβ i (Fin.is_le i), Matrix.mul_apply]
     rw [← Fin.sum_univ_eq_sum_range (fun j => r ((i : ℤ) - j).natAbs * revSol r k j)]
     simp only [P, of_apply, ite_true, T, symmToeplitz_apply]
   have hsub : (T * P).submatrix Fin.castSucc Fin.castSucc = symmToeplitz k r := by
     ext i j
-    simp only [submatrix_apply, mul_apply, P, of_apply, Fin.castSucc_ne_last, ite_false,
+    simp only [submatrix_apply, Matrix.mul_apply, P, of_apply, Fin.castSucc_ne_last, ite_false,
       mul_ite, mul_one, mul_zero, Finset.sum_ite_eq', mem_univ, ite_true, T, symmToeplitz_apply,
       Fin.val_castSucc]
   have hTP : det (T * P) = det T := by rw [det_mul, hP, mul_one]
@@ -497,7 +497,7 @@ def unitUpper (r : ℕ → K) (n : ℕ) : Matrix (Fin n) (Fin n) K :=
 private theorem symmToeplitz_mul_unitUpper_apply (hr : r 0 = 1) {n : ℕ}
     (hβ : ∀ j, j + 1 < n → beta r j ≠ 0) (i k : Fin n) (hik : (i : ℕ) ≤ k) :
     (symmToeplitz n r * unitUpper r n) i k = if (i : ℕ) = k then beta r k else 0 := by
-  rw [mul_apply]
+  rw [Matrix.mul_apply]
   simp only [unitUpper, of_apply, symmToeplitz_apply]
   rw [Fin.sum_univ_eq_sum_range (fun j => r ((i : ℤ) - j).natAbs * revSol r k j),
     sum_mul_revSol k.isLt]
@@ -513,7 +513,7 @@ theorem transpose_mul_mul_eq_diagonal (hr : r 0 = 1) {n : ℕ}
       ((unitUpper r n)ᵀ * symmToeplitz n r * unitUpper r n) l k =
         if l = k then beta r k else 0 := by
     intro l k hlk
-    rw [Matrix.mul_assoc, mul_apply]
+    rw [Matrix.mul_assoc, Matrix.mul_apply]
     have : ∀ i : Fin n, (unitUpper r n)ᵀ l i * (symmToeplitz n r * unitUpper r n) i k =
         revSol r l i * (if (i : ℕ) = k then beta r k else 0) := by
       intro i
@@ -829,10 +829,10 @@ theorem inv_symmToeplitz_eq (hr : r 0 = 1) {m : ℕ} (hβ : ∀ j < m + 1, beta 
       rw [symmToeplitz_apply, Fin.val_castSucc, Fin.val_last, Fin.val_rev]
       congr 1
       omega
-    rw [mul_apply, Fin.sum_univ_castSucc, hlast, e2] at hTB
+    rw [Matrix.mul_apply, Fin.sum_univ_castSucc, hlast, e2] at hTB
     simp only [Matrix.one_apply, Fin.castSucc_inj, eT] at hTB
-    rw [Matrix.sub_apply, vecMulVec_apply, exchange_mulVec_apply, mul_apply, Matrix.one_apply,
-      ← hTB]
+    rw [Matrix.sub_apply, vecMulVec_apply, exchange_mulVec_apply, Matrix.mul_apply,
+      Matrix.one_apply, ← hTB]
     simp only [submatrix_apply]
     ring
   have hy : symmToeplitz m r *ᵥ (fun i : Fin m => sol r m i) =
@@ -856,7 +856,7 @@ theorem inv_symmToeplitz_eq (hr : r 0 = 1) {m : ℕ} (hβ : ∀ j < m + 1, beta 
       vecMulVec ((symmToeplitz m r)⁻¹ *ᵥ u) (lastCol r m) := by
     intro u
     ext i j
-    simp only [mul_apply, vecMulVec_apply, mulVec, dotProduct, sum_mul, mul_assoc]
+    simp only [Matrix.mul_apply, vecMulVec_apply, mulVec, dotProduct, sum_mul, mul_assoc]
   have hv : (exchange m *ᵥ fun i : Fin m => sol r m i) = (gamma r m)⁻¹ • lastCol r m := by
     rw [lastCol, smul_smul, inv_mul_cancel₀ hγ, one_smul]
   rw [hB11, hAB, Matrix.mul_sub, Matrix.mul_one, hvm, hAinv, hv]
@@ -1177,7 +1177,7 @@ theorem lpOpNorm_one_inv_le (hr : r 0 = 1) {m : ℕ} (hT : (symmToeplitz (m + 1)
   have hentry : ∀ i, ‖(symmToeplitz (m + 1) r)⁻¹ i l‖ ≤
       ∑ k : Fin (m + 1), |revSol r k i| * (beta r k)⁻¹ * |revSol r k l| := by
     intro i
-    rw [hinv, mul_apply, Real.norm_eq_abs]
+    rw [hinv, Matrix.mul_apply, Real.norm_eq_abs]
     refine (abs_sum_le_sum_abs _ _).trans (le_of_eq (sum_congr rfl fun k _ => ?_))
     rw [mul_diagonal, transpose_apply, abs_mul, abs_mul, abs_inv, abs_of_pos (hβpos k k.isLt)]
     rfl

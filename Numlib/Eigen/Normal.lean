@@ -749,7 +749,7 @@ theorem eq_sum_smul_vecMulVec_of_conj_eq_diagonal {U A : Matrix n n 𝕜}
   rw [hA]
   ext i j
   rw [Matrix.sum_apply, Matrix.mul_apply]
-  simp only [mul_diagonal, smul_apply, vecMulVec_apply, transpose_apply, Pi.star_apply,
+  simp only [mul_diagonal, Matrix.smul_apply, vecMulVec_apply, transpose_apply, Pi.star_apply,
     star_apply, smul_eq_mul]
   refine Finset.sum_congr rfl fun k _ => ?_
   ring

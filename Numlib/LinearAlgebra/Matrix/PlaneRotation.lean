@@ -150,7 +150,7 @@ theorem planeEmbed_injective (hjk : j ≠ k) :
 /-- The embedding of the identity is the identity. -/
 theorem planeEmbed_one (hjk : j ≠ k) : planeEmbed j k (1 : Matrix (Fin 2) (Fin 2) R) = 1 := by
   ext p q
-  simp only [planeEmbed_apply, one_apply]
+  simp only [planeEmbed_apply, Matrix.one_apply]
   split_ifs <;> simp_all
 
 /-- An embedding is the identity exactly when its `2 × 2` block is. -/
@@ -225,7 +225,7 @@ theorem planeEmbed_mul_apply {m : Type*} (hjk : j ≠ k) (M : Matrix n m R) (p :
       if p = j then G 0 0 * M j q + G 0 1 * M k q
       else if p = k then G 1 0 * M j q + G 1 1 * M k q
       else M p q := by
-  rw [mul_apply]
+  rw [Matrix.mul_apply]
   exact sum_planeEmbed_mul G hjk (fun r => M r q) p
 
 /-- Right multiplication by an embedded `2 × 2` matrix combines the columns `j` and `k` and
@@ -236,7 +236,7 @@ theorem mul_planeEmbed_apply {m : Type*} (hjk : j ≠ k) (M : Matrix m n R) (p :
       if q = j then M p j * G 0 0 + M p k * G 1 0
       else if q = k then M p j * G 0 1 + M p k * G 1 1
       else M p q := by
-  rw [mul_apply]
+  rw [Matrix.mul_apply]
   exact sum_mul_planeEmbed G hjk (fun r => M p r) q
 
 /-- An embedded `2 × 2` matrix acts on a vector through its `j`-th and `k`-th entries alone. -/
@@ -266,7 +266,7 @@ theorem planeEmbed_mul_planeEmbed (hjk : j ≠ k) (G' : Matrix (Fin 2) (Fin 2) R
     planeEmbed j k G * planeEmbed j k G' = planeEmbed j k (G * G') := by
   ext p q
   rw [planeEmbed_mul_apply G hjk]
-  simp only [planeEmbed_apply, mul_apply, Fin.sum_univ_two]
+  simp only [planeEmbed_apply, Matrix.mul_apply, Fin.sum_univ_two]
   split_ifs <;> simp_all [hjk.symm]
 
 end Mul
@@ -293,7 +293,7 @@ theorem det_planeEmbed (hjk : j ≠ k) : (planeEmbed j k G).det = G.det := by
     exact ite_eq_right fun h : i = l => hi (h ▸ hl)]
   have hone : toSquareBlockProp (planeEmbed j k G) (fun i => ¬(i = j ∨ i = k)) = 1 := by
     ext ⟨a, ha⟩ ⟨b, hb⟩
-    rw [toSquareBlockProp_def, of_apply, one_apply,
+    rw [toSquareBlockProp_def, of_apply, Matrix.one_apply,
       planeEmbed_apply_of_ne_left G (fun h => ha (Or.inl h)) fun h => ha (Or.inr h)]
     simp [Subtype.ext_iff]
   rw [hone, det_one, mul_one, ← det_submatrix_equiv_self (planeEquiv hjk)]
@@ -400,7 +400,7 @@ theorem transpose_planeRotation_mul_self (hjk : j ≠ k) (hcs : c ^ 2 + s ^ 2 = 
   rw [planeRotation_transpose hjk, planeRotation, planeRotation, planeEmbed_mul_planeEmbed _ hjk,
     planeEmbed_eq_one_iff _ hjk]
   ext a b
-  fin_cases a <;> fin_cases b <;> simp [mul_apply, Fin.sum_univ_two] <;> nlinarith [hcs]
+  fin_cases a <;> fin_cases b <;> simp [Matrix.mul_apply, Fin.sum_univ_two] <;> nlinarith [hcs]
 
 /-- A plane rotation with `c ^ 2 + s ^ 2 = 1` belongs to the orthogonal group. -/
 theorem planeRotation_mem_orthogonalGroup (hjk : j ≠ k) (hcs : c ^ 2 + s ^ 2 = 1) :
@@ -561,7 +561,7 @@ noncomputable def planeReflector (φ : ℝ) : Matrix (Fin 2) (Fin 2) ℝ :=
 theorem planeReflector_mul_self (φ : ℝ) : planeReflector φ * planeReflector φ = 1 := by
   ext i j
   fin_cases i <;> fin_cases j <;>
-    simp [planeReflector, mul_apply, Fin.sum_univ_two, ← sq, Real.sin_sq_add_cos_sq,
+    simp [planeReflector, Matrix.mul_apply, Fin.sum_univ_two, ← sq, Real.sin_sq_add_cos_sq,
       Real.cos_sq_add_sin_sq] <;> ring
 
 /-- A plane reflection is symmetric. -/

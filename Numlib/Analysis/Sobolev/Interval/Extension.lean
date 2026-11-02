@@ -331,8 +331,8 @@ theorem eLpNorm_reflectFun_le [Fact (1 ≤ p)] {g : ℝ → ℝ}
     _ ≤ eLpNorm ((Iic c).indicator F) p volume + eLpNorm ((Iic c)ᶜ.indicator F) p volume :=
         eLpNorm_add_le Fact.out
     _ = eLpNorm F p (volume.restrict (Iic c)) + eLpNorm F p (volume.restrict (Ioi c)) := by
-        rw [eLpNorm_indicator_eq_eLpNorm_restrict measurableSet_Iic, compl_Iic,
-          eLpNorm_indicator_eq_eLpNorm_restrict measurableSet_Ioi]
+        rw [eLpNorm_indicator_eq_eLpNorm_restrict measurableSet_Iic.nullMeasurableSet, compl_Iic,
+          eLpNorm_indicator_eq_eLpNorm_restrict measurableSet_Ioi.nullMeasurableSet]
     _ = eLpNorm (fun x ↦ g (2 * c - x)) p (volume.restrict (Iic c))
           + eLpNorm g p (volume.restrict (Ioi c)) := by
         congr 1
@@ -819,8 +819,8 @@ theorem eLpNorm_reflectFunIio_le [Fact (1 ≤ p)] {g : ℝ → ℝ}
     _ ≤ eLpNorm ((Ici c).indicator F) p volume + eLpNorm ((Ici c)ᶜ.indicator F) p volume :=
         eLpNorm_add_le Fact.out
     _ = eLpNorm F p (volume.restrict (Ici c)) + eLpNorm F p (volume.restrict (Iio c)) := by
-        rw [eLpNorm_indicator_eq_eLpNorm_restrict measurableSet_Ici, compl_Ici,
-          eLpNorm_indicator_eq_eLpNorm_restrict measurableSet_Iio]
+        rw [eLpNorm_indicator_eq_eLpNorm_restrict measurableSet_Ici.nullMeasurableSet, compl_Ici,
+          eLpNorm_indicator_eq_eLpNorm_restrict measurableSet_Iio.nullMeasurableSet]
     _ = eLpNorm (fun x ↦ g (2 * c - x)) p (volume.restrict (Ici c))
           + eLpNorm g p (volume.restrict (Iio c)) := by
         congr 1
@@ -1251,9 +1251,10 @@ theorem eLpNorm_cutoffIoiFun_le (hab : a < b) (u : SobolevIntervalLp 1 p (Opens.
         by_cases hxb : x < b
         · have hmem : x ∈ Ioo a b := ⟨hx, hxb⟩
           rw [indicator_of_mem hmem]
-        · rw [indicator_of_notMem (fun h ↦ hxb h.2), cutoffIoiFun_of_le hab u (not_lt.1 hxb)]
+        · rw [indicator_of_notMem (fun (h : x ∈ Ioo a b) ↦ hxb h.2),
+            cutoffIoiFun_of_le hab u (not_lt.1 hxb)]
     _ = eLpNorm (cutoffIoiFun a b u) p (volume.restrict (Ioo a b)) := by
-        rw [eLpNorm_indicator_eq_eLpNorm_restrict measurableSet_Ioo,
+        rw [eLpNorm_indicator_eq_eLpNorm_restrict measurableSet_Ioo.nullMeasurableSet,
           Measure.restrict_restrict measurableSet_Ioo, inter_eq_left.2 Ioo_subset_Ioi_self]
     _ ≤ eLpNorm (rep u) p (volume.restrict (Ioo a b)) := by
         refine eLpNorm_mono_ae hmeas ((ae_restrict_iff' measurableSet_Ioo).2
@@ -1277,7 +1278,7 @@ theorem eLpNorm_cutoffIoiDeriv_le (hab : a < b) (u : SobolevIntervalLp 1 p (Open
           (volume.restrict (Ioo a b)) := by
         have e : cutoffIoiDeriv a b u = (Ioo a b).indicator
             (fun t ↦ -(b - a)⁻¹ * rep u t + cutoffFun a b t * deriv u 1 t) := rfl
-        rw [e, eLpNorm_indicator_eq_eLpNorm_restrict measurableSet_Ioo,
+        rw [e, eLpNorm_indicator_eq_eLpNorm_restrict measurableSet_Ioo.nullMeasurableSet,
           Measure.restrict_restrict measurableSet_Ioo, inter_eq_left.2 Ioo_subset_Ioi_self]
     _ ≤ eLpNorm (fun t ↦ -(b - a)⁻¹ * rep u t) p (volume.restrict (Ioo a b))
           + eLpNorm (fun t ↦ cutoffFun a b t * deriv u 1 t) p (volume.restrict (Ioo a b)) :=
@@ -1315,7 +1316,7 @@ theorem cutoffIoiFun_eq_integral (hab : a < b) (u : SobolevIntervalLp 1 p (Opens
   · rw [cutoffIoiFun_of_le hab u hbx]
     have h0 : ∀ t ∈ uIcc b x, cutoffIoiDeriv a b u t = 0 := fun t ht ↦ by
       rw [uIcc_of_le hbx] at ht
-      exact indicator_of_notMem (fun h ↦ h.2.not_ge ht.1) _
+      exact indicator_of_notMem (fun (h : t ∈ Ioo a b) ↦ h.2.not_ge ht.1) _
     rw [intervalIntegral.integral_congr h0, intervalIntegral.integral_zero]
   · have hxI : x ∈ Icc a b := ⟨hx.le, hxb.le⟩
     rw [cutoffIoiFun_of_mem u ⟨hx, hxb⟩, intervalIntegral.integral_symm]
@@ -1492,9 +1493,10 @@ theorem eLpNorm_cutoffIioFun_le (hab : a < b) (u : SobolevIntervalLp 1 p (Opens.
         by_cases hxa : a < x
         · have hmem : x ∈ Ioo a b := ⟨hxa, hx⟩
           rw [indicator_of_mem hmem]
-        · rw [indicator_of_notMem (fun h ↦ hxa h.1), cutoffIioFun_of_le hab u (not_lt.1 hxa)]
+        · rw [indicator_of_notMem (fun (h : x ∈ Ioo a b) ↦ hxa h.1),
+            cutoffIioFun_of_le hab u (not_lt.1 hxa)]
     _ = eLpNorm (cutoffIioFun a b u) p (volume.restrict (Ioo a b)) := by
-        rw [eLpNorm_indicator_eq_eLpNorm_restrict measurableSet_Ioo,
+        rw [eLpNorm_indicator_eq_eLpNorm_restrict measurableSet_Ioo.nullMeasurableSet,
           Measure.restrict_restrict measurableSet_Ioo, inter_eq_left.2 Ioo_subset_Iio_self]
     _ ≤ eLpNorm (rep u) p (volume.restrict (Ioo a b)) := by
         refine eLpNorm_mono_ae hmeas ((ae_restrict_iff' measurableSet_Ioo).2
@@ -1522,7 +1524,7 @@ theorem eLpNorm_cutoffIioDeriv_le (hab : a < b) (u : SobolevIntervalLp 1 p (Open
           (volume.restrict (Ioo a b)) := by
         have e : cutoffIioDeriv a b u = (Ioo a b).indicator
             (fun t ↦ (b - a)⁻¹ * rep u t + (1 - cutoffFun a b t) * deriv u 1 t) := rfl
-        rw [e, eLpNorm_indicator_eq_eLpNorm_restrict measurableSet_Ioo,
+        rw [e, eLpNorm_indicator_eq_eLpNorm_restrict measurableSet_Ioo.nullMeasurableSet,
           Measure.restrict_restrict measurableSet_Ioo, inter_eq_left.2 Ioo_subset_Iio_self]
     _ ≤ eLpNorm (fun t ↦ (b - a)⁻¹ * rep u t) p (volume.restrict (Ioo a b))
           + eLpNorm (fun t ↦ (1 - cutoffFun a b t) * deriv u 1 t) p (volume.restrict (Ioo a b)) :=
@@ -1558,7 +1560,7 @@ theorem cutoffIioFun_eq_integral (hab : a < b) (u : SobolevIntervalLp 1 p (Opens
   · rw [cutoffIioFun_of_le hab u hxa]
     have h0 : ∀ t ∈ uIcc a x, cutoffIioDeriv a b u t = 0 := fun t ht ↦ by
       rw [uIcc_of_ge hxa] at ht
-      exact indicator_of_notMem (fun h ↦ h.1.not_ge ht.2) _
+      exact indicator_of_notMem (fun (h : t ∈ Ioo a b) ↦ h.1.not_ge ht.2) _
     rw [intervalIntegral.integral_congr h0, intervalIntegral.integral_zero]
   · have hxI : x ∈ Icc a b := ⟨hax.le, hx.le⟩
     rw [cutoffIioFun_of_mem u ⟨hax, hx⟩]

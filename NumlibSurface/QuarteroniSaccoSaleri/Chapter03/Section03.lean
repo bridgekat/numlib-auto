@@ -281,9 +281,9 @@ theorem equation_3_37 (hpiv : ∀ k : Fin n, (k : ℕ) + 1 < n → gemStage A k 
       Pi.single_apply, mul_ite, mul_one, mul_zero, Finset.sum_ite_eq, mem_univ, ite_true,
       gemMultipliers]
     split_ifs with h1 h2
-    · simp [one_apply, h1.ne']
-    · simp [one_apply, h2]
-    · simp [one_apply, h2]
+    · simp [h1.ne']
+    · simp [Matrix.one_apply, h2]
+    · simp [h2]
   · rw [← gemLowerStage_of_le A le_rfl, gemLowerStage_eq_prod A n le_rfl]
     refine congrArg List.prod (congrArg List.ofFn (funext fun k => ?_))
     rw [inv_eq_right_inv (gaussTransform_mul_elimMul _ _)]

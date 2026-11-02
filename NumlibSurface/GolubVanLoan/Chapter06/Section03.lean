@@ -166,7 +166,8 @@ private theorem mul_rectDiagonal_tail_mul_transpose {k : ℕ} (hmnk : n + k ≤ 
       U.submatrix id (fun j : Fin k => Fin.castLE hmnk (Fin.natAdd n j)) *
         diagonal (fun j : Fin k => σ (n + j)) * (V.submatrix id (Fin.natAdd n))ᵀ := by
   ext a b
-  rw [mul_apply, mul_apply, Fin.sum_univ_add, Finset.sum_eq_zero fun i _ => ?_, zero_add]
+  rw [Matrix.mul_apply, Matrix.mul_apply, Fin.sum_univ_add, Finset.sum_eq_zero fun i _ => ?_,
+      zero_add]
   · refine Finset.sum_congr rfl fun j _ => ?_
     have hj : n + (j : ℕ) < m := by omega
     rw [mul_rectDiagonal_apply, mul_diagonal]
@@ -281,11 +282,11 @@ theorem tls_tauNorm {k : ℕ} [NeZero k] {V : Matrix (Fin (n + k)) (Fin (n + k))
     have hblk : V₁₂ᴴ * V₁₂ + V₂₂ᴴ * V₂₂ = 1 := by
       ext i j
       have h := congrFun (congrFun hVV (Fin.natAdd n i)) (Fin.natAdd n j)
-      rw [mul_apply, Fin.sum_univ_add] at h
-      rw [Matrix.add_apply, mul_apply, mul_apply]
+      rw [Matrix.mul_apply, Fin.sum_univ_add] at h
+      rw [Matrix.add_apply, Matrix.mul_apply, Matrix.mul_apply]
       simp only [conjTranspose_apply, transpose_apply, star_trivial, V₁₂, V₂₂,
         submatrix_apply] at h ⊢
-      rw [h, one_apply, one_apply]
+      rw [h, Matrix.one_apply, Matrix.one_apply]
       simp only [Fin.natAdd_inj]
     have := l2_opNorm_mul_inv_sq_eq hV₂₂ hblk
     rwa [Fintype.card_fin] at this
@@ -740,14 +741,14 @@ private theorem householder_tail {V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ} {r
   · rw [mem_orthogonalGroup_iff']
     ext k k'
     have h := congrFun (congrFun hPP (f k)) (f k')
-    rw [mul_apply] at h
+    rw [Matrix.mul_apply] at h
     have e1 : (1 : Matrix (Fin (n + 1 - r)) (Fin (n + 1 - r)) ℝ) k k' =
         (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ) (f k) (f k') := by
-      simp only [one_apply, hfinj.eq_iff]
-    rw [e1, ← h, mul_apply]
+      simp only [Matrix.one_apply, hfinj.eq_iff]
+    rw [e1, ← h, Matrix.mul_apply]
     exact Fintype.sum_of_injective f hfinj _ _
       (fun l hl => by rw [transpose_apply, hoff l hl k, zero_mul]) (fun _ => rfl)
-  · rw [mul_apply, mul_apply]
+  · rw [Matrix.mul_apply, Matrix.mul_apply]
     exact (Fintype.sum_of_injective f hfinj _ _ (fun l hl => by rw [hoff l hl k, mul_zero])
       (fun k' => rfl)).symm
 

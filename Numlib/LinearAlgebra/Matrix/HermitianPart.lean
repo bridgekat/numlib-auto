@@ -87,7 +87,7 @@ theorem hermitianPart_isHermitian (A : Matrix n n 𝕜) : (hermitianPart A).IsHe
 theorem skewHermitianPart_eq_hermitianPart (A : Matrix n n ℂ) :
     skewHermitianPart A = hermitianPart ((-Complex.I) • A) := by
   ext i j
-  simp only [skewHermitianPart_apply, hermitianPart_apply, smul_apply, smul_eq_mul, map_mul,
+  simp only [skewHermitianPart_apply, hermitianPart_apply, Matrix.smul_apply, smul_eq_mul, map_mul,
     map_neg, Complex.conj_I, neg_neg]
   rw [mul_inv, Complex.inv_I]
   ring

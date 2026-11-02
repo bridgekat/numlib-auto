@@ -393,7 +393,7 @@ theorem isClosed_subgradientRel [IsTopologicalAddGroup E]
   rw [hrw]
   refine isClosed_iInter fun z => ?_
   rcases eq_or_ne (f z) ⊤ with hz | hz
-  · convert isClosed_univ
+  · convert isClosed_univ using 1
     ext p
     simp [hz]
   · set r : ℝ := (f z).toReal with hrdef

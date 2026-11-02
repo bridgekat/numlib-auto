@@ -326,7 +326,7 @@ theorem mem_sobolevIntervalLpZero_iff_forall_abs_integral_le [ENNReal.HolderConj
     have hind : MemSobolevIntervalLp ((I : Set ℝ).indicator u) 1 p ⊤ := by
       have hu' : MemLp ((I : Set ℝ).indicator u) p (volume.restrict ((⊤ : Opens ℝ) : Set ℝ)) :=
         SobolevIntervalLp.memLp_restrict_top_iff.2
-          ((memLp_indicator_iff_restrict I.isOpen.measurableSet).2 hu)
+          ((memLp_indicator_iff_restrict I.isOpen.measurableSet.nullMeasurableSet).2 hu)
       refine (memSobolevIntervalLp_of_forall_abs_integral_mul_deriv_le (I := ⊤) hq hu'
         (C := max C 0) fun φ ↦ ?_).1
       rw [Measure.restrict_coe_top]
@@ -345,7 +345,7 @@ theorem mem_sobolevIntervalLpZero_iff_forall_abs_integral_le [ENNReal.HolderConj
     -- restricted to `I`, it is `u`, the function of some `v ∈ W^{1,p}(I)`
     have hmem : MemSobolevIntervalLp u 1 p I :=
       (MemSobolevMultiIndex.mono_set hind (le_top : I ≤ ⊤)).congr_ae
-        (indicator_ae_eq_restrict I.isOpen.measurableSet)
+        (indicator_ae_eq_restrict I.isOpen.measurableSet.nullMeasurableSet)
     obtain ⟨v, hv⟩ := hmem.exists_sobolevIntervalLp
     refine ⟨v, ?_, hv⟩
     rw [mem_sobolevIntervalLpZero_iff_indicator_mem hI hp]
@@ -647,7 +647,7 @@ theorem MeasureTheory.setIntegral_Ioc_eq_setIntegral_mul_indicator (hI : (I : Se
 /-- The indicator of a bounded interval lies in every `L^q(I)`. -/
 theorem MeasureTheory.memLp_indicator_Ioc_one (I : Opens ℝ) (q : ℝ≥0∞) (c d : ℝ) :
     MemLp ((Ioc c d).indicator fun _ ↦ (1 : ℝ)) q (volume.restrict (I : Set ℝ)) :=
-  memLp_indicator_const q measurableSet_Ioc 1 (Or.inr
+  memLp_indicator_const q measurableSet_Ioc.nullMeasurableSet 1 (Or.inr
     ((Measure.restrict_apply_le _ _).trans_lt measure_Ioc_lt_top).ne)
 
 namespace SobolevIntervalLp

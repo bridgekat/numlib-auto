@@ -78,7 +78,7 @@ theorem hamiltonian_sq_skewHamiltonian {M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ 
 
 /-- The complexification of Mathlib's `J`. -/
 private theorem complexify_J : (J (Fin n) ℝ).complexify = J (Fin n) ℂ := by
-  ext (i | i) (j | j) <;> by_cases h : i = j <;> simp [J, complexify, one_apply, h]
+  ext (i | i) (j | j) <;> by_cases h : i = j <;> simp [J, complexify, h]
 
 /-- `J [u; v] = [-v; u]` for Mathlib's `J`, so `[v; -u] = -J [u; v]`. -/
 private theorem J_mulVec_eq (x : Fin n ⊕ Fin n → ℂ) :

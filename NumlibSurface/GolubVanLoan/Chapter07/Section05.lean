@@ -301,7 +301,7 @@ theorem francis_first_column {N : ℕ} {H : Matrix (Fin (N + 3)) (Fin (N + 3)) �
   rw [isUpperHessenberg_iff_fin] at hH
   have hHH : ∀ i, (H * H) i 0 = H i 0 * H 0 0 + H i 1 * H 1 0 := by
     intro i
-    rw [mul_apply, Fin.sum_univ_succ, Fin.sum_univ_succ, Finset.sum_eq_zero, add_zero]
+    rw [Matrix.mul_apply, Fin.sum_univ_succ, Fin.sum_univ_succ, Finset.sum_eq_zero, add_zero]
     · rfl
     · intro k _
       rw [hH _ 0 (by simp), mul_zero]
@@ -585,12 +585,12 @@ theorem IsBlockSupported.mul {p m : ℕ} {Q P : Matrix (Fin n) (Fin n) ℝ}
   fun i j hij => by
     by_cases hi : p ≤ (i : ℕ) ∧ (i : ℕ) < m
     · have hj : ¬ (p ≤ (j : ℕ) ∧ (j : ℕ) < m) := fun hj => hij ⟨hi, hj⟩
-      rw [mul_apply, Finset.sum_eq_single j, hP j j (fun h => hj h.2), one_apply_eq, mul_one,
+      rw [Matrix.mul_apply, Finset.sum_eq_single j, hP j j (fun h => hj h.2), one_apply_eq, mul_one,
         hQ i j hij]
       · intro k _ hkj
         rw [hP k j (fun h => hj h.2), one_apply_ne hkj, mul_zero]
       · simp
-    · rw [mul_apply, Finset.sum_eq_single i, hQ i i (fun h => hi h.1), one_apply_eq, one_mul,
+    · rw [Matrix.mul_apply, Finset.sum_eq_single i, hQ i i (fun h => hi h.1), one_apply_eq, one_mul,
         hP i j (fun h => hi h.1)]
       · intro k _ hki
         rw [hQ i k (fun h => hi h.1), one_apply_ne (Ne.symm hki), zero_mul]
@@ -613,7 +613,7 @@ private theorem transpose_mul_mul_apply_congr {p m : ℕ} {P X Y : Matrix (Fin n
     (hXY : ∀ k l : Fin n, (p ≤ (k : ℕ) ∧ (k : ℕ) < m) → (p ≤ (l : ℕ) ∧ (l : ℕ) < m) →
       X k l = Y k l) {i j : Fin n} (hi : p ≤ (i : ℕ) ∧ (i : ℕ) < m)
     (hj : p ≤ (j : ℕ) ∧ (j : ℕ) < m) : (Pᵀ * X * P) i j = (Pᵀ * Y * P) i j := by
-  simp only [mul_apply, transpose_apply, Finset.sum_mul]
+  simp only [Matrix.mul_apply, transpose_apply, Finset.sum_mul]
   refine Finset.sum_congr rfl fun l _ => Finset.sum_congr rfl fun k _ => ?_
   by_cases hk : p ≤ (k : ℕ) ∧ (k : ℕ) < m
   · by_cases hl : p ≤ (l : ℕ) ∧ (l : ℕ) < m
@@ -645,16 +645,16 @@ theorem blockConj_eq_of_decoupled {p m : ℕ} {Z X : Matrix (Fin n) (Fin n) ℝ}
     blockConj p m Z X = Zᵀ * X * Z := by
   have hZo : ∀ k l : Fin n, ¬ (p ≤ (k : ℕ) ∧ (k : ℕ) < m) ∨ ¬ (p ≤ (l : ℕ) ∧ (l : ℕ) < m) →
       Z k l = if k = l then 1 else 0 := fun k l h => by
-    rw [hZ k l (fun h' => h.elim (fun h1 => h1 h'.1) (fun h2 => h2 h'.2)), one_apply]
+    rw [hZ k l (fun h' => h.elim (fun h1 => h1 h'.1) (fun h2 => h2 h'.2)), Matrix.one_apply]
   ext i j
   simp only [blockConj, of_apply]
   split_ifs with hin
   · rfl
   by_cases hi : p ≤ (i : ℕ) ∧ (i : ℕ) < m
   · have hj : ¬ (p ≤ (j : ℕ) ∧ (j : ℕ) < m) := fun hj => hin ⟨hi, hj⟩
-    rw [Matrix.mul_assoc, mul_apply, Finset.sum_eq_zero, (hX i j hi hj).1]
+    rw [Matrix.mul_assoc, Matrix.mul_apply, Finset.sum_eq_zero, (hX i j hi hj).1]
     intro k _
-    rw [transpose_apply, mul_apply, Finset.sum_eq_single j]
+    rw [transpose_apply, Matrix.mul_apply, Finset.sum_eq_single j]
     · rw [hZo j j (Or.inl hj), ite_eq_left rfl, mul_one]
       by_cases hk : p ≤ (k : ℕ) ∧ (k : ℕ) < m
       · rw [(hX k j hk hj).1, mul_zero]
@@ -663,12 +663,12 @@ theorem blockConj_eq_of_decoupled {p m : ℕ} {Z X : Matrix (Fin n) (Fin n) ℝ}
       rw [hZo l j (Or.inr hj), ite_eq_right hlj, mul_zero]
     · simp
   · have hrow : ∀ l, (Zᵀ * X) i l = X i l := fun l => by
-      rw [mul_apply, Finset.sum_eq_single i]
+      rw [Matrix.mul_apply, Finset.sum_eq_single i]
       · rw [transpose_apply, hZo i i (Or.inl hi), ite_eq_left rfl, one_mul]
       · intro k _ hki
         rw [transpose_apply, hZo k i (Or.inr hi), ite_eq_right hki, zero_mul]
       · simp
-    rw [mul_apply]
+    rw [Matrix.mul_apply]
     simp only [hrow]
     rw [Finset.sum_eq_single j]
     · by_cases hj : p ≤ (j : ℕ) ∧ (j : ℕ) < m
@@ -1047,7 +1047,7 @@ theorem sum_eq_sum_windowEmb {p k : ℕ} (h : p + k ≤ n) {f : Fin n → ℝ}
 /-- The transpose of a matrix acting on a block acts on it. -/
 theorem IsBlockSupported.transpose {p m : ℕ} {Q : Matrix (Fin n) (Fin n) ℝ}
     (hQ : IsBlockSupported p m Q) : IsBlockSupported p m Qᵀ := fun i j hij => by
-  simpa [one_apply, eq_comm] using hQ j i fun h => hij ⟨h.2, h.1⟩
+  simpa [Matrix.one_apply, eq_comm] using hQ j i fun h => hij ⟨h.2, h.1⟩
 
 /-- A matrix acting on the window is zero between a window index and an index off it. -/
 theorem IsBlockSupported.apply_eq_zero {p k : ℕ} {Q : Matrix (Fin n) (Fin n) ℝ}
@@ -1063,7 +1063,7 @@ theorem windowBlock_mul_of_isBlockSupported_right {p k : ℕ} (h : p + k ≤ n)
     (X : Matrix (Fin n) (Fin n) ℝ) :
     windowBlock p h (X * Y) = windowBlock p h X * windowBlock p h Y := by
   ext a b
-  simp only [windowBlock_apply, mul_apply]
+  simp only [windowBlock_apply, Matrix.mul_apply]
   refine sum_eq_sum_windowEmb h fun l hl => ?_
   rw [hY.apply_eq_zero (fun e => hl (e.2 (windowEmb_mem h b))), mul_zero]
 
@@ -1074,7 +1074,7 @@ theorem windowBlock_mul_of_isBlockSupported_left {p k : ℕ} (h : p + k ≤ n)
     (Y : Matrix (Fin n) (Fin n) ℝ) :
     windowBlock p h (X * Y) = windowBlock p h X * windowBlock p h Y := by
   ext a b
-  simp only [windowBlock_apply, mul_apply]
+  simp only [windowBlock_apply, Matrix.mul_apply]
   refine sum_eq_sum_windowEmb h fun l hl => ?_
   rw [hX.apply_eq_zero (fun e => hl (e.1 (windowEmb_mem h a))), zero_mul]
 
@@ -1775,7 +1775,7 @@ private theorem algorithm_5_1_3_pure_zero (a : ℝ) : Id.run (algorithm_5_1_3 pu
 private theorem givensRotation_one_zero {i j : Fin n} (hij : i ≠ j) :
     givensRotation i j 1 0 = 1 := by
   ext r q
-  rw [givensRotation, planeRotation_apply hij, one_apply]
+  rw [givensRotation, planeRotation_apply hij, Matrix.one_apply]
   split_ifs <;> simp_all
 
 /-- **The eigenvector rotation triangularizes the block**: if `(a, b) ≠ 0`-or-`b = 0` is an
@@ -2417,7 +2417,7 @@ private theorem mul_apply_congr_of_isBlockSupported (hZ : IsBlockSupported p m Z
     {X Y : Matrix (Fin n) (Fin n) ℝ} {i j : Fin n} (hj : p ≤ (j : ℕ) ∧ (j : ℕ) < m)
     (hXY : ∀ k : Fin n, (p ≤ (k : ℕ) ∧ (k : ℕ) < m) → X i k = Y i k) :
     (X * Z) i j = (Y * Z) i j := by
-  simp only [mul_apply]
+  simp only [Matrix.mul_apply]
   refine Finset.sum_congr rfl fun k _ => ?_
   by_cases hk : p ≤ (k : ℕ) ∧ (k : ℕ) < m
   · rw [hXY k hk]
@@ -2428,7 +2428,7 @@ private theorem mul_apply_congr_of_isBlockSupported (hZ : IsBlockSupported p m Z
 private theorem mul_apply_of_isBlockSupported (hZ : IsBlockSupported p m Z)
     (X : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) {j : Fin n}
     (hj : ¬ (p ≤ (j : ℕ) ∧ (j : ℕ) < m)) : (X * Z) i j = X i j := by
-  rw [mul_apply, Finset.sum_eq_single j, hZ j j fun h => hj h.2, one_apply_eq, mul_one]
+  rw [Matrix.mul_apply, Finset.sum_eq_single j, hZ j j fun h => hj h.2, one_apply_eq, mul_one]
   · intro k _ hk
     rw [hZ k j fun h => hj h.2, one_apply_ne hk, mul_zero]
   · simp
@@ -2438,7 +2438,7 @@ private theorem transpose_mul_apply_congr_of_isBlockSupported (hZ : IsBlockSuppo
     {X Y : Matrix (Fin n) (Fin n) ℝ} {i j : Fin n} (hi : p ≤ (i : ℕ) ∧ (i : ℕ) < m)
     (hXY : ∀ k : Fin n, (p ≤ (k : ℕ) ∧ (k : ℕ) < m) → X k j = Y k j) :
     (Zᵀ * X) i j = (Zᵀ * Y) i j := by
-  simp only [mul_apply, transpose_apply]
+  simp only [Matrix.mul_apply, transpose_apply]
   refine Finset.sum_congr rfl fun k _ => ?_
   by_cases hk : p ≤ (k : ℕ) ∧ (k : ℕ) < m
   · rw [hXY k hk]
@@ -2449,8 +2449,8 @@ private theorem transpose_mul_apply_congr_of_isBlockSupported (hZ : IsBlockSuppo
 private theorem transpose_mul_apply_of_isBlockSupported (hZ : IsBlockSupported p m Z)
     (X : Matrix (Fin n) (Fin n) ℝ) {i : Fin n} (j : Fin n)
     (hi : ¬ (p ≤ (i : ℕ) ∧ (i : ℕ) < m)) : (Zᵀ * X) i j = X i j := by
-  rw [mul_apply, Finset.sum_eq_single i, transpose_apply, hZ i i fun h => hi h.1, one_apply_eq,
-    one_mul]
+  rw [Matrix.mul_apply, Finset.sum_eq_single i, transpose_apply, hZ i i fun h => hi h.1,
+    one_apply_eq, one_mul]
   · intro k _ hk
     rw [transpose_apply, hZ k i fun h => hi h.2, one_apply_ne hk, zero_mul]
   · simp
@@ -2482,7 +2482,7 @@ theorem francisOffBlockStep_pure {v : Fin n → ℝ} (β : ℝ)
   have hPS : IsBlockSupported p m (1 - β • vecMulVec v v) := isBlockSupported_reflector β hv
   have hPt : (1 - β • vecMulVec v v)ᵀ = 1 - β • vecMulVec v v := by
     ext a b
-    simp [vecMulVec_apply, mul_comm, one_apply, eq_comm]
+    simp [vecMulVec_apply, mul_comm, Matrix.one_apply, eq_comm]
   have hvW : ∀ j ∉ francisWindow n p m, v j = 0 := fun j hj =>
     hv j fun h => hj (mem_francisWindow.2 h)
   change (Id.run (householderApplyLeft pure v β (francisWindow n p m)

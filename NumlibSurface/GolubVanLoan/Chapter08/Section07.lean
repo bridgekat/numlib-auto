@@ -249,7 +249,7 @@ private theorem mul_solveCols {G : Matrix (Fin n) (Fin n) ℝ}
   ext i j
   have := congrFun (h (Y.col j)) i
   rw [solveCols_id]
-  simpa [mul_apply, mulVec, dotProduct] using this
+  simpa [Matrix.mul_apply, mulVec, dotProduct] using this
 
 /-- **Algorithm 8.7.1, exact semantics**: if `schur` returns an orthogonal `Q` and `a` with
 `QᵀCQ = diag(a)` for symmetric `C`, then for symmetric `A` and positive definite `B` the output
@@ -561,21 +561,21 @@ theorem algorithm_8_7_2_spec {m₁ m₂ : ℕ}
     ext i j
     have := congrFun (congrFun hQR.mul_eq (Fin.castAdd m₂ i)) j
     simp only [S, submatrix_apply, id, finSumFinEquiv_symm_apply_castAdd, fromRows_apply_inl,
-      mul_apply] at this
-    simp only [Q₁, mul_apply, submatrix_apply, id]
+      Matrix.mul_apply] at this
+    simp only [Q₁, Matrix.mul_apply, submatrix_apply, id]
     exact this.symm
   have hB1 : B = Q₂ * QR.2 := by
     ext i j
     have := congrFun (congrFun hQR.mul_eq (Fin.natAdd m₁ i)) j
     simp only [S, submatrix_apply, id, finSumFinEquiv_symm_apply_natAdd, fromRows_apply_inr,
-      mul_apply] at this
-    simp only [Q₂, mul_apply, submatrix_apply, id]
+      Matrix.mul_apply] at this
+    simp only [Q₂, Matrix.mul_apply, submatrix_apply, id]
     exact this.symm
   have hQQ : Q₁ᵀ * Q₁ + Q₂ᵀ * Q₂ = 1 := by
     ext i j
     have := congrFun (congrFun hQR.conjTranspose_mul_self i) j
-    simp only [mul_apply, conjTranspose_apply, star_trivial, Fin.sum_univ_add] at this
-    simpa [Q₁, Q₂, mul_apply] using this
+    simp only [Matrix.mul_apply, conjTranspose_apply, star_trivial, Fin.sum_univ_add] at this
+    simpa [Q₁, Q₂, Matrix.mul_apply] using this
   obtain ⟨hU1, hU2, hV, hDA, hDB⟩ := hcs Q₁ Q₂ hQQ
   have hRX : QR.2 * X = out.2.2.1 := mul_solveCols (fun b =>
     Chapter03.algorithm_3_1_2_spec hQR.isUpperTriangular (fun i => (hRd i).ne') b) _
@@ -621,7 +621,7 @@ theorem gsvd_subspace_via_rq {R V Z T : Matrix (Fin n) (Fin n) ℝ}
     intro M U hU i
     have hcol : (M * U).col (Fin.castLE hk i) = ∑ j : Fin n, U j (Fin.castLE hk i) • M.col j := by
       ext r
-      simp [col_apply, mul_apply, Finset.sum_apply, mul_comm]
+      simp [col_apply, Matrix.mul_apply, Finset.sum_apply, mul_comm]
     rw [hcol]
     refine Submodule.sum_mem _ fun j _ => ?_
     by_cases hj : (j : ℕ) < k

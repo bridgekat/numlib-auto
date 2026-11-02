@@ -426,7 +426,8 @@ theorem scalingSquaring_spec_backward [NeZero n] (o : ℤ) {δ : ℝ}
     linarith [Real.log_two_gt_d9]
   have hD := (Pade.isUnit_aeval_expDen (𝕂 := ℝ) q q hsmall).1
   obtain ⟨⟨E, hE, hc, hEn⟩, -⟩ := moler_van_loan q q j hA
-  have hqδ : Pade.errorBound q q ≤ δ := hq ▸ Nat.sInf_mem hδ
+  have hqδ : Pade.errorBound q q ≤ δ :=
+    hq ▸ Nat.sInf_mem (s := {q | Pade.errorBound q q ≤ δ}) hδ
   refine ⟨E, (scalingSquaring_spec o δ A hj hq hD).trans hE, hc, hEn.trans ?_⟩
   exact mul_le_mul_of_nonneg_right hqδ (norm_nonneg A)
 

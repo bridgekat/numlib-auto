@@ -91,7 +91,7 @@ theorem equation_4_51 (α : ℕ → ℝ) (b x₀ : Fin n → ℝ) (k : ℕ) :
 
 /-- **(4.52).** The Krylov subspace of order `m`, `K_m(A; v) = span {v, A v, …, A^{m-1} v}`. It is
 the backbone's `Krylov.subspace (toEuclideanLin A) v m` (`krylovSubspace_eq`). -/
-def krylovSubspace (v : EuclideanSpace ℝ (Fin n)) (m : ℕ) :
+noncomputable def krylovSubspace (v : EuclideanSpace ℝ (Fin n)) (m : ℕ) :
     Submodule ℝ (EuclideanSpace ℝ (Fin n)) :=
   Submodule.span ℝ (Set.range fun i : Fin m => toEuclideanLin (A ^ (i : ℕ)) v)
 

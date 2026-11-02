@@ -1108,13 +1108,13 @@ theorem exists_eq_prodRev_mul_add {P : ℕ → Matrix ι ι ℝ}
     exists_eq_prodRev_mulVec_add hP hε (x := fun k => (A k).col j) r fun k hk => by
       have := hA k hk j
       rwa [show (A (k + 1) - P k * A k).col j = (A (k + 1)).col j - P k *ᵥ (A k).col j from by
-        ext i; simp [col_apply, mul_apply, mulVec, dotProduct]] at this
+        ext i; simp [col_apply, Matrix.mul_apply, mulVec, dotProduct]] at this
   choose dx hdx hdxn using hcol
   refine ⟨Matrix.of fun i j => dx j i, ?_, fun j => hdxn j⟩
   ext i j
   have := congrFun (hdx j) i
   rw [col_apply] at this
-  rw [this, mul_apply, mulVec, dotProduct]
+  rw [this, Matrix.mul_apply, mulVec, dotProduct]
   refine Finset.sum_congr rfl fun l _ => ?_
   simp [col_apply]
 
@@ -1137,16 +1137,16 @@ theorem exists_eq_mul_add_of_step {P Q : Matrix ι ι ℝ} (hP : P ∈ Matrix.or
       ‖(toLp 2 dx : EuclideanSpace ℝ ι)‖ ≤
         ((1 + ε) ^ (k + 1) - 1) * ‖(toLp 2 (A.col j) : EuclideanSpace ℝ ι)‖ := fun j =>
     exists_eq_mulVec_add_of_step hP hQ hε (y := B.col j)
-      (by rw [hB]; ext i; simp [col_apply, mul_apply, mulVec, dotProduct]) (hE j) (by
+      (by rw [hB]; ext i; simp [col_apply, Matrix.mul_apply, mulVec, dotProduct]) (hE j) (by
         have := hB' j
         rwa [show (B' - P * B).col j = B'.col j - P *ᵥ B.col j from by
-          ext i; simp [col_apply, mul_apply, mulVec, dotProduct]] at this)
+          ext i; simp [col_apply, Matrix.mul_apply, mulVec, dotProduct]] at this)
   choose dx hdx hdxn using hcol
   refine ⟨Matrix.of fun i j => dx j i, ?_, fun j => hdxn j⟩
   ext i j
   have := congrFun (hdx j) i
   rw [col_apply] at this
-  rw [this, mul_apply, mulVec, dotProduct]
+  rw [this, Matrix.mul_apply, mulVec, dotProduct]
   refine Finset.sum_congr rfl fun l _ => ?_
   simp [col_apply]
 
@@ -2760,7 +2760,7 @@ theorem frobenius_norm_sub_le_of_forall_roundsForwardSubst_col {m : RoundingMode
     have h2 : T⁻¹ *ᵥ (T *ᵥ Y.col j) = Y.col j := by
       rw [mulVec_mulVec, nonsing_inv_mul T hTu, one_mulVec]
     have h3 : (T⁻¹ * A).col j = T⁻¹ *ᵥ A.col j := by
-      ext i; simp [col_apply, mul_apply, mulVec, dotProduct]
+      ext i; simp [col_apply, Matrix.mul_apply, mulVec, dotProduct]
     have h4 : (Y - T⁻¹ * A).col j = Y.col j - (T⁻¹ * A).col j := by
       ext i; simp [col_apply]
     rw [h4, h3, ← h1, mulVec_add, h2]

@@ -362,7 +362,7 @@ theorem translateL_mem_zero (hΩ : IsTranslationInvariant (Ω : Set E) h)
     exact hu
   change translateL F b k p μ hΩ u ∈ (SobolevMultiIndexZero F b k p Ω μ : Set _)
   rw [SobolevMultiIndexZero, Submodule.topologicalClosure_coe]
-  refine closure_mono (image_subset_iff.2 hT) ?_
+  refine closure_mono (image_subset_iff.2 fun v hv => mem_preimage.2 (hT v hv)) ?_
   exact image_closure_subset_closure_image (translateL F b k p μ hΩ).continuous ⟨u, hmem, rfl⟩
 
 end SobolevMultiIndex

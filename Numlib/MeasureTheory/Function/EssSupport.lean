@@ -79,7 +79,7 @@ neighbourhoods meet `{f ≠ 0}` in a set of positive `μ`-measure, that is, the 
 measure `μ.restrict (Function.support f)`. Its complement is the largest open set on which `f`
 vanishes `μ`-almost everywhere ([brezis2011functional] Proposition 4.17 and the definition
 following it). -/
-def essSupport (f : α → E) : Set α :=
+noncomputable def essSupport (f : α → E) : Set α :=
   (μ.restrict (Function.support f)).support
 
 /-- The essential support is closed. -/

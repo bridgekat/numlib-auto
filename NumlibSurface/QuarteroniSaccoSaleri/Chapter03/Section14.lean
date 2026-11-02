@@ -89,7 +89,7 @@ private theorem isPatternIrreducible_regularizationMatrix
       · rw [one_apply_ne hij]
     | succ k ih =>
       intro i j
-      rw [pow_succ, mul_apply]
+      rw [pow_succ, Matrix.mul_apply]
       exact Finset.sum_nonneg fun x _ => mul_nonneg (ih i x) (hBnn x j)
   have hBadj : ∀ u v : Fin n, G.Adj (Sum.inl u) (Sum.inl v) → 0 < B u v := by
     intro u v hadj

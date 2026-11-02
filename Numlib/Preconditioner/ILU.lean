@@ -192,7 +192,7 @@ This is the form in which `R` enters the regular-splitting statement `Matrix.IsI
 the error analysis of §10.5. -/
 theorem IsILU.sub_eq_zero_of_notMem (h : IsILU P A L U) {i j : n} (hij : (i, j) ∉ P) :
     (L * U - A) i j = 0 := by
-  rw [sub_apply, h.agree i j hij, sub_self]
+  rw [Matrix.sub_apply, h.agree i j hij, sub_self]
 
 omit [Preorder n] in
 /-- **The row-sum identity behind `MILU`** ([saad2003iterative], (10.21)): a residual `R = L U - A`
@@ -215,7 +215,7 @@ supported in the zero pattern, exactly as `Matrix.IsILU.sub_eq_zero_of_notMem` d
 incomplete `LU` factorization. -/
 theorem IsIC.sub_eq_zero_of_notMem {B : Matrix n n α} (h : IsIC P B L) {i j : n}
     (hij : (i, j) ∉ P) : (L * Lᵀ - B) i j = 0 := by
-  rw [sub_apply, h.agree i j hij, sub_self]
+  rw [Matrix.sub_apply, h.agree i j hij, sub_self]
 
 end Residual
 

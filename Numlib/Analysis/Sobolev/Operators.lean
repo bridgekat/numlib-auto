@@ -254,7 +254,7 @@ theorem fn_extendZeroMul (hα : IsSobolevCutoff Ω α) (u : SobolevMultiIndex F 
 theorem fn_extendZeroMul_restrict (hα : IsSobolevCutoff Ω α) (u : SobolevMultiIndex F b 1 p Ω μ) :
     fn (extendZeroMul hα u) =ᵐ[μ.restrict (Ω : Set E)] fun x ↦ α x • fn u x :=
   Filter.EventuallyEq.trans (ae_restrict_of_ae (fn_extendZeroMul hα u))
-    (indicator_ae_eq_restrict Ω.isOpen.measurableSet)
+    (indicator_ae_eq_restrict Ω.isOpen.measurableSet.nullMeasurableSet)
 
 /-- The partial derivative `∂_i` of the zero extension of `α u` is `α ∂_i u + (∂_i α) u` extended
 by zero: the weak derivatives of `SobolevMultiIndex.extendZeroMul hα u` are the ones

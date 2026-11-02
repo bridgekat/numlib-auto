@@ -618,7 +618,7 @@ theorem exists_orthonormal_cols_of_invariant {ι : Type*} [Fintype ι] (M : Matr
     ext i j
     have h := orthonormal_iff_ite.1 b.orthonormal i j
     rw [Submodule.coe_inner, PiLp.inner_apply] at h
-    simp only [transpose_apply, mul_apply, hX₀, of_apply, one_apply]
+    simp only [transpose_apply, Matrix.mul_apply, hX₀, of_apply, Matrix.one_apply]
     rw [← h]
     refine Finset.sum_congr rfl fun r _ => ?_
     simp [mul_comm]
@@ -644,7 +644,7 @@ theorem exists_orthonormal_cols_of_invariant {ι : Type*} [Fintype ι] (M : Matr
       ext r j
       have := congrFun (hc j) r
       simp only [mulVec, dotProduct] at this
-      simp only [mul_apply, C, of_apply]
+      simp only [Matrix.mul_apply, C, of_apply]
       exact this
     rw [Matrix.mul_assoc, hMX, ← Matrix.mul_assoc X₀ᵀ, horth, Matrix.one_mul]
 

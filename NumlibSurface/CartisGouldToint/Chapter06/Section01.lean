@@ -101,7 +101,7 @@ theorem omega1_def (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (x : ℝⁿ) :
 
 /-- The set of first-order `α`-restricted feasible steps (6.1.8) of [cartis2022evaluation],
 `𝒞¹(x, α) = {d ∈ 𝒞(x) | |⟨d, ∇¹f(x)⟩| ≤ τ₁ α}`. -/
-def restrictedSteps₁ (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (τ₁ α : ℝ) (x : ℝⁿ) : Set ℝⁿ :=
+noncomputable def restrictedSteps₁ (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (τ₁ α : ℝ) (x : ℝⁿ) : Set ℝⁿ :=
   Optimization.restrictedSteps (iteratedFDeriv ℝ 1 f x) (τ₁ * α) (Optimization.feasibleSteps C x)
 
 /-- The second-order criticality measure (6.1.7) of [cartis2022evaluation],
@@ -111,7 +111,7 @@ noncomputable def omega2 (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (τ₁ : ℝ) (x 
 
 /-- The set of second-order `(α₁, α₂)`-restricted feasible steps (6.1.10) of
 [cartis2022evaluation], `𝒞²(x, α₁, α₂) = {d ∈ 𝒞¹(x, α₁) | |⟨d, ∇²f(x) d⟩| ≤ τ₂ α₂}`. -/
-def restrictedSteps₂ (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (τ₁ τ₂ α₁ α₂ : ℝ) (x : ℝⁿ) :
+noncomputable def restrictedSteps₂ (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (τ₁ τ₂ α₁ α₂ : ℝ) (x : ℝⁿ) :
     Set ℝⁿ :=
   Optimization.restrictedSteps (iteratedFDeriv ℝ 2 f x) (τ₂ * α₂) (restrictedSteps₁ f C τ₁ α₁ x)
 

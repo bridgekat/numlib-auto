@@ -425,11 +425,12 @@ theorem IsPolarDecomposition.posSemidef_sub_iInf_colSingularValues {A U P : Matr
       ext i j
       by_cases hij : i = j
       · subst hij
-        simp only [sub_apply, smul_apply, diagonal_apply_eq, one_apply_eq, smul_eq_mul, mul_one]
+        simp only [Matrix.sub_apply, Matrix.smul_apply, diagonal_apply_eq, one_apply_eq,
+            smul_eq_mul, mul_one]
         push_cast
         ring
-      · simp only [sub_apply, smul_apply, diagonal_apply_ne _ hij, one_apply_ne hij, smul_zero,
-          sub_zero]
+      · simp only [Matrix.sub_apply, Matrix.smul_apply, diagonal_apply_ne _ hij, one_apply_ne hij,
+          smul_zero, sub_zero]
     rw [hd, Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_smul, Matrix.mul_one, Matrix.smul_mul, hVV,
       ← hspec]
   rw [heq]
@@ -584,11 +585,11 @@ theorem IsPolarDecomposition.exists_posSemidef_sub_sortedSingularValues {m : ℕ
   set k := σ (m - 2) - σ (m - 1)
   refine ⟨fun i => V i l, ?_, ?_⟩
   · have := congrFun (congrFun hVV l) l
-    simpa [mul_apply, dotProduct] using this
+    simpa [Matrix.mul_apply, dotProduct] using this
   have hvv : vecMulVec (fun i => V i l) (fun i => V i l) =
       V * diagonal (Pi.single l 1) * Vᵀ := by
     ext i j
-    rw [mul_apply]
+    rw [Matrix.mul_apply]
     simp [vecMulVec_apply, mul_diagonal, Pi.single_apply]
   set d : Fin m → ℝ := fun i => σ i - c + k * (Pi.single l 1 : Fin m → ℝ) i with hd
   have hdiag : diagonal d =

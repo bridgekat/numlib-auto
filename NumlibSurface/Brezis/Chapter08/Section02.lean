@@ -695,10 +695,10 @@ theorem lemma_8_3 (u : SobolevIntervalLp 1 p (Opens.Ioo 0 1)) {η : ℝ → ℝ}
   have hηb' : MemLp (deriv η) ⊤ (volume.restrict (Ioo (0 : ℝ) 1)) :=
     (hη.continuous_deriv (by simp)).continuousOn.memLp_top_restrict_Ioo
   have hrest : (volume.restrict (Ioi (0 : ℝ))).restrict (Ioo 0 1) = volume.restrict (Ioo 0 1) := by
-    rw [Measure.restrict_restrict measurableSet_Ioo, inter_eq_left.2 fun x hx ↦ hx.1]
+    rw [Measure.restrict_restrict measurableSet_Ioo, inter_eq_left.2 Ioo_subset_Ioi_self]
   have hmem : ∀ {f : ℝ → ℝ}, MemLp f p (volume.restrict (Ioo (0 : ℝ) 1)) →
       MemLp ((Ioo (0 : ℝ) 1).indicator f) p (volume.restrict (Ioi 0)) := fun hf ↦ by
-    rw [memLp_iff, eLpNorm_indicator_eq_eLpNorm_restrict measurableSet_Ioo, hrest]
+    rw [memLp_iff, eLpNorm_indicator_eq_eLpNorm_restrict measurableSet_Ioo.nullMeasurableSet, hrest]
     exact hf.eLpNorm_lt_top
   refine ⟨memSobolevSpace_iff_memSobolevIntervalLp.2 (memSobolevIntervalLp_one_iff.2
     ⟨hmem (hηb.fun_mul (SobolevIntervalLp.memLp_rep hI u)), _, hweak,

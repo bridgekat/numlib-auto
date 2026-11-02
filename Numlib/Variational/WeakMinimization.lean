@@ -283,7 +283,7 @@ theorem ConvexOn.weakSeqLowerSemicontinuousOn {f : E → ℝ} {K : Set E}
       (fun k => subset_closure ⟨hu (σ k), not_lt.1 (hσy k)⟩) (hlim.comp hσ)
   have : (𝓝[S] w).NeBot := mem_closure_iff_nhdsWithin_neBot.1 hmem
   have hev : ∀ᶠ x in 𝓝[S] w, y < f x :=
-    (hlsc w hw y hy).filter_mono (nhdsWithin_mono w fun x hx => hx.1)
+    (hlsc w hw y hy).filter_mono (nhdsWithin_mono w fun x (hx : x ∈ S) => hx.1)
   obtain ⟨x, hx1, hx2⟩ := (hev.and eventually_mem_nhdsWithin).exists
   exact absurd hx2.2 (not_le.2 hx1)
 

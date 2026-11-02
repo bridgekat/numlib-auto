@@ -157,7 +157,7 @@ theorem sylvesterMap_submatrix {m' n' : Type*} [Fintype m'] [Fintype n'] (σ : m
 theorem sylvesterMap_diagonal_apply [DecidableEq m] [DecidableEq n] (ω : m → R) (ν : n → R)
     (X : Matrix m n R) (k : m) (j : n) :
     sylvesterMap (diagonal ω) (diagonal ν) X k j = (ω k - ν j) * X k j := by
-  simp only [sylvesterMap_apply, sub_apply, diagonal_mul, mul_diagonal]
+  simp only [sylvesterMap_apply, Matrix.sub_apply, diagonal_mul, mul_diagonal]
   ring
 
 /-! ### The block computation of Lemma 7.1.5 -/
@@ -277,7 +277,7 @@ theorem sylvesterMap_bijective_iff_disjoint_spectrum [IsAlgClosed K] {A : Matrix
   obtain ⟨i, hi⟩ := Function.ne_iff.mp hx
   obtain ⟨j, hj⟩ := Function.ne_iff.mp hy
   have := congrFun (congrFun (h.1 h0) i) j
-  rw [vecMulVec_apply, zero_apply] at this
+  rw [vecMulVec_apply, Matrix.zero_apply] at this
   exact mul_ne_zero hi hj this
 
 /-- The Sylvester equation `A X - X B = C` has exactly one solution for every `C` when `A` and `B`
@@ -315,7 +315,7 @@ theorem apply_eq_of_sylvesterMap_diagonal_eq {r : Type*} [Fintype r] {ω : m →
     sylvesterMap (diagonal ω) (diagonal ν) A = R * Sᵀ ↔
       ∀ k j, A k j = (R k ⬝ᵥ S j) / (ω k - ν j) := by
   rw [sylvesterMap_diagonal_eq_iff h, ← Matrix.ext_iff]
-  simp only [of_apply, mul_apply, transpose_apply, dotProduct]
+  simp only [of_apply, Matrix.mul_apply, transpose_apply, dotProduct]
 
 end Field
 
@@ -631,7 +631,7 @@ theorem sep_le_norm_sub [DecidableEq m] [DecidableEq n] {α β : 𝕜} (hα : α
   obtain ⟨j, hj⟩ := Function.ne_iff.mp hy
   intro h0
   have := congrFun (congrFun h0 i) j
-  rw [vecMulVec_apply, zero_apply] at this
+  rw [vecMulVec_apply, Matrix.zero_apply] at this
   exact mul_ne_zero hi hj this
 
 /-- **Unitary invariance** of the separation: `sep (Uᴴ A U) (Vᴴ B V) = sep A B` for unitary `U`,
@@ -775,7 +775,7 @@ theorem sep_diagonal [DecidableEq m] [DecidableEq n] [Nonempty m] [Nonempty n] (
     · intro h0
       simpa using congrFun (congrFun h0 i) j
     · ext k l
-      rw [← sylvesterMap_apply, sylvesterMap_diagonal_apply, smul_apply, single_apply,
+      rw [← sylvesterMap_apply, sylvesterMap_diagonal_apply, Matrix.smul_apply, single_apply,
         smul_eq_mul]
       split_ifs with h
       · obtain ⟨rfl, rfl⟩ := h
@@ -830,7 +830,7 @@ theorem sep_eq_iInf_colSingularValues [DecidableEq n] (c : 𝕜) (T : Matrix n n
         replicateCol Unit ((T - c • 1) *ᵥ WithLp.ofLp (x : EuclideanSpace 𝕜 n)) := by
     ext i j
     simp only [sub_mulVec, smul_mulVec, one_mulVec]
-    simp [mul_apply, mulVec, dotProduct, mul_comm]
+    simp [Matrix.mul_apply, mulVec, dotProduct, mul_comm]
   change ‖T * replicateCol Unit (WithLp.ofLp (x : EuclideanSpace 𝕜 n)) -
       replicateCol Unit (WithLp.ofLp (x : EuclideanSpace 𝕜 n)) * of (fun _ _ => c)‖ = _
   rw [hv, frobenius_norm_replicateCol]

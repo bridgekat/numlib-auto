@@ -195,7 +195,7 @@ theorem remark_8_16_i (hI : (I : Set ℝ).OrdConnected) (hp : p ≠ ∞) {u : �
     have hvu : (SobolevIntervalLp.restrict (J := I) (I := ⊤) (subset_univ _) w).fn
         =ᵐ[volume.restrict I] u :=
       (SobolevIntervalLp.fn_restrict_ae_eq _ w).trans
-        (hw''.trans (indicator_ae_eq_restrict I.isOpen.measurableSet))
+        (hw''.trans (indicator_ae_eq_restrict I.isOpen.measurableSet.nullMeasurableSet))
     refine ⟨_, (mem_sobolevIntervalLpZero_iff_indicator_mem hI hp _).2 (h.congr_ae ?_), hvu⟩
     exact SobolevIntervalLp.eventuallyEq_restrict_top_iff.2
       (indicator_ae_eq_of_ae_eq_restrict I.isOpen.measurableSet hvu).symm

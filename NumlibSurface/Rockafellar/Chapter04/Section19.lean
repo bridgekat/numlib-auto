@@ -241,7 +241,7 @@ theorem corollary_19_2_2 {C : Set (Rn n)} (hC : Polyhedral C) :
   have heq : polarSet (pairing n) C
       = {y : Rn n | supportFn (pairing n) C y ≤ ((1 : ℝ) : EReal)} := by
     ext y
-    rw [Set.mem_ofPred_eq, supportFn_le_coe_iff, mem_polarSet]
+    rw [mem_polarSet, Set.mem_ofPred_eq, supportFn_le_coe_iff]
   rw [heq]
   exact hs.polyhedral_sublevel 1
 

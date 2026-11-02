@@ -382,7 +382,7 @@ private theorem col_dotProduct_col_of_mem {k : ℕ} {Q : Matrix (Fin k) (Fin k) 
     Q.col i ⬝ᵥ Q.col j = (1 : Matrix (Fin k) (Fin k) ℝ) i j := by
   have := congrFun (congrFun (mem_unitaryGroup_iff'.1 hQ) i) j
   rw [← this]
-  simp [mul_apply, dotProduct, col_apply]
+  simp [Matrix.mul_apply, dotProduct, col_apply]
 
 /-- The columns of an orthogonal matrix have unit Euclidean norm. -/
 private theorem norm_col_of_mem {k : ℕ} {Q : Matrix (Fin k) (Fin k) ℝ}
@@ -635,7 +635,7 @@ private theorem rank_transpose_leadingCols {V : Matrix (Fin n) (Fin n) ℝ}
   have hWW : W * Wᵀ = 1 := by
     ext i j
     have := congrFun (congrFun hVV (Fin.castLE hr i)) (Fin.castLE hr j)
-    simpa [hW, mul_apply, one_apply, Fin.castLE_inj] using this
+    simpa [hW, Matrix.mul_apply, Matrix.one_apply, Fin.castLE_inj] using this
   refine le_antisymm (rank_le_height W) ?_
   have := rank_mul_le_left W Wᵀ
   rwa [hWW, rank_one, Fintype.card_fin] at this
@@ -676,7 +676,7 @@ theorem qrcp_V11 {V : Matrix (Fin n) (Fin n) ℝ} (hV : V ∈ orthogonalGroup (F
     have h2 := congrFun (congrFun hT (Fin.castLE hr i)) j
     simp only [submatrix_apply, id] at h2 ⊢
     rw [h2]
-    simp [mul_apply, hBdef]
+    simp [Matrix.mul_apply, hBdef]
   have hQinv : (Qᵀ)⁻¹ = Q := inv_eq_left_inv ((mem_orthogonalGroup_iff _ _).1 hQO)
   rw [hV11, Matrix.mul_inv_rev, hQinv, ← transpose_nonsing_inv, l2_opNorm_unitary_mul hQO,
     ← conjTranspose_eq_transpose_of_trivial, l2_opNorm_conjTranspose]
@@ -724,7 +724,7 @@ theorem theorem_5_5_3 {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin 
   rw [sub_sub_sub_cancel_left, toEuclideanLin_mul_apply]
   congr 1
   ext p
-  simp only [toEuclideanLin_apply, PiLp.toLp_apply, mulVec, dotProduct, mul_apply,
+  simp only [toEuclideanLin_apply, PiLp.toLp_apply, mulVec, dotProduct, Matrix.mul_apply,
     submatrix_apply, id_eq, transpose_apply, Finset.sum_apply, Pi.smul_apply, smul_eq_mul,
     col_apply, Finset.sum_mul]
   rw [Finset.sum_comm]

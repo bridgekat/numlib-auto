@@ -285,7 +285,7 @@ theorem equation_6_5_14 {n : ℕ} {A H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
   have hcol : ∀ i : Fin n, H i.succ 0 = 0 := fun i => hH.isUpperTriangular (Fin.succ_pos i)
   have hent : ∀ i j, A i j = H 0 i * H 0 j + ∑ k : Fin n, H k.succ i * H k.succ j := by
     intro i j
-    rw [← hA, mul_apply, Fin.sum_univ_succ]
+    rw [← hA, Matrix.mul_apply, Fin.sum_univ_succ]
     rfl
   have h00 : A 0 0 = H 0 0 ^ 2 := by
     rw [hent]
@@ -299,7 +299,7 @@ theorem equation_6_5_14 {n : ℕ} {A H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
   · ext i j
     have e1 : ((H.submatrix Fin.succ Fin.succ)ᵀ * H.submatrix Fin.succ Fin.succ) i j =
         ∑ k : Fin n, H k.succ i.succ * H k.succ j.succ := by
-      simp [mul_apply]
+      simp [Matrix.mul_apply]
     rw [e1, Matrix.sub_apply, Matrix.smul_apply, submatrix_apply, vecMulVec_apply,
       hent i.succ j.succ, hv i, hv j, h00, smul_eq_mul]
     field_simp
@@ -847,7 +847,7 @@ theorem qrDeleteFirstRow_spec {m n : ℕ} {A : Matrix (Fin (m + 1)) (Fin n) ℝ}
       (mem_orthogonalGroup_iff' _ ℝ).1 hP, Matrix.one_mul, h.mul_eq]
   have hrow : ∀ j, st.2.1 0 j = st.1 j := by
     intro j
-    rw [h2, h1, mul_apply, mulVec, dotProduct]
+    rw [h2, h1, Matrix.mul_apply, mulVec, dotProduct]
     simp only [transpose_apply]
     exact Finset.sum_congr rfl fun l _ => mul_comm _ _
   have hrow0 : ∀ j : Fin m, st.2.1 0 j.succ = 0 := fun j => by
@@ -856,7 +856,7 @@ theorem qrDeleteFirstRow_spec {m n : ℕ} {A : Matrix (Fin (m + 1)) (Fin n) ℝ}
   have hcol0 : ∀ i : Fin m, st.2.1 i.succ 0 = 0 := by
     have e1 : (st.2.1 * st.2.1ᵀ) 0 0 = 1 := by rw [(mem_orthogonalGroup_iff _ ℝ).1 hQo]; simp
     have e2 : (st.2.1ᵀ * st.2.1) 0 0 = 1 := by rw [(mem_orthogonalGroup_iff' _ ℝ).1 hQo]; simp
-    rw [mul_apply, Fin.sum_univ_succ] at e1 e2
+    rw [Matrix.mul_apply, Fin.sum_univ_succ] at e1 e2
     simp only [transpose_apply, hrow0, mul_zero, Finset.sum_const_zero, add_zero] at e1 e2
     have hs : ∑ i : Fin m, st.2.1 i.succ 0 * st.2.1 i.succ 0 = 0 := by linarith
     intro i
@@ -866,14 +866,14 @@ theorem qrDeleteFirstRow_spec {m n : ℕ} {A : Matrix (Fin (m + 1)) (Fin n) ℝ}
   · refine (mem_orthogonalGroup_iff _ ℝ).2 ?_
     ext i j
     have := congrFun (congrFun ((mem_orthogonalGroup_iff _ ℝ).1 hQo) i.succ) j.succ
-    rw [mul_apply, Fin.sum_univ_succ] at this
-    simp only [transpose_apply, hcol0, zero_mul, zero_add, one_apply, Fin.succ_inj] at this
-    simpa [mul_apply, one_apply] using this
+    rw [Matrix.mul_apply, Fin.sum_univ_succ] at this
+    simp only [transpose_apply, hcol0, zero_mul, zero_add, Matrix.one_apply, Fin.succ_inj] at this
+    simpa [Matrix.mul_apply, Matrix.one_apply] using this
   · exact hHess i.succ j (by simp; omega)
   · ext i j
     have := congrFun (congrFun hQR i.succ) j
-    rw [mul_apply, Fin.sum_univ_succ, hcol0, zero_mul, zero_add] at this
-    simpa [mul_apply] using this
+    rw [Matrix.mul_apply, Fin.sum_univ_succ, hcol0, zero_mul, zero_add] at this
+    simpa [Matrix.mul_apply] using this
 
 /-- The exact step of `choleskyUpdate`. -/
 private noncomputable def cholUpdStep {n : ℕ} (S : Matrix (Fin (n + 1)) (Fin n) ℝ) (k : Fin n) :
@@ -887,7 +887,7 @@ private theorem transpose_mul_self_castSucc {n p : ℕ} (S : Matrix (Fin (n + 1)
     Sᵀ * S = (S.submatrix Fin.castSucc id)ᵀ * S.submatrix Fin.castSucc id +
       vecMulVec (S (Fin.last n)) (S (Fin.last n)) := by
   ext i j
-  simp [mul_apply, Fin.sum_univ_castSucc, vecMulVec_apply]
+  simp [Matrix.mul_apply, Fin.sum_univ_castSucc, vecMulVec_apply]
 
 /-- **§6.5.4, Cholesky updating is correct in exact arithmetic**: if `A = GGᵀ`
 (`Matrix.IsCholesky A Gᵀ`), the output `G̃` of `choleskyUpdate` is lower triangular with nonzero
@@ -1018,10 +1018,10 @@ theorem equation_6_5_16 {n p : ℕ} {A : Matrix (Fin (n + p)) (Fin n) ℝ}
     ext i j
     have := congrFun (congrFun hR i)
     simp only [submatrix_apply, id] at this ⊢
-    rw [mul_apply]
+    rw [Matrix.mul_apply]
     simp only [this] at *
     rcases i with i | i
-    · simp [fromRows_apply_inl, mul_apply]
+    · simp [fromRows_apply_inl, Matrix.mul_apply]
     · simp [fromRows_apply_inr]
   · exact hLt hij
   · exact (mem_orthogonalGroup_iff' _ ℝ).1 hU
@@ -1045,7 +1045,7 @@ theorem ulv_nullspace_norm {r q p : ℕ} {A : Matrix (Fin (r + q + p)) (Fin (r +
     simpa [hf, Fin.ext_iff] using hab
   have hWW : Wᵀ * W = 1 := by
     ext a b
-    simp only [hW, mul_apply, transpose_apply, submatrix_apply, id, one_apply]
+    simp only [hW, Matrix.mul_apply, transpose_apply, submatrix_apply, id, Matrix.one_apply]
     rw [Finset.sum_eq_single (f a)]
     · simp [hfinj.eq_iff]
     · intro i _ hi
@@ -1055,12 +1055,12 @@ theorem ulv_nullspace_norm {r q p : ℕ} {A : Matrix (Fin (r + q + p)) (Fin (r +
       W * L.submatrix (Fin.natAdd r) (Fin.natAdd r) := by
     ext i j
     have hsub : (Uᵀ * A * V.submatrix id (Fin.natAdd r)) i j = (Uᵀ * A * V) i (Fin.natAdd r j) := by
-      simp only [mul_apply, submatrix_apply, id]
+      simp only [Matrix.mul_apply, submatrix_apply, id]
     rw [hsub]
     refine Fin.addCases (fun a => ?_) (fun b => ?_) i
     · have e := congrFun (congrFun h (Sum.inl a)) (Fin.natAdd r j)
       simp only [submatrix_apply, finSumFinEquiv_apply_left, id, fromRows_apply_inl] at e
-      rw [e, mul_apply]
+      rw [e, Matrix.mul_apply]
       refine Fin.addCases (fun a' => ?_) (fun b' => ?_) a
       · have : L (Fin.castAdd q a') (Fin.natAdd r j) = 0 := hL (by
           have := a'.isLt
@@ -1068,7 +1068,7 @@ theorem ulv_nullspace_norm {r q p : ℕ} {A : Matrix (Fin (r + q + p)) (Fin (r +
           omega)
         rw [this, Finset.sum_eq_zero]
         intro k _
-        simp only [hW, submatrix_apply, id, one_apply, hf]
+        simp only [hW, submatrix_apply, id, Matrix.one_apply, hf]
         rw [ite_eq_right]
         · simp
         · intro hk
@@ -1076,9 +1076,9 @@ theorem ulv_nullspace_norm {r q p : ℕ} {A : Matrix (Fin (r + q + p)) (Fin (r +
           simp at this
           omega
       · rw [Finset.sum_eq_single b']
-        · simp [hW, hf, one_apply]
+        · simp [hW, hf, Matrix.one_apply]
         · intro k _ hk
-          simp only [hW, submatrix_apply, id, one_apply, hf]
+          simp only [hW, submatrix_apply, id, Matrix.one_apply, hf]
           rw [ite_eq_right]
           · simp
           · intro hk'
@@ -1087,9 +1087,9 @@ theorem ulv_nullspace_norm {r q p : ℕ} {A : Matrix (Fin (r + q + p)) (Fin (r +
     · have e := congrFun (congrFun h (Sum.inr b)) (Fin.natAdd r j)
       simp only [submatrix_apply, finSumFinEquiv_apply_right, id, fromRows_apply_inr,
         Matrix.zero_apply] at e
-      rw [e, mul_apply, Finset.sum_eq_zero]
+      rw [e, Matrix.mul_apply, Finset.sum_eq_zero]
       intro k _
-      simp only [hW, submatrix_apply, id, one_apply, hf]
+      simp only [hW, submatrix_apply, id, Matrix.one_apply, hf]
       rw [ite_eq_right]
       · simp
       · intro hk

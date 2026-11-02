@@ -111,7 +111,7 @@ private theorem modelq_dotProduct (n : ℕ) (k l : Fin n) :
 /-- `(Q^h)ᵀ Q^h = I`. -/
 theorem modelQ_transpose_mul (n : ℕ) : (modelQ n)ᵀ * modelQ n = 1 := by
   ext k l
-  rw [mul_apply, one_apply, ← modelq_dotProduct]
+  rw [Matrix.mul_apply, Matrix.one_apply, ← modelq_dotProduct]
   rfl
 
 /-- `Q^h (Q^h)ᵀ = I`. -/
@@ -241,7 +241,7 @@ theorem equation_11_6_10 (m : ℕ) (q l : Fin m) :
 private theorem diagPart_modelA (n : ℕ) :
     diagPart (modelA n) = (2 * ((n : ℝ) + 1) ^ 2) • (1 : Matrix (Fin n) (Fin n) ℝ) := by
   ext i j
-  rw [diagPart_apply, Matrix.smul_apply, one_apply]
+  rw [diagPart_apply, Matrix.smul_apply, Matrix.one_apply]
   split_ifs with h
   · subst h
     rw [modelA_eq, Matrix.smul_apply, symmTridiagonalToeplitz_apply_self, smul_eq_mul, smul_eq_mul]
@@ -620,7 +620,7 @@ noncomputable def modelB (n : ℕ) : Matrix (Fin n) (Fin n) ℝ :=
 private theorem modelB_eq (n : ℕ) : modelB n = symmTridiagonalToeplitz n 1 2 := by
   ext i j
   have hn : ((n : ℝ) + 1) ≠ 0 := by positivity
-  simp only [modelB, modelA, Matrix.sub_apply, Matrix.smul_apply, one_apply, smul_eq_mul,
+  simp only [modelB, modelA, Matrix.sub_apply, Matrix.smul_apply, Matrix.one_apply, smul_eq_mul,
     symmTridiagonalToeplitz_apply]
   split_ifs <;> field_simp <;> ring
 
@@ -939,7 +939,7 @@ noncomputable def twoGridBlock (m : ℕ) : Matrix (Fin (2 * m + 1)) (Fin (2 * m 
 /-- Column `k` of `Q^h B` is `∑_i B_ik q_i`, read off `Q^h`'s columns. -/
 private theorem modelQ_mul_apply {n : ℕ} {p : Type*} (B : Matrix (Fin n) p ℝ)
     (i : Fin n) (k : p) : (modelQ n * B) i k = ∑ j, modelq n j i * B j k := by
-  rw [mul_apply]
+  rw [Matrix.mul_apply]
   rfl
 
 /-- **Theorem 11.6.2** ((11.6.21)). `E^h Q^h = Q^h [S^h 0 C^hℰ_m; 0 1 0; ℰ_mS^h 0 ℰ_mC^hℰ_m]`. The

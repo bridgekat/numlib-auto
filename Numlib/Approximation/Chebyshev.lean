@@ -1145,6 +1145,7 @@ private theorem exists_separators_of_not_equioscillates {X : Set ℝ} [CompactSp
     by_cases hj : j + 1 < m
     · have hset : IsClosed {u : X | g u = g (zz j) ∧ (zz j : ℝ) ≤ (u : ℝ) ∧
           (u : ℝ) ≤ (zz (j + 1) : ℝ)} := by
+        rw [Set.ofPred_and, Set.ofPred_and]
         refine IsClosed.inter (isClosed_eq g.continuous continuous_const) ?_
         exact IsClosed.inter (isClosed_le continuous_const continuous_subtype_val)
           (isClosed_le continuous_subtype_val continuous_const)

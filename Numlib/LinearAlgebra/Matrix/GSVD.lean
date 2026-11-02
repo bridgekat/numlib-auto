@@ -144,9 +144,9 @@ theorem exists_isGSVD (hnm : n ≤ m₁) (A : Matrix (Fin m₁) (Fin n) 𝕜)
   have hQo : Q₁₁ᴴ * Q₁₁ + Q₂₁ᴴ * Q₂₁ = 1 := by
     ext i j
     have h := congrFun (congrFun hQQ (Fin.castLE hrm i)) (Fin.castLE hrm j)
-    rw [mul_apply, Fin.sum_univ_add, one_apply] at h
+    rw [Matrix.mul_apply, Fin.sum_univ_add, Matrix.one_apply] at h
     simp only [(Fin.castLE_injective hrm).eq_iff] at h
-    rw [add_apply, mul_apply, mul_apply, one_apply]
+    rw [Matrix.add_apply, Matrix.mul_apply, Matrix.mul_apply, Matrix.one_apply]
     simpa [Q₁₁, Q₂₁, conjTranspose_apply, submatrix_apply] using h
   obtain ⟨U₁, U₂, V₁, θ, hc⟩ := exists_isThinCSD Q₁₁ Q₂₁ hQo (hrn.trans hnm)
   -- the selector `R = [I_r 0]` and the diagonal `Σ_r`
@@ -201,14 +201,14 @@ theorem exists_isGSVD (hnm : n ≤ m₁) (A : Matrix (Fin m₁) (Fin n) 𝕜)
   have hAZ : A * Z = Q₁₁ * D * R := by
     ext i j
     rw [mul_rectDiagonal_apply,
-      show (A * Z) i j = (M * Z) (Fin.castAdd m₂ i) j by simp [mul_apply, hM], hMZ]
+      show (A * Z) i j = (M * Z) (Fin.castAdd m₂ i) j by simp [Matrix.mul_apply, hM], hMZ]
     split_ifs
     · simp [Q₁₁, hD, mul_diagonal]
     · rfl
   have hBZ : B * Z = Q₂₁ * D * R := by
     ext i j
     rw [mul_rectDiagonal_apply,
-      show (B * Z) i j = (M * Z) (Fin.natAdd m₁ i) j by simp [mul_apply, hM], hMZ]
+      show (B * Z) i j = (M * Z) (Fin.natAdd m₁ i) j by simp [Matrix.mul_apply, hM], hMZ]
     split_ifs
     · simp [Q₂₁, hD, mul_diagonal]
     · rfl
@@ -301,7 +301,7 @@ theorem mulVec_col_eq_smul_col_of_mul_eq_mul_rectDiagonal (hnm : n ≤ m) {γ : 
     M *ᵥ X.col k = γ k • U.col (Fin.castLE hnm k) := by
   rw [← col_mul_eq_mulVec_col, h]
   ext i
-  simp only [col_apply, mul_apply, rectDiagonal_apply, Pi.smul_apply, smul_eq_mul]
+  simp only [col_apply, Matrix.mul_apply, rectDiagonal_apply, Pi.smul_apply, smul_eq_mul]
   rw [Finset.sum_eq_single (Fin.castLE hnm k)]
   · simp [mul_comm]
   · intro j _ hj
@@ -435,7 +435,7 @@ theorem IsGSVD.ker_inf_ker (h : IsGSVD A B U₁ U₂ X α β) :
     · change A *ᵥ X.col i = 0
       rw [← col_mul_eq_mulVec_col, hAX]
       ext k
-      rw [col_apply, mul_apply]
+      rw [col_apply, Matrix.mul_apply]
       refine Finset.sum_eq_zero fun l _ => ?_
       rw [rectDiagonal_apply]
       split_ifs with hli
@@ -444,7 +444,7 @@ theorem IsGSVD.ker_inf_ker (h : IsGSVD A B U₁ U₂ X α β) :
     · change B *ᵥ X.col i = 0
       rw [← col_mul_eq_mulVec_col, hBX]
       ext k
-      rw [col_apply, mul_apply]
+      rw [col_apply, Matrix.mul_apply]
       exact Finset.sum_eq_zero fun l _ => by simp [shiftedRectDiagonal_apply, hβ]
   have hcard : Fintype.card {i : Fin n // r ≤ (i : ℕ)} = n - r := by
     rw [← Fintype.card_fin (n - r)]

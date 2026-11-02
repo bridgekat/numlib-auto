@@ -151,12 +151,12 @@ theorem MemLpLoc.memLpLoc_one {f : 𝔼 → ℝ} {p : ENNReal} [Fact (1 ≤ p)] 
     (hf : MemLpLoc f p Ω) : MemLpLoc f 1 Ω := by
   intro K hKΩ hK
   have h : MemLp f p ((volume.restrict Ω).restrict K) := by
-    rw [memLp_iff, ← eLpNorm_indicator_eq_eLpNorm_restrict hK.measurableSet]
+    rw [memLp_iff, ← eLpNorm_indicator_eq_eLpNorm_restrict hK.measurableSet.nullMeasurableSet]
     exact hf K hKΩ hK
   have : IsFiniteMeasure ((volume.restrict Ω).restrict K) := ⟨by
     rw [Measure.restrict_apply_univ]
     exact (Measure.le_iff'.1 Measure.restrict_le_self K).trans_lt hK.measure_lt_top⟩
-  rw [memLp_iff, eLpNorm_indicator_eq_eLpNorm_restrict hK.measurableSet]
+  rw [memLp_iff, eLpNorm_indicator_eq_eLpNorm_restrict hK.measurableSet.nullMeasurableSet]
   exact (h.mono_exponent Fact.out).eLpNorm_lt_top
 
 /-- **Proposition 4.19.** For `f ∈ C_c(ℝ^N)` and `g ∈ L^1_loc(ℝ^N)`, `(f ⋆ g)(x)` is well

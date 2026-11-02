@@ -304,7 +304,7 @@ and `Matrix.linearIndependent_cols_iff_isUnit`. -/
 theorem theorem_5_7_eigenvectors {A B X : Matrix (Fin n) (Fin n) ℝ} {lam : Fin n → ℝ}
     (hX : IsUnit X) (hA : Xᵀ * A * X = diagonal lam) (hB : Xᵀ * B * X = 1) :
     (∀ i, A *ᵥ X.col i = lam i • (B *ᵥ X.col i)) ∧ LinearIndependent ℝ X.col := by
-  refine ⟨fun i => ?_, linearIndependent_cols_iff_isUnit.mpr hX⟩
+  refine ⟨fun i => ?_, linearIndependent_col_iff_isUnit.mpr hX⟩
   have hB' : star X * B * X = 1 := by
     rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial]
   have hA' : star X * A * X = diagonal lam := by

@@ -235,45 +235,45 @@ variable [Fintype n] {p p' q q' : ℕ}
 /-- Sums keep the larger lower bandwidth. -/
 theorem HasLowerBandwidth.add [AddZeroClass R] {A B : Matrix n n R} (hA : A.HasLowerBandwidth p)
     (hB : B.HasLowerBandwidth p') : (A + B).HasLowerBandwidth (max p p') := fun i j hij => by
-  rw [add_apply, hA i j ((le_max_left _ _).trans_lt hij),
+  rw [Matrix.add_apply, hA i j ((le_max_left _ _).trans_lt hij),
     hB i j ((le_max_right _ _).trans_lt hij), add_zero]
 
 /-- Sums keep the larger upper bandwidth. -/
 theorem HasUpperBandwidth.add [AddZeroClass R] {A B : Matrix n n R} (hA : A.HasUpperBandwidth q)
     (hB : B.HasUpperBandwidth q') : (A + B).HasUpperBandwidth (max q q') := fun i j hij => by
-  rw [add_apply, hA i j ((le_max_left _ _).trans_lt hij),
+  rw [Matrix.add_apply, hA i j ((le_max_left _ _).trans_lt hij),
     hB i j ((le_max_right _ _).trans_lt hij), add_zero]
 
 /-- Scalar multiples keep the lower bandwidth. -/
 theorem HasLowerBandwidth.smul {S : Type*} [Zero R] [SMulZeroClass S R] {A : Matrix n n R}
     (hA : A.HasLowerBandwidth p) (c : S) : (c • A).HasLowerBandwidth p := fun i j hij => by
-  rw [smul_apply, hA i j hij, smul_zero]
+  rw [Matrix.smul_apply, hA i j hij, smul_zero]
 
 /-- Scalar multiples keep the upper bandwidth. -/
 theorem HasUpperBandwidth.smul {S : Type*} [Zero R] [SMulZeroClass S R] {A : Matrix n n R}
     (hA : A.HasUpperBandwidth q) (c : S) : (c • A).HasUpperBandwidth q := fun i j hij => by
-  rw [smul_apply, hA i j hij, smul_zero]
+  rw [Matrix.smul_apply, hA i j hij, smul_zero]
 
 /-- Negation keeps the lower bandwidth. -/
 theorem HasLowerBandwidth.neg [NegZeroClass R] {A : Matrix n n R} (hA : A.HasLowerBandwidth p) :
-    (-A).HasLowerBandwidth p := fun i j hij => by rw [neg_apply, hA i j hij, neg_zero]
+    (-A).HasLowerBandwidth p := fun i j hij => by rw [Matrix.neg_apply, hA i j hij, neg_zero]
 
 /-- Negation keeps the upper bandwidth. -/
 theorem HasUpperBandwidth.neg [NegZeroClass R] {A : Matrix n n R} (hA : A.HasUpperBandwidth q) :
-    (-A).HasUpperBandwidth q := fun i j hij => by rw [neg_apply, hA i j hij, neg_zero]
+    (-A).HasUpperBandwidth q := fun i j hij => by rw [Matrix.neg_apply, hA i j hij, neg_zero]
 
 /-- Differences keep the larger lower bandwidth. -/
 theorem HasLowerBandwidth.sub [SubNegZeroMonoid R] {A B : Matrix n n R}
     (hA : A.HasLowerBandwidth p) (hB : B.HasLowerBandwidth p') :
     (A - B).HasLowerBandwidth (max p p') := fun i j hij => by
-  rw [sub_apply, hA i j ((le_max_left _ _).trans_lt hij),
+  rw [Matrix.sub_apply, hA i j ((le_max_left _ _).trans_lt hij),
     hB i j ((le_max_right _ _).trans_lt hij), sub_zero]
 
 /-- Differences keep the larger upper bandwidth. -/
 theorem HasUpperBandwidth.sub [SubNegZeroMonoid R] {A B : Matrix n n R}
     (hA : A.HasUpperBandwidth q) (hB : B.HasUpperBandwidth q') :
     (A - B).HasUpperBandwidth (max q q') := fun i j hij => by
-  rw [sub_apply, hA i j ((le_max_left _ _).trans_lt hij),
+  rw [Matrix.sub_apply, hA i j ((le_max_left _ _).trans_lt hij),
     hB i j ((le_max_right _ _).trans_lt hij), sub_zero]
 
 variable [NonUnitalNonAssocSemiring R] {A B : Matrix n n R}
@@ -283,7 +283,7 @@ nonzero term needs at most `p` indices in `[k, i)` and at most `p'` in `[j, k)`,
 intervals cover `[j, i)`. -/
 theorem HasLowerBandwidth.mul (hA : A.HasLowerBandwidth p) (hB : B.HasLowerBandwidth p') :
     (A * B).HasLowerBandwidth (p + p') := fun i j hij => by
-  rw [mul_apply]
+  rw [Matrix.mul_apply]
   refine Finset.sum_eq_zero fun k _ => ?_
   by_cases hk : p < #{l | k ≤ l ∧ l < i}
   · rw [hA i k hk, zero_mul]
@@ -294,7 +294,7 @@ theorem HasLowerBandwidth.mul (hA : A.HasLowerBandwidth p) (hB : B.HasLowerBandw
 /-- Bandwidths add under products, the upper version. -/
 theorem HasUpperBandwidth.mul (hA : A.HasUpperBandwidth q) (hB : B.HasUpperBandwidth q') :
     (A * B).HasUpperBandwidth (q + q') := fun i j hij => by
-  rw [mul_apply]
+  rw [Matrix.mul_apply]
   refine Finset.sum_eq_zero fun k _ => ?_
   by_cases hk : q < #{l | i ≤ l ∧ l < k}
   · rw [hA i k hk, zero_mul]
@@ -362,7 +362,7 @@ theorem pow_apply_eq_zero_of_potential [Semiring S] (M : Matrix ι ι S) (f : ι
     omega
   | succ k ih =>
     intro i j h
-    rw [pow_succ, mul_apply]
+    rw [pow_succ, Matrix.mul_apply]
     refine Finset.sum_eq_zero fun r _ => ?_
     by_cases hr : f j ≤ f r
     · rw [hM r j hr, mul_zero]

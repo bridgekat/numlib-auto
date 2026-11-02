@@ -474,7 +474,7 @@ theorem corollary_7_1_7 (A : Matrix (Fin n) (Fin n) ℂ) :
       funext i
       rw [jordanForm_const_eq_add_smul_one, add_comm]
       ext a b
-      simp [N, reindex_apply, Matrix.add_apply, one_apply]
+      simp [N, reindex_apply, Matrix.add_apply, Matrix.one_apply]
     rw [hPA, ← hblk]
     ext a b
     simp [reindex_apply, τ]
@@ -591,7 +591,7 @@ theorem corollary_7_1_7_multiplicity {A X : Matrix (Fin n) (Fin n) ℂ} {q : ℕ
         reindex σ σ (blockDiagonal' fun j => μ j • (1 : Matrix _ _ ℂ) + N j - μ i • 1) := by
       rw [← blockDiagonal'_sub_smul_one]
       ext a b
-      simp [reindex_apply, Matrix.sub_apply, one_apply]
+      simp [reindex_apply, Matrix.sub_apply, Matrix.one_apply]
     rw [hsub, finrank_ker_mulVecLin_reindex, finrank_ker_mulVecLin_blockDiagonal',
       Finset.sum_eq_single i]
     · rw [add_sub_cancel_left]
@@ -820,7 +820,7 @@ theorem equation_7_1_13 {ε : ℝ} (hε : 0 < ε) :
       simpa [A, vecMul, dotProduct, Fin.sum_univ_two, mul_comm] using this
     have h3 : X⁻¹ k 0 * X 0 k + X⁻¹ k 1 * X 1 k = 1 := by
       have := congrFun (congrFun (Matrix.nonsing_inv_mul X hdet) k) k
-      simpa [mul_apply, Fin.sum_univ_two] using this
+      simpa [Matrix.mul_apply, Fin.sum_univ_two] using this
     have hx : X 1 k = 0 := by
       have h4 : (2 * ε : ℂ) * X 1 k = 0 := by linear_combination -h1
       rcases mul_eq_zero.1 h4 with h5 | h5
@@ -843,11 +843,11 @@ theorem equation_7_1_13 {ε : ℝ} (hε : 0 < ε) :
     have hYX : Y * X = 1 := by
       ext i j
       fin_cases i <;> fin_cases j
-      · simp [X, Y, mul_apply, Fin.sum_univ_two]
-      · simpa [X, Y, mul_apply, Fin.sum_univ_two] using
+      · simp [X, Y, Matrix.mul_apply, Fin.sum_univ_two]
+      · simpa [X, Y, Matrix.mul_apply, Fin.sum_univ_two] using
           (show (1 : ℂ) * 1 + 1 / (2 * ε) * -(2 * ε) = 0 by field_simp; ring)
-      · simp [X, Y, mul_apply, Fin.sum_univ_two]
-      · simpa [X, Y, mul_apply, Fin.sum_univ_two] using
+      · simp [X, Y, Matrix.mul_apply, Fin.sum_univ_two]
+      · simpa [X, Y, Matrix.mul_apply, Fin.sum_univ_two] using
           (show (0 : ℂ) * 1 + -(1 / (2 * ε)) * -(2 * ε) = 1 by field_simp; ring)
     have hinv : X⁻¹ = Y := Matrix.inv_eq_left_inv hYX
     have hXu : IsUnit X := (isUnit_iff_isUnit_det X).2 (isUnit_det_of_left_inverse hYX)
@@ -855,11 +855,11 @@ theorem equation_7_1_13 {ε : ℝ} (hε : 0 < ε) :
     · have hAX : A * X = X * diagonal ![1 + (ε : ℂ), 1 - ε] := by
         ext i j
         fin_cases i <;> fin_cases j
-        · simp [X, A, mul_apply, Fin.sum_univ_two]
-        · simpa [X, A, mul_apply, Fin.sum_univ_two] using
+        · simp [X, A, Matrix.mul_apply, Fin.sum_univ_two]
+        · simpa [X, A, Matrix.mul_apply, Fin.sum_univ_two] using
             (show (1 + ε : ℂ) * 1 + 1 * -(2 * ε) = 1 * (1 - ε) by ring)
-        · simp [X, A, mul_apply, Fin.sum_univ_two]
-        · simpa [X, A, mul_apply, Fin.sum_univ_two] using
+        · simp [X, A, Matrix.mul_apply, Fin.sum_univ_two]
+        · simpa [X, A, Matrix.mul_apply, Fin.sum_univ_two] using
             (show (0 : ℂ) * 1 + (1 - ε) * -(2 * ε) = -(2 * ε) * (1 - ε) by ring)
       rw [Matrix.mul_assoc, hAX, ← Matrix.mul_assoc,
         Matrix.nonsing_inv_mul X ((isUnit_iff_isUnit_det X).1 hXu), Matrix.one_mul]

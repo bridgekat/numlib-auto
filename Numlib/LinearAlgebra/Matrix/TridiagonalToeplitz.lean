@@ -833,7 +833,7 @@ private theorem symmTridiagonalToeplitz_neg_one_two_mul_negOneTwoInv (n : ℕ) :
   have hi : (i : ℕ) + 2 ≤ n + 1 := by omega
   change (symmTridiagonalToeplitz n (-1) 2 *ᵥ fun j => negOneTwoInv n j k) i = _
   rw [neg_one_two_mulVec_apply, padZero_negOneTwoInv_col k (by omega),
-    padZero_negOneTwoInv_col k (by omega), padZero_negOneTwoInv_col k hi, one_apply]
+    padZero_negOneTwoInv_col k (by omega), padZero_negOneTwoInv_col k hi, Matrix.one_apply]
   rcases lt_trichotomy (i : ℕ) k with hik | hik | hik
   · have hne : i ≠ k := fun h => by rw [h] at hik; exact lt_irrefl _ hik
     have h1 : (i : ℕ) + 1 ≤ k + 1 := by omega
@@ -1133,7 +1133,7 @@ theorem secondDifferencePeriodic_mulVec (hn : 2 ≤ n) (v : Fin n → ℝ) :
       = (of fun i j : Fin n => if (i : ℕ) = 0 ∧ (j : ℕ) + 1 = n then (1 : ℝ) else 0)
         + of fun i j : Fin n => if (i : ℕ) + 1 = n ∧ (j : ℕ) = 0 then (1 : ℝ) else 0 := by
     ext i j
-    simp only [of_apply, add_apply]
+    simp only [of_apply, Matrix.add_apply]
     split_ifs <;> first | (exfalso; omega) | ring
   rw [secondDifferencePeriodic, hsplit, sub_mulVec, add_mulVec]
   funext i
@@ -1255,13 +1255,13 @@ theorem cornerTridiagonal_isSymm (n : ℕ) (γ δ : ℝ) : (cornerTridiagonal n 
 /-- Off the diagonal, `Y_{γ,δ}` is `tridiag(1, 0, 1)`. -/
 theorem cornerTridiagonal_apply_of_ne (γ δ : ℝ) {i l : Fin n} (h : i ≠ l) :
     cornerTridiagonal n γ δ i l = if (i : ℕ) + 1 = l ∨ (l : ℕ) + 1 = i then 1 else 0 := by
-  rw [cornerTridiagonal, add_apply, diagonal_apply_ne _ h, add_zero,
+  rw [cornerTridiagonal, Matrix.add_apply, diagonal_apply_ne _ h, add_zero,
     symmTridiagonalToeplitz_apply', ite_eq_right (fun h' => h (Fin.ext h'))]
 
 /-- Away from the two corners, the diagonal of `Y_{γ,δ}` vanishes. -/
 theorem cornerTridiagonal_apply_self (γ δ : ℝ) {i : Fin n} (hi₀ : 0 < (i : ℕ))
     (hi : (i : ℕ) + 1 < n) : cornerTridiagonal n γ δ i i = 0 := by
-  rw [cornerTridiagonal, add_apply, diagonal_apply_eq, symmTridiagonalToeplitz_apply',
+  rw [cornerTridiagonal, Matrix.add_apply, diagonal_apply_eq, symmTridiagonalToeplitz_apply',
     ite_eq_left rfl, ite_eq_right hi₀.ne', ite_eq_right hi.ne]
   ring
 
@@ -1294,14 +1294,14 @@ theorem cornerTridiagonal_transpose (γ δ : ℝ) :
 theorem cornerTridiagonal_mul_apply (γ δ : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) {i : Fin n}
     (hi₀ : 0 < (i : ℕ)) (hi : (i : ℕ) + 1 < n) (j : Fin n) :
     (cornerTridiagonal n γ δ * A) i j = A ⟨i - 1, by omega⟩ j + A ⟨i + 1, hi⟩ j := by
-  rw [mul_apply]
+  rw [Matrix.mul_apply]
   exact cornerTridiagonal_mul_apply_aux γ δ hi₀ hi fun l => A l j
 
 /-- Away from the first and last column, `(A Y_{γ,δ})_ij = A_{i, j−1} + A_{i, j+1}`. -/
 theorem mul_cornerTridiagonal_apply (γ δ : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) (i : Fin n)
     {j : Fin n} (hj₀ : 0 < (j : ℕ)) (hj : (j : ℕ) + 1 < n) :
     (A * cornerTridiagonal n γ δ) i j = A i ⟨j - 1, by omega⟩ + A i ⟨j + 1, hj⟩ := by
-  rw [mul_apply, ← cornerTridiagonal_mul_apply_aux γ δ hj₀ hj fun l => A i l]
+  rw [Matrix.mul_apply, ← cornerTridiagonal_mul_apply_aux γ δ hj₀ hj fun l => A i l]
   refine sum_congr rfl fun l _ => ?_
   rw [mul_comm, ← transpose_apply (cornerTridiagonal n γ δ), cornerTridiagonal_transpose]
 
@@ -1311,7 +1311,7 @@ theorem two_smul_one_sub_cornerTridiagonal_zero_zero (n : ℕ) :
     (2 : ℝ) • (1 : Matrix (Fin n) (Fin n) ℝ) - cornerTridiagonal n 0 0
       = symmTridiagonalToeplitz n (-1) 2 := by
   ext i j
-  rw [cornerTridiagonal_zero_zero, sub_apply, smul_apply, one_apply,
+  rw [cornerTridiagonal_zero_zero, Matrix.sub_apply, Matrix.smul_apply, Matrix.one_apply,
     symmTridiagonalToeplitz_apply, symmTridiagonalToeplitz_apply]
   split_ifs <;> simp
 
@@ -1613,7 +1613,7 @@ private theorem mem_spectrum_tridiagonalToeplitz_super_zero (n : ℕ) (a b μ : 
   have hentry : ∀ i j : Fin n, M i j
       = (if i = j then μ else 0) - tridiagonalToeplitz n a b 0 i j := by
     intro i j
-    rw [hM, sub_apply, algebraMap_matrix_apply]
+    rw [hM, Matrix.sub_apply, algebraMap_matrix_apply]
     simp
   have hlow : M.IsLowerTriangular := by
     intro i j hij

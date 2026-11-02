@@ -82,7 +82,7 @@ theorem multilinearRank_le_iff (A : Tensor κ 𝕜) (hr : ∀ k, r k ≤ Fintype
         * diagonal (fun i => if i ∈ T k then 1 else 0) * (hosvdFactor A k)ᴴ := by
       intro k
       ext x y
-      rw [mul_apply, mul_apply]
+      rw [Matrix.mul_apply, Matrix.mul_apply]
       simp only [U, submatrix_apply, id_eq, conjTranspose_apply, mul_diagonal, mul_ite, mul_one,
         mul_zero, ite_mul, zero_mul]
       rw [Finset.sum_ite_mem, Finset.univ_inter, ← Finset.sum_coe_sort (T k)]

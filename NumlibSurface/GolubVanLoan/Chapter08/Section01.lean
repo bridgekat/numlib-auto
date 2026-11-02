@@ -712,7 +712,7 @@ theorem corollary_8_1_11 {A E : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {r s
 private theorem norm_toLp_eq_one_of_transpose_mul_self {x : Fin n → ℝ}
     (h : (replicateCol (Fin 1) x)ᵀ * replicateCol (Fin 1) x = 1) : ‖WithLp.toLp 2 x‖ = 1 := by
   have h00 := congrFun (congrFun h 0) 0
-  simp only [mul_apply, transpose_apply, replicateCol_apply, one_apply_eq] at h00
+  simp only [Matrix.mul_apply, transpose_apply, replicateCol_apply, one_apply_eq] at h00
   have h2 : ‖WithLp.toLp 2 x‖ ^ 2 = 1 := by
     rw [EuclideanSpace.real_norm_sq_eq]
     simpa [sq] using h00
@@ -802,7 +802,7 @@ theorem theorem_8_1_12 {A E : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {s : �
   have hPP : 1 + Pᵀ * P = (1 + p ⬝ᵥ p) • (1 : Matrix (Fin 1) (Fin 1) ℝ) := by
     ext i j
     rw [Fin.fin_one_eq_zero i, Fin.fin_one_eq_zero j]
-    simp [hPp, mul_apply, dotProduct]
+    simp [hPp, Matrix.mul_apply, dotProduct]
   set S : Matrix (Fin 1) (Fin 1) ℝ := c • 1 with hS
   have hSs : S.IsSymm := by rw [hS, IsSymm, transpose_smul, transpose_one]
   have hSS : S * S = 1 + Pᵀ * P := by
@@ -812,7 +812,7 @@ theorem theorem_8_1_12 {A E : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {s : �
   have hQh : (replicateCol (Fin 1) q₁ + Q₂ * P) * S⁻¹ = replicateCol (Fin 1) qh₁ := by
     rw [hSinv, Matrix.mul_smul, Matrix.mul_one, hqh]
     ext i j
-    simp [hPp, mul_apply, mulVec, dotProduct, mul_add]
+    simp [hPp, Matrix.mul_apply, mulVec, dotProduct, mul_add]
   obtain ⟨horth, ⟨M, hM⟩, hdist⟩ := h S hSs hSS
   rw [hQh] at horth hM hdist
   rw [hsep, ← he, hEe, range_toEuclideanLin_replicateCol,
@@ -826,7 +826,7 @@ theorem theorem_8_1_12 {A E : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {s : �
   refine ⟨hqh₁, ⟨M 0 0, ?_⟩, hgap, hgap ▸ hdist⟩
   ext i
   have := congrFun (congrFun hM i) 0
-  simpa [mul_apply, mulVec, dotProduct, mul_comm] using this
+  simpa [Matrix.mul_apply, mulVec, dotProduct, mul_comm] using this
 
 end Frobenius
 

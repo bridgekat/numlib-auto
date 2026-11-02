@@ -1181,7 +1181,7 @@ theorem re_trace_toEuclideanLin_comp_self {M : Matrix n n 𝕜} (hM : M.IsHermit
   norm_num
   rw [trace, map_sum]
   refine Finset.sum_congr rfl fun i _ => ?_
-  rw [diag_apply, mul_apply, map_sum]
+  rw [diag_apply, Matrix.mul_apply, map_sum]
   refine Finset.sum_congr rfl fun j _ => ?_
   rw [← hM.apply i j, RCLike.star_def, RCLike.conj_mul, RCLike.norm_conj, ← RCLike.ofReal_pow,
     RCLike.ofReal_re]

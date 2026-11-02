@@ -615,7 +615,7 @@ theorem isMinOn_norm_mul_sub_one_pinv (A : Matrix m n 𝕜) :
         = toEuclideanLin A (WithLp.toLp 2 fun i => X i j) - e j := by
     intro X j
     ext i
-    simp [he, mulVec, dotProduct, mul_apply, one_apply, eq_comm]
+    simp [he, mulVec, dotProduct, Matrix.mul_apply, Matrix.one_apply, eq_comm]
   have hpinv : ∀ j, (WithLp.toLp 2 fun i => A.pinv i j : EuclideanSpace 𝕜 n)
       = toEuclideanLin A.pinv (e j) := by
     intro j
@@ -696,7 +696,7 @@ private theorem toLp_sub_mul_conjTranspose_row (A : Matrix m r 𝕜) (K : Matrix
   rw [neg_sub, toEuclideanLin_toLp]
   congr 1
   funext j
-  simp only [sub_apply, mul_apply, conjTranspose_apply, Pi.sub_apply]
+  simp only [Matrix.sub_apply, Matrix.mul_apply, conjTranspose_apply, Pi.sub_apply]
   congr 1
   exact Finset.sum_congr rfl fun l _ => mul_comm _ _
 
@@ -731,11 +731,11 @@ theorem isMinOn_norm_sub_mul_conjTranspose_iff (A : Matrix m r 𝕜)
     have h1 : Kbᴴ * Kb = (Kᴴ * K)ᵀ := by
       rw [hKb, transpose_mul]
       ext a c
-      simp [mul_apply, conjTranspose_apply]
+      simp [Matrix.mul_apply, conjTranspose_apply]
     have h2 : Kbᴴ = Kᵀ := by ext a c; simp [hKb]
     rw [h1, h2, mulVec_transpose, mulVec_transpose]
     constructor <;> intro h <;> funext j <;>
-      simpa [vecMul, dotProduct, mul_apply] using congrFun h j
+      simpa [vecMul, dotProduct, Matrix.mul_apply] using congrFun h j
   have hsum := norm_sub_mul_conjTranspose_sq A K
   constructor
   · intro h

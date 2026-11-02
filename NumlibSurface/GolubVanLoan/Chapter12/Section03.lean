@@ -76,7 +76,7 @@ theorem equation_12_3_2 {m n : ℕ} (p : Equiv.Perm (Fin m)) (q : Equiv.Perm (Fi
   ext I J
   obtain ⟨⟨i₁, i₂⟩, rfl⟩ := finProdFinEquiv.surjective I
   obtain ⟨⟨j₁, j₂⟩, rfl⟩ := finProdFinEquiv.surjective J
-  simp only [kroneckerFin_apply, submatrix_apply, id, one_apply, kroneckerPermIndex,
+  simp only [kroneckerFin_apply, submatrix_apply, id, Matrix.one_apply, kroneckerPermIndex,
     Equiv.trans_apply, Equiv.symm_apply_apply, Equiv.prodCongr_apply, Prod.map,
     EmbeddingLike.apply_eq_iff_eq, Prod.mk.injEq]
   rw [ite_zero_mul_ite_zero, one_mul]
@@ -592,15 +592,15 @@ theorem theorem_12_3_1 {r : ℕ} (A : Matrix (Fin (m₁ * m₂)) (Fin (n₁ * n�
     set V : Matrix (Fin (n₂ * m₂)) (Fin r) ℝ := of fun J t => v t J
     have hUV : (∑ t, σ t • vecMulVec (u t) (v t)) = U * diagonal σ * Vᵀ := by
       ext I J
-      simp [U, V, Matrix.sum_apply, mul_apply, vecMulVec_apply, diagonal_apply, mul_comm,
+      simp [U, V, Matrix.sum_apply, Matrix.mul_apply, vecMulVec_apply, diagonal_apply, mul_comm,
         mul_left_comm]
     have hU : Uᵀ * U = 1 := by
       ext t l
-      rw [mul_apply, one_apply, ← hu t l]
+      rw [Matrix.mul_apply, Matrix.one_apply, ← hu t l]
       rfl
     have hV : Vᵀ * V = 1 := by
       ext t l
-      rw [mul_apply, one_apply, ← hv t l]
+      rw [Matrix.mul_apply, Matrix.one_apply, ← hv t l]
       rfl
     rw [hUV]
     refine le_antisymm ?_ ?_
@@ -623,7 +623,7 @@ private theorem rank_sum_vecMulVec_le {p q r : ℕ} (x : Fin r → Fin p → ℝ
   have h : (∑ k, vecMulVec (x k) (y k)) =
       (of fun I k => x k I : Matrix (Fin p) (Fin r) ℝ) * of fun k J => y k J := by
     ext I J
-    simp [mul_apply, vecMulVec_apply, Matrix.sum_apply]
+    simp [Matrix.mul_apply, vecMulVec_apply, Matrix.sum_apply]
   rw [h]
   exact (rank_mul_le_left _ _).trans ((rank_le_card_width _).trans (by simp))
 
@@ -734,7 +734,7 @@ private theorem col_dotProduct {T Q : Matrix (Fin n) (Fin n) ℝ} {α : Fin n �
   have hy : Qᵀ *ᵥ (fun i => Q i k) = Pi.single k 1 := by
     funext i
     have := congrFun (congrFun h2 i) k
-    rw [mul_apply, one_apply] at this
+    rw [Matrix.mul_apply, Matrix.one_apply] at this
     rw [Pi.single_apply]
     simpa [mulVec, dotProduct, eq_comm] using this
   obtain ⟨h1, h1'⟩ := dotProduct_mulVec_eq_sum hQ hT fun i => Q i k

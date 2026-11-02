@@ -74,9 +74,9 @@ theorem equation_10_4_2 (hnm : n ≤ m) (hU : U ∈ orthogonalGroup (Fin m) ℝ)
   have hAV := mul_eq_mul_of_transpose_mul_mul hU hB
   ext x
   have h1 : (A *ᵥ V.col k) x = (U * B) x k := by
-    rw [← hAV, mul_apply, mulVec, dotProduct]
+    rw [← hAV, Matrix.mul_apply, mulVec, dotProduct]
     rfl
-  rw [h1, mul_apply]
+  rw [h1, Matrix.mul_apply]
   have hz : ∀ i : Fin m, (i : ℕ) ≠ k → (i : ℕ) + 1 ≠ k → U x i * B i k = 0 :=
     fun i h1 h2 => by rw [hBb i k (Ne.symm h1) (Ne.symm h2), mul_zero]
   split_ifs with hk
@@ -99,9 +99,9 @@ theorem equation_10_4_3 (hnm : n ≤ m) (hV : V ∈ orthogonalGroup (Fin n) ℝ)
   have hAU := transpose_mul_eq_mul_transpose hV hB
   ext x
   have h1 : (Aᵀ *ᵥ U.col (Fin.castLE hnm k)) x = (V * Bᵀ) x (Fin.castLE hnm k) := by
-    rw [← hAU, mul_apply, mulVec, dotProduct]
+    rw [← hAU, Matrix.mul_apply, mulVec, dotProduct]
     rfl
-  rw [h1, mul_apply]
+  rw [h1, Matrix.mul_apply]
   have hz : ∀ i : Fin n, i ≠ k → (i : ℕ) ≠ k + 1 → V x i * Bᵀ i (Fin.castLE hnm k) = 0 :=
     fun i h1 h2 => by
       rw [transpose_apply, hBb _ i (by simpa [Fin.ext_iff] using h1) (by simpa using h2),
@@ -136,7 +136,7 @@ theorem equation_10_4_6 (hnm : n ≤ m) (hU : U ∈ orthogonalGroup (Fin m) ℝ)
   have h1 : (A * V.submatrix id (Fin.castLE hk)) x j = (U * B) x (Fin.castLE hk j) := by
     rw [← hAV]
     rfl
-  rw [h1, mul_apply, mul_apply, sum_fin_eq_sum_castLE (hk.trans hnm) _ fun i hi => by
+  rw [h1, Matrix.mul_apply, Matrix.mul_apply, sum_fin_eq_sum_castLE (hk.trans hnm) _ fun i hi => by
     rw [hBb i _ (by simp; omega) (by simp; omega), mul_zero]]
   rfl
 
@@ -162,7 +162,7 @@ theorem equation_10_4_7 (hnm : n ≤ m) (hU : U ∈ orthogonalGroup (Fin m) ℝ)
         (V * Bᵀ) x (Fin.castLE (hk.trans hnm) j) := by
       rw [← hAU]
       rfl
-    rw [e, mul_apply, mul_apply, sum_fin_eq_sum_castLE hk _ fun i hi => ?_]
+    rw [e, Matrix.mul_apply, Matrix.mul_apply, sum_fin_eq_sum_castLE hk _ fun i hi => ?_]
     · rfl
     · rw [transpose_apply]
       by_cases h2 : (i : ℕ) = k ∧ (j : ℕ) + 1 = k
@@ -196,7 +196,7 @@ theorem singularValues_bidiag_subset {m n : ℕ} {A : Matrix (Fin m) (Fin n) ℝ
     ext a b
     have h := congrFun (congrFun ((mem_orthogonalGroup_iff' _ _).1 hV) (Fin.castLE hk a))
       (Fin.castLE hk b)
-    simpa [hVk, mul_apply, one_apply, Fin.ext_iff] using h
+    simpa [hVk, Matrix.mul_apply, Matrix.one_apply, Fin.ext_iff] using h
   set hH := isHermitian_conjTranspose_mul_self Bk
   set y : Fin k → ℝ := ⇑(hH.eigenvectorBasis i) with hy
   have hy0 : y ≠ 0 := by
@@ -266,7 +266,7 @@ theorem equation_10_4_10 {k : ℕ} (hk : 1 ≤ k) :
     v k
   rw [h]
   ext x j
-  rw [Matrix.add_apply, mul_apply, Fin.sum_univ_castSucc, mul_apply, vecMulVec_apply]
+  rw [Matrix.add_apply, Matrix.mul_apply, Fin.sum_univ_castSucc, Matrix.mul_apply, vecMulVec_apply]
   congr 1
   · refine Finset.sum_congr rfl fun i _ => ?_
     have := congrFun (congrFun hsub i) j
@@ -393,7 +393,7 @@ private theorem submatrix_castLE_mul_transpose {m k : ℕ} (hkm : k ≤ m)
     U.submatrix id (Fin.castLE hkm) * (U.submatrix id (Fin.castLE hkm))ᵀ =
       U * (rectDiagonal fun i => if i < k then (1 : ℝ) else 0) * Uᵀ := by
   ext a b
-  simp only [mul_apply, submatrix_apply, id_eq, transpose_apply, rectDiagonal_apply]
+  simp only [Matrix.mul_apply, submatrix_apply, id_eq, transpose_apply, rectDiagonal_apply]
   set F : ℕ → ℝ := fun i => if h : i < m then U a ⟨i, h⟩ * U b ⟨i, h⟩ else 0 with hF
   have h1 : ∀ j : Fin k, U a (Fin.castLE hkm j) * U b (Fin.castLE hkm j) = F j := fun j => by
     have hj : (j : ℕ) < m := by omega
@@ -500,7 +500,7 @@ private theorem submatrix_mul_id {p q t : ℕ} (M : Matrix (Fin p) (Fin q) ℝ)
     (N : Matrix (Fin q) (Fin t) ℝ) (row : Fin s → Fin p) :
     (M * N).submatrix row id = M.submatrix row id * N := by
   ext i j
-  simp [mul_apply]
+  simp [Matrix.mul_apply]
 
 /-- **(10.4.23)**: with a row selection `row : Fin s → Fin m`, a diagonal scaling `D_R = diag(d)`,
 `R = D_R A(row, :)` and `Ψ = D_R C(row, :)`:

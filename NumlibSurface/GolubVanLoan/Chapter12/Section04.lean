@@ -364,7 +364,7 @@ theorem equation_12_4_11 {n₁ t n₂ p₃ p₄ q₃ q₄ q₅ : ℕ}
     (Matrix.of fun i j => A i j a₃ a₄ b₃ b₄ b₅) =
       (Matrix.of fun i k => B i k a₃ a₄) * Matrix.of fun k j => C k j b₃ b₄ b₅ := by
   ext i j
-  rw [of_apply, hA, mul_apply]
+  rw [of_apply, hA, Matrix.mul_apply]
   rfl
 
 /-- **(12.4.12)–(12.4.13)** and the display after it: the contraction `𝒜(i, j) = ∑_k ℬ(i, k) 𝒞(k,
@@ -429,11 +429,12 @@ theorem equation_12_4_14 (S : RTensor n) (k : Fin d) {m : ℕ} (M : Matrix (Fin 
           finCongr (Function.update_of_ne j.2 m n).symm) := by
     rw [modeProduct, Tensor.modeUnfold_rectModeProd]
     ext x c
-    simp only [submatrix_apply, reindex_apply, mul_apply, id, Equiv.refl_symm, Equiv.coe_refl]
+    simp only [submatrix_apply, reindex_apply, Matrix.mul_apply, id, Equiv.refl_symm,
+        Equiv.coe_refl]
     rfl
   refine ⟨h1, fun a => ?_⟩
   rw [← Tensor.modeUnfold_apply (modeProduct n S k M) k a, h1, reindex_apply, submatrix_apply,
-    mul_apply]
+    Matrix.mul_apply]
   refine Finset.sum_congr rfl fun y _ => ?_
   congr 1
   simp only [Tensor.modeUnfold, of_apply]
@@ -506,7 +507,7 @@ theorem equation_12_4_17 (S : RTensor n) (k : Fin d) {p q : ℕ} (F : Matrix (Fi
     Tensor.rectModeProd_rectModeProd]
   congr 1
   ext a b
-  simp only [reindex_apply, submatrix_apply, mul_apply, id, Equiv.refl_symm, Equiv.coe_refl]
+  simp only [reindex_apply, submatrix_apply, Matrix.mul_apply, id, Equiv.refl_symm, Equiv.coe_refl]
   rw [← (finCongr (Function.update_self k p n)).sum_comp]
   rfl
 

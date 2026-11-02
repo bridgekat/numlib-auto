@@ -557,7 +557,7 @@ theorem eLpNorm_indicator_smul_le_of_forall_norm_le {s : Set E} (hs : Measurable
     {u : E → F} (hu : AEStronglyMeasurable u (μ.restrict s)) :
     eLpNorm (s.indicator fun x ↦ g x • u x) p μ
       ≤ ENNReal.ofReal M * eLpNorm u p (μ.restrict s) := by
-  rw [eLpNorm_indicator_eq_eLpNorm_restrict hs]
+  rw [eLpNorm_indicator_eq_eLpNorm_restrict hs.nullMeasurableSet]
   refine eLpNorm_le_mul_eLpNorm_of_ae_le_mul (f := fun x ↦ g x • u x) (hg.smul hu) ?_ p
   filter_upwards [self_mem_ae_restrict hs] with x hx
   simp only [norm_smul]
@@ -569,7 +569,7 @@ measurable on `s` and `u ∈ L^p(s)`. -/
 theorem memLp_indicator_smul_of_forall_norm_le {s : Set E} (hs : MeasurableSet s) {g : E → ℝ}
     {M : ℝ} (hM : ∀ x ∈ s, ‖g x‖ ≤ M) (hg : AEStronglyMeasurable g (μ.restrict s)) {u : E → F}
     (hu : MemLp u p (μ.restrict s)) : MemLp (s.indicator fun x ↦ g x • u x) p μ := by
-  rw [memLp_indicator_iff_restrict hs]
+  rw [memLp_indicator_iff_restrict hs.nullMeasurableSet]
   have hgtop : MemLp g ⊤ (μ.restrict s) :=
     memLp_top_of_bound hg M ((ae_restrict_mem hs).mono hM)
   exact hgtop.smul hu
@@ -1500,11 +1500,11 @@ theorem MeasureTheory.MemLp.tendsto_eLpNorm_indicator_compl_ball_restrict {G : T
     (hf : MemLp f p (μ.restrict s)) {r : ℕ → ℝ} (hr : Tendsto r atTop atTop) :
     Tendsto (fun j ↦ eLpNorm ((ball (0 : E) (r j))ᶜ.indicator f) p (μ.restrict s)) atTop
       (𝓝 0) := by
-  refine (((memLp_indicator_iff_restrict hs).2 hf).tendsto_eLpNorm_indicator_compl_ball hp'
-    hr).congr fun j ↦ ?_
+  refine (((memLp_indicator_iff_restrict hs.nullMeasurableSet).2
+    hf).tendsto_eLpNorm_indicator_compl_ball hp' hr).congr fun j ↦ ?_
   rw [Set.indicator_indicator, eLpNorm_indicator_eq_eLpNorm_restrict
-    (measurableSet_ball.compl.inter hs), eLpNorm_indicator_eq_eLpNorm_restrict
-    measurableSet_ball.compl, Measure.restrict_restrict measurableSet_ball.compl]
+    (measurableSet_ball.compl.inter hs).nullMeasurableSet, eLpNorm_indicator_eq_eLpNorm_restrict
+    measurableSet_ball.compl.nullMeasurableSet, Measure.restrict_restrict measurableSet_ball.compl]
 
 omit [NormedSpace ℝ E] [FiniteDimensional ℝ E] [IsLocallyFiniteMeasure μ] [μ.IsAddHaarMeasure] in
 /-- The function `(ζ_n − 1) f`, for a cut-off `ζ_n` with values in `[0, 1]` equal to `1` on

@@ -1078,13 +1078,15 @@ theorem norm_deriv_zero_le_of_deriv_eq (hI : (I : Set ℝ).OrdConnected)
   have hindm : AEStronglyMeasurable ((I : Set ℝ).indicator (deriv w 1)) volume :=
     (aestronglyMeasurable_indicator_iff hIm).2 (Lp.aestronglyMeasurable _)
   have hFp : MemLp F p volume := by
-    rw [hF]; exact ((memLp_indicator_iff_restrict hIm).2 (Lp.memLp (deriv w 1))).norm
+    rw [hF]
+    exact ((memLp_indicator_iff_restrict hIm.nullMeasurableSet).2 (Lp.memLp (deriv w 1))).norm
   have hFm : AEStronglyMeasurable F volume := hFp.aestronglyMeasurable
   have hF0 : ∀ t, 0 ≤ F t := fun t ↦ by rw [hF]; exact norm_nonneg _
   have hκm : AEStronglyMeasurable κ volume := by
     rw [hκ]; exact aestronglyMeasurable_const.indicator measurableSet_Ioo
   have hFnorm : eLpNorm F p volume = ‖deriv w 1‖ₑ := by
-    rw [hF, eLpNorm_norm _ hindm, eLpNorm_indicator_eq_eLpNorm_restrict hIm, Lp.enorm_def]
+    rw [hF, eLpNorm_norm _ hindm, eLpNorm_indicator_eq_eLpNorm_restrict hIm.nullMeasurableSet,
+        Lp.enorm_def]
   have hκnorm : eLpNorm κ 1 volume = ENNReal.ofReal (2 * h) := by
     rw [hκ, eLpNorm_indicator_const measurableSet_Ioo.nullMeasurableSet one_ne_zero
       ENNReal.one_ne_top, Real.volume_Ioo, ENNReal.toReal_one, div_one, ENNReal.rpow_one,
@@ -1163,7 +1165,7 @@ theorem norm_deriv_zero_le_of_deriv_eq (hI : (I : Set ℝ).OrdConnected)
   have hind : AEStronglyMeasurable ((I : Set ℝ).indicator (rep v)) volume :=
     (aestronglyMeasurable_indicator_iff hIm).2 hrepv
   have hindnorm : eLpNorm ((I : Set ℝ).indicator (rep v)) p volume = ‖deriv v 0‖ₑ := by
-    rw [eLpNorm_indicator_eq_eLpNorm_restrict hIm, Lp.enorm_def, deriv_zero]
+    rw [eLpNorm_indicator_eq_eLpNorm_restrict hIm.nullMeasurableSet, Lp.enorm_def, deriv_zero]
     exact eLpNorm_congr_ae (fn_ae_eq_rep hI v).symm
   obtain ⟨fA, hfA⟩ : ∃ f : ℝ → ℝ, f = fun x ↦ ‖rep v x‖ := ⟨_, rfl⟩
   obtain ⟨fB, hfB⟩ : ∃ f : ℝ → ℝ, f = fun x ↦ ‖(I : Set ℝ).indicator (rep v) (x + h)‖ :=

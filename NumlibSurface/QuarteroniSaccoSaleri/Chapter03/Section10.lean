@@ -113,7 +113,7 @@ theorem equation_3_65 [NeZero n] (hn : ((3 * n : ℕ) : ℝ) * m.u < 1) (h : Rou
     refine linfty_opNorm_le_of_abs_entrywiseLE fun i j => ?_
     have := hδA i j
     have hM : 0 ≤ (L.abs * U.abs) i j := by
-      rw [mul_apply]
+      rw [Matrix.mul_apply]
       exact Finset.sum_nonneg fun k _ => mul_nonneg (abs_nonneg _) (abs_nonneg _)
     simp only [Matrix.abs_apply, Matrix.smul_apply, smul_eq_mul] at this ⊢
     rw [abs_mul, abs_of_nonneg hγ0, abs_of_nonneg hM]

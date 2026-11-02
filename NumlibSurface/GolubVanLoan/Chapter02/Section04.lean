@@ -295,7 +295,7 @@ private theorem svdTruncation_eq_sum (U : Matrix (Fin m) (Fin m) ℝ) (σ : ℕ 
       ∑ i : Fin k, σ i • vecMulVec (U.col (Fin.castLE hkm i)) (V.col (Fin.castLE hkn i)) := by
   ext a b
   simp only [svdTruncation, RCLike.ofReal_real_eq_id, id]
-  rw [mul_apply, Matrix.sum_apply]
+  rw [Matrix.mul_apply, Matrix.sum_apply]
   have hg : ∀ j : Fin n,
       (U * (rectDiagonal (fun i => if i < k then σ i else 0) :
         Matrix (Fin m) (Fin n) ℝ)) a j * star V j b =

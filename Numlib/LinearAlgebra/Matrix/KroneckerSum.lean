@@ -99,7 +99,7 @@ theorem kroneckerSum_def (A : Matrix m m R) (B : Matrix n n R) :
 theorem kroneckerSum_apply (A : Matrix m m R) (B : Matrix n n R) (i₁ j₁ : m) (i₂ j₂ : n) :
     (A ⊕ₖ B) (i₁, i₂) (j₁, j₂)
       = (if i₂ = j₂ then A i₁ j₁ else 0) + (if i₁ = j₁ then B i₂ j₂ else 0) := by
-  simp [kroneckerSum, one_apply, mul_ite, ite_mul]
+  simp [kroneckerSum, Matrix.one_apply, mul_ite, ite_mul]
 
 /-- The Kronecker sum is additive as a function of the pair `(A, B)`. -/
 theorem kroneckerSum_add (A₁ A₂ : Matrix m m R) (B₁ B₂ : Matrix n n R) :
@@ -317,7 +317,7 @@ private theorem inner_kronecker_one_left (A : Matrix m m 𝕜) (z : EuclideanSpa
   have hfib : ∀ (i : m) (j : n), ((A ⊗ₖ (1 : Matrix n n 𝕜)) *ᵥ WithLp.ofLp z) (i, j)
       = (A *ᵥ WithLp.ofLp (colFibre z j)) i := by
     intro i j
-    simp [colFibre, mulVec_apply_eq_sum, Fintype.sum_prod_type, one_apply]
+    simp [colFibre, mulVec_apply_eq_sum, Fintype.sum_prod_type, Matrix.one_apply]
   simp only [EuclideanSpace.inner_eq_star_dotProduct, dotProduct, Pi.star_apply]
   rw [Fintype.sum_prod_type_right]
   refine Finset.sum_congr rfl fun j _ => Finset.sum_congr rfl fun i _ => ?_
@@ -332,7 +332,7 @@ private theorem inner_one_kronecker_right (B : Matrix n n 𝕜) (z : EuclideanSp
   have hfib : ∀ (i : m) (j : n), (((1 : Matrix m m 𝕜) ⊗ₖ B) *ᵥ WithLp.ofLp z) (i, j)
       = (B *ᵥ WithLp.ofLp (rowFibre z i)) j := by
     intro i j
-    simp [rowFibre, mulVec_apply_eq_sum, Fintype.sum_prod_type, one_apply]
+    simp [rowFibre, mulVec_apply_eq_sum, Fintype.sum_prod_type, Matrix.one_apply]
   simp only [EuclideanSpace.inner_eq_star_dotProduct, dotProduct, Pi.star_apply]
   rw [Fintype.sum_prod_type]
   refine Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun j _ => ?_

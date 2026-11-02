@@ -142,11 +142,11 @@ theorem EntrywiseNonneg.complexSpectralRadius_lt_one_iff {B : Matrix n n ℝ}
     have hC : (1 - B) * (1 - B)⁻¹ = 1 := mul_nonsing_inv _ (isUnit_iff_isUnit_det _ |>.1 hu)
     -- Every partial sum is bounded above by `(1 - B)⁻¹`, entry by entry.
     have hle : ∀ k i j, (∑ x ∈ range k, B ^ x) i j ≤ (1 - B)⁻¹ i j := fun k i j => by
-      rw [geom_sum_eq_sub_pow_mul hC k, sub_apply]
+      rw [geom_sum_eq_sub_pow_mul hC k, Matrix.sub_apply]
       simpa using ((hB.pow k).mul hCnn).apply i j
     have hmono : ∀ i j, Monotone fun k => (∑ x ∈ range k, B ^ x) i j := fun i j =>
       monotone_nat_of_le_succ fun k => by
-        rw [sum_range_succ, add_apply]
+        rw [sum_range_succ, Matrix.add_apply]
         simpa using (hB.pow k).apply i j
     refine (tendsto_pow_iff_complexSpectralRadius_lt_one B).1 ?_
     refine tendsto_pi_nhds.2 fun i => tendsto_pi_nhds.2 fun j => ?_
@@ -195,7 +195,7 @@ theorem diag_pos (i : n) : 0 < A i i := by
   have hdet : IsUnit A.det := isUnit_iff_isUnit_det _ |>.1 hA.isUnit
   have hrow : ∑ k, A i k * A⁻¹ k i = 1 := by
     have := congrArg (fun M : Matrix n n ℝ => M i i) (mul_nonsing_inv A hdet)
-    simpa [mul_apply] using this
+    simpa [Matrix.mul_apply] using this
   have hoff : ∑ k ∈ univ.erase i, A i k * A⁻¹ k i ≤ 0 :=
     sum_nonpos fun k hk =>
       mul_nonpos_of_nonpos_of_nonneg (hA.offDiag_nonpos i k (mem_erase.1 hk).1.symm)
@@ -219,7 +219,7 @@ variable {A B : Matrix n n ℝ}
 private theorem one_sub_diagInv_mul_apply (A : Matrix n n ℝ) (i j : n) :
     ((1 : Matrix n n ℝ) - diagonal (fun i => (A i i)⁻¹) * A) i j
       = (1 : Matrix n n ℝ) i j - (A i i)⁻¹ * A i j := by
-  rw [sub_apply, diagonal_mul]
+  rw [Matrix.sub_apply, diagonal_mul]
 
 /-- The Jacobi operator `1 - D⁻¹ A` of a matrix with positive diagonal and nonpositive off-diagonal
 entries is entrywise nonnegative. -/
@@ -464,7 +464,7 @@ theorem isMMatrix_iff_exists_pos_mulVec_pos {A : Matrix n n ℝ} (hoff : A.IsZMa
       have hzero : ∀ j, A⁻¹ i j = 0 := fun j =>
         (sum_eq_zero_iff_of_nonneg hnn).1 h.symm j (mem_univ j)
       have h1 := congrFun (congrFun (nonsing_inv_mul A hdet) i) i
-      rw [mul_apply, one_apply_eq] at h1
+      rw [Matrix.mul_apply, one_apply_eq] at h1
       simp [hzero] at h1
     · rw [mulVec_mulVec, mul_nonsing_inv A hdet, one_mulVec]
       exact zero_lt_one

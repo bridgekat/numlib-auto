@@ -607,8 +607,8 @@ theorem isPrincipalVectors_of_isSVD {m : Type*} [Fintype m] {p q : ℕ}
   have hZj : Zᴴ *ᵥ Z.col j = Pi.single j 1 := by
     funext i
     have := congrFun (congrFun hZZ i) j
-    rw [mul_apply] at this
-    rw [Pi.single_apply, ← one_apply, ← this]
+    rw [Matrix.mul_apply] at this
+    rw [Pi.single_apply, ← Matrix.one_apply, ← this]
     rfl
   have hSig : (rectDiagonal fun i => ((σ i : ℝ) : 𝕜) : Matrix (Fin p) (Fin q) 𝕜) *ᵥ
       Pi.single j 1 = (σ j : 𝕜) • Pi.single (Fin.castLE hqp j) 1 := by

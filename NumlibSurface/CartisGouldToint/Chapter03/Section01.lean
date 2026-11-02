@@ -189,7 +189,7 @@ theorem isNewtonStep_iff_isMinOn (hf : ContDiffAt ℝ 2 f x)
     (IsNewtonStep f x s' ↔ s' = s) ∧
       (IsMinOn (taylorPolynomial f 2 x) univ s' ↔ s' = s) := by
   have hpos : ∀ d, d ≠ 0 → 0 < iteratedFDeriv ℝ 2 f x (fun _ => d) := fun d hd =>
-    lt_of_lt_of_le (by have := norm_pos_iff.2 hd; positivity)
+    lt_of_lt_of_le (mul_pos hpd (pow_pos (norm_pos_iff.2 hd) 2))
       (minCurvature_mul_norm_sq_le (iteratedFDeriv ℝ 2 f x) d)
   have hdiff := taylorPolynomial_two_add_sub hf hs
   refine ⟨⟨fun hs' => ?_, fun h => h ▸ hs⟩, ⟨fun hmin => ?_, fun h => h ▸ fun y _ => ?_⟩⟩

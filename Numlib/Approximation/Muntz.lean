@@ -63,7 +63,7 @@ local notation "μ₁" => MeasureTheory.volume.restrict (Set.Ioo (0 : ℝ) 1)
 
 private theorem aestronglyMeasurable_rpow (l : ℝ) :
     AEStronglyMeasurable (fun t : ℝ ↦ t ^ l) μ₁ :=
-  (ContinuousOn.rpow_const continuousOn_id fun _ hx ↦
+  (ContinuousOn.rpow_const continuousOn_id fun _ (hx : _ ∈ Set.Ioo (0 : ℝ) 1) ↦
     Or.inl (ne_of_gt hx.1)).aestronglyMeasurable measurableSet_Ioo
 
 /-- `∫₀¹ tᵃ t^b dt = 1 / (a + b + 1)` whenever `a + b > -1`. -/

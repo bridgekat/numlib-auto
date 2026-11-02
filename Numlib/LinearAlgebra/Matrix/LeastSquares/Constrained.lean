@@ -434,14 +434,14 @@ theorem isLSESolution_of_isQR {A : Matrix m (Fin n) 𝕜} {b : EuclideanSpace �
   have hBQ₁ : B * Q₁ = R₁ᴴ := by
     ext i j
     have := congrFun (congrFun hBQ i) (Fin.castLE hpn j)
-    simp only [mul_apply, conjTranspose_apply] at this
-    simp only [hQ₁, hR₁, mul_apply, firstColumns_apply, conjTranspose_apply, firstRows_apply]
+    simp only [Matrix.mul_apply, conjTranspose_apply] at this
+    simp only [hQ₁, hR₁, Matrix.mul_apply, firstColumns_apply, conjTranspose_apply, firstRows_apply]
     exact this
   have hBQ₂ : B * Q₂ = 0 := by
     ext i j
     have := congrFun (congrFun hBQ i) ⟨n - (n - p) + j, by omega⟩
-    simp only [mul_apply, conjTranspose_apply] at this
-    simp only [hQ₂, mul_apply, lastColumns_apply, zero_apply]
+    simp only [Matrix.mul_apply, conjTranspose_apply] at this
+    simp only [hQ₂, Matrix.mul_apply, lastColumns_apply, Matrix.zero_apply]
     rw [this, h.apply_eq_zero _ i (by simp only; omega), star_zero]
   have hsplit : Q₁ * Q₁ᴴ + Q₂ * Q₂ᴴ = 1 :=
     firstColumns_mul_conjTranspose_add_lastColumns_mul_conjTranspose h.mem_unitaryGroup hpn

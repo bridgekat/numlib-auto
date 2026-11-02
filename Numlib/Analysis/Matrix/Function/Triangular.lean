@@ -369,12 +369,12 @@ theorem aeval_apply_eq_sum_pathProd [CharZero 𝕜] [DecidableEq 𝕜] {T : Matr
       pathProd T (path i s j) * divDiff (fun z => p.eval z) ((path i s j).map fun k => T k k) := by
   induction p using Polynomial.induction_on' with
   | add p q hp hq =>
-    simp only [map_add, add_apply, hp, hq, divDiff_eval_add, mul_add, Finset.sum_add_distrib]
+    simp only [map_add, Matrix.add_apply, hp, hq, divDiff_eval_add, mul_add, Finset.sum_add_distrib]
   | monomial m c =>
     have h : (fun z => (monomial m c).eval z) = c • fun z : 𝕜 => z ^ m := by
       funext z
       simp [eval_monomial]
-    rw [aeval_monomial, ← Algebra.smul_def, smul_apply, pow_apply_eq_sum_pathProd hT m hij,
+    rw [aeval_monomial, ← Algebra.smul_def, Matrix.smul_apply, pow_apply_eq_sum_pathProd hT m hij,
       smul_eq_mul, Finset.mul_sum, h]
     refine Finset.sum_congr rfl fun s _ => ?_
     rw [divDiff_const_smul]

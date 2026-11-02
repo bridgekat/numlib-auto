@@ -129,30 +129,30 @@ theorem sylvesterMap_schurComplement {F G A : Matrix (Fin (N + 1)) (Fin (N + 1))
   have ha : a * α = 1 := inv_mul_cancel₀ hα
   have E : ∀ p q, (F * A - A * G) p q = ∑ l, R p l * S q l := fun p q => by
     have := congrFun (congrFun h p) q
-    simpa only [sylvesterMap_apply, mul_apply, transpose_apply] using this
+    simpa only [sylvesterMap_apply, Matrix.mul_apply, transpose_apply] using this
   ext i j
   have e00 : F 0 0 * α - α * G 0 0 = ∑ l, R 0 l * S 0 l := by
     have := E 0 0
-    simp only [sub_apply, mul_apply, Fin.sum_univ_succ, hF, hG, zero_mul, mul_zero,
+    simp only [Matrix.sub_apply, Matrix.mul_apply, Fin.sum_univ_succ, hF, hG, zero_mul, mul_zero,
       Finset.sum_const_zero, add_zero] at this
     linear_combination this
   have e0j : F 0 0 * A 0 j.succ - (α * G 0 j.succ + ∑ t : Fin N, A 0 t.succ * G t.succ j.succ) =
       ∑ l, R 0 l * S j.succ l := by
     have := E 0 j.succ
-    simp only [sub_apply, mul_apply, Fin.sum_univ_succ, hF, zero_mul, Finset.sum_const_zero,
-      add_zero] at this
+    simp only [Matrix.sub_apply, Matrix.mul_apply, Fin.sum_univ_succ, hF, zero_mul,
+      Finset.sum_const_zero, add_zero] at this
     linear_combination this
   have ei0 : (F i.succ 0 * α + ∑ t : Fin N, F i.succ t.succ * A t.succ 0) - A i.succ 0 * G 0 0 =
       ∑ l, R i.succ l * S 0 l := by
     have := E i.succ 0
-    simp only [sub_apply, mul_apply, Fin.sum_univ_succ, hG, mul_zero, Finset.sum_const_zero,
-      add_zero] at this
+    simp only [Matrix.sub_apply, Matrix.mul_apply, Fin.sum_univ_succ, hG, mul_zero,
+      Finset.sum_const_zero, add_zero] at this
     linear_combination this
   have eij : (F i.succ 0 * A 0 j.succ + ∑ t : Fin N, F i.succ t.succ * A t.succ j.succ) -
       (A i.succ 0 * G 0 j.succ + ∑ t : Fin N, A i.succ t.succ * G t.succ j.succ) =
       ∑ l, R i.succ l * S j.succ l := by
     have := E i.succ j.succ
-    simp only [sub_apply, mul_apply, Fin.sum_univ_succ] at this
+    simp only [Matrix.sub_apply, Matrix.mul_apply, Fin.sum_univ_succ] at this
     linear_combination this
   have hl : sylvesterMap (F.submatrix Fin.succ Fin.succ) (G.submatrix Fin.succ Fin.succ)
       (A.submatrix Fin.succ Fin.succ -
@@ -161,8 +161,8 @@ theorem sylvesterMap_schurComplement {F G A : Matrix (Fin (N + 1)) (Fin (N + 1))
           a * A 0 j.succ * ∑ t : Fin N, F i.succ t.succ * A t.succ 0) -
         (∑ t : Fin N, A i.succ t.succ * G t.succ j.succ -
           a * A i.succ 0 * ∑ t : Fin N, A 0 t.succ * G t.succ j.succ) := by
-    simp only [sylvesterMap_apply, sub_apply, mul_apply, submatrix_apply, smul_apply,
-      vecMulVec_apply, smul_eq_mul]
+    simp only [sylvesterMap_apply, Matrix.sub_apply, Matrix.mul_apply, submatrix_apply,
+      Matrix.smul_apply, vecMulVec_apply, smul_eq_mul]
     congr 1
     · rw [mul_sum, ← sum_sub_distrib]
       exact sum_congr rfl fun t _ => by ring
@@ -173,8 +173,8 @@ theorem sylvesterMap_schurComplement {F G A : Matrix (Fin (N + 1)) (Fin (N + 1))
       ∑ l, R i.succ l * S j.succ l - a * A 0 j.succ * ∑ l, R i.succ l * S 0 l -
         a * A i.succ 0 * ∑ l, R 0 l * S j.succ l +
         a * a * A i.succ 0 * A 0 j.succ * ∑ l, R 0 l * S 0 l := by
-    simp only [mul_apply, transpose_apply, sub_apply, submatrix_apply, smul_apply,
-      vecMulVec_apply, smul_eq_mul, id]
+    simp only [Matrix.mul_apply, transpose_apply, Matrix.sub_apply, submatrix_apply,
+      Matrix.smul_apply, vecMulVec_apply, smul_eq_mul, id]
     simp only [mul_sum, ← sum_sub_distrib, ← sum_add_distrib]
     exact sum_congr rfl fun l _ => by ring
   rw [hl, hr]
@@ -229,7 +229,7 @@ theorem sylvesterMap_cyclicShift_one_neg_one_injective (h2 : (2 : K) ≠ 0) :
 theorem sylvesterMap_cyclicShift_toeplitz_apply {T : Matrix (Fin n) (Fin n) K} (hT : T.IsToeplitz)
     {i j : Fin n} (hi : 0 < (i : ℕ)) (hj : (j : ℕ) + 1 < n) :
     sylvesterMap (cyclicShift n 1) (cyclicShift n (-1)) T i j = 0 := by
-  rw [sylvesterMap_apply, sub_apply, cyclicShift_mul_apply_of_pos _ _ hi,
+  rw [sylvesterMap_apply, Matrix.sub_apply, cyclicShift_mul_apply_of_pos _ _ hi,
     mul_cyclicShift_apply_of_lt _ _ _ hj, sub_eq_zero]
   exact isToeplitz_iff.mp hT _ _ _ _ (by simp only; omega)
 
@@ -240,7 +240,7 @@ theorem sylvesterMap_cyclicShift_hankel_apply {H : Matrix (Fin n) (Fin n) K} (hH
     {i j : Fin n} (hi : (i : ℕ) + 1 < n) (hj : (j : ℕ) + 1 < n) :
     sylvesterMap (cyclicShift n 1)ᵀ (cyclicShift n (-1)) H i j = 0 := by
   obtain ⟨h, rfl⟩ := hH
-  rw [sylvesterMap_apply, sub_apply, transpose_cyclicShift_mul_apply_of_lt _ _ hi,
+  rw [sylvesterMap_apply, Matrix.sub_apply, transpose_cyclicShift_mul_apply_of_lt _ _ hi,
     mul_cyclicShift_apply_of_lt _ _ _ hj, hankel_apply, hankel_apply, sub_eq_zero]
   congr 1
   simp only
@@ -261,7 +261,7 @@ theorem sylvesterMap_cornerTridiagonal_toeplitz_apply {T : Matrix (Fin n) (Fin n
     (hT : T.IsToeplitz) {i j : Fin n} (hi₀ : 0 < (i : ℕ)) (hi : (i : ℕ) + 1 < n)
     (hj₀ : 0 < (j : ℕ)) (hj : (j : ℕ) + 1 < n) :
     sylvesterMap (cornerTridiagonal n 0 0) (cornerTridiagonal n 1 1) T i j = 0 := by
-  rw [sylvesterMap_apply, sub_apply, cornerTridiagonal_mul_apply _ _ _ hi₀ hi,
+  rw [sylvesterMap_apply, Matrix.sub_apply, cornerTridiagonal_mul_apply _ _ _ hi₀ hi,
     mul_cornerTridiagonal_apply _ _ _ _ hj₀ hj,
     isToeplitz_iff.mp hT ⟨i - 1, by omega⟩ j i ⟨j + 1, hj⟩ (by simp only; omega),
     isToeplitz_iff.mp hT ⟨i + 1, hi⟩ j i ⟨j - 1, by omega⟩ (by simp only; omega)]
@@ -275,7 +275,7 @@ theorem sylvesterMap_cornerTridiagonal_hankel_apply {H : Matrix (Fin n) (Fin n) 
     (hj₀ : 0 < (j : ℕ)) (hj : (j : ℕ) + 1 < n) :
     sylvesterMap (cornerTridiagonal n 0 0) (cornerTridiagonal n 1 1) H i j = 0 := by
   obtain ⟨h, rfl⟩ := hH
-  rw [sylvesterMap_apply, sub_apply, cornerTridiagonal_mul_apply _ _ _ hi₀ hi,
+  rw [sylvesterMap_apply, Matrix.sub_apply, cornerTridiagonal_mul_apply _ _ _ hi₀ hi,
     mul_cornerTridiagonal_apply _ _ _ _ hj₀ hj]
   simp only [hankel_apply]
   rw [show (i : ℕ) - 1 + j = i + (j - 1) by omega, show (i : ℕ) + 1 + j = i + (j + 1) by omega]
@@ -288,7 +288,7 @@ private theorem eq_zero_of_forall_dotProduct_eq_zero {v : Fin n → Fin n → �
   set V : Matrix (Fin n) (Fin n) ℝ := of v
   have hVV : V * Vᵀ = diagonal fun k => v k ⬝ᵥ v k := by
     ext k l
-    rw [mul_apply, diagonal_apply]
+    rw [Matrix.mul_apply, diagonal_apply]
     change v k ⬝ᵥ v l = _
     split_ifs with h
     · rw [h]
@@ -485,7 +485,7 @@ theorem displacementRank_cornerTridiagonal_toeplitz_add_hankel_le
     {T H : Matrix (Fin n) (Fin n) ℝ} (hT : T.IsToeplitz) (hH : H.IsHankel) :
     displacementRank (cornerTridiagonal n 0 0) (cornerTridiagonal n 1 1) (T + H) ≤ 4 :=
   displacementRank_cornerTridiagonal_le_of_border fun _ _ hi₀ hi hj₀ hj => by
-    rw [map_add, add_apply, sylvesterMap_cornerTridiagonal_toeplitz_apply hT hi₀ hi hj₀ hj,
+    rw [map_add, Matrix.add_apply, sylvesterMap_cornerTridiagonal_toeplitz_apply hT hi₀ hi hj₀ hj,
       sylvesterMap_cornerTridiagonal_hankel_apply hH hi₀ hi hj₀ hj, add_zero]
 
 end Bounds

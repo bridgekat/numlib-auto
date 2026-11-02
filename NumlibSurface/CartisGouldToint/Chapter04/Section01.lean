@@ -151,8 +151,8 @@ theorem assumptionDpL_one_iff {f : EuclideanSpace ℝ (Fin n) → ℝ} {L : ℝ}
 
 /-- The set `𝒵_ε` of (4.1.4): the unit directions of curvature at most `ε₂` in absolute value,
 `{d | ‖d‖ = 1 ∧ |∇²f(x)[d]²| ≤ ε₂}` (also the set `𝓜₀` of Step 0). -/
-def smallCurvatureSet (f : EuclideanSpace ℝ (Fin n) → ℝ) (x : EuclideanSpace ℝ (Fin n))
-    (ε₂ : ℝ) : Set (EuclideanSpace ℝ (Fin n)) :=
+noncomputable def smallCurvatureSet (f : EuclideanSpace ℝ (Fin n) → ℝ)
+    (x : EuclideanSpace ℝ (Fin n)) (ε₂ : ℝ) : Set (EuclideanSpace ℝ (Fin n)) :=
   smallCurvatureDirections (iteratedFDeriv ℝ 2 f x) ε₂
 
 theorem mem_smallCurvatureSet {f : EuclideanSpace ℝ (Fin n) → ℝ} {x d : EuclideanSpace ℝ (Fin n)}
@@ -293,8 +293,9 @@ def arpOrder : Option ℝ → Option ℝ → ℕ
 and `𝓜_{k+1} = {d | ‖d‖ = 1 ∧ |∇²m_k(s_k)[d]²| ≤ θ₂ ‖s_k‖^{p-1}}` (4.1.14), with the model
 `m_k = regularizedModel (ftaylorSeries ℝ f (x k)) p (σ k)` of (4.1.2). (`𝓜₀ = ∅` if `ε₂ = +∞`; the
 sets are only used when `ε₃ < ∞`.) -/
-def arpCurvSet (f : EuclideanSpace ℝ (Fin n) → ℝ) (p : ℕ) (P : ARpParams) (ε₂ : Option ℝ)
-    (x s : ℕ → EuclideanSpace ℝ (Fin n)) (σ : ℕ → ℝ) : ℕ → Set (EuclideanSpace ℝ (Fin n))
+noncomputable def arpCurvSet (f : EuclideanSpace ℝ (Fin n) → ℝ) (p : ℕ) (P : ARpParams)
+    (ε₂ : Option ℝ) (x s : ℕ → EuclideanSpace ℝ (Fin n)) (σ : ℕ → ℝ) :
+    ℕ → Set (EuclideanSpace ℝ (Fin n))
   | 0 => ε₂.elim ∅ (smallCurvatureSet f (x 0))
   | k + 1 => smallCurvatureDirections
       (iteratedFDeriv ℝ 2 (regularizedModel (ftaylorSeries ℝ f (x k)) p (σ k)) (s k))

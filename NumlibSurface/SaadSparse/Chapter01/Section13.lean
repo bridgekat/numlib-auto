@@ -167,7 +167,7 @@ private theorem inv_one_add_of_mul_self_eq_zero {T : Matrix (Fin n) (Fin n) 𝕜
 private theorem single_mul_self_eq_zero (hij : i ≠ j) :
     (single i j (1 : 𝕜) : Matrix (Fin n) (Fin n) 𝕜) * single i j 1 = 0 := by
   ext a b
-  simp only [mul_apply, single_apply, zero_apply]
+  simp only [Matrix.mul_apply, single_apply, Matrix.zero_apply]
   refine Finset.sum_eq_zero fun l _ => ?_
   by_cases hl : j = l
   · subst hl; simp [hij]

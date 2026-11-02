@@ -461,8 +461,8 @@ theorem isUnit_tridiagonalOf_one_zero [Ring S] (L : Fin N → S) :
     IsUnit (tridiagonalOf L 1 0) := by
   have h : tridiagonalOf L 1 0 = 1 + tridiagonalOf L 0 0 := by
     ext i j
-    simp only [tridiagonalOf, of_apply, add_apply, one_apply, Pi.one_apply, Pi.zero_apply,
-      Fin.ext_iff]
+    simp only [tridiagonalOf, of_apply, Matrix.add_apply, Matrix.one_apply, Pi.one_apply,
+      Pi.zero_apply, Fin.ext_iff]
     split_ifs <;> simp
   rw [h]
   refine isUnit_one_add_of_potential _ (fun i => N - i)
@@ -488,7 +488,8 @@ theorem isUnit_tridiagonalOf_zero [Ring S] (U : Fin (N + 1) → S) (F : Fin N �
       exact Ring.mul_inverse_cancel _ (hU i)
     rw [hone, Matrix.one_mul]
     ext i j
-    simp only [tridiagonalOf, of_apply, add_apply, diagonal_apply, Pi.zero_apply, Fin.ext_iff]
+    simp only [tridiagonalOf, of_apply, Matrix.add_apply, diagonal_apply, Pi.zero_apply,
+        Fin.ext_iff]
     split_ifs <;> simp
   rw [h]
   refine hdiag.mul
@@ -553,7 +554,8 @@ theorem pow_apply_zero_zero_eq_of_isTridiagonal {M M' : Matrix (Fin (m + 1)) (Fi
   have hsplit : ∀ N : Matrix (Fin (m + 1)) (Fin (m + 1)) S, (N ^ (j₁ + j₂)) 0 0 =
       (Nᵀ ^ j₁ *ᵥ Pi.single 0 1) ⬝ᵥ (N ^ j₂ *ᵥ Pi.single 0 1) := by
     intro N
-    rw [pow_add, ← transpose_pow, mulVec_single_one, mulVec_single_one, mul_apply, dotProduct]
+    rw [pow_add, ← transpose_pow, mulVec_single_one, mulVec_single_one, Matrix.mul_apply,
+        dotProduct]
     rfl
   rw [hsplit, hsplit, hcol, hrow]
 

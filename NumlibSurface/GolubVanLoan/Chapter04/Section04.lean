@@ -532,7 +532,7 @@ theorem equation_4_4_14 {N : ℕ} {A : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ} (
   have hlow : ∀ i m : Fin (N + 1), m ≤ i → (Lm * T * Lmᵀ) i m = A i m := by
     intro i m hmi
     have hmi' := Fin.le_def.1 hmi
-    rw [Matrix.mul_assoc, mul_apply]
+    rw [Matrix.mul_assoc, Matrix.mul_apply]
     simp only [hH]
     simp only [hLm, of_apply]
     rw [Fin.sum_univ_eq_sum_range (fun k => s.2.2 i k * Hn m k) (N + 1),

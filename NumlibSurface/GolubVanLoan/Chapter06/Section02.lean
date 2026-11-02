@@ -531,10 +531,10 @@ theorem algorithm_6_2_2_spec {m₂ : ℕ} (hpn : m₂ ≤ n)
     rw [← hRy, mulVec_mulVec, nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).1 hR₁u), one_mulVec]
   have hAQ₁ : (A * Q).firstColumns hpn = A * Q.firstColumns hpn := by
     ext i j
-    simp [firstColumns, mul_apply]
+    simp [firstColumns, Matrix.mul_apply]
   have hAQ₂ : (A * Q).submatrix id e = A * Q.submatrix id e := by
     ext i j
-    simp [mul_apply]
+    simp [Matrix.mul_apply]
   set z := Id.run (ls (A * Q.submatrix id e) (b + -(A * Q.firstColumns hpn) *ᵥ y)) with hz
   have hzLS := hls (A * Q.submatrix id e) (b + -(A * Q.firstColumns hpn) *ᵥ y)
   have hout : Id.run (algorithm_6_2_2 pure hpn ls A B b d) =

@@ -228,13 +228,13 @@ theorem swap_two_by_two {l₁ l₂ t c s : ℝ} (hcs : c ^ 2 + s ^ 2 = 1)
       simp
   · ext i j
     fin_cases i <;> fin_cases j
-    · simp [mul_apply, Fin.sum_univ_two]
+    · simp [Matrix.mul_apply, Fin.sum_univ_two]
       linear_combination (-c) * h + l₂ * hcs
-    · simp [mul_apply, Fin.sum_univ_two]
+    · simp [Matrix.mul_apply, Fin.sum_univ_two]
       linear_combination (-s) * h + t * hcs
-    · simp [mul_apply, Fin.sum_univ_two]
+    · simp [Matrix.mul_apply, Fin.sum_univ_two]
       linear_combination (-s) * h
-    · simp [mul_apply, Fin.sum_univ_two]
+    · simp [Matrix.mul_apply, Fin.sum_univ_two]
       linear_combination c * h + l₁ * hcs
 
 /-! ### §7.6.2 Algorithm 7.6.1: reordering the Schur form -/
@@ -829,18 +829,18 @@ theorem blockDiagonalization_update {q : ℕ} {b : Fin n → Fin q} {T Z : Matri
     (1 + Z)⁻¹ = 1 - Z ∧ (1 + Z)⁻¹ * T * (1 + Z) = T + T * Z - Z * T := by
   have hZZ : Z * Z = 0 := by
     ext r c
-    rw [mul_apply, Matrix.zero_apply]
+    rw [Matrix.mul_apply, Matrix.zero_apply]
     refine Finset.sum_eq_zero fun s _ => ?_
     by_contra h
     obtain ⟨h1, h2⟩ := mul_ne_zero_iff.1 h
     exact hij.ne ((hZ s c h2).1.symm.trans (hZ r s h1).2)
   have hZTZ : Z * T * Z = 0 := by
     ext r c
-    rw [mul_apply, Matrix.zero_apply]
+    rw [Matrix.mul_apply, Matrix.zero_apply]
     refine Finset.sum_eq_zero fun t _ => ?_
     by_cases h2 : Z t c = 0
     · rw [h2, mul_zero]
-    rw [mul_apply, Finset.sum_mul]
+    rw [Matrix.mul_apply, Finset.sum_mul]
     refine Finset.sum_eq_zero fun s _ => ?_
     by_cases h1 : Z r s = 0
     · rw [h1, zero_mul, zero_mul]
@@ -878,7 +878,7 @@ theorem equation_7_6_5 {p r : ℕ} (F : Matrix (Fin p) (Fin p) ℝ) {G : Matrix 
   have h1 : ∀ k, (F * Z - Z * G).col k = F *ᵥ Z.col k - ∑ i, G i k • Z.col i := by
     intro k
     ext r'
-    simp only [col_apply, Matrix.sub_apply, mul_apply, Pi.sub_apply, mulVec, dotProduct,
+    simp only [col_apply, Matrix.sub_apply, Matrix.mul_apply, Pi.sub_apply, mulVec, dotProduct,
       Finset.sum_apply, Pi.smul_apply, smul_eq_mul]
     congr 1
     exact Finset.sum_congr rfl fun i _ => mul_comm _ _
@@ -1293,7 +1293,7 @@ private theorem blockSubMul_pure {li lj : List (Fin n)} (hli : li.Nodup)
   by_cases hr : r ∈ li
   · obtain ⟨a, rfl⟩ := List.mem_iff_get.1 hr
     rw [h1 a (List.mem_finRange a), Function.update_self, Matrix.mul_assoc, Matrix.mul_assoc,
-      selCols_mul_apply_get hli, mul_apply, Fin.sum_univ_def]
+      selCols_mul_apply_get hli, Matrix.mul_apply, Fin.sum_univ_def]
     congr 2
     exact List.map_congr_left fun e _ => by rw [selCols_transpose_mul_apply]
   · rw [h2 r (by rwa [hmap]), Matrix.mul_assoc, Matrix.mul_assoc,
@@ -1334,7 +1334,7 @@ private theorem blockAddMul_pure {li lj : List (Fin n)} (hlj : lj.Nodup)
   by_cases hc : c ∈ lj
   · obtain ⟨e, rfl⟩ := List.mem_iff_get.1 hc
     rw [h1 e (List.mem_finRange e), Function.update_self, mul_selCols_transpose_apply_get hlj,
-      mul_apply, Fin.sum_univ_def, add_comm]
+      Matrix.mul_apply, Fin.sum_univ_def, add_comm]
     congr 2
     exact List.map_congr_left fun a _ => by rw [mul_selCols_apply]
   · rw [h2 c (by rwa [hmap]), mul_selCols_transpose_apply_of_notMem _ _ hc, add_zero]
@@ -1463,7 +1463,7 @@ private theorem BlockDiagInv.step {b : Fin n → Fin q} {Q₀ T₀ : Matrix (Fin
       ∑ e, Z a e * A ((blockIndices b j).get e) c := by
     intro A a c
     rw [hZf_def, blockZf, Matrix.mul_assoc, Matrix.mul_assoc, selCols_mul_apply_get hli,
-      mul_apply]
+      Matrix.mul_apply]
     exact Finset.sum_congr rfl fun e _ => by rw [selCols_transpose_mul_apply]
   have hZL0 : ∀ (A : Matrix (Fin n) (Fin n) ℝ) r c, b r ≠ i → (Zf * A) r c = 0 := by
     intro A r c hr
@@ -1474,7 +1474,7 @@ private theorem BlockDiagInv.step {b : Fin n → Fin q} {Q₀ T₀ : Matrix (Fin
     intro A r e
     rw [hZf_def, blockZf]
     simp only [← Matrix.mul_assoc]
-    rw [mul_selCols_transpose_apply_get hlj, mul_apply]
+    rw [mul_selCols_transpose_apply_get hlj, Matrix.mul_apply]
     exact Finset.sum_congr rfl fun a _ => by rw [mul_selCols_apply]
   have hZR0 : ∀ (A : Matrix (Fin n) (Fin n) ℝ) r c, b c ≠ j → (A * Zf) r c = 0 := by
     intro A r c hc
@@ -1562,7 +1562,7 @@ private theorem BlockDiagInv.step {b : Fin n → Fin q} {Q₀ T₀ : Matrix (Fin
     · obtain ⟨a, rfl⟩ := List.mem_iff_get.1 (mem_blockIndices.2 hri)
       obtain ⟨e, rfl⟩ := List.mem_iff_get.1 (mem_blockIndices.2 hcj)
       have hs := congrFun (congrFun hsyl a) e
-      simp only [Matrix.sub_apply, mul_apply, Matrix.neg_apply, submatrix_apply] at hs
+      simp only [Matrix.sub_apply, Matrix.mul_apply, Matrix.neg_apply, submatrix_apply] at hs
       rw [hW'e, hZR W, hZL W, hWu _ _ hrc (by rw [hri, hcj]; exact hPij)]
       have e1 : ∑ a', W ((blockIndices b i).get a) ((blockIndices b i).get a') * Z a' e =
           ∑ a', QT.2 ((blockIndices b i).get a) ((blockIndices b i).get a') * Z a' e :=
@@ -1746,7 +1746,7 @@ private theorem frobenius_norm_sq_fromBlocks_one {a b : ℕ} (Z : Matrix (Fin a)
     ‖(fromBlocks 1 Z 0 1 : Matrix (Fin a ⊕ Fin b) (Fin a ⊕ Fin b) ℝ)‖ ^ 2 = a + b + ‖Z‖ ^ 2 := by
   have hone : ∀ m : ℕ, ∑ i : Fin m, ∑ j : Fin m, ‖(1 : Matrix (Fin m) (Fin m) ℝ) i j‖ ^ 2 = m := by
     intro m
-    simp [one_apply]
+    simp [Matrix.one_apply]
   rw [frobenius_norm_sq_eq_sum_sq, frobenius_norm_sq_eq_sum_sq, Fintype.sum_sum_type]
   simp only [Fintype.sum_sum_type, fromBlocks_apply₁₁, fromBlocks_apply₁₂, fromBlocks_apply₂₁,
     fromBlocks_apply₂₂, Finset.sum_add_distrib, hone]

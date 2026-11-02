@@ -539,7 +539,7 @@ orders if `h` (or, for ARqpC-SC, the feasible set `X`) is not convex
 (`Optimization.compositeHalvingSet`). (The book's algorithm uses the *known* convexity; if it is
 unknown, the algorithm halves at order `1` as well, which is the nonconvex case of the analysis:
 every statement below holds for that variant with the nonconvex-case conclusions.) -/
-abbrev halvingSet (h : ℝᵐ → ℝ) (X : Set ℝⁿ) : Set ℕ :=
+noncomputable abbrev halvingSet (h : ℝᵐ → ℝ) (X : Set ℝⁿ) : Set ℕ :=
   Optimization.compositeHalvingSet h X
 
 /-- **Algorithm 14.1.2** of [cartis2022evaluation] (detailed Step 2 of ARqpC) as an output

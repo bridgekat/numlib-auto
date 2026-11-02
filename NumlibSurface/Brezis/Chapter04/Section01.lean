@@ -211,11 +211,12 @@ theorem theorem_4_5 [SigmaFinite μ₁] [SigmaFinite μ₂] {F : α₁ × α₂ 
 of measurable functions converges a.e. to `g`, then for every `ε > 0` there is a measurable `A`
 with `μ (Ω ∖ A) < ε` on which the convergence is uniform. -/
 theorem theorem_4_29 [IsFiniteMeasure μ] {f : ℕ → α → ℝ} {g : α → ℝ}
-    (hf : ∀ n, StronglyMeasurable (f n)) (hg : StronglyMeasurable g)
+    (hf : ∀ n, StronglyMeasurable (f n)) (_hg : StronglyMeasurable g)
     (hfg : ∀ᵐ x ∂μ, Tendsto (fun n => f n x) atTop (𝓝 (g x))) {ε : ℝ≥0∞} (hε : 0 < ε) :
     ∃ A : Set α, MeasurableSet A ∧ μ Aᶜ < ε ∧ TendstoUniformlyOn f g atTop A := by
   obtain ⟨t, ht, hμt, hunif⟩ :=
-    tendstoUniformlyOn_of_ae_tendsto' hf hg hfg (lt_min (ENNReal.half_pos hε.ne') one_pos)
+    tendstoUniformlyOn_of_ae_tendsto' (fun n => (hf n).aestronglyMeasurable) hfg
+      (lt_min (ENNReal.half_pos hε.ne') one_pos)
   refine ⟨tᶜ, ht.compl, ?_, hunif⟩
   rw [compl_compl]
   refine hμt.trans_lt ?_

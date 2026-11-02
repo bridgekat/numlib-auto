@@ -1025,7 +1025,7 @@ theorem permMatrix_mul_one_sub_vecMulVec_single_mul_transpose {ρ : Equiv.Perm (
     ⟨fun h => ρ.injective (h.trans hk.symm), fun h => h ▸ hk⟩
   rw [transpose_permMatrix, permMatrix_mul_mul_permMatrix, permMatrix_mulVec]
   ext i j
-  simp only [submatrix_apply, sub_apply, vecMulVec_apply, Pi.single_apply, one_apply,
+  simp only [submatrix_apply, Matrix.sub_apply, vecMulVec_apply, Pi.single_apply, Matrix.one_apply,
     EmbeddingLike.apply_eq_iff_eq, hk' j, Function.comp_apply]
 
 end FullPivotStages
@@ -1415,7 +1415,7 @@ theorem abs_gemStage_le_growthFactor_mul_supAbs (k : ℕ) (i j : Fin N) :
     |gemStage A k i j| ≤ growthFactor A * A.supAbs := by
   rcases eq_or_ne A.supAbs 0 with h0 | h0
   · rw [supAbs_eq_zero_iff.1 h0, gemStage_zero_matrix]
-    simp only [zero_apply, abs_zero]
+    simp only [Matrix.zero_apply, abs_zero]
     exact mul_nonneg (growthFactor_nonneg _) (supAbs_nonneg _)
   have hbdd : BddAbove (Set.range fun p : Fin N × Fin N × Fin N =>
       |gemStage A p.1 p.2.1 p.2.2|) := (Set.finite_range _).bddAbove

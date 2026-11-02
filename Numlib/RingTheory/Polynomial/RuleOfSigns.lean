@@ -70,7 +70,7 @@ theorem trailingCoeff_eraseLead {P : R[X]} (h : P.eraseLead ≠ 0) :
   have hntd : P.eraseLead.natTrailingDegree = P.natTrailingDegree := by
     refine le_antisymm (natTrailingDegree_le_of_ne_zero ?_) (le_natTrailingDegree h fun m hm => ?_)
     · rw [eraseLead_coeff_of_ne _ hlt.ne]
-      exact trailingCoeff_nonzero_iff_nonzero.2 hP
+      exact trailingCoeff_ne_zero.2 hP
     · rw [eraseLead_coeff_of_ne _ (hm.trans hlt).ne]
       exact coeff_eq_zero_of_lt_natTrailingDegree hm
   rw [trailingCoeff, trailingCoeff, hntd, eraseLead_coeff_of_ne _ hlt.ne]
@@ -112,7 +112,7 @@ theorem signVariations_mod_two_eq {P : R[X]} (hP : P ≠ 0) :
     rw [h1]
     exact signType_parity _ _ _ (sign_ne_zero.2 (leadingCoeff_ne_zero.2 hP))
       (sign_ne_zero.2 (leadingCoeff_ne_zero.2 hE))
-      (sign_ne_zero.2 (trailingCoeff_nonzero_iff_nonzero.2 hP))
+      (sign_ne_zero.2 (trailingCoeff_ne_zero.2 hP))
 
 end Semiring
 
@@ -135,7 +135,7 @@ theorem sign_leadingCoeff_eq_sign_trailingCoeff_of_forall_pos (hP : P ≠ 0)
     rw [zero_add, ← hQ] at this
     rw [← coeff_zero_eq_eval_zero, ← this]
     rfl
-  have htc : P.trailingCoeff ≠ 0 := trailingCoeff_nonzero_iff_nonzero.2 hP
+  have htc : P.trailingCoeff ≠ 0 := trailingCoeff_ne_zero.2 hP
   have hnear : ∀ᶠ x in 𝓝 (0 : ℝ), 0 < Q.eval x * P.trailingCoeff := by
     have hc : ContinuousAt (fun x => Q.eval x * P.trailingCoeff) 0 :=
       (Q.continuous.mul continuous_const).continuousAt
@@ -237,7 +237,7 @@ theorem signVariations_mod_two_eq_roots_countP_pos_mod_two (hP : P ≠ 0) :
     rw [signVariations_mod_two_eq hP, signVariations_mod_two_eq hQ] at *
     rw [leadingCoeff_mul, leadingCoeff_X_sub_C, one_mul, sign_trailingCoeff_X_sub_C_mul hηpos,
       signType_parity_neg _ _ (sign_ne_zero.2 (leadingCoeff_ne_zero.2 hQ))
-        (sign_ne_zero.2 (trailingCoeff_nonzero_iff_nonzero.2 hQ)), ihQ]
+        (sign_ne_zero.2 (trailingCoeff_ne_zero.2 hQ)), ihQ]
     omega
 
 /-- **Descartes' rule of signs, parity clause** ([quarteroni2000numerical] Property 6.5, second

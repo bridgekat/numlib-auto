@@ -1456,7 +1456,7 @@ theorem gmresCore_spec {op : (Fin n → ℝ) → Id (Fin n → ℝ)} {B : Matrix
     · rfl
   have hC1 : W' * Hk = R' := by
     ext a b
-    rw [mul_apply, hR', submatrix_apply, hRW (κ b) b.2 (ι a), hcolh (κ b) b.2, mulVec,
+    rw [Matrix.mul_apply, hR', submatrix_apply, hRW (κ b) b.2 (ι a), hcolh (κ b) b.2, mulVec,
       dotProduct]
     rw [← sum_castLE_eq hk1 (fun c => W (ι a) c * h c (κ b))
       fun c hc => by rw [hWrow a c hc, zero_mul]]
@@ -1464,12 +1464,12 @@ theorem gmresCore_spec {op : (Fin n → ℝ) → Id (Fin n → ℝ)} {B : Matrix
   have hWo : W'ᵀ * W' = 1 := by
     have hWW := (mem_orthogonalGroup_iff' _ _).1 hWmem
     ext a c
-    rw [mul_apply]
+    rw [Matrix.mul_apply]
     have e := congrFun (congrFun hWW (ι a)) (ι c)
-    rw [mul_apply, ← sum_castLE_eq hk1 (fun d => Wᵀ (ι a) d * W d (ι c))
+    rw [Matrix.mul_apply, ← sum_castLE_eq hk1 (fun d => Wᵀ (ι a) d * W d (ι c))
       fun d hd => by rw [transpose_apply, hWcol d a hd, zero_mul]] at e
     refine e.trans ?_
-    rw [one_apply, one_apply]
+    rw [Matrix.one_apply, Matrix.one_apply]
     simp [ι, Fin.ext_iff]
   have hW'mem : W' ∈ orthogonalGroup (Fin (k + 1)) ℝ := (mem_orthogonalGroup_iff' _ _).2 hWo
   have hC3 : (fun a => s.g (ι a)) = W' *ᵥ Krylov.firstVec β₀ (k + 1) := by

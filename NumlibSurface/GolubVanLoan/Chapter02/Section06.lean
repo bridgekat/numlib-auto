@@ -433,7 +433,7 @@ theorem equation_2_6_9 (hn : 0 < n) :
   have hC : ∀ i j : Fin n, C i j = cEntry i j := fun _ _ => rfl
   have hBC : B * C = 1 := by
     ext i j
-    rw [mul_apply, one_apply]
+    rw [Matrix.mul_apply, Matrix.one_apply]
     simp_rw [hB, hC]
     rw [Fin.sum_univ_eq_sum_range (fun k => bEntry i k * cEntry k j) n,
       sum_bEntry_mul_cEntry i.isLt j.isLt]

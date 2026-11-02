@@ -140,7 +140,7 @@ theorem sum_norm_sq_modeUnfold_hosvdCoreOf (hU : ∀ k, U k ∈ unitaryGroup (κ
     ∑ c, ‖(hosvdCoreOf U A).modeUnfold k i c‖ ^ 2 = σ i ^ 2 := by
   have h := congrFun (congrFun (modeUnfold_hosvdCoreOf_mul_conjTranspose A hU k) i) i
   rw [conjTranspose_mul, conjTranspose_conjTranspose, ← Matrix.mul_assoc, hσ,
-    diagonal_apply_eq, mul_apply] at h
+    diagonal_apply_eq, Matrix.mul_apply] at h
   simp only [conjTranspose_apply, RCLike.star_def, RCLike.mul_conj] at h
   exact_mod_cast h
 

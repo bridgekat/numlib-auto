@@ -1,4 +1,4 @@
-import Mathlib.Data.Sum.Order
+import Mathlib.Order.Sum.Order
 import Numlib.DomainDecomposition.Schur
 import Numlib.Preconditioner.ILU
 import NumlibSurface.SaadSparse.Chapter14.Section02

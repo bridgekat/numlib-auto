@@ -100,7 +100,7 @@ theorem iteratedFDeriv_normRpow_smul (lam : ℝ) (n : ℕ) {t : ℝ} (ht : 0 < t
   have hs : IsOpen ({0}ᶜ : Set E) := isOpen_compl_singleton
   have hpre : g ⁻¹' ({0}ᶜ : Set E) = {0}ᶜ := by
     ext y
-    simp [hg, smul_eq_zero, ht.ne']
+    simp [hg, ht.ne']
   have hgx : g x ∈ ({0}ᶜ : Set E) := by
     rw [hg]
     exact smul_ne_zero ht.ne' hx

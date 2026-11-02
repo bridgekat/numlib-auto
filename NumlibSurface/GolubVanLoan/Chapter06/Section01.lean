@@ -285,7 +285,7 @@ theorem equation_6_1_10 {k q : ℕ} {Z : Matrix (Fin (n + q)) (Fin (n + q)) ℝ}
       exact (mem_orthogonalGroup_iff _ ℝ).1 hZ
     rw [← h1]
     ext i j
-    simp only [Matrix.add_apply, mul_apply, submatrix_apply, transpose_apply, id,
+    simp only [Matrix.add_apply, Matrix.mul_apply, submatrix_apply, transpose_apply, id,
       Fin.sum_univ_add]
   rw [Matrix.mul_assoc, Matrix.mul_assoc C, ← Matrix.mul_add, hZZ, Matrix.mul_one, mulVec_mulVec]
 
@@ -546,10 +546,10 @@ theorem equation_6_1_19 (w : Fin m → ℝ) {A : Matrix (Fin m) (Fin n) ℝ}
     have e := Fin.sum_castLE_eq_sum_ite (min_le_left m n) fun i : Fin m =>
       U k i ^ 2 * (σ i ^ 2 / (σ i ^ 2 + μ))
     simp only [Fin.val_castLE] at e
-    rw [e, mul_apply]
+    rw [e, Matrix.mul_apply]
     refine sum_congr rfl fun i _ => ?_
     have hi := i.isLt
-    rw [mul_apply, sum_eq_single i, diagonal_apply_eq, transpose_apply]
+    rw [Matrix.mul_apply, sum_eq_single i, diagonal_apply_eq, transpose_apply]
     · by_cases hin : (i : ℕ) < n
       · rw [ite_eq_left (lt_min hi hin), ite_eq_left hin]
         ring

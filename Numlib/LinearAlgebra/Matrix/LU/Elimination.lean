@@ -320,7 +320,7 @@ noncomputable def gemLowerStage (k : ℕ) : Matrix (Fin N) (Fin N) K :=
 /-- Before the first stage, the partial multiplier matrix is the identity. -/
 theorem gemLowerStage_zero : gemLowerStage A 0 = 1 := by
   ext i j
-  simp [gemLowerStage, one_apply]
+  simp [gemLowerStage, Matrix.one_apply]
 
 /-- After all `N` stages, the partial multiplier matrix is the multiplier matrix. -/
 theorem gemLowerStage_of_le {k : ℕ} (hk : N ≤ k) : gemLowerStage A k = gemLower A := by
@@ -332,7 +332,7 @@ the new column of multipliers is appended. -/
 theorem gemLowerStage_succ {k : ℕ} (h : k < N) :
     gemLowerStage A (k + 1) = gemLowerStage A k * elimMul (gemStage A k) ⟨k, h⟩ := by
   ext i j
-  rw [elimMul, Matrix.mul_add, Matrix.mul_one, add_apply, mul_apply]
+  rw [elimMul, Matrix.mul_add, Matrix.mul_one, Matrix.add_apply, Matrix.mul_apply]
   rw [Finset.sum_eq_single i (fun r _ hri => ?_) (fun h => absurd (mem_univ i) h)]
   · simp only [gemLowerStage, of_apply, elimMultipliers_apply, lt_irrefl, false_and, ite_false,
       ite_true, one_mul]

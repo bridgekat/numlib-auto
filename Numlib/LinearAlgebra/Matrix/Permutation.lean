@@ -124,7 +124,7 @@ theorem mul_exchange_apply {m : Type*} (A : Matrix m (Fin n) R) (i : m) (j : Fin
 @[simp]
 theorem exchange_mul_exchange : (exchange n : Matrix (Fin n) (Fin n) R) * exchange n = 1 := by
   ext i j
-  rw [exchange_mul_apply, exchange_apply, one_apply, Fin.rev_rev]
+  rw [exchange_mul_apply, exchange_apply, Matrix.one_apply, Fin.rev_rev]
   exact if_congr eq_comm rfl rfl
 
 /-- Multiplying by the exchange matrix on the left reverses the rows:
@@ -403,7 +403,7 @@ theorem cyclicShift_mul_apply_of_pos {n : ℕ} (φ : R) (A : Matrix (Fin n) (Fin
 theorem mul_cyclicShift_apply_of_lt {n : ℕ} (φ : R) (A : Matrix (Fin n) (Fin n) R) (i : Fin n)
     {j : Fin n} (hj : (j : ℕ) + 1 < n) :
     (A * cyclicShift n φ) i j = A i ⟨j + 1, hj⟩ := by
-  rw [mul_apply, Finset.sum_eq_single ⟨j + 1, hj⟩]
+  rw [Matrix.mul_apply, Finset.sum_eq_single ⟨j + 1, hj⟩]
   · rw [cyclicShift_apply, ite_eq_left rfl, mul_one]
   · intro l _ hl
     have hl' : (l : ℕ) ≠ j + 1 := fun h' => hl (Fin.ext h')
@@ -414,7 +414,7 @@ theorem mul_cyclicShift_apply_of_lt {n : ℕ} (φ : R) (A : Matrix (Fin n) (Fin 
 theorem mul_transpose_cyclicShift_apply_of_pos {n : ℕ} (φ : R) (A : Matrix (Fin n) (Fin n) R)
     (i : Fin n) {j : Fin n} (hj : 0 < (j : ℕ)) :
     (A * (cyclicShift n φ)ᵀ) i j = A i ⟨j - 1, by omega⟩ := by
-  rw [mul_apply, Finset.sum_eq_single ⟨j - 1, by omega⟩]
+  rw [Matrix.mul_apply, Finset.sum_eq_single ⟨j - 1, by omega⟩]
   · rw [transpose_apply, cyclicShift_apply, ite_eq_left (by simp only; omega), mul_one]
   · intro l _ hl
     have hl' : (j : ℕ) ≠ l + 1 := fun h' => hl (Fin.ext (by simp only; omega))
@@ -425,7 +425,7 @@ theorem mul_transpose_cyclicShift_apply_of_pos {n : ℕ} (φ : R) (A : Matrix (F
 theorem transpose_cyclicShift_mul_apply_of_lt {n : ℕ} (φ : R) (A : Matrix (Fin n) (Fin n) R)
     {i : Fin n} (hi : (i : ℕ) + 1 < n) (j : Fin n) :
     ((cyclicShift n φ)ᵀ * A) i j = A ⟨i + 1, hi⟩ j := by
-  rw [mul_apply, Finset.sum_eq_single ⟨i + 1, hi⟩]
+  rw [Matrix.mul_apply, Finset.sum_eq_single ⟨i + 1, hi⟩]
   · rw [transpose_apply, cyclicShift_apply, ite_eq_left rfl, one_mul]
   · intro l _ hl
     have hl' : (l : ℕ) ≠ i + 1 := fun h' => hl (Fin.ext h')

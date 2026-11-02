@@ -474,9 +474,11 @@ theorem HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm_and_norm_
   set f' : E → F := C.indicator f with hf'def
   set w' : E → F := C.indicator w with hw'def
   have hf'Lp : MemLp f' p μ :=
-    (memLp_indicator_iff_restrict hCmeas).2 (hf.memLp_restrict_of_compact_subset hp' hWΩ hWc)
+    (memLp_indicator_iff_restrict hCmeas.nullMeasurableSet).2
+      (hf.memLp_restrict_of_compact_subset hp' hWΩ hWc)
   have hw'Lp : MemLp w' p μ :=
-    (memLp_indicator_iff_restrict hCmeas).2 (hw.memLp_restrict_of_compact_subset hp' hWΩ hWc)
+    (memLp_indicator_iff_restrict hCmeas.nullMeasurableSet).2
+      (hw.memLp_restrict_of_compact_subset hp' hWΩ hWc)
   have hf'loc : LocallyIntegrable f' μ := hf'Lp.locallyIntegrable hp
   have hint : HasWeakIteratedLineDerivOn y f' w' ⟨interior C, isOpen_interior⟩ μ :=
     (h.mono (interior_subset.trans hWΩ)).congr_ae

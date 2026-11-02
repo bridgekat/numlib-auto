@@ -4,8 +4,8 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.Analysis.SpecialFunctions.Integrals.LogTrigonometric`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
-import Mathlib.Analysis.SpecialFunctions.Integrability.LogMeromorphic
-import Mathlib.Analysis.SpecialFunctions.Integrals.LogTrigonometric
+import Mathlib.Analysis.SpecialFunctions.Integrability.Log
+import Mathlib.Analysis.SpecialFunctions.Integrals.Log
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Periodic
 
 /-!

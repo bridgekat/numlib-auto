@@ -259,7 +259,8 @@ norm is the maximum absolute row sum, `‖A‖_∞ = max_i ∑_j |a_ij|`.  The s
 this really is the operator norm of `x ↦ A x` on sup-normed coordinate space. -/
 theorem example_2_2_8_linfty (A : Matrix m n 𝕜) :
     ‖A‖ = ((Finset.univ.sup fun i => ∑ j, ‖A i j‖₊ : NNReal) : ℝ) ∧
-      ‖A‖ = ‖ContinuousLinearMap.mk (Matrix.mulVecLin A)‖ :=
+      ‖A‖ = ‖ContinuousLinearMap.mk (Matrix.mulVecLin A)
+        (Matrix.mulVecLin A).continuous_of_finiteDimensional‖ :=
   ⟨Matrix.linfty_opNorm_def A, Matrix.linfty_opNorm_eq_opNorm A⟩
 
 end MatrixLinfty

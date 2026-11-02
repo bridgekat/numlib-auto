@@ -235,12 +235,12 @@ theorem range_one_add_matrixSign (e : l ⊕ m ≃ n) {A X : Matrix n n ℂ} (hX 
     rw [matrixSign_conj_fromBlocks e hX h h₁ h₂]
     ext i j
     have h1 : (1 : Matrix n n ℂ) i j = ∑ x : l ⊕ m, X i (e x) * X⁻¹ (e x) j := by
-      rw [← mul_nonsing_inv X hdet, mul_apply, ← e.sum_comp]
-    simp only [smul_apply, add_apply, h1, mul_apply, reindex_apply, submatrix_apply, X₂, Y₂,
-      Function.comp_apply, id]
+      rw [← mul_nonsing_inv X hdet, Matrix.mul_apply, ← e.sum_comp]
+    simp only [Matrix.smul_apply, Matrix.add_apply, h1, Matrix.mul_apply, reindex_apply,
+      submatrix_apply, X₂, Y₂, Function.comp_apply, id]
     simp only [← e.sum_comp, e.symm_apply_apply, Fintype.sum_sum_type, fromBlocks_apply₁₁,
       fromBlocks_apply₁₂, fromBlocks_apply₂₁, fromBlocks_apply₂₂]
-    simp only [neg_apply, one_apply, zero_apply]
+    simp only [Matrix.neg_apply, Matrix.one_apply, Matrix.zero_apply]
     simp only [mul_ite, mul_one, mul_zero, mul_neg, neg_mul,
       Finset.sum_ite_eq', Finset.mem_univ, ite_true, Finset.sum_const_zero,
       add_zero, zero_add, Finset.sum_neg_distrib, smul_eq_mul]

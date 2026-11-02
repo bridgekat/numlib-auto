@@ -199,7 +199,7 @@ omit [Fintype ι] in
 /-- Row `l.get a` of `E N` is row `a` of `N`. -/
 theorem selCols_mul_apply_get {l : List ι} (hl : l.Nodup) (N : Matrix (Fin l.length) κ ℝ)
     (a : Fin l.length) (c : κ) : (selCols l * N) (l.get a) c = N a c := by
-  rw [mul_apply, Finset.sum_eq_single a]
+  rw [Matrix.mul_apply, Finset.sum_eq_single a]
   · simp [selCols]
   · intro a' _ ha'
     simp only [selCols, of_apply, ite_mul, one_mul, zero_mul, ite_eq_right_iff]
@@ -210,7 +210,7 @@ omit [Fintype ι] in
 /-- The rows of `E N` outside `l` vanish. -/
 theorem selCols_mul_apply_of_notMem {l : List ι} (N : Matrix (Fin l.length) κ ℝ) {r : ι}
     (hr : r ∉ l) (c : κ) : (selCols l * N) r c = 0 := by
-  rw [mul_apply]
+  rw [Matrix.mul_apply]
   refine Finset.sum_eq_zero fun a _ => ?_
   have : l.get a ≠ r := fun h => hr (h ▸ List.get_mem l a)
   simp only [selCols, of_apply, this, ite_false, zero_mul]
@@ -220,7 +220,7 @@ omit [Fintype ι] in
 theorem mul_selCols_transpose_apply_get {l : List ι} (hl : l.Nodup)
     (N : Matrix κ (Fin l.length) ℝ) (r : κ) (e : Fin l.length) :
     (N * (selCols l)ᵀ) r (l.get e) = N r e := by
-  rw [mul_apply, Finset.sum_eq_single e]
+  rw [Matrix.mul_apply, Finset.sum_eq_single e]
   · simp [selCols]
   · intro e' _ he'
     simp only [transpose_apply, selCols, of_apply, mul_ite, mul_one, mul_zero, ite_eq_right_iff]
@@ -231,7 +231,7 @@ omit [Fintype ι] in
 /-- The columns of `N Eᵀ` outside `l` vanish. -/
 theorem mul_selCols_transpose_apply_of_notMem {l : List ι} (N : Matrix κ (Fin l.length) ℝ)
     (r : κ) {c : ι} (hc : c ∉ l) : (N * (selCols l)ᵀ) r c = 0 := by
-  rw [mul_apply]
+  rw [Matrix.mul_apply]
   refine Finset.sum_eq_zero fun e _ => ?_
   have : l.get e ≠ c := fun h => hc (h ▸ List.get_mem l e)
   simp only [transpose_apply, selCols, of_apply, this, ite_false, mul_zero]
@@ -239,12 +239,12 @@ theorem mul_selCols_transpose_apply_of_notMem {l : List ι} (N : Matrix κ (Fin 
 /-- Row `a` of `Eᵀ A` is row `l.get a` of `A`. -/
 theorem selCols_transpose_mul_apply (l : List ι) (A : Matrix ι κ ℝ) (a : Fin l.length) (c : κ) :
     ((selCols l)ᵀ * A) a c = A (l.get a) c := by
-  simp [mul_apply, selCols]
+  simp [Matrix.mul_apply, selCols]
 
 /-- Column `a` of `A E` is column `l.get a` of `A`. -/
 theorem mul_selCols_apply (l : List ι) (A : Matrix κ ι ℝ) (r : κ) (a : Fin l.length) :
     (A * selCols l) r a = A r (l.get a) := by
-  simp [mul_apply, selCols]
+  simp [Matrix.mul_apply, selCols]
 
 end Generic
 

@@ -143,7 +143,7 @@ theorem remark_4_12 {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ∞) :
   have hp0 : p ≠ 0 := (zero_lt_one.trans_le Fact.out).ne'
   set φ : ℝ → ℝ := (Set.Ico (0 : ℝ) 1).indicator fun _ => 1 with hφ
   have hφp : MemLp φ p volume :=
-    memLp_indicator_const p measurableSet_Ico 1 (Or.inr measure_Ico_lt_top.ne)
+    memLp_indicator_const p measurableSet_Ico.nullMeasurableSet 1 (Or.inr measure_Ico_lt_top.ne)
   have hτ : ∀ t : ℝ, MemLp (fun x => φ (x + t)) p volume := fun t =>
     hφp.comp_measurePreserving (measurePreserving_add_right volume t)
   set x : ℕ → Lp ℝ p (volume : Measure ℝ) := fun n => (hτ n).toLp _ with hx

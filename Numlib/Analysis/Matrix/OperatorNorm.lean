@@ -818,7 +818,8 @@ theorem lpOpNorm_top (A : Matrix m n 𝕜) : lpOpNorm ⊤ A = ‖A‖ := by
   refine le_antisymm (ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg _) fun x => ?_)
     (ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg _) fun v => ?_)
   · rw [lpCLM_apply, PiLp.norm_toLp, ← PiLp.norm_ofLp x]
-    exact (ContinuousLinearMap.mk (mulVecLin A)).le_opNorm (WithLp.ofLp x)
+    exact (ContinuousLinearMap.mk (mulVecLin A)
+      (mulVecLin A).continuous_of_finiteDimensional).le_opNorm (WithLp.ofLp x)
   · have h := (lpCLM ⊤ A).le_opNorm (WithLp.toLp ⊤ v)
     rwa [lpCLM_apply, PiLp.norm_toLp, PiLp.norm_toLp, WithLp.ofLp_toLp] at h
 
@@ -1453,7 +1454,7 @@ theorem re_trace_conjTranspose_mul_le (Y X : Matrix m n 𝕜) :
     fun X => WithLp.toLp 2 fun i => WithLp.toLp 2 (X i)
   have hΦ : ∀ X, ‖Φ X‖ = ‖X‖ := fun X => rfl
   have hinner : inner 𝕜 (Φ Y) (Φ X) = trace (Yᴴ * X) := by
-    simp only [Φ, PiLp.inner_apply, RCLike.inner_apply, trace, diag_apply, mul_apply,
+    simp only [Φ, PiLp.inner_apply, RCLike.inner_apply, trace, diag_apply, Matrix.mul_apply,
       conjTranspose_apply, RCLike.star_def]
     rw [Finset.sum_comm]
     simp only [mul_comm]
@@ -1729,7 +1730,7 @@ theorem frobenius_norm_mul_le_lpOpNorm_two_mul [DecidableEq n] {o : Type*} [Fint
       (lpCLM 2 X).le_opNorm _
     have h2 := pow_le_pow_left₀ (norm_nonneg _) h1 2
     rw [mul_pow, lpCLM_apply, EuclideanSpace.norm_sq_eq, EuclideanSpace.norm_sq_eq] at h2
-    simpa [mulVec, dotProduct, mul_apply] using h2
+    simpa [mulVec, dotProduct, Matrix.mul_apply] using h2
   have hsq : ‖X * Y‖ ^ 2 ≤ (c * ‖Y‖) ^ 2 := by
     rw [mul_pow, frobenius_norm_sq_eq_sum_sq, frobenius_norm_sq_eq_sum_sq, Finset.sum_comm,
       Finset.sum_comm (f := fun k j => ‖Y k j‖ ^ 2), Finset.mul_sum]

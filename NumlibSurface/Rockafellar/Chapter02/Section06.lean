@@ -69,7 +69,7 @@ variable {n m p : ℕ} {C C₁ C₂ : Set (Rn n)}
 /-! ### The relative interior, the relative boundary and relatively open sets -/
 
 /-- **Rockafellar, §6 (p. 44).** The **relative boundary** of `C` is `(cl C) ∖ (ri C)`. -/
-def relbd (C : Set (Rn n)) : Set (Rn n) := closure C \ ri C
+noncomputable def relbd (C : Set (Rn n)) : Set (Rn n) := closure C \ ri C
 
 /-- The bridge: the book's relative boundary is Mathlib's `intrinsicFrontier`. -/
 theorem relbd_eq_intrinsicFrontier (C : Set (Rn n)) : relbd C = intrinsicFrontier ℝ C :=

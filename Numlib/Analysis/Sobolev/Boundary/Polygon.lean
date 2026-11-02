@@ -1034,7 +1034,9 @@ theorem indicator_planeTriangle' (g : ℝ × ℝ → ℝ) (x y : ℝ) :
   · rw [indicator_of_mem h, indicator_of_mem (show x ∈ {x : ℝ | 0 < y ∧ 0 < x ∧ y + x < 1} from
       ⟨h.2.1, h.1, by linarith [h.2.2]⟩)]
   · rw [indicator_of_notMem h,
-      indicator_of_notMem (fun h' ↦ h ⟨h'.2.1, h'.1, by linarith [h'.2.2]⟩)]
+      indicator_of_notMem
+        (fun (h' : x ∈ {x : ℝ | 0 < y ∧ 0 < x ∧ y + x < 1}) ↦
+          h ⟨h'.2.1, h'.1, by linarith [h'.2.2]⟩)]
 
 /-- **Fubini on the plane triangle**, `x` outside. -/
 theorem integral_planeTriangle_eq {g : ℝ × ℝ → ℝ} (hg : IntegrableOn g planeTriangle) :

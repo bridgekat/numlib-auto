@@ -383,7 +383,7 @@ theorem charpoly_half_add_of_involutive {A B : Matrix n n ℝ} (hAs : A.IsSymm) 
       Complex.exp_zero]
   have hpt : ∀ z : ℂ, (p.map (algebraMap ℝ ℂ)).eval z ^ 2 =
       (r.map (algebraMap ℝ ℂ)).eval z ^ 2 := fun z => by
-    obtain ⟨d, hd⟩ := IsAlgClosed.exists_eq_mul_self ((4 * z ^ 2 - 2) ^ 2 - 4)
+    obtain ⟨d, hd⟩ := IsAlgClosed.isSquare ((4 * z ^ 2 - 2) ^ 2 - 4)
     have h12 : (4 * z ^ 2 - 2 + d) / 2 * ((4 * z ^ 2 - 2 - d) / 2) = 1 := by
       linear_combination (1 / 4 : ℂ) * hd
     have hs : (4 * z ^ 2 - 2 + d) / 2 + (4 * z ^ 2 - 2 - d) / 2 = 4 * z ^ 2 - 2 := by ring

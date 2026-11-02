@@ -1,5 +1,5 @@
 import Mathlib.Geometry.Euclidean.Angle.Unoriented.RightAngle
-import Mathlib.Geometry.Euclidean.Incenter
+import Mathlib.Geometry.Euclidean.Incenter.Basic
 import Mathlib.Geometry.Euclidean.Triangle
 
 /-!

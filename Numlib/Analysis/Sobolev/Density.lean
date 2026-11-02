@@ -425,7 +425,7 @@ theorem MeasureTheory.MemLp.tendsto_eLpNorm_indicator_compl_ball [μ.IsAddHaarMe
     · simp [Set.indicator_of_mem hx, hzero x hx]
     · simp [Set.indicator_of_notMem hx]
   rw [heq]
-  exact (eLpNorm_indicator_le _ measurableSet_ball.compl).trans hule
+  exact (eLpNorm_indicator_le _ measurableSet_ball.compl.nullMeasurableSet).trans hule
 
 /-- A smooth cut-off on a finite-dimensional real normed space: a function equal to `1` on the
 closed unit ball, supported in the ball of radius `2`, with values in `[0, 1]`. -/
@@ -992,11 +992,11 @@ theorem MemSobolev.exists_seq_contDiff_tendsto_eLpNorm (hf : MemSobolev f k p Ω
   have hVC : V ⊆ C := (subset_closure.trans hVW).trans subset_closure
   have hCΩ : C ⊆ (Ω : Set E) := hWΩ
   set f' : E → F := C.indicator f with hf'def
-  have hf'Lp : MemLp f' p μ := (memLp_indicator_iff_restrict (f := f) hCmeas).2
+  have hf'Lp : MemLp f' p μ := (memLp_indicator_iff_restrict (f := f) hCmeas.nullMeasurableSet).2
     (hf.memLp.mono_measure (Measure.restrict_mono hCΩ le_rfl))
   have hf'loc : LocallyIntegrable f' μ := hf'Lp.locallyIntegrable hp
   have hw'Lp : ∀ m ≤ k, MemLp (C.indicator (weakIteratedFDeriv m f Ω μ)) p μ := fun m hm ↦
-    (memLp_indicator_iff_restrict (f := weakIteratedFDeriv m f Ω μ) hCmeas).2
+    (memLp_indicator_iff_restrict (f := weakIteratedFDeriv m f Ω μ) hCmeas.nullMeasurableSet).2
       ((hf.memLp_weakIteratedFDeriv hm).mono_measure (Measure.restrict_mono hCΩ le_rfl))
   have hint : ∀ m ≤ k, HasWeakIteratedFDerivOn m f' (C.indicator (weakIteratedFDeriv m f Ω μ))
       ⟨interior C, isOpen_interior⟩ μ := fun m hm ↦
@@ -1193,7 +1193,7 @@ theorem eLpNorm_iteratedFDeriv_smul_sub_le {V W : Set E} (hV : IsOpen V) {ψ : E
           ((hψ.smul (ha.sub hb)).continuous_iteratedFDeriv (by simp)).aestronglyMeasurable hpt
     _ = eLpNorm (fun y ↦ (((k : ℝ) + 1) * 2 ^ k * M) *
           ∑ s ∈ Finset.range (k + 1), ‖iteratedFDeriv ℝ s a y - iteratedFDeriv ℝ s b y‖) p
-          (μ.restrict V) := eLpNorm_indicator_eq_eLpNorm_restrict hV.measurableSet
+          (μ.restrict V) := eLpNorm_indicator_eq_eLpNorm_restrict hV.measurableSet.nullMeasurableSet
     _ ≤ ENNReal.ofReal (((k : ℝ) + 1) * 2 ^ k * M) *
           eLpNorm (fun y ↦ ∑ s ∈ Finset.range (k + 1),
             ‖iteratedFDeriv ℝ s a y - iteratedFDeriv ℝ s b y‖) p (μ.restrict V) := by

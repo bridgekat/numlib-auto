@@ -255,7 +255,7 @@ theorem isBlockLDL_pivot (hs : s ≤ 2) {N : Matrix (Fin s ⊕ Fin m) (Fin s ⊕
       rcases finSumFinEquiv_symm_cases j with ⟨hj, ej⟩ | ⟨hj, ej⟩ <;> rw [ei, ej]
     · rw [fromBlocks_apply₁₁, one_apply_ne]
       exact fun he => by simp only [Fin.mk.injEq] at he; omega
-    · rw [fromBlocks_apply₁₂, zero_apply]
+    · rw [fromBlocks_apply₁₂, Matrix.zero_apply]
     · omega
     · rw [fromBlocks_apply₂₂]
       exact hL'.isLowerTriangular (OrderDual.toDual_lt_toDual.2 (Fin.lt_def.2 (by simp; omega)))
@@ -270,8 +270,8 @@ theorem isBlockLDL_pivot (hs : s ≤ 2) {N : Matrix (Fin s ⊕ Fin m) (Fin s ⊕
     rcases finSumFinEquiv_symm_cases i with ⟨hi, ei⟩ | ⟨hi, ei⟩ <;>
       rcases finSumFinEquiv_symm_cases j with ⟨hj, ej⟩ | ⟨hj, ej⟩ <;> rw [ei, ej]
     · rw [fromBlocks_apply₁₁, fromBlocks_apply₁₁, hE'.apply]
-    · rw [fromBlocks_apply₂₁, fromBlocks_apply₁₂, zero_apply, zero_apply]
-    · rw [fromBlocks_apply₂₁, fromBlocks_apply₁₂, zero_apply, zero_apply]
+    · rw [fromBlocks_apply₂₁, fromBlocks_apply₁₂, Matrix.zero_apply, Matrix.zero_apply]
+    · rw [fromBlocks_apply₂₁, fromBlocks_apply₁₂, Matrix.zero_apply, Matrix.zero_apply]
     · rw [fromBlocks_apply₂₂, fromBlocks_apply₂₂, hD'.isSymm.apply]
   · -- `D` is tridiagonal
     rw [isTridiagonal_iff_fin]
@@ -280,8 +280,8 @@ theorem isBlockLDL_pivot (hs : s ≤ 2) {N : Matrix (Fin s ⊕ Fin m) (Fin s ⊕
     rcases finSumFinEquiv_symm_cases i with ⟨hi, ei⟩ | ⟨hi, ei⟩ <;>
       rcases finSumFinEquiv_symm_cases j with ⟨hj, ej⟩ | ⟨hj, ej⟩ <;> rw [ei, ej]
     · omega
-    · rw [fromBlocks_apply₁₂, zero_apply]
-    · rw [fromBlocks_apply₂₁, zero_apply]
+    · rw [fromBlocks_apply₁₂, Matrix.zero_apply]
+    · rw [fromBlocks_apply₂₁, Matrix.zero_apply]
     · rw [fromBlocks_apply₂₂]
       exact isTridiagonal_iff_fin.1 hD'.isTridiagonal _ _ (by simp only; omega)
   · -- the `2 × 2` blocks do not overlap
@@ -290,9 +290,9 @@ theorem isBlockLDL_pivot (hs : s ≤ 2) {N : Matrix (Fin s ⊕ Fin m) (Fin s ⊕
     · rcases finSumFinEquiv_symm_cases (⟨i + 2, hi⟩ : Fin (s + m)) with ⟨h2, e2⟩ | ⟨h2, e2⟩
       · simp only at h2
         omega
-      · rw [e1, e2, fromBlocks_apply₂₁, zero_apply]
+      · rw [e1, e2, fromBlocks_apply₂₁, Matrix.zero_apply]
     · rcases finSumFinEquiv_symm_cases (⟨i, by omega⟩ : Fin (s + m)) with ⟨h0, e0⟩ | ⟨h0, e0⟩
-      · rw [e1, e0, fromBlocks_apply₂₁, zero_apply] at hne
+      · rw [e1, e0, fromBlocks_apply₂₁, Matrix.zero_apply] at hne
         exact absurd rfl hne
       · rcases finSumFinEquiv_symm_cases (⟨i + 2, hi⟩ : Fin (s + m)) with ⟨h2, e2⟩ | ⟨h2, e2⟩
         · simp only at h2 h1
@@ -316,7 +316,7 @@ theorem isBlockLDL_pivot (hs : s ≤ 2) {N : Matrix (Fin s ⊕ Fin m) (Fin s ⊕
     · rw [fromBlocks_apply₁₁, one_apply_ne]
       exact fun he => by simp only [Fin.mk.injEq] at he; omega
     · omega
-    · rw [fromBlocks_apply₂₁, zero_apply] at hne
+    · rw [fromBlocks_apply₂₁, Matrix.zero_apply] at hne
       exact absurd rfl hne
     · rw [fromBlocks_apply₂₂] at hne ⊢
       exact h.block _ _ (by simp only; omega) hne
@@ -399,7 +399,7 @@ theorem exists_isBlockLDL_step (P : K → Prop) (hP0 : P 0) (hP1 : P 1) {s m : �
   · change P (fromBlocks 1 0 (M'.toBlocks₂₁ * M'.toBlocks₁₁⁻¹) L'
       (finSumFinEquiv.symm i) (finSumFinEquiv.symm j))
     rcases finSumFinEquiv.symm i with a | a <;> rcases finSumFinEquiv.symm j with b | b
-    · rw [fromBlocks_apply₁₁, one_apply]
+    · rw [fromBlocks_apply₁₁, Matrix.one_apply]
       split_ifs
       · exact hP1
       · exact hP0
@@ -440,7 +440,7 @@ theorem exists_perm_isBlockLDL_of_pivot (P : K → Prop) (hP0 : P 0) (hP1 : P 1)
   · refine ⟨1, 1, 0, ?_, fun i j => ?_⟩
     · rw [hA0]
       exact isBlockLDL_zero
-    · rw [one_apply]
+    · rw [Matrix.one_apply]
       split_ifs
       · exact hP1
       · exact hP0
@@ -458,9 +458,9 @@ theorem exists_perm_isBlockLDL_of_pivot (P : K → Prop) (hP0 : P 0) (hP1 : P 1)
       exact isUnit_iff_ne_zero.2 hr
     · have hj : j = 0 := Subsingleton.elim _ _
       subst hj
-      rw [mul_apply, Fin.sum_univ_one, inv_def, adjugate_fin_one, det_unique,
+      rw [Matrix.mul_apply, Fin.sum_univ_one, inv_def, adjugate_fin_one, det_unique,
         show (default : Fin 1) = 0 from rfl, hE00]
-      simp only [smul_apply, one_apply_eq, smul_eq_mul, mul_one, Ring.inverse_eq_inv']
+      simp only [Matrix.smul_apply, one_apply_eq, smul_eq_mul, mul_one, Ring.inverse_eq_inv']
       have hx : τ (Fin.natAdd 1 i) ≠ r := by
         rw [← hτ0]
         exact τ.injective.ne (fun h => by simp [Fin.ext_iff] at h)
@@ -522,14 +522,14 @@ theorem exists_perm_isBlockLDL_of_pivot (P : K → Prop) (hP0 : P 0) (hP1 : P 1)
         rw [show (Fin.castAdd m (1 : Fin 2)) = o from rfl, hτo]
       obtain ⟨hP0', hP1'⟩ := htP _ hx1 hx2
       change P ((N.toBlocks₂₁ * N.toBlocks₁₁⁻¹) i j)
-      rw [mul_apply, Fin.sum_univ_two, inv_def, adjugate_fin_two, hdetN, hC0, hC1]
+      rw [Matrix.mul_apply, Fin.sum_univ_two, inv_def, adjugate_fin_two, hdetN, hC0, hC1]
       fin_cases j
-      · simp only [Fin.zero_eta, Fin.isValue, smul_apply, of_apply, cons_val', cons_val_zero,
+      · simp only [Fin.zero_eta, Fin.isValue, Matrix.smul_apply, of_apply, cons_val', cons_val_zero,
           cons_val_one, empty_val', cons_val_fin_one, smul_eq_mul, Ring.inverse_eq_inv', hN11, hN10]
         convert hP0' using 1
         field_simp
         ring
-      · simp only [Fin.mk_one, Fin.isValue, smul_apply, of_apply, cons_val', cons_val_zero,
+      · simp only [Fin.mk_one, Fin.isValue, Matrix.smul_apply, of_apply, cons_val', cons_val_zero,
           cons_val_one, empty_val', cons_val_fin_one, smul_eq_mul, Ring.inverse_eq_inv', hN01,
           hN00]
         convert hP1' using 1
@@ -685,7 +685,7 @@ private theorem exists_perm_isAasen_aux :
     refine ⟨1, 1, A, ⟨isUnitLowerTriangular_one, fun i h hi => absurd (Subsingleton.elim _ _) hi,
       hA, isTridiagonal_iff_fin.2 fun i j hij => ?_, by simp⟩, fun i j => ?_, fun _ => rfl⟩
     · omega
-    · rw [one_apply]
+    · rw [Matrix.one_apply]
       split_ifs <;> simp
   | m + 2, A, hA => by
     -- the first row and column, and the trailing block
@@ -723,7 +723,7 @@ private theorem exists_perm_isAasen_aux :
     have hMσ : M.submatrix σ' σ' = 1 - vecMulVec l' (Pi.single (0 : Fin (m + 1)) (1 : K)) := by
       ext i j
       have hj : σ' j = 0 ↔ j = 0 := σ'.injective.eq_iff' hσ0
-      simp [hM, hl', vecMulVec_apply, Pi.single_apply, one_apply, σ'.injective.eq_iff, hj]
+      simp [hM, hl', vecMulVec_apply, Pi.single_apply, Matrix.one_apply, σ'.injective.eq_iff, hj]
     have hkey : N * T' * Nᵀ = B.submatrix ρ ρ := by
       have h1 : A'.submatrix σ' σ' =
           (1 - vecMulVec l' (Pi.single (0 : Fin (m + 1)) (1 : K))) * B.submatrix ρ ρ *
@@ -748,9 +748,9 @@ private theorem exists_perm_isAasen_aux :
       · exact h'.col_zero k (Nat.succ_pos m) hk
     have hMinv : ∀ i k, Minv i k = (if i = k then 1 else 0) + if k = 0 then l' i else 0 := by
       intro i k
-      simp [hMinv, vecMulVec_apply, Pi.single_apply, one_apply]
+      simp [hMinv, vecMulVec_apply, Pi.single_apply, Matrix.one_apply]
     have hN0 : ∀ i, N i 0 = if i = 0 then 1 else l' i := fun i => by
-      rw [hN, mul_apply, Finset.sum_eq_single 0
+      rw [hN, Matrix.mul_apply, Finset.sum_eq_single 0
         (fun k _ hk => by rw [hL'col, ite_eq_right hk, mul_zero]) (by simp), hL'col,
         ite_eq_left rfl, mul_one, hMinv]
       by_cases hi : i = 0
@@ -759,7 +759,7 @@ private theorem exists_perm_isAasen_aux :
     have hNj : ∀ i j, j ≠ 0 → N i j = L' i j := fun i j hj => by
       have hL'0 : L' 0 j = 0 := h'.isUnitLowerTriangular.isLowerTriangular
         (OrderDual.toDual_lt_toDual.2 (Fin.pos_iff_ne_zero.2 hj))
-      rw [hN, mul_apply]
+      rw [hN, Matrix.mul_apply]
       simp only [hMinv, add_mul, Finset.sum_add_distrib, ite_mul, one_mul, zero_mul,
         Finset.sum_ite_eq, Finset.mem_univ, ite_true, Finset.sum_ite_eq', hL'0, mul_zero, add_zero]
     have hcρ : ∀ i, c (ρ i) = c₀ * N i 0 := fun i => by
@@ -850,12 +850,12 @@ private theorem exists_perm_isAasen_aux :
         induction j using Fin.cases with
         | zero =>
           rw [hσ0']
-          simp [mul_apply, Fin.sum_univ_succ, hLd, hTd]
+          simp [Matrix.mul_apply, Fin.sum_univ_succ, hLd, hTd]
         | succ j' =>
           rw [hσ0', hσs, hA.apply (ρ j').succ 0]
           change _ = c (ρ j')
           rw [hcρ]
-          simp only [mul_apply, transpose_apply, Fin.sum_univ_succ, hLd, hTd, of_apply,
+          simp only [Matrix.mul_apply, transpose_apply, Fin.sum_univ_succ, hLd, hTd, of_apply,
             Fin.cases_zero, Fin.cases_succ, Fin.succ_ne_zero, ite_true,
             ite_false, zero_mul, mul_zero, one_mul, Finset.sum_const_zero, add_zero,
             zero_add]
@@ -865,7 +865,7 @@ private theorem exists_perm_isAasen_aux :
           rw [hσ0', hσs]
           change _ = c (ρ i')
           rw [hcρ]
-          simp only [mul_apply, transpose_apply, Fin.sum_univ_succ, hLd, hTd, of_apply,
+          simp only [Matrix.mul_apply, transpose_apply, Fin.sum_univ_succ, hLd, hTd, of_apply,
             Fin.cases_zero, Fin.cases_succ, Fin.succ_ne_zero, ite_true,
             ite_false, zero_mul, mul_zero, mul_one, Finset.sum_const_zero, add_zero,
             zero_add]
@@ -875,7 +875,7 @@ private theorem exists_perm_isAasen_aux :
           change _ = B (ρ i') (ρ j')
           rw [show B (ρ i') (ρ j') = (N * T' * Nᵀ) i' j' from
             (congrFun (congrFun hkey i') j').symm]
-          simp only [mul_apply, transpose_apply, Fin.sum_univ_succ, hLd, hTd, of_apply,
+          simp only [Matrix.mul_apply, transpose_apply, Fin.sum_univ_succ, hLd, hTd, of_apply,
             Fin.cases_zero, Fin.cases_succ, Fin.succ_ne_zero, ite_true,
             ite_false, zero_mul, mul_zero, Finset.sum_const_zero, add_zero,
             zero_add]

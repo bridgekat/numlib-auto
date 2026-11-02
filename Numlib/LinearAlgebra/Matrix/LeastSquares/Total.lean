@@ -319,7 +319,7 @@ private theorem exists_rankOne_perturbation (hd : ∀ i, d i ≠ 0) (ht : ∀ j,
   have hA : ((A + E) * replicateCol Unit (fun j => -((t (Sum.inl j) : 𝕜) *
       w (Sum.inl j)) / c)) i u = -(((A + E) *ᵥ fun j => (t (Sum.inl j) : 𝕜) *
         w (Sum.inl j)) i) / c := by
-    simp only [mul_apply, replicateCol_apply, mulVec, dotProduct, neg_div, Finset.sum_div,
+    simp only [Matrix.mul_apply, replicateCol_apply, mulVec, dotProduct, neg_div, Finset.sum_div,
       ← Finset.sum_neg_distrib, mul_div_assoc, mul_neg]
   rw [hA, eq_neg_of_add_eq_zero_left hi, neg_neg, mul_div_cancel_right₀ _ hc]
 
@@ -694,7 +694,7 @@ private theorem mul_eq_iff_tlsWeighted_mul_tlsNull_eq_zero {d : m → ℝ} {t : 
     rw [← sub_eq_zero]
     ext i j
     have := congrFun (congrFun h i) j
-    rw [diagonal_mul, zero_apply] at this
+    rw [diagonal_mul, Matrix.zero_apply] at this
     exact (mul_eq_zero.1 this).resolve_left (RCLike.ofReal_ne_zero.2 (hd i))
 
 end Feasible
@@ -751,7 +751,7 @@ private theorem svdTruncation_mul_eq_zero_iff {M : Matrix (Fin m) (Fin (n + k)) 
   have hSig : ((rectDiagonal fun i => if i < n then ((σ i : ℝ) : 𝕜) else 0 :
       Matrix (Fin m) (Fin (n + k)) 𝕜)).submatrix id (Fin.natAdd n) = 0 := by
     ext i j
-    simp only [submatrix_apply, id_eq, rectDiagonal_apply, Fin.val_natAdd, zero_apply]
+    simp only [submatrix_apply, id_eq, rectDiagonal_apply, Fin.val_natAdd, Matrix.zero_apply]
     split_ifs <;> first | rfl | (exfalso; omega)
   have hCV₂ : svdTruncation U σ V n * V.submatrix id (Fin.natAdd n) = 0 := by
     change (svdTruncation U σ V n * V).submatrix id (Fin.natAdd n) = 0
@@ -769,16 +769,16 @@ private theorem svdTruncation_mul_eq_zero_iff {M : Matrix (Fin m) (Fin (n + k)) 
     have hlead : ∀ (i : Fin n) (j : p), (star V * Y) (Fin.castAdd k i) j = 0 := by
       intro i j
       have := congrFun (congrFun hZ ⟨i, lt_of_lt_of_le i.isLt hnm⟩) j
-      rw [mul_apply, Finset.sum_eq_single (Fin.castAdd k i) (fun b _ hb => by
+      rw [Matrix.mul_apply, Finset.sum_eq_single (Fin.castAdd k i) (fun b _ hb => by
           rw [rectDiagonal_apply, ite_eq_right (fun h => hb (Fin.ext h.symm)), zero_mul])
           (fun h => absurd (Finset.mem_univ _) h), rectDiagonal_apply,
         ite_eq_left (show ((⟨i, lt_of_lt_of_le i.isLt hnm⟩ : Fin m) : ℕ) = Fin.castAdd k i
-          from rfl), ite_eq_left i.isLt, zero_apply] at this
+          from rfl), ite_eq_left i.isLt, Matrix.zero_apply] at this
       exact (mul_eq_zero.1 this).resolve_left (RCLike.ofReal_ne_zero.2 (hpos i i.isLt))
     have hY : Y = V * (star V * Y) := by rw [← Matrix.mul_assoc, hVV', Matrix.one_mul]
     conv_lhs => rw [hY]
     ext r j
-    rw [mul_apply, mul_apply, Fin.sum_univ_add]
+    rw [Matrix.mul_apply, Matrix.mul_apply, Fin.sum_univ_add]
     simp only [hlead, mul_zero, Finset.sum_const_zero, zero_add]
     rfl
   · intro h

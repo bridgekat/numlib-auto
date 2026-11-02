@@ -74,7 +74,7 @@ theorem mul_submatrix_sigmaMk_eq_sum (A : Matrix (Σ a, m a) (Σ c, p c) R)
     (A * B).submatrix (Sigma.mk a) (Sigma.mk b) =
       ∑ c, A.submatrix (Sigma.mk a) (Sigma.mk c) * B.submatrix (Sigma.mk c) (Sigma.mk b) := by
   ext i j
-  simp [mul_apply, Fintype.sum_sigma, sum_apply]
+  simp [Matrix.mul_apply, Fintype.sum_sigma, Matrix.sum_apply]
 
 end Sigma
 
@@ -90,7 +90,7 @@ of the two factors then vanishes. -/
 theorem BlockTriangular.mul_apply_self_of_injective {M N : Matrix n n R}
     (hM : M.BlockTriangular b) (hN : N.BlockTriangular b) (hb : Function.Injective b) (i : n) :
     (M * N) i i = M i i * N i i := by
-  rw [mul_apply]
+  rw [Matrix.mul_apply]
   refine Finset.sum_eq_single i (fun k _ hk => ?_) (by simp)
   rcases lt_or_gt_of_ne (hb.ne hk) with h | h
   · rw [hM h, zero_mul]
@@ -111,7 +111,7 @@ theorem mul_apply_eq_zero_of_lt {α l m n R : Type*} [LinearOrder α] [Fintype m
     [NonUnitalNonAssocSemiring R] {b : l → α} {c : m → α} {d : n → α} {A : Matrix l m R}
     {B : Matrix m n R} (hA : ∀ i k, c k < b i → A i k = 0) (hB : ∀ k j, d j < c k → B k j = 0)
     {i : l} {j : n} (hij : d j < b i) : (A * B) i j = 0 := by
-  rw [mul_apply]
+  rw [Matrix.mul_apply]
   refine Finset.sum_eq_zero fun k _ => ?_
   rcases lt_or_ge (c k) (b i) with h | h
   · rw [hA i k h, zero_mul]
@@ -348,7 +348,7 @@ theorem consDiag_mul_of_cons [NonUnitalNonAssocSemiring α] (a : α) (Q : Matrix
     (w : Fin p → α) (X : Matrix (Fin n) (Fin p) α) :
     consDiag a Q * of (Fin.cons w X) = of (Fin.cons (a • w) (Q * X)) := by
   ext i j
-  induction i using Fin.cases <;> simp [mul_apply, Fin.sum_univ_succ]
+  induction i using Fin.cases <;> simp [Matrix.mul_apply, Fin.sum_univ_succ]
 
 /-- `diag(a, Q) diag(b, Q') = diag(a b, Q Q')`. -/
 theorem consDiag_mul_consDiag [NonUnitalNonAssocSemiring α] (a b : α)
@@ -356,14 +356,14 @@ theorem consDiag_mul_consDiag [NonUnitalNonAssocSemiring α] (a b : α)
     consDiag a Q * consDiag b Q' = consDiag (a * b) (Q * Q') := by
   ext i j
   induction i using Fin.cases <;> induction j using Fin.cases <;>
-    simp [mul_apply, Fin.sum_univ_succ]
+    simp [Matrix.mul_apply, Fin.sum_univ_succ]
 
 /-- `diag(1, 1) = 1`. -/
 @[simp]
 theorem consDiag_one [Zero α] [One α] : consDiag (1 : α) (1 : Matrix (Fin m) (Fin m) α) = 1 := by
   ext i j
   induction i using Fin.cases <;> induction j using Fin.cases <;>
-    simp [one_apply, Fin.succ_ne_zero, (Fin.succ_ne_zero _).symm]
+    simp [Matrix.one_apply, Fin.succ_ne_zero, (Fin.succ_ne_zero _).symm]
 
 /-- `diag(a, Q)ᴴ = diag(a⋆, Qᴴ)`. -/
 theorem conjTranspose_consDiag [AddMonoid α] [StarAddMonoid α] (a : α)

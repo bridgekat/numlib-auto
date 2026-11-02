@@ -233,7 +233,7 @@ private theorem inv_diagPart_eq (hd : ∀ i, A i i ≠ 0) :
 /-- The entries of the Jacobi iteration matrix `B = I - D⁻¹ A`. -/
 private theorem jacobiMatrix_apply (hd : ∀ i, A i i ≠ 0) (i j : Fin n) :
     (1 - (diagPart A)⁻¹ * A) i j = (if i = j then 1 else 0) - (A i i)⁻¹ * A i j := by
-  rw [Matrix.sub_apply, one_apply, inv_diagPart_eq hd, diagonal_mul]
+  rw [Matrix.sub_apply, Matrix.one_apply, inv_diagPart_eq hd, diagonal_mul]
 
 /-- The Jacobi iteration matrix of a matrix with positive diagonal and nonpositive off-diagonal
 entries is entrywise nonnegative: this is what makes Theorem 1.29 applicable to it. -/

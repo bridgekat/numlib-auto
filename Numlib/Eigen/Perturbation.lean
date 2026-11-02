@@ -1496,14 +1496,14 @@ private theorem norm_pow_apply_le {M N : Matrix n n ℂ} {c : ℝ} (hc : 0 ≤ c
     · simp [one_apply_ne hij]
   | succ k ih =>
     refine ⟨?_, ?_⟩
-    · rw [pow_succ M, mul_apply, pow_succ (N.map (‖·‖)), mul_apply, Finset.mul_sum]
+    · rw [pow_succ M, Matrix.mul_apply, pow_succ (N.map (‖·‖)), Matrix.mul_apply, Finset.mul_sum]
       refine (norm_sum_le _ _).trans (Finset.sum_le_sum fun l _ => ?_)
       rw [norm_mul, map_apply]
       calc ‖(M ^ k) i l‖ * ‖M l j‖ ≤ (c ^ k * ((N.map (‖·‖)) ^ k) i l) * (c * ‖N l j‖) :=
             mul_le_mul (ih i l).1 (h l j) (norm_nonneg _)
               (mul_nonneg (pow_nonneg hc _) (ih i l).2)
         _ = c ^ (k + 1) * (((N.map (‖·‖)) ^ k) i l * ‖N l j‖) := by ring
-    · rw [pow_succ, mul_apply]
+    · rw [pow_succ, Matrix.mul_apply]
       exact Finset.sum_nonneg fun l _ => mul_nonneg (ih i l).2 (by rw [map_apply]; positivity)
 
 /-- [golub2013matrix] Theorem 7.2.3: let `Qᴴ A Q = diagonal d + N` for a unitary `Q`, and let
@@ -1564,7 +1564,7 @@ theorem exists_norm_sub_le_of_schur {A : Matrix n n ℂ} {Q : Matrix n n ℂ}
   have hMp : M ^ p = 0 := by
     ext i j
     have h := (norm_pow_apply_le (inv_nonneg.mpr hδ.le) hMent p i j).1
-    rw [hN, zero_apply, mul_zero] at h
+    rw [hN, Matrix.zero_apply, mul_zero] at h
     simpa using h
   -- the resolvent of `B = D + N` as a finite Neumann series
   set B := diagonal d + N with hB

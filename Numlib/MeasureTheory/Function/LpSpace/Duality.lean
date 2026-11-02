@@ -330,7 +330,7 @@ theorem apply_toLp_simpleFunc_eq_integral_rnDeriv_mul (hp : p ≠ ∞) (φ : Str
     obtain ⟨Cf, hCf⟩ := f.exists_forall_norm_le
     obtain ⟨Cg, hCg⟩ := g.exists_forall_norm_le
     have := MemLp.toLp_add (f.memLp_of_isFiniteMeasure p μ) (g.memLp_of_isFiniteMeasure p μ)
-    simp only [SimpleFunc.coe_add]
+    simp only [FunLike.coe_add]
     rw [this, map_add, hf, hg, ← integral_add
       (hu₀.mul_bdd f.aestronglyMeasurable (ae_of_all _ hCf))
       (hu₀.mul_bdd g.aestronglyMeasurable (ae_of_all _ hCg))]
@@ -483,7 +483,7 @@ theorem eLpNorm_rnDeriv_dualToSignedMeasure_le [Fact (1 ≤ q)] [p.HolderConjuga
     have h3 : ‖hg_mem.toLp g‖ ≤ μ.real A := by
       rw [Lp.norm_toLp, measureReal_def]
       refine ENNReal.toReal_mono hAfin.ne ?_
-      rw [hg_def, eLpNorm_indicator_eq_eLpNorm_restrict hA]
+      rw [hg_def, eLpNorm_indicator_eq_eLpNorm_restrict hA.nullMeasurableSet]
       refine (eLpNorm_le_of_ae_bound (C := 1)
         (aestronglyMeasurable_extremal hu₀m.aestronglyMeasurable 1).restrict
         (ae_of_all _ fun x => norm_extremal_one_le u₀ x)).trans ?_
@@ -840,7 +840,7 @@ theorem norm_toDualCLM_apply [SigmaFinite μ] [Fact (1 ≤ p)] [Fact (1 ≤ q)] 
     have h3 : ‖hg_mem.toLp g‖ ≤ μ.real A := by
       rw [Lp.norm_toLp, measureReal_def]
       refine ENNReal.toReal_mono hAfin.ne ?_
-      rw [hg_def, eLpNorm_indicator_eq_eLpNorm_restrict hA]
+      rw [hg_def, eLpNorm_indicator_eq_eLpNorm_restrict hA.nullMeasurableSet]
       refine (eLpNorm_le_of_ae_bound (C := 1)
         (aestronglyMeasurable_extremal (Lp.aestronglyMeasurable u) 1).restrict
         (ae_of_all _ fun x => norm_extremal_one_le _ x)).trans ?_

@@ -76,7 +76,8 @@ theorem symTridiag_submatrix_castLE [Zero R] (ρ γ : ℕ → R) {n k : ℕ} (h 
 theorem symTridiag_add_smul_one [Ring R] (ρ γ : ℕ → R) (μ : R) (k : ℕ) :
     symTridiag ρ γ k + μ • (1 : Matrix (Fin k) (Fin k) R) = symTridiag (fun i => ρ i + μ) γ k := by
   ext i j
-  simp only [add_apply, smul_apply, one_apply, symTridiag_apply, Fin.ext_iff, smul_eq_mul]
+  simp only [Matrix.add_apply, Matrix.smul_apply, Matrix.one_apply, symTridiag_apply, Fin.ext_iff,
+      smul_eq_mul]
   split_ifs <;> simp
 
 end Def
@@ -197,7 +198,7 @@ theorem posDef_symTridiag_add_iff {k : ℕ} :
             (Fin.castLE (show i + 1 ≤ k by omega)) (Fin.castLE (show i + 1 ≤ k by omega)) =
             symTridiag ρ γ (i + 1) + μ • (1 : Matrix (Fin (i + 1)) (Fin (i + 1)) ℝ) := by
           ext a b
-          simp [symTridiag_apply, one_apply, Fin.ext_iff]
+          simp [symTridiag_apply, Matrix.one_apply, Fin.ext_iff]
         rwa [heq] at this
       have hdet := hsub.det_pos
       rw [det_symTridiag_add_smul_one ρ γ μ fun j hj => (hpos j (by omega)).ne',

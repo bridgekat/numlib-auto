@@ -265,7 +265,7 @@ omit [DecidableEq n] [Nonempty n] in
 private theorem IsBand.mul {a b : ℕ} {M N : Matrix n n ℂ} (hM : IsBand a M) (hN : IsBand b N) :
     IsBand (a + b) (M * N) := by
   intro i j hij
-  rw [mul_apply] at hij
+  rw [Matrix.mul_apply] at hij
   obtain ⟨k, -, hk⟩ := Finset.exists_ne_zero_of_sum_ne_zero hij
   have hM' := hM i k (left_ne_zero_of_mul hk)
   have hN' := hN k j (right_ne_zero_of_mul hk)
@@ -383,7 +383,7 @@ theorem l2_opNorm_exp_smul_le_of_schur (hQ : Q ∈ unitaryGroup n ℂ)
       simp only [Function.iterate_zero, id_eq]
       rw [← hTDN]
       exact isBand_zero_of_isUpperTriangular (Matrix.BlockTriangular.exp
-        (fun i j h => by rw [smul_apply, hT h, smul_zero]))
+        (fun i j h => by rw [Matrix.smul_apply, hT h, smul_zero]))
     | succ m ih =>
       intro s
       rw [Function.iterate_succ_apply']

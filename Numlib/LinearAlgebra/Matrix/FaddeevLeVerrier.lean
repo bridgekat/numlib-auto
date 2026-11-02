@@ -82,7 +82,7 @@ theorem derivative_det (M : Matrix n n R[X]) :
     Finset.mul_sum]
   rw [Finset.sum_comm]
   refine Finset.sum_congr rfl fun j _ => ?_
-  rw [diag_apply, mul_apply]
+  rw [diag_apply, Matrix.mul_apply]
   have h := det_apply' (M.updateCol j fun r => derivative (M r j))
   simp_rw [hcol] at h
   rw [← h, ← cramer_apply, cramer_eq_adjugate_mulVec, mulVec_apply_eq_sum]
@@ -92,7 +92,7 @@ theorem derivative_det (M : Matrix n n R[X]) :
 theorem charmatrix_map_derivative (A : Matrix n n R) : (charmatrix A).map derivative = 1 := by
   refine Matrix.ext fun i j => ?_
   rw [map_apply, charmatrix_apply, derivative_sub, derivative_C, sub_zero, diagonal_apply,
-    one_apply]
+    Matrix.one_apply]
   split_ifs
   · exact derivative_X
   · exact derivative_zero
@@ -162,7 +162,8 @@ variable {K : Type*} [Field K] {n : Type*} [Fintype n] [DecidableEq n] (A : Matr
 private theorem charmatrix_eq_smul_one_sub :
     charmatrix A = (X : K[X]) • (1 : Matrix n n K[X]) - A.map C := by
   refine Matrix.ext fun i j => ?_
-  rw [charmatrix_apply, sub_apply, smul_apply, one_apply, map_apply, diagonal_apply]
+  rw [charmatrix_apply, Matrix.sub_apply, Matrix.smul_apply, Matrix.one_apply, map_apply,
+      diagonal_apply]
   split_ifs <;> simp
 
 omit [Fintype n] in
@@ -170,7 +171,8 @@ omit [Fintype n] in
 private theorem map_C_smul_one (c : K) :
     (c • (1 : Matrix n n K)).map C = C c • (1 : Matrix n n K[X]) := by
   refine Matrix.ext fun i j => ?_
-  rw [map_apply, smul_apply, smul_apply, one_apply, one_apply, smul_eq_mul, smul_eq_mul]
+  rw [map_apply, Matrix.smul_apply, Matrix.smul_apply, Matrix.one_apply, Matrix.one_apply,
+      smul_eq_mul, smul_eq_mul]
   split_ifs <;> simp
 
 /-- **The adjugate of the characteristic matrix**:
@@ -235,7 +237,7 @@ theorem adjugate_charmatrix_eq_sum :
     exact h
   refine Matrix.ext fun i j => ?_
   have h := congrFun (congrFun hcancel i) j
-  rw [smul_apply, smul_apply, smul_eq_mul, smul_eq_mul] at h
+  rw [Matrix.smul_apply, Matrix.smul_apply, smul_eq_mul, smul_eq_mul] at h
   exact mul_left_cancel₀ (charpoly_monic A).ne_zero h
 
 end Adjugate
