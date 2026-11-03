@@ -15,3 +15,23 @@ source = "Conn–Gould–Toint, Algorithm 11.3.1 and (11.3.4)–(11.3.5)"
 [[node]]
 id = "theorem_11_3_2"
 source = "Conn–Gould–Toint, Theorem 11.3.2"
+
+[[node]]
+id = "selectOptionalCorrection"
+source = "Conn–Gould–Toint, Algorithms 15.3.1 and 16.2.1, Step 2a–2b"
+
+[[node]]
+id = "OptionalCorrectionStep"
+source = "Conn–Gould–Toint, Algorithms 15.3.1 and 16.2.1, Step 2"
+
+[[node]]
+id = "OptionalCorrectionStep.selected_bounds"
+source = "Conn–Gould–Toint, Algorithms 11.3.1, 15.3.1 and 16.2.1"
+
+[[node]]
+id = "OptionalCorrectionStep.original_ratio_le"
+source = "Conn–Gould–Toint, Algorithms 11.3.1, 15.3.1 and 16.2.1"
+
+[[node]]
+id = "NonsmoothCorrectionRun.ofOptionalCorrectionSteps"
+source = "Conn–Gould–Toint, Algorithms 11.3.1, 15.3.1 and 16.2.1"

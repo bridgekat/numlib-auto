@@ -197,6 +197,63 @@ theorem theorem_11_3_1 {Q : NonsmoothTRParams} {f : E → ℝ} {m : E → P → 
     run.rejected_update (fun k hk ↦ ((run.radius_update k).unsuccessful
       (lt_of_not_ge (fun h ↦ hk ((run.accepted_iff k).mpr h)))).2) hj hz
 
+
+/-- The optional correction is kept exactly when it does not worsen the merit
+of the original trial. A skipped or rejected correction is zero. -/
+noncomputable def selectOptionalCorrection (f : E → ℝ) (x s : E) (proposal : Option E) : E :=
+  match proposal with
+  | none => 0
+  | some d => if f (x + s + d) ≤ f (x + s) then d else 0
+
+/-- Step 2 of a nonsmooth trust-region correction algorithm. The input
+required is the current sufficient-decrease benchmark. A proposed correction
+reduces its own model and satisfies the enlarged radius before the merit
+comparison is made. -/
+structure OptionalCorrectionStep (f m mCS : E → ℝ) (p : E → ℝ)
+    (x s : E) (Δ τ required : ℝ) (proposal : Option E) (correction : E) : Prop where
+  radius_nonneg : 0 ≤ Δ
+  enlargement_gt_one : 1 < τ
+  original_radius : p s ≤ Δ
+  required_nonneg : 0 ≤ required
+  original_decrease : required ≤ m 0 - m s
+  proposal_valid : ∀ d, proposal = some d → mCS d ≤ mCS 0 ∧ p (s + d) ≤ τ * Δ
+  selected : correction = selectOptionalCorrection f x s proposal
+
+omit [InnerProductSpace ℝ E] [CompleteSpace E] in
+/-- The selected correction satisfies the enlarged radius and cannot worsen
+the original trial merit, including when the correction is reset to zero. -/
+theorem OptionalCorrectionStep.selected_bounds
+    {f m mCS : E → ℝ} {p : E → ℝ} {x s : E} {Δ τ required : ℝ}
+    {proposal : Option E} {correction : E}
+    (h : OptionalCorrectionStep f m mCS p x s Δ τ required proposal correction) :
+    p (s + correction) ≤ τ * Δ ∧ f (x + (s + correction)) ≤ f (x + s) := by
+  have hbase : p s ≤ τ * Δ :=
+    h.original_radius.trans (le_mul_of_one_le_left h.radius_nonneg h.enlargement_gt_one.le)
+  cases proposal with
+  | none =>
+    rw [h.selected]
+    simpa [selectOptionalCorrection] using hbase
+  | some d =>
+    rw [h.selected]
+    by_cases hd : f (x + s + d) ≤ f (x + s)
+    · simp only [selectOptionalCorrection, ite_eq_left hd]
+      exact ⟨(h.proposal_valid d rfl).2, by simpa only [add_assoc] using hd⟩
+    · simp only [selectOptionalCorrection, ite_eq_right hd, add_zero, le_refl, and_true]
+      exact hbase
+
+omit [InnerProductSpace ℝ E] [CompleteSpace E] in
+/-- Algorithm 11.3.1 keeps the prediction from the original step. With this
+denominator the selected correction can only improve the reduction ratio. -/
+theorem OptionalCorrectionStep.original_ratio_le
+    {f m mCS : E → ℝ} {p : E → ℝ} {x s : E} {Δ τ required : ℝ}
+    {proposal : Option E} {correction : E}
+    (h : OptionalCorrectionStep f m mCS p x s Δ τ required proposal correction) :
+    reductionRatio f x s (m 0 - m s) ≤
+      reductionRatio f x (s + correction) (m 0 - m s) := by
+  unfold reductionRatio
+  exact div_le_div_of_nonneg_right (sub_le_sub_left h.selected_bounds.2 _)
+    (h.required_nonneg.trans h.original_decrease)
+
 omit [InnerProductSpace ℝ E] [CompleteSpace E] in
 /-- Algorithm 11.3.1. The correction can improve the objective at the
 original trial, while the prediction still comes from the original step. -/
@@ -222,6 +279,39 @@ structure NonsmoothCorrectionRun (Q : NonsmoothTRParams) (f : E → ℝ)
   next_radius : ∀ k, NonsmoothRadiusUpdate Q
     (reductionRatio f (x k) (s k + correction k)
       (m (x k) (parameter k) 0 - m (x k) (parameter k) (s k))) (Δ k) (Δ (k + 1))
+
+omit [InnerProductSpace ℝ E] [CompleteSpace E] in
+/-- Optional correction steps measured in the ambient norm give the trial
+fields of Algorithm 11.3.1. The iterate and radius updates use the selected
+trial but retain the original prediction. -/
+def NonsmoothCorrectionRun.ofOptionalCorrectionSteps
+    {Q : NonsmoothTRParams} {f : E → ℝ} {m : E → P → E → ℝ}
+    (x s correction : ℕ → E) (Δ required : ℕ → ℝ) (parameter : ℕ → P)
+    (mCS : ℕ → E → ℝ) (proposal : ℕ → Option E) (τ : ℝ) (hτ : 1 < τ)
+    (hΔ₀ : 0 < Δ 0) (hcap : Δ 0 ≤ Q.Δmax)
+    (htrial : ∀ k, OptionalCorrectionStep f (m (x k) (parameter k)) (mCS k) (fun d ↦ ‖d‖)
+      (x k) (s k) (Δ k) τ (required k) (proposal k) (correction k))
+    (hnext : ∀ k, x (k + 1) = acceptStep Q.η₁ f (x k) (s k + correction k)
+      (m (x k) (parameter k) 0 - m (x k) (parameter k) (s k)))
+    (hrad : ∀ k, NonsmoothRadiusUpdate Q
+      (reductionRatio f (x k) (s k + correction k)
+        (m (x k) (parameter k) 0 - m (x k) (parameter k) (s k))) (Δ k) (Δ (k + 1))) :
+    NonsmoothCorrectionRun Q f m where
+  x := x
+  s := s
+  correction := correction
+  Δ := Δ
+  parameter := parameter
+  radius_initial_pos := hΔ₀
+  radius_initial_le := hcap
+  step_bound k := (htrial k).original_radius
+  enlargement := τ
+  enlargement_ge_one := hτ.le
+  corrected_bound k := (htrial k).selected_bounds.1
+  improves k := by simpa only [add_assoc] using (htrial k).selected_bounds.2
+  pred_nonneg k := (htrial k).required_nonneg.trans (htrial k).original_decrease
+  next_x := hnext
+  next_radius := hrad
 
 /-- Theorem 11.3.2. Correction improves the numerator of the acceptance
 ratio, and its fixed enlargement only changes the displacement coefficient

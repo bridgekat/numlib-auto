@@ -1,5 +1,5 @@
 import Numlib.Optimization.EpigraphPenalty
-import NumlibSurface.ConnGouldToint.Chapter11.Section02
+import NumlibSurface.ConnGouldToint.Chapter11.Section03
 import Mathlib.Analysis.Calculus.ContDiff.RCLike
 import Mathlib.Order.Filter.Extr
 import Mathlib.Analysis.Calculus.FDeriv.Prod
@@ -70,6 +70,22 @@ noncomputable def polyhedralResidualValue [Nonempty ι] (c : E → Y)
 noncomputable def polyhedralResidualModel [Nonempty ι] (c : E → Y)
     (p : ι → Y →L[ℝ] ℝ) (b : ι → ℝ) (H : E →L[ℝ] E →L[ℝ] ℝ) (x s : E) : ℝ :=
   H s s / 2 + polyhedralAffineMaximum p b (c x + fderiv ℝ c x s)
+
+/-- The correction model of Algorithm 16.2.1 uses the affine maximum of
+the residual at the original trial and its shifted Jacobian. -/
+noncomputable def polyhedralResidualCorrectionModel [Nonempty ι] (c : E → Y)
+    (p : ι → Y →L[ℝ] ℝ) (b : ι → ℝ) (HCS : E →L[ℝ] E →L[ℝ] ℝ)
+    (x s shift d : E) : ℝ :=
+  HCS d d / 2 + polyhedralAffineMaximum p b (c (x + s) + fderiv ℝ c (x + shift) d)
+
+/-- Algorithm 16.2.1 supplies Step 2 of Algorithm 11.3.1 with the
+polyhedral residual objective and correction model. -/
+def algorithm_16_2_1 [Nonempty ι] (c : E → Y) (p : ι → Y →L[ℝ] ℝ) (b : ι → ℝ)
+    (H HCS : E →L[ℝ] E →L[ℝ] ℝ) (normK : Seminorm ℝ E) (x s shift : E)
+    (Δ τ required : ℝ) (proposal : Option E) (correction : E) : Prop :=
+  Chapter11.OptionalCorrectionStep (polyhedralResidualValue c p b)
+    (polyhedralResidualModel c p b H x) (polyhedralResidualCorrectionModel c p b HCS x s shift)
+    normK x s Δ τ required proposal correction
 
 /-- The trust-region model problem (16.2.5). -/
 def IsPolyhedralModelSolution [Nonempty ι] (c : E → Y)

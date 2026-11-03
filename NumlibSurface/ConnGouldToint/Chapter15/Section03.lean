@@ -1,5 +1,6 @@
-import NumlibSurface.ConnGouldToint.Chapter11.Section02
+import NumlibSurface.ConnGouldToint.Chapter11.Section03
 import Mathlib.Analysis.SpecialFunctions.Pow.Deriv
+import Mathlib.Analysis.InnerProductSpace.PiL2
 import NumlibSurface.ConnGouldToint.Chapter15.Section02
 import NumlibSurface.ConnGouldToint.Chapter06.Section01
 
@@ -457,6 +458,51 @@ section Global
 open Filter
 open scoped Topology NNReal
 
+
+/-- The Euclidean norm of the mixed violation vector is the distance to the
+residual cone. Equality residuals are retained, and inequality residuals
+are truncated to their nonpositive parts. -/
+theorem infDist_eq_mixed_violation_norm {ι : Type*} [Fintype ι] (equality : ι → Bool)
+    (c : EuclideanSpace ℝ ι) :
+    let C : Set (EuclideanSpace ℝ ι) := {z | ∀ i, if equality i then z i = 0 else 0 ≤ z i}
+    let r : EuclideanSpace ℝ ι := WithLp.toLp 2
+      (fun i ↦ if equality i then c i else min (c i) 0)
+    Metric.infDist c C = ‖r‖ := by
+  intro C r
+  let z : EuclideanSpace ℝ ι := WithLp.toLp 2
+    (fun i ↦ if equality i then 0 else max (c i) 0)
+  have hz : z ∈ C := by
+    intro i
+    cases h : equality i <;> simp [z, h]
+  have hzr : c - z = r := by
+    ext i
+    cases h : equality i
+    · by_cases hi : 0 ≤ c i
+      · simp [z, r, h, PiLp.sub_apply, max_eq_left hi, min_eq_right hi]
+      · simp [z, r, h, PiLp.sub_apply, max_eq_right (le_of_not_ge hi),
+          min_eq_left (le_of_not_ge hi)]
+    · simp [z, r, h, PiLp.sub_apply]
+  refine le_antisymm ?_ ?_
+  · simpa only [dist_eq_norm, hzr] using Metric.infDist_le_dist_of_mem (x := c) hz
+  · apply (Metric.le_infDist ⟨z, hz⟩).mpr
+    intro w hw
+    rw [dist_eq_norm]
+    have hsum : ‖r‖ ^ 2 ≤ ‖c - w‖ ^ 2 := by
+      rw [EuclideanSpace.real_norm_sq_eq, EuclideanSpace.real_norm_sq_eq]
+      apply Finset.sum_le_sum
+      intro i _
+      have hwi := hw i
+      cases h : equality i
+      · have hwi' : 0 ≤ w i := by simpa [h] using hwi
+        by_cases hi : 0 ≤ c i
+        · simpa [r, h, PiLp.sub_apply, min_eq_right hi] using sq_nonneg (c i - w i)
+        · change (if equality i then c i else min (c i) 0) ^ 2 ≤ (c i - w i) ^ 2
+          simp only [h, Bool.false_eq_true, ite_false, min_eq_left (le_of_not_ge hi)]
+          nlinarith only [mul_nonneg hwi' (show 0 ≤ w i - 2 * c i by linarith)]
+      · have hwi' : w i = 0 := by simpa [h] using hwi
+        simp [r, h, hwi', PiLp.sub_apply]
+    nlinarith only [hsum, norm_nonneg r, norm_nonneg (c - w)]
+
 /-- Distance form of the exact-penalty merit function (15.3.3).
 For Euclidean equality and one-sided inequality residuals, distance
 to the feasible residual cone is the norm of the violation vector. -/
@@ -469,6 +515,23 @@ noncomputable def sqpDistanceModel (f : E → ℝ) (g : E → E) (c : E → Y)
     (x : E) (H : E →L[ℝ] E) (s : E) : ℝ :=
   Chapter06.quadraticModel (f x) (g x) H.toLinearMap s +
     σ * Metric.infDist (c x + A x s) C
+
+/-- The correction model of Algorithm 15.3.1 linearizes the residual at the
+shifted Jacobian point, using the residual at the original trial. -/
+noncomputable def sqpDistanceCorrectionModel (f : E → ℝ) (c : E → Y)
+    (A : E → E →L[ℝ] Y) (C : Set Y) (σ : ℝ) (x s shift gCS : E)
+    (HCS : E →L[ℝ] E) (d : E) : ℝ :=
+  Chapter06.quadraticModel (f x) gCS HCS.toLinearMap d +
+    σ * Metric.infDist (c (x + s) + A (x + shift) d) C
+
+/-- Algorithm 15.3.1 supplies Step 2 of Algorithm 11.3.1 with the exact-penalty
+models. The proposal may be skipped, and a worsening proposal is reset to zero. -/
+def algorithm_15_3_1 (f : E → ℝ) (g : E → E) (c : E → Y) (A : E → E →L[ℝ] Y)
+    (C : Set Y) (σ : ℝ) (p : Seminorm ℝ E) (x s shift gCS : E)
+    (H HCS : E →L[ℝ] E) (Δ τ required : ℝ) (proposal : Option E) (correction : E) : Prop :=
+  Chapter11.OptionalCorrectionStep (sqpDistanceMerit f c C σ)
+    (sqpDistanceModel f g c A C σ x H) (sqpDistanceCorrectionModel f c A C σ x s shift gCS HCS)
+    p x s Δ τ required proposal correction
 
 /-- Uniform quadratic Taylor errors and a bounded model Hessian give
 uniform normalized model agreement for the exact-penalty model. -/

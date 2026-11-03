@@ -55,3 +55,15 @@ source = "Conn–Gould–Toint, model consistency used in Theorem 15.3.1"
 [[node]]
 id = "theorem_15_3_1"
 source = "Conn–Gould–Toint, Theorem 15.3.1, monotone run with explicit Clarke chain rule"
+
+[[node]]
+id = "sqpDistanceCorrectionModel"
+source = "Conn–Gould–Toint, Algorithm 15.3.1, Step 2a"
+
+[[node]]
+id = "algorithm_15_3_1"
+source = "Conn–Gould–Toint, Algorithm 15.3.1"
+
+[[node]]
+id = "infDist_eq_mixed_violation_norm"
+source = "Conn–Gould–Toint, Algorithm 15.3.1, Euclidean mixed violation representation"
