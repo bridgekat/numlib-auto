@@ -1,9 +1,10 @@
 import NumlibSurface.ConnGouldToint.Chapter11.Section02
+import NumlibSurface.ConnGouldToint.Chapter03.Section01
 
 /-! # Taylor models of composite objectives -/
 
-open Metric
-open scoped NNReal
+open Filter Metric Optimization ConvexAnalysis
+open scoped NNReal Topology
 
 namespace ConnGouldToint.Chapter11
 
@@ -68,6 +69,62 @@ theorem theorem_11_5_1_uniform_agreement {f : E → ℝ} {m : E → I → E → 
     _ ≤ K * ‖s‖ ^ 2 := herr y hy i s (hs.trans (min_le_left _ _))
     _ = (K * ‖s‖) * ‖s‖ := by ring
     _ ≤ _ := mul_le_mul_of_nonneg_right hmul hn.le
+
+/-- Theorem 11.5.1's uniform accuracy conclusion from Lipschitz derivatives
+on the trial segments and a Lipschitz outer function on the two residual images. -/
+theorem theorem_11_5_1_of_lipschitz_derivatives
+    {f : E → ℝ} {c : E → Y} {h : Y → ℝ}
+    {q : E → I → E → ℝ} {r : E → I → E → Y} {x : E}
+    {S : Set E} {D : Set Y} {ε δ C F : ℝ} {L Lf Lc : ℝ≥0}
+    (hε : 0 < ε) (hδ : 0 < δ) (hC : 0 ≤ C) (hF : 0 ≤ F)
+    (hS : IsOpen S) (hf : ContDiffOn ℝ 1 f S) (hc : ContDiffOn ℝ 1 c S)
+    (hLf : LipschitzOnWith Lf (fderiv ℝ f) S)
+    (hLc : LipschitzOnWith Lc (fderiv ℝ c) S) (hL : LipschitzOnWith L h D)
+    (hseg : ∀ y ∈ ball x ε, ∀ s, ‖s‖ ≤ δ → ∀ t ∈ Set.Icc (0 : ℝ) 1, y + t • s ∈ S)
+    (hactual : ∀ y ∈ ball x ε, ∀ s, ‖s‖ ≤ δ → c (y + s) ∈ D)
+    (hmodel : ∀ y ∈ ball x ε, ∀ i s, ‖s‖ ≤ δ →
+      c y + fderiv ℝ c y s + r y i s ∈ D)
+    (hq : ∀ y ∈ ball x ε, ∀ i s, ‖s‖ ≤ δ → |q y i s| ≤ C * ‖s‖ ^ 2)
+    (hr : ∀ y ∈ ball x ε, ∀ i s, ‖s‖ ≤ δ → ‖r y i s‖ ≤ F * ‖s‖ ^ 2) :
+    UniformNormalizedModelAgreementAt (fun y ↦ f y + h (c y))
+      (compositeTaylorModel f c h q r) x := by
+  apply theorem_11_5_1_uniform_agreement (K := (1 / 2 : ℝ) * Lf + C +
+    (L : ℝ) * ((1 / 2 : ℝ) * Lc + F)) hε hδ (by positivity)
+  intro y hy i s hs
+  have htrial := hseg y hy s hs
+  have hyS : y ∈ S := by simpa using htrial 0 (by norm_num)
+  have hTaylorF := Chapter03.theorem_3_1_4 hS hf htrial (γ := Lf)
+    (fun z hz ↦ by simpa only [dist_eq_norm] using hLf.dist_le_mul z hz y hyS)
+  have hTaylorC := Chapter03.theorem_3_1_6 hS hc htrial (γ := Lc)
+    (fun z hz ↦ by simpa only [dist_eq_norm] using hLc.dist_le_mul z hz y hyS)
+  exact compositeTaylorModel_error hL (hactual y hy s hs) (hmodel y hy i s hs)
+    hTaylorF hTaylorC (hq y hy i s hs) (hr y hy i s hs)
+
+/-- AM.2n and AM.3n in Theorem 11.5.1 follow from the uniform accuracy
+estimate once the objective and model satisfy local Lipschitz regularity. -/
+theorem theorem_11_5_1_value_and_directional_agreement
+    {V₀ : Type*} [NormedAddCommGroup V₀] [InnerProductSpace ℝ V₀]
+    [FiniteDimensional ℝ V₀] [Nontrivial V₀]
+    {f : V₀ → ℝ} {m : V₀ → I → V₀ → ℝ} {x : V₀} {i : I}
+    {U V : Set V₀} {Lf Lm : ℝ≥0}
+    (hacc : UniformNormalizedModelAgreementAt f m x)
+    (hU : U ∈ 𝓝 x) (hLf : LipschitzOnWith Lf f U)
+    (hV : V ∈ 𝓝 (0 : V₀)) (hLm : LipschitzOnWith Lm (m x i) V)
+    (hf : ∀ d : V₀, Tendsto (fun t : ℝ ↦ (f (x + t • d) - f x) / t)
+      (𝓝[>] 0) (𝓝 (clarkeDerivative f x d)))
+    (hm : ∀ d : V₀, Tendsto (fun t : ℝ ↦ (m x i (t • d) - m x i 0) / t)
+      (𝓝[>] 0) (𝓝 (clarkeDerivative (m x i) 0 d))) :
+    m x i 0 = f x ∧ ∀ d : V₀, d ≠ 0 →
+      clarkeDerivative (m x i) 0 d = clarkeDerivative f x d := by
+  apply (lemma_11_2_1 hU hLf hV hLm hf hm).mpr
+  apply Metric.tendsto_nhds.mpr
+  intro a ha
+  obtain ⟨ε, Δ, hε, hΔ, h⟩ := hacc (a / 2) (half_pos ha)
+  filter_upwards [ball_mem_nhds (0 : V₀) hΔ] with s hs
+  rw [dist_zero_right, Real.norm_eq_abs]
+  have hnorm : ‖s‖ ≤ Δ := by
+    exact (by simpa only [mem_ball, dist_zero_right] using hs : ‖s‖ < Δ).le
+  exact (h x (mem_ball_self hε) i s hnorm).trans_lt (half_lt_self ha)
 
 /-- The residual can stay in the domain of the outer function while its
 affine model leaves that domain at arbitrarily small steps. -/

@@ -15,3 +15,11 @@ source = "Conn–Gould–Toint, uniform normalized error argument in Theorem 11.
 [[node]]
 id = "compositeTaylorModel_domain_counterexample"
 source = "Conn–Gould–Toint, counterexample to model domain coverage in Theorem 11.5.1"
+
+[[node]]
+id = "theorem_11_5_1_of_lipschitz_derivatives"
+source = "Conn–Gould–Toint, Theorem 11.5.1 from Lipschitz Taylor derivatives and model domain coverage"
+
+[[node]]
+id = "theorem_11_5_1_value_and_directional_agreement"
+source = "Conn–Gould–Toint, Theorem 11.5.1, AM.2n and AM.3n for regular composite models"

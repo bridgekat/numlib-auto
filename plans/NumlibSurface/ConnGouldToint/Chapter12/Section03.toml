@@ -51,3 +51,15 @@ source = "Conn–Gould–Toint, sequential active-set identification from normal
 [[node]]
 id = "corollary_12_3_9_of_eventually_active"
 source = "Conn–Gould–Toint, Corollary 12.3.9 under eventual active-set identification"
+
+[[node]]
+id = "eventually_activeConstraintSet_eq_of_compact_normal_certificates"
+source = "Conn–Gould–Toint, compact-run active-set identification from supported normal certificates"
+
+[[node]]
+id = "theorem_12_3_8_of_normal_certificates"
+source = "Conn–Gould–Toint, Theorem 12.3.8 with connected limit set and asymptotic normal certificates"
+
+[[node]]
+id = "lemma_12_3_7_of_normal_certificates"
+source = "Conn–Gould–Toint, Lemma 12.3.7 under a common limit active set and supported normal certificates"

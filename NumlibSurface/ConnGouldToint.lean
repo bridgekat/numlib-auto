@@ -168,7 +168,8 @@ parameter. The generalized Cauchy decrease includes the tangent stopping test.
 Lemma 12.3.1 uses local constancy to cover connected sets. Lemma 12.3.6
 approximates the negative gradient by normal directions at nearby points.
 The perturbation result identifies the active set from nearby supported normal
-representations. Corollary 12.3.9 assumes eventual identification.
+representations. Lemma 12.3.7 and Theorem 12.3.8 have versions under asymptotic
+normal certificates. Corollary 12.3.9 assumes eventual identification.
 The local comparison in the proof of Theorem 12.3.4 uses the relaxed
 feasible set and a shifted displacement. A half-line example shows why
 the comparison cannot give the full-feasible bound from the trial

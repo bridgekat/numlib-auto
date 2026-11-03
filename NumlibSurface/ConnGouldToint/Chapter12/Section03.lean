@@ -173,6 +173,94 @@ theorem lemma_12_3_1 [Fintype ι] {S : Set E}
   obtain ⟨x, hx⟩ := hS.nonempty
   exact ⟨activeConstraintSet c x, fun y hy ↦ hS.isPreconnected.constant hcont hy hx⟩
 
+/-- Supported normal certificates identify the common active set uniformly
+along a compact sequence and nearby trial points. -/
+theorem eventually_activeConstraintSet_eq_of_compact_normal_certificates [Fintype ι]
+    {K S : Set E} {c : ι → E → ℝ} {n : ι → E → E} {g : E → E}
+    {x u v : ℕ → E} {A : Set ι}
+    (hK : IsCompact K) (hx : ∀ k, x k ∈ K)
+    (hlim : ∀ z (j : ℕ → ℕ), StrictMono j → Tendsto (x ∘ j) atTop (𝓝 z) → z ∈ S)
+    (hc : ∀ i, Continuous (c i)) (hn : ∀ i, Continuous (n i)) (hg : Continuous g)
+    (hind : ∀ z ∈ S, LinearIndependent ℝ (fun i : activeConstraintSet c z ↦ n i z))
+    (hstat : ∀ z ∈ S, HasStrictActiveMultipliers c n g z)
+    (hAS : ∀ z ∈ S, activeConstraintSet c z = A)
+    (hu : Tendsto (fun k ↦ u k - x k) atTop (𝓝 0))
+    (hv : Tendsto (fun k ↦ v k - g (x k)) atTop (𝓝 0))
+    (hrep : ∀ᶠ k in atTop, ∃ μ : ι → ℝ, v k = ∑ i, μ i • n i (u k) ∧
+      ∀ i ∉ activeConstraintSet c (u k), μ i = 0) :
+    ∀ᶠ k in atTop, activeConstraintSet c (u k) = A := by
+  by_contra! hbad
+  obtain ⟨j, hj, hjbad⟩ := extraction_of_frequently_atTop hbad
+  obtain ⟨z, _, i, hi, hzi⟩ := hK.isSeqCompact (fun k ↦ hx (j k))
+  let w := j ∘ i
+  have hw : StrictMono w := hj.comp hi
+  have hxw : Tendsto (x ∘ w) atTop (𝓝 z) := hzi
+  have hz := hlim z w hw hxw
+  have huw : Tendsto (u ∘ w) atTop (𝓝 z) := by
+    change Tendsto (fun k ↦ u (w k)) atTop (𝓝 z)
+    simpa only [Function.comp_apply, sub_add_cancel, zero_add] using
+      (hu.comp hw.tendsto_atTop).add hxw
+  have hgw : Tendsto (g ∘ x ∘ w) atTop (𝓝 (g z)) := hg.continuousAt.tendsto.comp hxw
+  have hvw : Tendsto (v ∘ w) atTop (𝓝 (g z)) := by
+    change Tendsto (fun k ↦ v (w k)) atTop (𝓝 (g z))
+    simpa only [Function.comp_apply, sub_add_cancel, zero_add] using
+      (hv.comp hw.tendsto_atTop).add hgw
+  have hgood := eventually_activeConstraintSet_eq_of_tendsto hc hn (hind z hz) (hstat z hz)
+    huw hvw (hw.tendsto_atTop.eventually hrep)
+  obtain ⟨k, hk⟩ := hgood.exists
+  exact hjbad (i k) (hk.trans (hAS z hz))
+
+/-- A certificate-based version of Theorem 12.3.8. On a connected limit set,
+asymptotically accurate supported normal certificates at the iterates and at
+the Cauchy points identify the same active set at both sequences. -/
+theorem theorem_12_3_8_of_normal_certificates [Fintype ι]
+    {K S : Set E} {c : ι → E → ℝ} {n : ι → E → E} {g : E → E}
+    {x u v w : ℕ → E}
+    (hK : IsCompact K) (hx : ∀ k, x k ∈ K) (hS : IsConnected S)
+    (hlim : ∀ z (j : ℕ → ℕ), StrictMono j → Tendsto (x ∘ j) atTop (𝓝 z) → z ∈ S)
+    (hc : ∀ i, Continuous (c i)) (hn : ∀ i, Continuous (n i)) (hg : Continuous g)
+    (hind : ∀ z ∈ S, LinearIndependent ℝ (fun i : activeConstraintSet c z ↦ n i z))
+    (hstat : ∀ z ∈ S, HasStrictActiveMultipliers c n g z)
+    (hu : Tendsto (fun k ↦ u k - x k) atTop (𝓝 0))
+    (hv : Tendsto (fun k ↦ v k - g (x k)) atTop (𝓝 0))
+    (hw : Tendsto (fun k ↦ w k - g (x k)) atTop (𝓝 0))
+    (hvrep : ∀ᶠ k in atTop, ∃ μ : ι → ℝ, v k = ∑ i, μ i • n i (x k) ∧
+      ∀ i ∉ activeConstraintSet c (x k), μ i = 0)
+    (hwrep : ∀ᶠ k in atTop, ∃ μ : ι → ℝ, w k = ∑ i, μ i • n i (u k) ∧
+      ∀ i ∉ activeConstraintSet c (u k), μ i = 0) :
+    ∃ A : Set ι, (∀ z ∈ S, activeConstraintSet c z = A) ∧
+      ∀ᶠ k in atTop, activeConstraintSet c (x k) = A ∧ activeConstraintSet c (u k) = A := by
+  obtain ⟨A, hA⟩ := lemma_12_3_1 hS hc hn hg hind hstat
+  have hzero : Tendsto (fun k ↦ x k - x k) atTop (𝓝 0) := by
+    simpa only [sub_self] using (tendsto_const_nhds : Tendsto (fun _ : ℕ ↦ (0 : E)) atTop (𝓝 0))
+  exact ⟨A, hA,
+    (eventually_activeConstraintSet_eq_of_compact_normal_certificates
+      hK hx hlim hc hn hg hind hstat hA hzero hv hvrep).and
+    (eventually_activeConstraintSet_eq_of_compact_normal_certificates
+      hK hx hlim hc hn hg hind hstat hA hu hw hwrep)⟩
+
+/-- Lemma 12.3.7 under the compact-run normal certificate condition.
+Infinitely many successful iterations then give an identified subsequence. -/
+theorem lemma_12_3_7_of_normal_certificates [Fintype ι]
+    {K S : Set E} {c : ι → E → ℝ} {n : ι → E → E} {g : E → E}
+    {x v : ℕ → E} {A : Set ι} {success : ℕ → Prop}
+    (hK : IsCompact K) (hx : ∀ k, x k ∈ K)
+    (hlim : ∀ z (j : ℕ → ℕ), StrictMono j → Tendsto (x ∘ j) atTop (𝓝 z) → z ∈ S)
+    (hc : ∀ i, Continuous (c i)) (hn : ∀ i, Continuous (n i)) (hg : Continuous g)
+    (hind : ∀ z ∈ S, LinearIndependent ℝ (fun i : activeConstraintSet c z ↦ n i z))
+    (hstat : ∀ z ∈ S, HasStrictActiveMultipliers c n g z)
+    (hA : ∀ z ∈ S, activeConstraintSet c z = A)
+    (hv : Tendsto (fun k ↦ v k - g (x k)) atTop (𝓝 0))
+    (hrep : ∀ᶠ k in atTop, ∃ μ : ι → ℝ, v k = ∑ i, μ i • n i (x k) ∧
+      ∀ i ∉ activeConstraintSet c (x k), μ i = 0)
+    (hsuccess : ∃ᶠ k in atTop, success k) :
+    ∃ j : ℕ → ℕ, StrictMono j ∧ ∀ i, success (j i) ∧ activeConstraintSet c (x (j i)) = A := by
+  have hzero : Tendsto (fun k ↦ x k - x k) atTop (𝓝 0) := by
+    simpa only [sub_self] using (tendsto_const_nhds : Tendsto (fun _ : ℕ ↦ (0 : E)) atTop (𝓝 0))
+  have hid := eventually_activeConstraintSet_eq_of_compact_normal_certificates
+    hK hx hlim hc hn hg hind hstat hA hzero hv hrep
+  exact extraction_of_frequently_atTop (hsuccess.and_eventually hid)
+
 /-- Lemma 12.3.2. On a compact limit set, points with different active
 sets are uniformly separated. This pairwise statement also separates a point
 from any nonempty component with a different active set. -/
@@ -393,7 +481,8 @@ open Optimization ConvexAnalysis in
 /-- Lemma 12.3.6. For an already reindexed subsequence, the projected gradients
 tend to zero when the nearby feasible points have the component's active set.
 The outward normals generate supporting directions at those feasible points. -/
-private theorem projectedGradient_tendsto_zero_of_eventually_active [Fintype ι] [CompleteSpace E] {C K S : Set E}
+private theorem projectedGradient_tendsto_zero_of_eventually_active [Fintype ι] [CompleteSpace E]
+    {C K S : Set E}
     {c : ι → E → ℝ} {n : ι → E → E} {g : E → E}
     {x u : ℕ → E} {A : Set ι}
     (hK : IsCompact K) (hx : ∀ k, x k ∈ K)
@@ -425,7 +514,8 @@ private theorem projectedGradient_tendsto_zero_of_eventually_active [Fintype ι]
     continuous_const.smul (hn a).neg
   have hwz : w z = -g z := by
     simp only [w, smul_neg, Finset.sum_neg_distrib, ← hμ]
-  have hwmem (k : ℕ) (hk : activeConstraintSet c (u (q k)) = A) : w (u (q k)) ∈ normalDirections C (u (q k)) := by
+  have hwmem (k : ℕ) (hk : activeConstraintSet c (u (q k)) = A) :
+      w (u (q k)) ∈ normalDirections C (u (q k)) := by
     apply mem_normalDirections.mpr
     intro y hy
     change ⟪∑ a, μ a • (-n a (u (q k))), y - u (q k)⟫ ≤ 0
