@@ -26,11 +26,13 @@ section Doubling
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
 /-- A terminating trace of the inner loop of Algorithm 10.5.1. Index zero
-is the initial trial from Step 2. The model and norm are held fixed for every
+is the initial trial from Step 2. A budget of `some N` allows `N + 1`
+enlarged probes. The model and norm are held fixed for every
 probe, and the model is evaluated on the enlarged regions. Continuation uses
 `η₂` as in Step 3c. If the final probe is rejected, the preceding probe is retained. -/
 structure InternalDoublingTrace (P : InternalDoublingParams) (f m : E → ℝ)
-    (x : E) (p : Seminorm ℝ E) (previousRatio : ℝ) (sufficient : ℝ → E → Prop) where
+    (x : E) (p : Seminorm ℝ E) (previousRatio : ℝ) (sufficient : ℝ → E → Prop)
+    (budget : Option ℕ := none) where
   last : ℕ
   radius : ℕ → ℝ
   step : ℕ → E
@@ -42,37 +44,38 @@ structure InternalDoublingTrace (P : InternalDoublingParams) (f m : E → ℝ)
   enlarge : ∀ j < last, P.γ₃ * radius j ≤ radius (j + 1)
   continue_loop : ∀ j, 0 < j → j < last →
     P.η₂ ≤ btrRatio f m x (step j) ∧ ‖step (j - 1)‖ < ‖step j‖
-  stop : 0 < last →
+  within_budget : ∀ N, budget = some N → last ≤ N + 1
+  stop : 0 < last → (∃ N, budget = some N ∧ last = N + 1) ∨
     ¬ (P.η₂ ≤ btrRatio f m x (step last) ∧ ‖step (last - 1)‖ < ‖step last‖)
 
 namespace InternalDoublingTrace
 
 variable {P : InternalDoublingParams} {f m : E → ℝ} {x : E} {p : Seminorm ℝ E}
-  {previousRatio : ℝ} {sufficient : ℝ → E → Prop}
+  {previousRatio : ℝ} {sufficient : ℝ → E → Prop} {budget : Option ℕ}
 
 /-- The index of the stored trial after Step 3c. If there is no inner loop,
 the initial trial is retained even if it fails the acceptance test. -/
-noncomputable def storedIndex (trace : InternalDoublingTrace P f m x p previousRatio sufficient) :
-    ℕ :=
+noncomputable def storedIndex
+    (trace : InternalDoublingTrace P f m x p previousRatio sufficient budget) : ℕ :=
   if P.η₁ ≤ btrRatio f m x (trace.step trace.last) then trace.last else trace.last - 1
 
 /-- The radius retained together with the stored trial in Step 3c. -/
-noncomputable def storedRadius (trace : InternalDoublingTrace P f m x p previousRatio sufficient) :
-    ℝ :=
+noncomputable def storedRadius
+    (trace : InternalDoublingTrace P f m x p previousRatio sufficient budget) : ℝ :=
   trace.radius trace.storedIndex
 
 /-- The step retained for Step 4. -/
 noncomputable def storedStep
-    (trace : InternalDoublingTrace P f m x p previousRatio sufficient) : E :=
+    (trace : InternalDoublingTrace P f m x p previousRatio sufficient budget) : E :=
   trace.step trace.storedIndex
 
 /-- The achieved-to-predicted reduction ratio at the stored step. -/
-noncomputable def storedRatio (trace : InternalDoublingTrace P f m x p previousRatio sufficient) :
-    ℝ :=
+noncomputable def storedRatio
+    (trace : InternalDoublingTrace P f m x p previousRatio sufficient budget) : ℝ :=
   btrRatio f m x trace.storedStep
 
 private theorem storedIndex_le_last
-    (trace : InternalDoublingTrace P f m x p previousRatio sufficient) :
+    (trace : InternalDoublingTrace P f m x p previousRatio sufficient budget) :
     trace.storedIndex ≤ trace.last := by
   unfold storedIndex
   split
@@ -81,7 +84,7 @@ private theorem storedIndex_le_last
 
 /-- Internal doubling never reduces the stored radius below the initial radius. -/
 theorem storedRadius_ge_initial
-    (trace : InternalDoublingTrace P f m x p previousRatio sufficient) :
+    (trace : InternalDoublingTrace P f m x p previousRatio sufficient budget) :
     trace.radius 0 ≤ trace.storedRadius := by
   have h (j : ℕ) (hj : j ≤ trace.last) : trace.radius 0 ≤ trace.radius j := by
     induction j with
@@ -96,7 +99,7 @@ theorem storedRadius_ge_initial
 
 /-- If the preceding iteration was not very successful, there is no inner loop. -/
 theorem storedRadius_eq_initial_of_previous_not_very_successful
-    (trace : InternalDoublingTrace P f m x p previousRatio sufficient)
+    (trace : InternalDoublingTrace P f m x p previousRatio sufficient budget)
     (h : previousRatio < P.η₂) : trace.storedRadius = trace.radius 0 := by
   have hlast : trace.last = 0 :=
     Nat.eq_zero_of_not_pos fun hpos ↦ h.not_ge (trace.enter.mp hpos).1
@@ -105,7 +108,7 @@ theorem storedRadius_eq_initial_of_previous_not_very_successful
 /-- If the inner loop runs, Step 3c retains the latest acceptable probe.
 If the final probe fails, all earlier probes were very successful. -/
 theorem storedIndex_is_latest_acceptable
-    (trace : InternalDoublingTrace P f m x p previousRatio sufficient) (h : 0 < trace.last) :
+    (trace : InternalDoublingTrace P f m x p previousRatio sufficient budget) (h : 0 < trace.last) :
     P.η₁ ≤ trace.storedRatio ∧
       ∀ j ≤ trace.last, P.η₁ ≤ btrRatio f m x (trace.step j) → j ≤ trace.storedIndex := by
   by_cases hfinal : P.η₁ ≤ btrRatio f m x (trace.step trace.last)
@@ -135,7 +138,10 @@ theorem no_termination_of_always_continue
     (hlength : ∀ j, ‖trials j‖ < ‖trials (j + 1)‖) : False := by
   have hstart : 0 < trace.last := trace.enter.mpr
     ⟨hprevious, by simpa only [hmatch 0 (Nat.zero_le _)] using hratio 0⟩
-  apply trace.stop hstart
+  have hstop := trace.stop hstart
+  rcases hstop with ⟨N, hnone, _⟩ | hstop
+  · simp at hnone
+  apply hstop
   rw [hmatch _ le_rfl, hmatch _ (Nat.sub_le _ _)]
   exact ⟨hratio _, by simpa only [Nat.sub_add_cancel hstart] using hlength (trace.last - 1)⟩
 
@@ -146,14 +152,15 @@ at each iteration. Step 5 updates the stored radius into the next initial
 radius, with a strict upper endpoint for a successful but not very successful
 iteration. -/
 structure InternalDoublingRun (f : E → ℝ) (P : InternalDoublingParams)
-    (sufficient : ℕ → (E → ℝ) → E → ℝ → E → Prop) where
+    (sufficient : ℕ → (E → ℝ) → E → ℝ → E → Prop)
+    (budget : Option ℕ := none) where
   x : ℕ → E
   p : ℕ → Seminorm ℝ E
   norm_separates : ∀ k v, p k v = 0 → v = 0
   model : ℕ → E → ℝ
   previousRatio : ℕ → ℝ
   trace : ∀ k, InternalDoublingTrace P f (model k) (x k) (p k) (previousRatio k)
-    (sufficient k (model k) (x k))
+    (sufficient k (model k) (x k)) budget
   initial_previous_ratio : previousRatio 0 = 1
   previous_ratio_update : ∀ k, previousRatio (k + 1) = (trace k).storedRatio
   iterate_update : ∀ k, x (k + 1) =
@@ -170,7 +177,8 @@ form a run of Algorithm BTR. The enlargement at iteration `k + 1` can be
 absorbed into the update at iteration `k`, because it only occurs when that
 update follows a very successful trial. -/
 noncomputable def InternalDoublingRun.toBTRRun {f : E → ℝ} {P : InternalDoublingParams}
-    {sufficient : ℕ → (E → ℝ) → E → ℝ → E → Prop} (run : InternalDoublingRun f P sufficient) :
+    {sufficient : ℕ → (E → ℝ) → E → ℝ → E → Prop} {budget : Option ℕ}
+    (run : InternalDoublingRun f P sufficient budget) :
     BTRRun f P.toBTRParams (fun k m x s ↦ sufficient k m x (run.trace k).storedRadius s) where
   x := run.x
   p := run.p
@@ -200,6 +208,59 @@ noncomputable def InternalDoublingRun.toBTRRun {f : E → ℝ} {P : InternalDoub
         exact lt_of_not_ge h
       rw [(run.trace (k + 1)).storedRadius_eq_initial_of_previous_not_very_successful hprevious]
       exact hupdate
+
+/-- A finite budget makes the internal loop terminate whenever the
+prescribed probes can be computed. The retained trial still satisfies the
+same acceptance rule, so the capped outer run has the BTR representation. -/
+theorem exists_cappedInternalDoublingTrace {P : InternalDoublingParams} {f m : E → ℝ}
+    {x : E} {p : Seminorm ℝ E} {previousRatio : ℝ} {sufficient : ℝ → E → Prop}
+    (N : ℕ) (radius : ℕ → ℝ) (step : ℕ → E) (hpos : 0 < radius 0)
+    (hfeas : ∀ j ≤ N + 1, x + step j ∈ trustRegion p x (radius j))
+    (hsuff : ∀ j ≤ N + 1, sufficient (radius j) (step j))
+    (hpred : ∀ j ≤ N + 1, 0 < m x - m (x + step j))
+    (hgrowth : ∀ j < N + 1, P.γ₃ * radius j ≤ radius (j + 1)) :
+    ∃ trace : InternalDoublingTrace P f m x p previousRatio sufficient (some N),
+      trace.radius = radius ∧ trace.step = step := by
+  classical
+  by_cases henter : P.η₂ ≤ previousRatio ∧ P.η₂ ≤ btrRatio f m x (step 0)
+  · let good (j : ℕ) := P.η₂ ≤ btrRatio f m x (step j) ∧ ‖step (j - 1)‖ < ‖step j‖
+    have hex : ∃ j, 0 < j ∧ (j = N + 1 ∨ ¬ good j) := ⟨N + 1, by omega, Or.inl rfl⟩
+    let j := Nat.find hex
+    have hj : 0 < j ∧ (j = N + 1 ∨ ¬ good j) := Nat.find_spec hex
+    have hjN : j ≤ N + 1 := Nat.find_min' hex ⟨by omega, Or.inl rfl⟩
+    refine ⟨{
+      last := j
+      radius := radius
+      step := step
+      initial_radius_pos := hpos
+      enter := ⟨fun _ ↦ henter, fun _ ↦ hj.1⟩
+      feasible i hi := hfeas i (hi.trans hjN)
+      sufficient_decrease i hi := hsuff i (hi.trans hjN)
+      predicted_pos i hi := hpred i (hi.trans hjN)
+      enlarge i hi := hgrowth i (hi.trans_le hjN)
+      continue_loop i hi hij := ?_
+      within_budget := ?_
+      stop := fun _ ↦ hj.2.imp_left (fun h ↦ ⟨N, rfl, h⟩)
+    }, rfl, rfl⟩
+    · by_contra hn
+      exact (Nat.find_min hex hij) ⟨hi, Or.inr hn⟩
+    · intro M h
+      cases Option.some.inj h
+      exact hjN
+  · refine ⟨{
+      last := 0
+      radius := radius
+      step := step
+      initial_radius_pos := hpos
+      enter := by simp [henter]
+      feasible i hi := hfeas i (by omega)
+      sufficient_decrease i hi := hsuff i (by omega)
+      predicted_pos i hi := hpred i (by omega)
+      enlarge _ h := (Nat.not_lt_zero _ h).elim
+      continue_loop _ _ h := (Nat.not_lt_zero _ h).elim
+      within_budget := fun _ _ ↦ Nat.zero_le _
+      stop := fun h ↦ (Nat.not_lt_zero _ h).elim
+    }, rfl, rfl⟩
 
 end Doubling
 

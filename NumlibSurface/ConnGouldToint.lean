@@ -110,8 +110,9 @@ hard directions give convergence of model values and minimizing cluster
 points. Distinct hard-case corrections can tie in the model comparison.
 The computed matrix run obtains the greedy solves and both lower bounds
 from an ordered pivot scan. The hard-case boundary correction selects a
-model-minimizing root with deterministic tie handling. The model values
-converge and every cluster point minimizes the model.
+model-minimizing root with deterministic tie handling. With a starting
+upper bracket strictly above the pole, the corrected steps along successful
+factorizations converge to one minimizer even when the minimizer is nonunique.
 Weighted subproblems use the M-inner product or the explicit coordinate transformation.
 The nonnegative index in Lemma 7.5.8 is k. Theorem 7.5.9 covers stationary
 stops and both positive- and zero-curvature boundary stops for convex
@@ -162,6 +163,10 @@ counterexample under norm comparison alone.
 Section 10.4 uses augmented predicted decrease for the corrected step ratio.
 The quadratic augmentation in (10.4.12) uses the trial argument, so the
 quadratic term cancels from the compensated ratio error in (10.4.16).
+Algorithm 10.5.1 uses the printed continuation threshold from Step 3c.
+The inner loop can run forever on exact models. A finite probe budget
+guarantees termination when the probes are available and preserves the
+reduction to the basic trust-region algorithm.
 Section 10.6 uses a vanishing tolerance schedule and an eventual curvature
 margin for the second-order dynamic accuracy test.
 

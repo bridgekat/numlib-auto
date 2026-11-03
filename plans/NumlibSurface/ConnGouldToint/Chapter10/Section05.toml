@@ -99,3 +99,7 @@ source = "Conn–Gould–Toint, nontermination of the uncapped Algorithm 10.5.1"
 [[node]]
 id = "stepLengthRadiusUpdate_counterexample"
 source = "Conn–Gould–Toint, quadratic counterexample following (10.5.6)"
+
+[[node]]
+id = "exists_cappedInternalDoublingTrace"
+source = "Conn–Gould–Toint, Algorithm 10.5.1 with a finite budget for enlarged probes"
