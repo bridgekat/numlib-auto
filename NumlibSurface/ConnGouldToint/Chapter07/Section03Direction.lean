@@ -1,5 +1,8 @@
 import Mathlib.Algebra.Order.Star.Real
 import Mathlib.LinearAlgebra.Matrix.PosDef
+import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
+import Mathlib.LinearAlgebra.Matrix.Notation
+import Mathlib.Data.Matrix.ColumnRowPartitioned
 import Mathlib.Topology.Instances.Matrix
 import Mathlib.Topology.MetricSpace.HausdorffDistance
 import Mathlib.Topology.MetricSpace.ProperSpace
@@ -213,5 +216,105 @@ theorem linpackDirection_limit {n : ℕ} (hn : 0 < n)
   have hε' := hdist.eventually (eventually_lt_nhds hε)
   exact (hε'.and (Eventually.of_forall fun k => hjε (l k))).exists.elim
     (fun _ hk => (not_lt_of_ge hk.2) hk.1)
+
+/-- The back solve at a failed Cholesky pivot gives a kernel vector of the
+rank-one corrected leading principal block. If the pivot occurs before the
+last row, the zero extension can have nonzero residual in later rows, so the
+kernel equation in (7.3.17) is stated on the leading principal block. -/
+theorem failedCholeskyPivotDirection {n : ℕ} {L : Matrix (Fin n) (Fin n) ℝ}
+    (hL : L.IsLowerTriangular) (hd : ∀ i, 0 < L i i)
+    (C : Matrix Unit (Fin n) ℝ) (δ : ℝ)
+    (B : Matrix (Fin n ⊕ Unit) (Fin n ⊕ Unit) ℝ)
+    (e : Fin n ⊕ Unit → ℝ) (he : e = Sum.elim (0 : Fin n → ℝ) (fun _ : Unit => 1))
+    (hB : B + δ • vecMulVec e e = fromRows L C * (fromRows L C)ᵀ) :
+    ∃ v : Fin n ⊕ Unit → ℝ, v (Sum.inr ()) = 1 ∧
+      (B + δ • vecMulVec e e) *ᵥ v = 0 ∧ v ⬝ᵥ B *ᵥ v = -δ := by
+  have hdet : Lᵀ.det ≠ 0 := by
+    rw [Matrix.det_transpose, Matrix.det_of_isLowerTriangular L hL]
+    exact Finset.prod_ne_zero_iff.mpr fun i _ => (hd i).ne'
+  have hunit : IsUnit Lᵀ := (Matrix.isUnit_iff_isUnit_det Lᵀ).mpr (isUnit_iff_ne_zero.mpr hdet)
+  obtain ⟨y, hy⟩ := Matrix.mulVec_surjective_iff_isUnit.mpr hunit
+    (-(Cᵀ *ᵥ (fun _ => 1)))
+  let v : Fin n ⊕ Unit → ℝ := Sum.elim y (fun _ => 1)
+  have hzero : (fromRows L C)ᵀ *ᵥ v = 0 := by
+    rw [Matrix.transpose_fromRows]
+    change fromCols Lᵀ Cᵀ *ᵥ Sum.elim y (fun _ => 1) = 0
+    rw [Matrix.fromCols_mulVec_sumElim, hy, neg_add_cancel]
+  have hker : (B + δ • vecMulVec e e) *ᵥ v = 0 := by
+    rw [hB, ← Matrix.mulVec_mulVec, hzero, Matrix.mulVec_zero]
+  have hev : e ⬝ᵥ v = 1 := by
+    rw [he]
+    change Sum.elim 0 (fun _ : Unit => (1 : ℝ)) ⬝ᵥ Sum.elim y (fun _ => 1) = 1
+    rw [sumElim_dotProduct_sumElim]
+    simp [dotProduct]
+  have hve : v ⬝ᵥ e = 1 := (dotProduct_comm _ _).trans hev
+  have houter : vecMulVec e e *ᵥ v = e := by
+    rw [Matrix.vecMulVec_mulVec, hev, MulOpposite.op_one, one_smul]
+  have hquadratic := congrArg (fun z => v ⬝ᵥ z) hker
+  simp only [Matrix.add_mulVec, Matrix.smul_mulVec, houter, dotProduct_add,
+    dotProduct_smul, hve, smul_eq_mul, mul_one, dotProduct_zero] at hquadratic
+  exact ⟨v, rfl, hker, by linarith⟩
+
+/-- The computed pivot correction is the deficit between the accumulated
+row square and the uncorrected pivot entry. -/
+theorem failedCholeskyPivot_correction {n : ℕ} {L : Matrix (Fin n) (Fin n) ℝ}
+    (hL : L.IsLowerTriangular) (hd : ∀ i, 0 < L i i)
+    (C : Matrix Unit (Fin n) ℝ) (d : ℝ) (hpivot : d ≤ (C * Cᵀ) () ()) :
+    let B := fromBlocks (L * Lᵀ) (L * Cᵀ) (C * Lᵀ) (Matrix.of fun _ _ : Unit => d)
+    let δ := (C * Cᵀ) () () - d
+    let e : Fin n ⊕ Unit → ℝ := Sum.elim (0 : Fin n → ℝ) (fun _ : Unit => 1)
+    0 ≤ δ ∧ ∃ v : Fin n ⊕ Unit → ℝ, v (Sum.inr ()) = 1 ∧
+      (B + δ • vecMulVec e e) *ᵥ v = 0 ∧ v ⬝ᵥ B *ᵥ v = -δ := by
+  dsimp only
+  refine ⟨sub_nonneg.mpr hpivot, failedCholeskyPivotDirection hL hd C _ _ _ rfl ?_⟩
+  rw [Matrix.transpose_fromRows, Matrix.fromRows_mul_fromCols]
+  ext (i | i) (j | j)
+  · simp [vecMulVec]
+  · cases j
+    simp [vecMulVec]
+  · cases i
+    simp [vecMulVec]
+  · cases i
+    cases j
+    simp [vecMulVec]
+
+/-- Correcting the first pivot of this matrix kills the leading residual
+but leaves the second coordinate equal to one. -/
+theorem failedCholeskyPivot_full_residual_counterexample :
+    let B : Matrix (Fin 2) (Fin 2) ℝ := !![-1, 1; 1, 1]
+    let e : Fin 2 → ℝ := ![1, 0]
+    (B + vecMulVec e e) *ᵥ e = ![0, 1] := by
+  dsimp only
+  ext i
+  fin_cases i <;> norm_num [Matrix.mulVec, dotProduct, Fin.sum_univ_two, vecMulVec]
+
+/-- The full shifted Hessian gives the same Rayleigh quotient as its leading
+principal block at the zero extension of the failed-pivot direction. The
+resulting lower bound is valid even when the full residual is nonzero. -/
+theorem failedCholeskyPivot_lower_bound {n : ℕ} {ι : Type*} [Fintype ι]
+    {B : Matrix (Fin n ⊕ Unit) (Fin n ⊕ Unit) ℝ}
+    (C : Matrix (Fin n ⊕ Unit) ι ℝ) (D : Matrix ι (Fin n ⊕ Unit) ℝ)
+    (F : Matrix ι ι ℝ) {lam lamMin δ : ℝ} {v : Fin n ⊕ Unit → ℝ}
+    (hv : v (Sum.inr ()) = 1) (hq : v ⬝ᵥ B *ᵥ v = -δ)
+    (hRayleigh : ∀ z, (lam + lamMin) * (z ⬝ᵥ z) ≤
+      z ⬝ᵥ fromBlocks B C D F *ᵥ z) :
+    lam + δ / (v ⬝ᵥ v) ≤ -lamMin := by
+  have hnorm : 0 < v ⬝ᵥ v := by
+    have hs : v (Sum.inr ()) ^ 2 ≤ ∑ i, v i ^ 2 :=
+      Finset.single_le_sum (fun i _ => sq_nonneg (v i)) (Finset.mem_univ _)
+    rw [hv, one_pow] at hs
+    have hd : v ⬝ᵥ v = ∑ i, v i ^ 2 := by simp [dotProduct, pow_two]
+    rw [hd]
+    exact zero_lt_one.trans_le hs
+  have hr := hRayleigh (Sum.elim v 0)
+  rw [Matrix.fromBlocks_mulVec] at hr
+  have hl : Sum.elim v (0 : ι → ℝ) ∘ Sum.inl = v := rfl
+  have ht : Sum.elim v (0 : ι → ℝ) ∘ Sum.inr = 0 := rfl
+  simp only [hl, ht, Matrix.mulVec_zero, add_zero, sumElim_dotProduct_sumElim,
+    zero_dotProduct, hq] at hr
+  have hdiv : δ / (v ⬝ᵥ v) ≤ -(lam + lamMin) := by
+    apply (div_le_iff₀ hnorm).2
+    nlinarith only [hr]
+  linarith
 
 end ConnGouldToint.Chapter07

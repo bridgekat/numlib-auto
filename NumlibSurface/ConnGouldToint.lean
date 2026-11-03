@@ -92,7 +92,10 @@ eigenvector and a continuous boundary correction give vector convergence in the 
 The LINPACK direction guarantee compares magnitudes in the sign rule. A
 rank-one counterexample shows failure of the printed signed rule. The
 nonzero-gradient Newton and fallback updates are verified with a supplied
-lower bound. The complete safeguarded run remains open.
+lower bound. The failed-pivot equation holds on the leading principal block,
+which still gives a full-matrix Rayleigh lower bound. The zero-gradient
+multiplier and feasible interior stopping results are verified. The complete
+nonzero-gradient safeguarded run remains open.
 Weighted subproblems use the M-inner product or the explicit coordinate transformation.
 The nonnegative index in Lemma 7.5.8 is k. Theorem 7.5.9 covers stationary
 stops and both positive- and zero-curvature boundary stops for convex

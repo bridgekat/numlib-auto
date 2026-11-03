@@ -127,3 +127,19 @@ source = "Conn–Gould–Toint, Algorithm 7.3.4, Steps 1–3 and 5 (multiplier u
 [[node]]
 id = "moreSorensenSafeguardedStep_of_positive_phi"
 source = "Conn–Gould–Toint, Algorithm 7.3.4, Steps 5a–b (positive secular value)"
+
+[[node]]
+id = "moreSorensenSafeguardedStep_zero_gradient"
+source = "Conn–Gould–Toint, Algorithm 7.3.4, Steps 2, 3b and 5 (successful factorization with zero gradient)"
+
+[[node]]
+id = "moreSorensen_interior_solution_of_unshifted_solve"
+source = "Conn–Gould–Toint, Algorithm 7.3.4, Step 1a (interior stopping for a positive semidefinite Hessian)"
+
+[[node]]
+id = "moreSorensen_zero_gradient_solution"
+source = "Conn–Gould–Toint, Theorem 7.3.4 (zero-gradient solution and multiplier)"
+
+[[node]]
+id = "moreSorensen_zero_gradient_run"
+source = "Conn–Gould–Toint, Theorem 7.3.4 (multiplier convergence of the zero-gradient safeguarding recurrence)"

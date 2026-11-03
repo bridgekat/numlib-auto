@@ -412,7 +412,10 @@ theorem acceptable_of_hard_stopping_rule {μ Δ κ κopt κtr : ℝ} (hμ : 0 �
 /-- The safeguarded geometric trial multiplier in (7.3.14). -/
 noncomputable abbrev moreSorensenTrial (θ lo hi : ℝ) : ℝ := bracketEstimate 1 θ lo hi
 
-/-- The multiplier update in Algorithm 7.3.4 for a nonzero gradient.
+/-- The multiplier update in Algorithm 7.3.4.
+With a zero gradient and a successful factorization, the raw step is zero.
+This is the upper-bracket branch for positive radius, and it skips Newton's
+formula because both triangular solves would give zero.
 Here `b` is the lower-bound estimate from the Cholesky direction or partial
 factorization. The test against the pole represents the positive definite
 factorization test. The return value contains the new lower and upper
@@ -420,14 +423,18 @@ endpoints and the next trial. Termination and the step correction are separate. 
 noncomputable def moreSorensenSafeguardedStep (g : E) (H : E →L[ℝ] E)
     (pole Δ θ lo hi x b : ℝ) : ℝ × ℝ × ℝ :=
   if pole < x then
-    let x' := moreSorensenNewtonStep g H Δ x
-    if 0 < phi g H Δ x then
+    if ‖g‖ = 0 then
       let lo' := max lo b
-      if pole < x' then (lo', x, x')
-      else
-        let lo'' := max lo' x'
-        (lo'', x, moreSorensenTrial θ lo'' x)
-    else (max lo x, hi, x')
+      (lo', x, moreSorensenTrial θ lo' x)
+    else
+      let x' := moreSorensenNewtonStep g H Δ x
+      if 0 < phi g H Δ x then
+        let lo' := max lo b
+        if pole < x' then (lo', x, x')
+        else
+          let lo'' := max lo' x'
+          (lo'', x, moreSorensenTrial θ lo'' x)
+      else (max lo x, hi, x')
   else
     let lo' := max (max lo x) b
     (lo', hi, moreSorensenTrial θ lo' hi)
@@ -448,13 +455,78 @@ theorem moreSorensenSafeguardedStep_of_positive_phi (hg : g ≠ 0)
   have hN := lemma_7_3_3 hg hΔ hsM hmul hx hpos
   dsimp only at hN ⊢
   rcases hN.2.2 with hgood | hbad
-  · simp only [moreSorensenSafeguardedStep, ite_eq_left hx, ite_eq_left hpos, ite_eq_left hgood.1]
+  · simp only [moreSorensenSafeguardedStep, ite_eq_left hx,
+      ite_eq_right (norm_ne_zero_iff.mpr hg), ite_eq_left hpos, ite_eq_left hgood.1]
     exact ⟨max_le hlr hb, trivial, Or.inl ⟨trivial, hgood.1, hgood.2, hN.2.1⟩⟩
-  · simp only [moreSorensenSafeguardedStep, ite_eq_left hx, ite_eq_left hpos, ite_eq_right (not_lt.mpr hbad)]
+  · simp only [moreSorensenSafeguardedStep, ite_eq_left hx,
+      ite_eq_right (norm_ne_zero_iff.mpr hg), ite_eq_left hpos, ite_eq_right (not_lt.mpr hbad)]
     have hnew := max_le (max_le hlr hb) hN.2.1
     exact ⟨hnew, trivial, Or.inr ⟨hbad, le_max_right _ _,
       bracketEstimate_mem_Icc (hlo.trans ((le_max_left _ _).trans (le_max_left _ _)))
         (hnew.trans hrx) (by simp) hθ⟩⟩
+
+omit [FiniteDimensional ℝ E] in
+/-- The zero-gradient safeguard tightens the upper endpoint and uses
+a bracket trial instead of a Newton candidate. -/
+theorem moreSorensenSafeguardedStep_zero_gradient {pole Δ θ lo hi x b : ℝ}
+    (hx : pole < x) :
+    moreSorensenSafeguardedStep (0 : E) H pole Δ θ lo hi x b =
+      (max lo b, x, moreSorensenTrial θ (max lo b) x) := by
+  simp [moreSorensenSafeguardedStep, hx]
+
+omit [FiniteDimensional ℝ E] in
+/-- Repeating the zero-gradient safeguard gives a hard bracketing run when
+the pole is nonnegative. Certified pivot or curvature estimates may tighten
+its lower endpoint without changing the multiplier limit. -/
+theorem moreSorensen_zero_gradient_run {pole Δ θ : ℝ} {lo hi x b : ℕ → ℝ}
+    (hθ : θ ∈ Ioo 0 1) (hlo : 0 ≤ lo 0) (hlp : lo 0 ≤ pole) (hph : pole ≤ hi 0)
+    (hx0 : x 0 ∈ Icc (lo 0) (hi 0)) (hb : ∀ k, b k ≤ pole)
+    (hrec : ∀ k, (lo (k + 1), hi (k + 1), x (k + 1)) =
+      moreSorensenSafeguardedStep (0 : E) H pole Δ θ (lo k) (hi k) (x k) (b k)) :
+    IsBracketRun pole pole θ θ lo hi x ∧ Tendsto x atTop (𝓝 pole) := by
+  have hleft (k : ℕ) (hx : x k ≤ pole) :
+      lo (k + 1) = max (max (lo k) (x k)) (b k) ∧ hi (k + 1) = hi k ∧
+      x (k + 1) = moreSorensenTrial θ (max (max (lo k) (x k)) (b k)) (hi k) := by
+    simpa only [moreSorensenSafeguardedStep, ite_eq_right (not_lt.mpr hx),
+      Prod.mk.injEq] using hrec k
+  have hright (k : ℕ) (hx : pole < x k) :
+      lo (k + 1) = max (lo k) (b k) ∧ hi (k + 1) = x k ∧
+      x (k + 1) = moreSorensenTrial θ (max (lo k) (b k)) (x k) := by
+    simpa only [moreSorensenSafeguardedStep_zero_gradient hx, Prod.mk.injEq] using hrec k
+  have hθ' : θ ∈ Icc (0 : ℝ) 1 := ⟨hθ.1.le, hθ.2.le⟩
+  have hinv (k : ℕ) :
+      0 ≤ lo k ∧ lo k ≤ pole ∧ pole ≤ hi k ∧ x k ∈ Icc (lo k) (hi k) := by
+    induction k with
+    | zero => exact ⟨hlo, hlp, hph, hx0⟩
+    | succ k ih =>
+      rcases le_or_gt (x k) pole with hx | hx
+      · obtain ⟨hl, hu, ht⟩ := hleft k hx
+        rw [hl, hu, ht]
+        have h0 : 0 ≤ max (max (lo k) (x k)) (b k) :=
+          ih.1.trans ((le_max_left _ _).trans (le_max_left _ _))
+        have hp := max_le (max_le ih.2.1 hx) (hb k)
+        exact ⟨h0, hp, ih.2.2.1,
+          bracketEstimate_mem_Icc h0 (hp.trans ih.2.2.1) (by simp) hθ'⟩
+      · obtain ⟨hl, hu, ht⟩ := hright k hx
+        rw [hl, hu, ht]
+        have h0 := ih.1.trans (le_max_left _ (b k))
+        have hp := max_le ih.2.1 (hb k)
+        exact ⟨h0, hp, hx.le, bracketEstimate_mem_Icc h0 (hp.trans hx.le) (by simp) hθ'⟩
+  have hrun : IsBracketRun pole pole θ θ lo hi x := by
+    refine ⟨hlo, hlp, hph, ?_, ?_, ?_⟩
+    · exact fun k hk => (hk.1.not_ge hk.2).elim
+    · intro k hx
+      obtain ⟨hl, hu, ht⟩ := hleft k hx
+      exact ⟨hu, Or.inr ⟨b k, hb k, hl⟩, θ, ⟨le_rfl, le_rfl⟩, 1, by simp,
+        by rw [hl, hu, ht]⟩
+    · intro k hx
+      obtain ⟨hl, hu, ht⟩ := hright k hx
+      refine ⟨hu.trans (min_eq_right (hinv k).2.2.2.2).symm, Or.inr ⟨b k, hb k, hl⟩,
+        θ, ⟨le_rfl, le_rfl⟩, θ, ⟨le_rfl, le_rfl⟩, le_rfl, 1, by simp, 1, by simp, le_rfl, ?_⟩
+      rw [hl, hu, ht]
+      exact ⟨le_rfl, le_rfl⟩
+  exact ⟨hrun, (hrun.tendsto_bracket_of_never_mem le_rfl hθ.1 hθ.2
+    (fun _ hk => hk.1.not_ge hk.2)).2.2⟩
 
 /-- The spectral bounds (7.3.18) on the multiplier of a boundary solution. -/
 theorem multiplier_bounds_of_boundary {μ Δ : ℝ} {s : E} (hΔ : 0 < Δ)
@@ -539,6 +611,41 @@ theorem moreSorensen_interior_solution {Δ : ℝ} (hHpos : -leftmost hH < 0)
   have hmul : IsTrustRegionMultiplier g H Δ (shiftedStep g H 0) 0 :=
     ⟨le_rfl, (step_spec hHpos).1, isPositive_add_smul_of_le hHpos.le, zero_mul _⟩
   exact hmul.isMinOn_of_norm_le hH hs
+
+/-- Interior stopping at zero shift also applies to a singular positive
+semidefinite Hessian when an unshifted solve supplies a feasible step. -/
+theorem moreSorensen_interior_solution_of_unshifted_solve {Δ : ℝ} {s : E}
+    (hHpos : -leftmost hH ≤ 0) (hsolve : H s = -g) (hs : ‖s‖ ≤ Δ) :
+    s ∈ Metric.closedBall 0 Δ ∧ IsMinOn (quadModel g H) (Metric.closedBall 0 Δ) s := by
+  have hmul : IsTrustRegionMultiplier g H Δ s 0 :=
+    ⟨le_rfl, by simpa using hsolve, isPositive_add_smul_of_le hHpos, zero_mul _⟩
+  exact hmul.isMinOn_of_norm_le hH hs
+
+/-- When the gradient vanishes, zero solves the positive semidefinite
+case. With a negative leftmost eigenvalue, a scaled unit leftmost eigenvector
+solves the boundary problem, with multiplier equal to the pole. -/
+theorem moreSorensen_zero_gradient_solution {Δ : ℝ} (hΔ : 0 ≤ Δ) :
+    ∃ s : E, ‖s‖ ≤ Δ ∧ IsTrustRegionMultiplier (0 : E) H Δ s (shiftThreshold hH) := by
+  by_cases hp : -leftmost hH ≤ 0
+  · have ht : shiftThreshold hH = 0 := max_eq_left hp
+    rw [ht]
+    exact ⟨0, by simpa using hΔ, le_rfl, by simp, isPositive_add_smul_of_le hp, zero_mul _⟩
+  · have hp' : 0 < -leftmost hH := lt_of_not_ge hp
+    have ht : shiftThreshold hH = -leftmost hH := max_eq_right hp'.le
+    rw [ht]
+    rcases subsingleton_or_nontrivial E with hE | hE
+    · rw [leftmost_eq_zero_of_subsingleton (hH := hH), neg_zero] at hp'
+      exact (lt_irrefl _ hp').elim
+    obtain ⟨i, hi⟩ := exists_eigenvalues_eq_leftmost (hH := hH)
+    let u : E := hH.eigenvectorBasis rfl i
+    have hu : ‖u‖ = 1 := (hH.eigenvectorBasis rfl).orthonormal.norm_eq_one i
+    have heig : H u = leftmost hH • u := by
+      rw [← hi]
+      exact hH.apply_eigenvectorBasis rfl i
+    have hnorm : ‖Δ • u‖ = Δ := by simp [norm_smul, abs_of_nonneg hΔ, hu]
+    have hsolve : (H + (-leftmost hH) • (1 : E →L[ℝ] E)) (Δ • u) = -(0 : E) := by
+      simp [add_apply, smul_apply, one_apply_eq_self, map_smul, heig, neg_smul]
+    exact ⟨Δ • u, hnorm.le, hp'.le, hsolve, isPositive_add_smul_of_le le_rfl, by simp [hnorm]⟩
 
 /-- An exact unit leftmost eigenvector provides a direction with the vanishing
 shifted curvature required in (7.3.16). This gives an eigensolver-based alternative

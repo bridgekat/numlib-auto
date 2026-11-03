@@ -31,3 +31,19 @@ source = "Conn–Gould–Toint, §7.3.7 (unit normalization)"
 [[node]]
 id = "linpackDirection_limit"
 source = "Conn–Gould–Toint, (7.3.16) (distance to the leftmost eigenspace and vanishing curvature)"
+
+[[node]]
+id = "failedCholeskyPivotDirection"
+source = "Conn–Gould–Toint, (7.3.17) (kernel equation restricted to the leading principal block)"
+
+[[node]]
+id = "failedCholeskyPivot_lower_bound"
+source = "Conn–Gould–Toint, §7.3.7, Algorithm 7.3.4 Steps 3c–d (Rayleigh lower bound on the pole)"
+
+[[node]]
+id = "failedCholeskyPivot_correction"
+source = "Conn–Gould–Toint, §7.3.7 (correction magnitude computed from the failed pivot)"
+
+[[node]]
+id = "failedCholeskyPivot_full_residual_counterexample"
+source = "Conn–Gould–Toint, (7.3.17) (counterexample to the full-matrix identity as printed)"
