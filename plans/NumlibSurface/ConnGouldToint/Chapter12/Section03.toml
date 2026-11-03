@@ -67,3 +67,55 @@ source = "Conn–Gould–Toint, Lemma 12.3.7 under a common limit active set and
 [[node]]
 id = "theorem_12_3_4_relaxed"
 source = "Conn–Gould–Toint, corrected relaxed criticality conclusion in Theorem 12.3.4"
+
+[[node]]
+id = "eventually_activeConstraintSet_eq_projectedGradientPath"
+source = "Conn–Gould–Toint, Section 12.3, identification at projected-gradient trials with bounded positive times"
+
+[[node]]
+id = "eventually_activeConstraintSet_eq_of_projectedGradient_residual"
+source = "Conn–Gould–Toint, Section 12.3, active-set identification from vanishing normalized projection displacement"
+
+[[node]]
+id = "eventually_activeConstraintSet_eq_of_small_Cauchy_radius"
+source = "Conn–Gould–Toint, Section 12.3, projected Cauchy trials with vanishing radii and radius-to-time ratio"
+
+[[node]]
+id = "cauchyDecrease_linear_of_tangentProjection_lower"
+source = "Conn–Gould–Toint, Section 12.3, linear-in-radius decrease when the trial tangent projection is bounded below"
+
+[[node]]
+id = "eventually_tangentProjection_lower_of_active_mismatch"
+source = "Conn–Gould–Toint, Section 12.3, strict complementarity separates missing active faces from small tangent gradients"
+
+[[node]]
+id = "eventually_verySuccessful_of_active_mismatch"
+source = "Conn–Gould–Toint, corrected small-radius success implication in Section 12.3"
+
+[[node]]
+id = "frequently_active_eq_at_Cauchy_trial_of_radius_tendsto_zero"
+source = "Conn–Gould–Toint, Section 12.3, arbitrarily late identified Cauchy trials at vanishing radii"
+
+[[node]]
+id = "prediction_le_of_common_center"
+source = "Conn–Gould–Toint, Section 12.3, comparison of successive trial predictions at a rejected center"
+
+[[node]]
+id = "eventually_rejection_then_identified"
+source = "Conn–Gould–Toint, corrected rejection transition in the proof of Lemma 12.3.7"
+
+[[node]]
+id = "frequently_successful_identified_of_radius_tendsto_zero"
+source = "Conn–Gould–Toint, corrected successful-trial subsequence in Lemma 12.3.7 at vanishing radii"
+
+[[node]]
+id = "eventually_CauchyTrial_preserves_active_face"
+source = "Conn–Gould–Toint, preservation of the limiting active set in Theorem 12.3.8"
+
+[[node]]
+id = "theorem_12_3_8_of_convergent_run_of_radius_tendsto_zero"
+source = "Conn–Gould–Toint, corrected Theorem 12.3.8 for convergent runs with vanishing radii"
+
+[[node]]
+id = "theorem_12_3_8_of_bounded_trial_times"
+source = "Conn–Gould–Toint, Theorem 12.3.8 for convergent runs with bounded positive projected trial times"

@@ -179,7 +179,12 @@ normal certificates. Corollary 12.3.9 assumes eventual identification.
 The local comparison in the proof of Theorem 12.3.4 uses the relaxed
 feasible set and a shifted displacement. A half-line example shows why
 the comparison cannot give the full-feasible bound from the trial
-conditions alone. The full run-based identification result remains open.
+conditions alone. A uniform tangent-gradient gap gives linear-in-radius
+model decrease and forces very successful misidentified trials. Theorem
+12.3.8 then proves eventual identification of both iterates and Cauchy points
+for convergent runs with vanishing radii. The bounded-positive-trial-time
+version also allows nonvanishing radii. General runs with several limit
+components or uncontrolled trial times remain open.
 Section 12.4 makes the identified-face trapping, feasible extension, and
 trial-segment Hessian agreement explicit. The corrected generalized eigenpoint
 test and decrease bound use the sign appropriate to negative curvature.

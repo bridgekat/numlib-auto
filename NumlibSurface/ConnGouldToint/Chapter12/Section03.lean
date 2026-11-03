@@ -1,5 +1,6 @@
 import NumlibSurface.ConnGouldToint.Chapter12.Section02
 import NumlibSurface.ConnGouldToint.Chapter06.Section04
+import NumlibSurface.ConnGouldToint.Chapter03.Section02
 import Mathlib.Analysis.InnerProductSpace.GramMatrix
 import Mathlib.Topology.Instances.Matrix
 import Mathlib.Topology.Connected.TotallyDisconnected
@@ -26,6 +27,18 @@ def HasStrictActiveMultipliers [Fintype ι] (c : ι → E → ℝ) (n : ι → E
     (∀ i ∈ activeConstraintSet c x, 0 < μ i) ∧
     ∀ i ∉ activeConstraintSet c x, μ i = 0
 
+omit [InnerProductSpace ℝ E] in
+private theorem eventually_activeConstraintSet_subset_of_tendsto [Fintype ι]
+    {α : Type*} {l : Filter α} {c : ι → E → ℝ} {u : α → E} {z : E}
+    (hc : ∀ i, Continuous (c i)) (hu : Tendsto u l (𝓝 z)) :
+    ∀ᶠ k in l, activeConstraintSet c (u k) ⊆ activeConstraintSet c z := by
+  refine (eventually_all.mpr fun i ↦ ?_).mono fun _ h i ↦ h i
+  by_cases hi : c i z = 0
+  · exact .of_forall fun _ _ ↦ hi
+  · have he := ((hc i).continuousAt.tendsto.comp hu).eventually
+      ((show IsOpen {r : ℝ | r ≠ 0} from isOpen_ne).mem_nhds hi)
+    exact he.mono fun _ hk hzero ↦ (hk hzero).elim
+
 /-- A supported normal representation near a strictly complementary point
 identifies the active set even when the represented vector is perturbed. -/
 theorem eventually_activeConstraintSet_eq_of_normal_representation [Fintype ι]
@@ -40,15 +53,8 @@ theorem eventually_activeConstraintSet_eq_of_normal_representation [Fintype ι]
   classical
   let w₀ : E × E := (x, g x)
   let J := activeConstraintSet c x
-  have hsub : ∀ᶠ y in 𝓝 x, activeConstraintSet c y ⊆ J := by
-    have h (i : ι) : ∀ᶠ y in 𝓝 x, i ∈ activeConstraintSet c y → i ∈ J := by
-      by_cases hi : i ∈ J
-      · exact Eventually.of_forall fun _ _ ↦ hi
-      · have hne : c i x ≠ 0 := hi
-        have ho := (show IsOpen {y : ℝ | y ≠ 0} from isOpen_ne).mem_nhds hne
-        have he : ∀ᶠ y in 𝓝 x, c i y ≠ 0 := (hc i).continuousAt ho
-        exact he.mono fun y hy hy' ↦ (hy hy').elim
-    exact (eventually_all.mpr h).mono fun y hy i ↦ hy i
+  have hsub : ∀ᶠ y in 𝓝 x, activeConstraintSet c y ⊆ J :=
+    eventually_activeConstraintSet_subset_of_tendsto hc tendsto_id
   let G (y : E × E) : Matrix J J ℝ := Matrix.gram ℝ (fun i : J ↦ n i y.1)
   let rhs (y : E × E) (i : J) := ⟪n i y.1, y.2⟫
   let a (y : E × E) := (G y)⁻¹ *ᵥ rhs y
@@ -126,6 +132,242 @@ theorem eventually_activeConstraintSet_eq_of_tendsto [Fintype ι] {α : Type*}
     (eventually_activeConstraintSet_eq_of_normal_representation hc hn hind hmul), hrep]
     with k hnear hrep
   exact hnear hrep
+
+open Optimization in
+private theorem exists_activeCoefficients_of_neg_mem_normal
+    [Fintype ι] [CompleteSpace E] [FiniteDimensional ℝ E]
+    {C : Set E} {c : ι → E → ℝ} {u v : E}
+    (hC : Chapter03.AC2 C) (hset : Chapter03.AC7 C c) (hu : u ∈ C)
+    (hQ : Chapter03.ActiveLinearizedConeMatches C c u)
+    (hvn : -v ∈ normalDirections C u) :
+    ∃ μ : ι → ℝ, v = ∑ i, μ i • gradient (c i) u ∧
+      ∀ i ∉ activeConstraintSet c u, μ i = 0 := by
+  classical
+  have hfeas : ∀ i, 0 ≤ c i (u) := by
+    rw [hset] at hu
+    exact hu
+  obtain ⟨μ, _, hμ⟩ := (Chapter03.theorem_3_2_10_normalCone hC hset hfeas hQ (-v)).mp hvn
+  let m (i : ι) := if hi : c i (u) = 0 then μ ⟨i, hi⟩ else 0
+  have hzsum : (∑ i : {i // c i (u) ≠ 0}, m i • gradient (c i) (u)) = 0 := by
+    apply Finset.sum_eq_zero
+    intro i _
+    simp [m, i.2]
+  have hsum : (∑ i : {i // c i (u) = 0}, μ i • gradient (c i) (u)) =
+      ∑ i, m i • gradient (c i) (u) := by
+    rw [← Fintype.sum_subtype_add_sum_subtype (fun i ↦ c i (u) = 0), hzsum, add_zero]
+    apply Finset.sum_congr rfl
+    intro i _
+    simp [m, i.2]
+  refine ⟨m, ?_, fun i hi ↦ dite_eq_right hi⟩
+  rw [← hsum]
+  simpa only [smul_neg, Finset.sum_neg_distrib, neg_inj, eq_comm] using hμ
+
+open Optimization ConvexAnalysis in
+private theorem sub_tangentProjection_mem_normal [CompleteSpace E] (C : Set E) (u d : E) :
+    d - bestApprox (tangentDirections C u) d ∈ normalDirections C u := by
+  let K := tangentDirections C u
+  let p := bestApprox K d
+  have hzero : (0 : E) ∈ K := by simp [K, tangentDirections, mem_polarCone]
+  have hcl : IsClosed K := isClosed_polarCone
+  have hconv : Convex ℝ K := convex_polarCone _ _
+  have hp : p ∈ K := bestApprox_mem ⟨0, hzero⟩ hcl hconv d
+  have hvar := inner_sub_bestApprox_le_zero ⟨0, hzero⟩ hcl hconv d
+  have h2p : (2 : ℝ) • p ∈ K := by
+    apply mem_polarCone.mpr
+    intro n hn
+    rw [innerₗ_apply_apply, real_inner_smul_right]
+    exact mul_nonpos_of_nonneg_of_nonpos (by norm_num) (mem_polarCone.mp hp n hn)
+  have horth : ⟪d - p, p⟫ = 0 := by
+    have hlo := hvar 0 hzero
+    have hhi := hvar ((2 : ℝ) • p) h2p
+    change ⟪d - p, 0 - p⟫ ≤ 0 at hlo
+    change ⟪d - p, (2 : ℝ) • p - p⟫ ≤ 0 at hhi
+    rw [zero_sub, inner_neg_right] at hlo
+    rw [inner_sub_right, real_inner_smul_right] at hhi
+    linarith
+  apply mem_normalDirections.mpr
+  intro y hy
+  have hdir : y - u ∈ K := by
+    exact mem_polarCone.mpr fun n hn ↦ mem_normalDirections.mp hn y hy
+  have hh := hvar (y - u) hdir
+  change ⟪d - p, y - u - p⟫ ≤ 0 at hh
+  rwa [inner_sub_right, horth, sub_zero] at hh
+
+open Optimization in
+/-- Strict complementarity gives a uniform tangent-gradient lower bound at
+nearby points with a different active set. The compared gradient is allowed
+to be evaluated at a separate convergent sequence of base points. -/
+theorem eventually_tangentProjection_lower_of_active_mismatch
+    [Fintype ι] [CompleteSpace E] [FiniteDimensional ℝ E] {α : Type*}
+    {l : Filter α} {C : Set E} {c : ι → E → ℝ} {f : E → ℝ}
+    {x u : α → E} {z : E}
+    (hC : Chapter03.AC2 C) (hset : Chapter03.AC7 C c)
+    (hc : ∀ i, Continuous (c i)) (hn : ∀ i, Continuous (gradient (c i)))
+    (hg : Continuous (gradient f))
+    (hind : LinearIndependent ℝ (fun i : activeConstraintSet c z ↦ gradient (c i) z))
+    (hmul : HasStrictActiveMultipliers c (fun i ↦ gradient (c i)) (gradient f) z)
+    (hx : Tendsto x l (𝓝 z)) (hu : Tendsto u l (𝓝 z))
+    (hfeas : ∀ᶠ k in l, u k ∈ C)
+    (hQ : ∀ᶠ k in l, Chapter03.ActiveLinearizedConeMatches C c (u k)) :
+    ∃ γ > 0, ∀ᶠ k in l, activeConstraintSet c (u k) ≠ activeConstraintSet c z →
+      γ ≤ ‖bestApprox (tangentDirections C (u k)) (-gradient f (x k))‖ := by
+  obtain ⟨ε, hε, hball⟩ := Metric.mem_nhds_iff.mp
+    (eventually_activeConstraintSet_eq_of_normal_representation hc hn hind hmul)
+  have hgx := hg.continuousAt.tendsto.comp hx
+  refine ⟨ε / 2, half_pos hε, ?_⟩
+  filter_upwards [hu.eventually (Metric.ball_mem_nhds z hε),
+    hgx.eventually (Metric.ball_mem_nhds (gradient f z) (half_pos hε)), hfeas, hQ]
+    with k huk hgk hk hQk
+  intro hneq
+  by_contra! hs
+  let p := bestApprox (tangentDirections C (u k)) (-gradient f (x k))
+  let v := gradient f (x k) + p
+  have hv : (u k, v) ∈ Metric.ball (z, gradient f z) ε := by
+    rw [Metric.mem_ball, Prod.dist_eq, max_lt_iff]
+    refine ⟨huk, ?_⟩
+    have hgk' : ‖gradient f (x k) - gradient f z‖ < ε / 2 := by
+      simpa only [Metric.mem_ball, dist_eq_norm, Function.comp_apply] using hgk
+    change dist v (gradient f z) < ε
+    rw [dist_eq_norm, show v - gradient f z = (gradient f (x k) - gradient f z) + p by
+      dsimp [v]; abel]
+    exact (norm_add_le _ _).trans_lt (by linarith only [hgk', hs])
+  have hvn : -v ∈ normalDirections C (u k) := by
+    simpa only [v, neg_add, ← sub_eq_add_neg, p] using
+      sub_tangentProjection_mem_normal C (u k) (-gradient f (x k))
+  exact hneq (hball hv (exists_activeCoefficients_of_neg_mem_normal hC hset hk hQk hvn))
+
+open Optimization in
+/-- A projected-gradient trial approaching a strictly complementary limit
+identifies its active set when its displacement divided by its time tends to zero.
+The active linearization qualification supplies the trial normal certificate. -/
+theorem eventually_activeConstraintSet_eq_of_projectedGradient_residual
+    [Fintype ι] [CompleteSpace E] [FiniteDimensional ℝ E] {α : Type*}
+    {l : Filter α} {C : Set E} {c : ι → E → ℝ} {f : E → ℝ}
+    {x : α → E} {t : α → ℝ} {z : E}
+    (hC : Chapter03.AC2 C) (hset : Chapter03.AC7 C c)
+    (hc : ∀ i, Continuous (c i)) (hn : ∀ i, Continuous (gradient (c i)))
+    (hg : Continuous (gradient f))
+    (hind : LinearIndependent ℝ (fun i : activeConstraintSet c z ↦ gradient (c i) z))
+    (hmul : HasStrictActiveMultipliers c (fun i ↦ gradient (c i)) (gradient f) z)
+    (hx : Tendsto x l (𝓝 z)) (ht : ∀ᶠ k in l, 0 < t k)
+    (hu : Tendsto (fun k ↦ projectedGradientPath C f (x k) (t k)) l (𝓝 z))
+    (huv : Tendsto (fun k ↦ (t k)⁻¹ •
+      (projectedGradientPath C f (x k) (t k) - x k)) l (𝓝 0))
+    (hQ : ∀ᶠ k in l, Chapter03.ActiveLinearizedConeMatches C c
+      (projectedGradientPath C f (x k) (t k))) :
+    ∀ᶠ k in l, activeConstraintSet c (projectedGradientPath C f (x k) (t k)) =
+      activeConstraintSet c z := by
+  classical
+  let u (k : α) := projectedGradientPath C f (x k) (t k)
+  let v (k : α) := gradient f (x k) + (t k)⁻¹ • (u k - x k)
+  have hgz : Tendsto (fun k ↦ gradient f (x k)) l (𝓝 (gradient f z)) :=
+    hg.continuousAt.tendsto.comp hx
+  have hv : Tendsto v l (𝓝 (gradient f z)) := by simpa only [add_zero] using hgz.add huv
+  apply eventually_activeConstraintSet_eq_of_tendsto hc hn hind hmul hu hv
+  filter_upwards [ht, hQ] with k htp hQk
+  have huk := projectedRay_mem hC.1 hC.2.1 hC.2.2 (x k) (-gradient f (x k)) (t k)
+  have hres := projectedRay_residual_mem_normal hC.1 hC.2.1 hC.2.2
+    (x k) (-gradient f (x k)) (t k)
+  have hvn : -v k ∈ normalDirections C (u k) := by
+    apply mem_normalDirections.mpr
+    intro y hy
+    have hh := mem_normalDirections.mp hres y hy
+    change ⟪x k + t k • (-gradient f (x k)) - u k, y - u k⟫ ≤ 0 at hh
+    have he : -v k = (t k)⁻¹ • (x k + t k • (-gradient f (x k)) - u k) := by
+      simp only [v, smul_sub, smul_add, smul_smul, inv_mul_cancel₀ htp.ne', one_smul]
+      module
+    rw [he, real_inner_smul_left]
+    exact mul_nonpos_of_nonneg_of_nonpos (inv_nonneg.mpr htp.le) hh
+  exact exists_activeCoefficients_of_neg_mem_normal hC hset huk hQk hvn
+
+open Optimization in
+/-- Near a strictly complementary limit, projected-gradient trials with times
+bounded above and away from zero identify the active set. The active
+linearization qualification at the trials supplies their normal certificates. -/
+theorem eventually_activeConstraintSet_eq_projectedGradientPath
+    [Fintype ι] [CompleteSpace E] [FiniteDimensional ℝ E] {α : Type*}
+    {l : Filter α} {C : Set E} {c : ι → E → ℝ} {f : E → ℝ}
+    {x : α → E} {t : α → ℝ} {z : E} {a b : ℝ}
+    (hC : Chapter03.AC2 C) (hset : Chapter03.AC7 C c) (hz : z ∈ C)
+    (hstat : -gradient f z ∈ normalDirections C z)
+    (hc : ∀ i, Continuous (c i)) (hn : ∀ i, Continuous (gradient (c i)))
+    (hg : Continuous (gradient f))
+    (hind : LinearIndependent ℝ (fun i : activeConstraintSet c z ↦ gradient (c i) z))
+    (hmul : HasStrictActiveMultipliers c (fun i ↦ gradient (c i)) (gradient f) z)
+    (hx : Tendsto x l (𝓝 z)) (ha : 0 < a)
+    (ht : ∀ᶠ k in l, a ≤ t k ∧ t k ≤ b)
+    (hQ : ∀ᶠ k in l, Chapter03.ActiveLinearizedConeMatches C c
+      (projectedGradientPath C f (x k) (t k))) :
+    ∀ᶠ k in l, activeConstraintSet c (projectedGradientPath C f (x k) (t k)) =
+      activeConstraintSet c z := by
+  let u (k : α) := projectedGradientPath C f (x k) (t k)
+  have hgz : Tendsto (fun k ↦ gradient f (x k)) l (𝓝 (gradient f z)) :=
+    hg.continuousAt.tendsto.comp hx
+  have hu : Tendsto u l (𝓝 z) := by
+    apply tendsto_iff_norm_sub_tendsto_zero.mpr
+    refine squeeze_zero' (.of_forall fun _ ↦ norm_nonneg _)
+      (g := fun k ↦ ‖x k - z‖ + b * ‖gradient f (x k) - gradient f z‖) ?_ ?_
+    · filter_upwards [ht] with k hk
+      have htz := (projectedRay_eq_self_iff hC.1 hC.2.1 hC.2.2 hz).mpr hstat
+        (t k) (ha.le.trans hk.1)
+      calc
+        ‖u k - z‖ ≤ ‖(x k + t k • (-gradient f (x k))) -
+            (z + t k • (-gradient f z))‖ := by
+          conv_lhs => rw [← htz]
+          exact norm_bestApprox_sub_bestApprox_le hC.1 hC.2.1 hC.2.2 _ _
+        _ = ‖(x k - z) - t k • (gradient f (x k) - gradient f z)‖ := by
+          congr 1
+          module
+        _ ≤ _ := by
+          refine (norm_sub_le _ _).trans (add_le_add_right ?_ _)
+          rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg (ha.le.trans hk.1)]
+          exact mul_le_mul_of_nonneg_right hk.2 (norm_nonneg _)
+    · simpa only [mul_zero, add_zero] using
+        (tendsto_iff_norm_sub_tendsto_zero.mp hx).add
+          ((tendsto_iff_norm_sub_tendsto_zero.mp hgz).const_mul b)
+  have huv : Tendsto (fun k ↦ (t k)⁻¹ • (u k - x k)) l (𝓝 0) := by
+    have hux : Tendsto (fun k ↦ u k - x k) l (𝓝 0) := by simpa using hu.sub hx
+    refine squeeze_zero_norm' (a := fun k ↦ a⁻¹ * ‖u k - x k‖) ?_ ?_
+    · filter_upwards [ht] with k hk
+      rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg (inv_nonneg.mpr (ha.le.trans hk.1))]
+      exact mul_le_mul_of_nonneg_right (inv_le_inv₀ (ha.trans_le hk.1) ha |>.2 hk.1)
+        (norm_nonneg _)
+    · simpa only [mul_zero] using
+        (tendsto_zero_iff_norm_tendsto_zero.mp hux).const_mul a⁻¹
+  exact eventually_activeConstraintSet_eq_of_projectedGradient_residual hC hset hc hn hg hind
+    hmul hx (ht.mono fun _ hk ↦ ha.trans_le hk.1) hu huv hQ
+
+open Optimization in
+/-- Cauchy trials identify the active set near a strictly complementary limit
+when the radius and the radius divided by the trial time both vanish. -/
+theorem eventually_activeConstraintSet_eq_of_small_Cauchy_radius
+    [Fintype ι] [CompleteSpace E] [FiniteDimensional ℝ E] {α : Type*}
+    {l : Filter α} {C : Set E} {c : ι → E → ℝ} {f : E → ℝ}
+    {x : α → E} {t Δ : α → ℝ} {z : E}
+    (hC : Chapter03.AC2 C) (hset : Chapter03.AC7 C c)
+    (hc : ∀ i, Continuous (c i)) (hn : ∀ i, Continuous (gradient (c i)))
+    (hg : Continuous (gradient f))
+    (hind : LinearIndependent ℝ (fun i : activeConstraintSet c z ↦ gradient (c i) z))
+    (hmul : HasStrictActiveMultipliers c (fun i ↦ gradient (c i)) (gradient f) z)
+    (hx : Tendsto x l (𝓝 z)) (ht : ∀ᶠ k in l, 0 < t k)
+    (hΔ : Tendsto Δ l (𝓝 0)) (hratio : Tendsto (fun k ↦ Δ k / t k) l (𝓝 0))
+    (hstep : ∀ᶠ k in l, ‖projectedGradientPath C f (x k) (t k) - x k‖ ≤ Δ k)
+    (hQ : ∀ᶠ k in l, Chapter03.ActiveLinearizedConeMatches C c
+      (projectedGradientPath C f (x k) (t k))) :
+    ∀ᶠ k in l, activeConstraintSet c (projectedGradientPath C f (x k) (t k)) =
+      activeConstraintSet c z := by
+  let u (k : α) := projectedGradientPath C f (x k) (t k)
+  have hux : Tendsto (fun k ↦ u k - x k) l (𝓝 0) := squeeze_zero_norm' hstep hΔ
+  have hu : Tendsto u l (𝓝 z) := by
+    simpa only [sub_add_cancel, zero_add] using hux.add hx
+  have huv : Tendsto (fun k ↦ (t k)⁻¹ • (u k - x k)) l (𝓝 0) := by
+    refine squeeze_zero_norm' (a := fun k ↦ Δ k / t k) ?_ hratio
+    filter_upwards [ht, hstep] with k htk hsk
+    rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg (inv_nonneg.mpr htk.le),
+      mul_comm, ← div_eq_mul_inv]
+    exact div_le_div_of_nonneg_right hsk htk.le
+  exact eventually_activeConstraintSet_eq_of_projectedGradient_residual
+    hC hset hc hn hg hind hmul hx ht hu huv hQ
 
 /-- The active set is locally constant relative to a set of strictly
 complementary stationary points with independent active normals. -/
@@ -424,6 +666,533 @@ theorem theorem_12_3_4_relaxed [CompleteSpace E] {R : Set E} {f : E → ℝ} {x 
   have hb := relaxedCriticality_lower_bound_of_nearby (f := f) hd hdnorm hxz
   have hχ : ε ≤ criticality R f x 1 := by linarith
   exact le_min hε hχ
+
+open Optimization in
+/-- At small radii, a Cauchy trial with a tangent-gradient lower bound yields
+model decrease linear in the radius. This estimate uses the actual feasible
+trial and does not compare full and relaxed criticality measures. -/
+theorem cauchyDecrease_linear_of_tangentProjection_lower [CompleteSpace E]
+    (P : GeneralizedCauchyParams) {C : Set E} (hclosed : IsClosed C) (hconv : Convex ℝ C)
+    {f m : E → ℝ} {x u : E} (hx : x ∈ C) {Δ β γ : ℝ}
+    (hΔ : 0 < Δ) (hβ : 0 < β) (hγ : 0 < γ)
+    (hsmall : β * Δ / 2 < (1 - P.lowerSlope) * γ)
+    (hc : IsApproxGeneralizedCauchyPoint P C f m x Δ u)
+    (hproj : γ ≤ ‖bestApprox (tangentDirections C u) (-gradient f x)‖)
+    (hTaylor : m u - (m x + ⟪gradient f x, u - x⟫) ≤ β * ‖u - x‖ ^ 2 / 2) :
+    P.upperSlope * (P.radiusFraction * γ) * Δ ≤ m x - m u := by
+  obtain ⟨t, ht, rfl, hball, hupper, hstop⟩ := hc
+  let u := projectedGradientPath C f x t
+  let r := ‖u - x‖
+  let L := -⟪gradient f x, u - x⟫
+  have hspeed : γ ≤ r / t :=
+    hproj.trans (norm_tangentProjection_projectedRay_le ⟨x, hx⟩ hclosed hconv x
+      (-gradient f x) ht)
+  have hrpos : 0 < r := (div_pos_iff_of_pos_right ht).mp (hγ.trans_le hspeed)
+  have hvar := mem_normalDirections.mp
+    (projectedRay_residual_mem_normal ⟨x, hx⟩ hclosed hconv x (-gradient f x) t) x hx
+  change ⟪x + t • (-gradient f x) - u, x - u⟫ ≤ 0 at hvar
+  rw [show x + t • (-gradient f x) - u = t • (-gradient f x) - (u - x) by abel,
+    show x - u = -(u - x) by abel, inner_neg_right, neg_nonpos, inner_sub_left,
+    real_inner_smul_left, inner_neg_left, real_inner_self_eq_norm_sq, sub_nonneg] at hvar
+  have hlin : γ * r ≤ L := by
+    have htγ := (le_div_iff₀ ht).mp hspeed
+    apply (le_of_mul_le_mul_left _ ht)
+    calc
+      t * (γ * r) = (γ * t) * r := by ring
+      _ ≤ r * r := mul_le_mul_of_nonneg_right htγ hrpos.le
+      _ ≤ t * L := by simpa only [pow_two, L] using hvar
+  have hL : 0 ≤ L := (mul_nonneg hγ.le hrpos.le).trans hlin
+  have hgoal : P.radiusFraction * γ * Δ ≤ L := by
+    rcases hstop with hR | hlow | hend
+    · calc
+        _ = γ * (P.radiusFraction * Δ) := by ring
+        _ ≤ γ * r := mul_le_mul_of_nonneg_left hR hγ.le
+        _ ≤ L := hlin
+    · exfalso
+      have hrel : (1 - P.lowerSlope) * L ≤ β * r ^ 2 / 2 := by
+        dsimp only [L, r]
+        linarith only [hTaylor, hlow]
+      have hrel' := (mul_le_mul_of_nonneg_left hlin (sub_nonneg.mpr P.lower_lt_one.le)).trans hrel
+      have hball' : r ≤ Δ := hball
+      have hmul := mul_le_mul_of_nonneg_left hball' (half_pos hβ).le
+      have hsmall' : β / 2 * Δ < (1 - P.lowerSlope) * γ := by
+        simpa only [div_mul_eq_mul_div] using hsmall
+      have hstrict := mul_lt_mul_of_pos_right (hmul.trans_lt hsmall') hrpos
+      nlinarith only [hstrict, hrel']
+    · have hbound : γ ≤ P.endpointFactor * (L / Δ) := by
+        apply hproj.trans
+        have hAbs : |⟪gradient f x, u - x⟫| = L := abs_of_nonpos (neg_nonneg.mp hL)
+        rw [← hAbs]
+        exact hend
+      have hcoeff : P.radiusFraction * P.endpointFactor ≤ 1 :=
+        (mul_le_mul P.fraction_lt_one.le (P.endpoint_lt_half.le.trans (by norm_num))
+          P.endpoint_pos.le (by norm_num)).trans_eq (one_mul 1)
+      have htimes := mul_le_mul_of_nonneg_right hbound hΔ.le
+      rw [mul_assoc, div_mul_cancel₀ _ hΔ.ne'] at htimes
+      calc
+        _ = P.radiusFraction * (γ * Δ) := by ring
+        _ ≤ P.radiusFraction * (P.endpointFactor * L) :=
+          mul_le_mul_of_nonneg_left htimes P.fraction_pos.le
+        _ ≤ L := by
+          rw [← mul_assoc]
+          exact mul_le_of_le_one_left hL hcoeff
+  calc
+    _ = P.upperSlope * (P.radiusFraction * γ * Δ) := by ring
+    _ ≤ P.upperSlope * L := mul_le_mul_of_nonneg_left hgoal P.upper_pos.le
+    _ ≤ _ := by
+      change m u ≤ m x + P.upperSlope * ⟪gradient f x, u - x⟫ at hupper
+      dsimp only [L]
+      linarith only [hupper]
+
+open Optimization Chapter06 in
+/-- At vanishing radii near a strictly complementary limit, a misidentified
+Cauchy trial is very successful whenever the chosen step improves the Cauchy
+model value. The proof uses a tangent-gradient gap at the trial. -/
+theorem eventually_verySuccessful_of_active_mismatch [Fintype ι] [CompleteSpace E]
+    [FiniteDimensional ℝ E] {α : Type*} {l : Filter α} {C : Set E} {c : ι → E → ℝ}
+    {f : E → ℝ} {m : α → E → ℝ} {x u s : α → E} {z : E} {Δ : α → ℝ}
+    (Q : GeneralizedCauchyParams) (P : BTRParams)
+    (hC : Chapter03.AC2 C) (hset : Chapter03.AC7 C c)
+    (hc : ∀ i, Continuous (c i)) (hn : ∀ i, Continuous (gradient (c i)))
+    (hg : Continuous (gradient f))
+    (hind : LinearIndependent ℝ (fun i : activeConstraintSet c z ↦ gradient (c i) z))
+    (hmul : HasStrictActiveMultipliers c (fun i ↦ gradient (c i)) (gradient f) z)
+    (hx : Tendsto x l (𝓝 z)) (hu : Tendsto u l (𝓝 z)) (hΔ : Tendsto Δ l (𝓝 0))
+    (hQ : ∀ᶠ k in l, Chapter03.ActiveLinearizedConeMatches C c (u k))
+    {β B : ℝ} (hβ : 0 < β)
+    (htrial : ∀ᶠ k in l, x k ∈ C ∧ 0 < Δ k ∧
+      IsApproxGeneralizedCauchyPoint Q C f (m k) (x k) (Δ k) (u k))
+    (hTaylor : ∀ᶠ k in l, m k (u k) - (m k (x k) + ⟪gradient f (x k), u k - x k⟫) ≤
+      β * ‖u k - x k‖ ^ 2 / 2)
+    (hfit : ∀ᶠ k in l, f (x k) = m k (x k) ∧ m k (x k + s k) ≤ m k (u k) ∧
+      |f (x k + s k) - m k (x k + s k)| ≤ B * Δ k ^ 2) :
+    ∃ κ > 0, ∀ᶠ k in l, activeConstraintSet c (u k) ≠ activeConstraintSet c z →
+      κ * Δ k ≤ m k (x k) - m k (x k + s k) ∧
+      P.η₂ ≤ btrRatio f (m k) (x k) (s k) := by
+  have hfeas : ∀ᶠ k in l, u k ∈ C := htrial.mono fun k ⟨_, _, t, _, hut, _⟩ ↦
+    hut.symm ▸ projectedRay_mem hC.1 hC.2.1 hC.2.2 (x k) (-gradient f (x k)) t
+  obtain ⟨γ, hγ, hgap⟩ := eventually_tangentProjection_lower_of_active_mismatch
+    hC hset hc hn hg hind hmul hx hu hfeas hQ
+  let κ := Q.upperSlope * (Q.radiusFraction * γ)
+  have hκ : 0 < κ := mul_pos Q.upper_pos (mul_pos Q.fraction_pos hγ)
+  have ht₁ : ∀ᶠ k in l, β * Δ k / 2 < (1 - Q.lowerSlope) * γ := by
+    have hpos := mul_pos (sub_pos.mpr Q.lower_lt_one) hγ
+    have ht := ((hΔ.const_mul β).div_const (2 : ℝ)).eventually
+      (gt_mem_nhds (show (β * 0 / 2 : ℝ) < _ by simpa using hpos))
+    exact ht
+  have ht₂ : ∀ᶠ k in l, B * Δ k ≤ (1 - P.η₂) * κ := by
+    have hpos := mul_pos (sub_pos.mpr P.eta₂_lt_one) hκ
+    exact ((hΔ.const_mul B).eventually
+      (gt_mem_nhds (show B * 0 < _ by simpa using hpos))).mono fun _ hk ↦ hk.le
+  refine ⟨κ, hκ, ?_⟩
+  filter_upwards [htrial, hTaylor, hfit, hgap, ht₁, ht₂]
+    with k ⟨hkx, hkΔ, hkC⟩ hTk ⟨hvk, hmk, hek⟩ hgk ht₁k ht₂k
+  intro hneq
+  have hdec := cauchyDecrease_linear_of_tangentProjection_lower
+    Q hC.2.1 hC.2.2 hkx hkΔ hβ hγ ht₁k hkC (hgk hneq) hTk
+  have hpred : κ * Δ k ≤ m k (x k) - m k (x k + s k) := hdec.trans (sub_le_sub_left hmk _)
+  have hpredpos := (mul_pos hκ hkΔ).trans_le hpred
+  have herr' : |f (x k + s k) - (f (x k) - (m k (x k) - m k (x k + s k)))| ≤
+      (1 - P.η₂) * (m k (x k) - m k (x k + s k)) := by
+    rw [hvk, sub_sub_cancel]
+    apply hek.trans
+    have hp₁ := mul_le_mul_of_nonneg_right ht₂k hkΔ.le
+    have hp₂ := mul_le_mul_of_nonneg_left hpred (sub_nonneg.mpr P.eta₂_lt_one.le)
+    nlinarith only [hp₁, hp₂]
+  exact ⟨hpred, by simpa [btrRatio] using le_reductionRatio_of_abs_sub_le hpredpos herr'⟩
+
+omit [NormedAddCommGroup E] [InnerProductSpace ℝ E] in
+open Chapter06 in
+/-- With positive radii converging to zero, arbitrarily late Cauchy trials
+identify the target face if each misidentified trial is very successful. -/
+theorem frequently_active_eq_at_Cauchy_trial_of_radius_tendsto_zero
+    {P : BTRParams} {ρ Δ : ℕ → ℝ} {u : ℕ → E} {c : ι → E → ℝ} {A : Set ι}
+    (hΔ : Tendsto Δ atTop (𝓝 0)) (hpos : ∀ k, 0 < Δ k)
+    (hupdate : ∀ k, BTRRadiusUpdate P (ρ k) (Δ k) (Δ (k + 1)))
+    (hmiss : ∀ᶠ k in atTop, activeConstraintSet c (u k) ≠ A → P.η₂ ≤ ρ k) :
+    ∃ᶠ k in atTop, activeConstraintSet c (u k) = A := by
+  by_contra! hbad
+  obtain ⟨N, hN⟩ := eventually_atTop.mp
+    (hmiss.and hbad)
+  have hmono (j : ℕ) : Δ N ≤ Δ (N + j) := by
+    induction j with
+    | zero => simp
+    | succ j ih =>
+      have hk := hN (N + j) (Nat.le_add_right _ _)
+      exact ih.trans ((hupdate (N + j)).very_successful (hk.1 hk.2))
+  obtain ⟨M, hM⟩ := eventually_atTop.mp (hΔ.eventually (gt_mem_nhds (hpos N)))
+  exact (not_lt_of_ge (hmono M)) (hM (N + M) (Nat.le_add_left _ _))
+
+open Optimization in
+/-- At a common center, a rejected trial whose endpoint has an accurate
+normal vector cannot have a prediction much smaller than the next trial's. -/
+theorem prediction_le_of_common_center {C : Set E}
+    {m m' : E → ℝ} {x s s' g n : E} {e e' : ℝ}
+    (hfeas : x + s' ∈ C) (hn : n ∈ normalDirections C (x + s))
+    (he : |m (x + s) - m x - ⟪g, s⟫| ≤ e)
+    (he' : |m' (x + s') - m' x - ⟪g, s'⟫| ≤ e') :
+    m' x - m' (x + s') ≤ m x - m (x + s) + e + e' + ‖-g - n‖ * ‖s' - s‖ := by
+  have hnormal := mem_normalDirections.mp hn (x + s') hfeas
+  rw [add_sub_add_left_eq_sub] at hnormal
+  have he₁ := le_trans (le_abs_self _) he
+  have he₂ := (neg_le_neg he').trans (neg_abs_le _)
+  have hlinear : ⟪-g, s' - s⟫ ≤ ‖-g - n‖ * ‖s' - s‖ := calc
+    _ = ⟪-g - n, s' - s⟫ + ⟪n, s' - s⟫ := by rw [inner_sub_left]; ring
+    _ ≤ ⟪-g - n, s' - s⟫ := add_le_of_nonpos_right hnormal
+    _ ≤ _ := real_inner_le_norm _ _
+  rw [inner_neg_left, inner_sub_right] at hlinear
+  linarith only [he₁, he₂, hlinear]
+
+open Optimization in
+private theorem exists_continuous_normal_on_active_face [Fintype ι] [CompleteSpace E]
+    {C : Set E} {c : ι → E → ℝ} {f : E → ℝ} {z : E}
+    (hn : ∀ i, Continuous (gradient (c i)))
+    (hstat : HasStrictActiveMultipliers c (fun i ↦ gradient (c i)) (gradient f) z)
+    (hnormal : ∀ y ∈ C, ∀ i ∈ activeConstraintSet c y,
+      -gradient (c i) y ∈ normalDirections C y) :
+    ∃ w : E → E, Continuous w ∧ w z = -gradient f z ∧
+      ∀ y ∈ C, activeConstraintSet c y = activeConstraintSet c z →
+        w y ∈ normalDirections C y := by
+  obtain ⟨μ, hμ, hμpos, hμzero⟩ := hstat
+  let w (v : E) := ∑ i, μ i • (-gradient (c i) v)
+  refine ⟨w, continuous_finsetSum _ (fun i _ ↦ continuous_const.smul (hn i).neg), ?_, ?_⟩
+  · simp only [w, smul_neg, Finset.sum_neg_distrib, ← hμ]
+  · intro y hy hA
+    apply mem_normalDirections.mpr
+    intro q hq
+    change ⟪∑ i, μ i • (-gradient (c i) y), q - y⟫ ≤ 0
+    rw [sum_inner]
+    apply Finset.sum_nonpos
+    intro i _
+    rw [real_inner_smul_left]
+    by_cases hi : i ∈ activeConstraintSet c z
+    · exact mul_nonpos_of_nonneg_of_nonpos (hμpos i hi).le
+        (mem_normalDirections.mp (hnormal _ hy i (hA.symm ▸ hi)) q hq)
+    · rw [hμzero i hi, zero_mul]
+
+open Optimization in
+/-- Once a nearby base point has the limiting active set, its Cauchy trial
+retains that set provided the trial also approaches the same limit. -/
+theorem eventually_CauchyTrial_preserves_active_face [Fintype ι] [CompleteSpace E]
+    [FiniteDimensional ℝ E] {α : Type*} {l : Filter α} {C : Set E} {c : ι → E → ℝ}
+    {f : E → ℝ} {x u : α → E} {z : E}
+    (hC : Chapter03.AC2 C) (hset : Chapter03.AC7 C c)
+    (hc : ∀ i, Continuous (c i)) (hn : ∀ i, Continuous (gradient (c i)))
+    (hg : Continuous (gradient f))
+    (hind : LinearIndependent ℝ (fun i : activeConstraintSet c z ↦ gradient (c i) z))
+    (hmul : HasStrictActiveMultipliers c (fun i ↦ gradient (c i)) (gradient f) z)
+    (hnormal : ∀ y ∈ C, ∀ i ∈ activeConstraintSet c y,
+      -gradient (c i) y ∈ normalDirections C y)
+    (hx : Tendsto x l (𝓝 z)) (hu : Tendsto u l (𝓝 z))
+    (hQ : ∀ᶠ k in l, Chapter03.ActiveLinearizedConeMatches C c (u k))
+    (htrial : ∀ᶠ k in l, x k ∈ C ∧
+      ∃ t > 0, u k = projectedGradientPath C f (x k) t) :
+    ∀ᶠ k in l, activeConstraintSet c (x k) = activeConstraintSet c z →
+      activeConstraintSet c (u k) = activeConstraintSet c z := by
+  have hfeas : ∀ᶠ k in l, u k ∈ C := htrial.mono fun k ⟨_, t, _, hut⟩ ↦
+    hut.symm ▸ projectedRay_mem hC.1 hC.2.1 hC.2.2 (x k) (-gradient f (x k)) t
+  obtain ⟨γ, hγ, hgap⟩ := eventually_tangentProjection_lower_of_active_mismatch
+    hC hset hc hn hg hind hmul hx hu hfeas hQ
+  obtain ⟨w, hw, hwz, hwn⟩ := exists_continuous_normal_on_active_face hn hmul hnormal
+  have hlim : Tendsto (fun k ↦ ‖-gradient f (x k) - w (x k)‖) l (𝓝 0) := by
+    simpa only [hwz, sub_self, norm_zero, Function.comp_apply] using
+      ((hg.continuousAt.tendsto.comp hx).neg.sub (hw.continuousAt.tendsto.comp hx)).norm
+  filter_upwards [htrial, hgap, hlim.eventually (gt_mem_nhds hγ)]
+    with k ⟨hk, t, ht, hut⟩ hgapk hsmall
+  intro hA
+  by_contra! hbad
+  have hfix := (projectedRay_eq_self_iff hC.1 hC.2.1 hC.2.2 hk).mpr (hwn _ hk hA) t ht.le
+  have hdist : ‖u k - x k‖ ≤ t * ‖-gradient f (x k) - w (x k)‖ := by
+    calc
+      ‖u k - x k‖ = ‖bestApprox C (x k + t • (-gradient f (x k))) -
+          bestApprox C (x k + t • w (x k))‖ :=
+        congrArg₂ (fun a b : E ↦ ‖a - b‖) hut hfix.symm
+      _ ≤ _ := by
+        refine (norm_bestApprox_sub_bestApprox_le hC.1 hC.2.1 hC.2.2 _ _).trans_eq ?_
+        rw [add_sub_add_left_eq_sub, ← smul_sub, norm_smul, Real.norm_eq_abs, abs_of_pos ht]
+  have hspeed := norm_tangentProjection_projectedRay_le
+    hC.1 hC.2.1 hC.2.2 (x k) (-gradient f (x k)) ht
+  rw [← show u k = projectedRay C (x k) (-gradient f (x k)) t from hut] at hspeed
+  have hle : ‖u k - x k‖ / t ≤ ‖-gradient f (x k) - w (x k)‖ :=
+    (div_le_iff₀ ht).mpr (by simpa only [mul_comm] using hdist)
+  exact (not_lt_of_ge ((hgapk hbad).trans (hspeed.trans hle))) hsmall
+
+open Optimization Chapter06 in
+/-- A rejection cannot immediately precede a misidentified Cauchy trial
+near a strictly complementary limit at vanishing radii. The old endpoint
+inherits the identified Cauchy face, allowing comparison at the common center. -/
+theorem eventually_rejection_then_identified [Fintype ι] [CompleteSpace E]
+    {C : Set E} {c : ι → E → ℝ} {f : E → ℝ} {P : BTRParams}
+    {sufficient : ℕ → (E → ℝ) → E → E → Prop}
+    (run : BTRRun f P sufficient) {u : ℕ → E} {z : E}
+    (hg : Continuous (gradient f)) (hn : ∀ i, Continuous (gradient (c i)))
+    (hstat : HasStrictActiveMultipliers c (fun i ↦ gradient (c i)) (gradient f) z)
+    (hnormal : ∀ y ∈ C, ∀ i ∈ activeConstraintSet c y,
+      -gradient (c i) y ∈ normalDirections C y)
+    (hx : Tendsto run.x atTop (𝓝 z)) (hΔ : Tendsto run.Δ atTop (𝓝 0))
+    (hstep : ∀ k, ‖run.s k‖ ≤ run.Δ k)
+    (hfeas : ∀ k, run.x k + run.s k ∈ C)
+    (hface : ∀ᶠ k in atTop, activeConstraintSet c (u k) = activeConstraintSet c z →
+      activeConstraintSet c (run.x k + run.s k) = activeConstraintSet c z)
+    {β B κ : ℝ} (hβ : 0 ≤ β) (hκ : 0 < κ)
+    (hTaylor : ∀ k, |run.model k (run.x k + run.s k) - run.model k (run.x k) -
+      ⟪gradient f (run.x k), run.s k⟫| ≤ β * run.Δ k ^ 2)
+    (hval : ∀ k, f (run.x k) = run.model k (run.x k))
+    (herr : ∀ k, |f (run.x k + run.s k) - run.model k (run.x k + run.s k)| ≤ B * run.Δ k ^ 2)
+    (hmiss : ∀ᶠ k in atTop, activeConstraintSet c (u k) ≠ activeConstraintSet c z →
+      κ * run.Δ k ≤ run.model k (run.x k) - run.model k (run.x k + run.s k) ∧
+      k ∈ run.verySuccessful) :
+    ∀ᶠ k in atTop, k ∉ run.successful →
+      activeConstraintSet c (u (k + 1)) = activeConstraintSet c z := by
+  obtain ⟨w, hw, hwz, hwn⟩ := exists_continuous_normal_on_active_face hn hstat hnormal
+  let y (k : ℕ) := run.x k + run.s k
+  have hsn : Tendsto run.s atTop (𝓝 0) := squeeze_zero_norm hstep hΔ
+  have hy : Tendsto y atTop (𝓝 z) := by simpa only [add_zero] using hx.add hsn
+  let d (k : ℕ) := ‖-gradient f (run.x k) - w (y k)‖
+  have hd : Tendsto d atTop (𝓝 0) := by
+    simpa only [d, hwz, sub_self, norm_zero, Function.comp_apply] using
+      ((hg.continuousAt.tendsto.comp hx).neg.sub (hw.continuousAt.tendsto.comp hy)).norm
+  let a := κ * P.γ₁ / 2
+  have ha : 0 < a := half_pos (mul_pos hκ P.gamma₁_pos)
+  have hsmall₁ : ∀ᶠ k in atTop, 2 * β * run.Δ k + 2 * d k < a := by
+    have hlim := (hΔ.const_mul (2 * β)).add (hd.const_mul 2)
+    have hlim' : Tendsto (fun k ↦ 2 * β * run.Δ k + 2 * d k) atTop (𝓝 0) := by
+      simpa only [mul_zero, add_zero] using hlim
+    exact hlim'.eventually (gt_mem_nhds ha)
+  have hsmall₂ : ∀ᶠ k in atTop, B * run.Δ k < (1 - P.η₁) * a := by
+    have hpos := mul_pos (sub_pos.mpr (P.eta₁_le_eta₂.trans_lt P.eta₂_lt_one)) ha
+    have hlim : Tendsto (fun k ↦ B * run.Δ k) atTop (𝓝 0) := by
+      simpa only [mul_zero] using hΔ.const_mul B
+    exact hlim.eventually (gt_mem_nhds hpos)
+  have hsuc : Tendsto (fun k : ℕ ↦ k + 1) atTop atTop :=
+    tendsto_atTop_mono (fun k ↦ Nat.le_succ k) tendsto_id
+  filter_upwards [hmiss, hsuc.eventually hmiss, hsmall₁, hsmall₂, hface]
+    with k hmk hmk' hs₁ hs₂ hfacek
+  intro hreject
+  by_contra! hbad
+  have hcenter := run.iterate_eq_of_unsuccessful hreject
+  have hsame : activeConstraintSet c (y k) = activeConstraintSet c z := by
+    apply hfacek
+    by_contra! hbad
+    exact hreject (run.verySuccessful_subset_successful (hmk hbad).2)
+  have hr := (run.radius_update k).unsuccessful (lt_of_not_ge hreject)
+  have hrad : run.Δ (k + 1) ≤ run.Δ k :=
+    hr.2.trans (mul_le_of_le_one_left (run.delta_pos k).le P.gamma₂_lt_one.le)
+  have hpredNew := (hmk' hbad).1
+  have hTaylorNew := hTaylor (k + 1)
+  rw [hcenter] at hpredNew hTaylorNew
+  have hnewFeas := hfeas (k + 1)
+  rw [hcenter] at hnewFeas
+  have hcmp := prediction_le_of_common_center hnewFeas (hwn _ (hfeas k) hsame) (hTaylor k) hTaylorNew
+  have hdist : ‖run.s (k + 1) - run.s k‖ ≤ 2 * run.Δ k := by
+    calc
+      _ ≤ ‖run.s (k + 1)‖ + ‖run.s k‖ := norm_sub_le _ _
+      _ ≤ run.Δ k + run.Δ k := add_le_add ((hstep _).trans hrad) (hstep _)
+      _ = _ := by ring
+  have hsq : β * run.Δ (k + 1) ^ 2 ≤ β * run.Δ k ^ 2 :=
+    mul_le_mul_of_nonneg_left (pow_le_pow_left₀ (run.delta_pos _).le hrad _) hβ
+  have hdterm := mul_le_mul_of_nonneg_left hdist (norm_nonneg
+    (-gradient f (run.x k) - w (y k)))
+  have hlow := (mul_le_mul_of_nonneg_left hr.1 hκ.le).trans hpredNew
+  have hbudget := mul_lt_mul_of_pos_right hs₁ (run.delta_pos k)
+  have hpred : a * run.Δ k ≤ run.model k (run.x k) - run.model k (y k) := by
+    change _ ≤ run.model k (run.x k) - run.model k (run.x k + run.s k)
+    change d k * ‖run.s (k + 1) - run.s k‖ ≤ d k * (2 * run.Δ k) at hdterm
+    change _ ≤ _ + _ + _ + d k * ‖run.s (k + 1) - run.s k‖ at hcmp
+    dsimp only [a] at hbudget ⊢
+    nlinarith only [hcmp, hsq, hdterm, hlow, hbudget]
+  have hp := (mul_pos ha (run.delta_pos k)).trans_le hpred
+  have he : |f (y k) - (f (run.x k) - (run.model k (run.x k) - run.model k (y k)))| ≤
+      (1 - P.η₁) * (run.model k (run.x k) - run.model k (y k)) := by
+    rw [hval k, sub_sub_cancel]
+    apply (herr k).trans
+    have h₁ := mul_le_mul_of_nonneg_right hs₂.le (run.delta_pos k).le
+    have h₂ := mul_le_mul_of_nonneg_left hpred
+      (sub_nonneg.mpr (P.eta₁_le_eta₂.trans P.eta₂_lt_one.le))
+    nlinarith only [h₁, h₂]
+  apply hreject
+  simpa [BTRRun.successful, btrRatio, y] using le_reductionRatio_of_abs_sub_le hp he
+
+omit [NormedAddCommGroup E] [InnerProductSpace ℝ E] in
+open Chapter06 in
+/-- At vanishing radii there are arbitrarily late identified successful
+trials when successes continue and rejections cannot precede a mismatch. -/
+theorem frequently_successful_identified_of_radius_tendsto_zero
+    {P : BTRParams} {ρ Δ : ℕ → ℝ} {u : ℕ → E} {c : ι → E → ℝ} {A : Set ι}
+    (hΔ : Tendsto Δ atTop (𝓝 0)) (hpos : ∀ k, 0 < Δ k)
+    (hupdate : ∀ k, BTRRadiusUpdate P (ρ k) (Δ k) (Δ (k + 1)))
+    (hmiss : ∀ᶠ k in atTop, activeConstraintSet c (u k) ≠ A → P.η₂ ≤ ρ k)
+    (hnext : ∀ᶠ k in atTop, ρ k < P.η₁ → activeConstraintSet c (u (k + 1)) = A)
+    (hsuccess : ∃ᶠ k in atTop, P.η₁ ≤ ρ k) :
+    ∃ᶠ k in atTop, P.η₁ ≤ ρ k ∧ activeConstraintSet c (u k) = A := by
+  classical
+  have hidentified := frequently_active_eq_at_Cauchy_trial_of_radius_tendsto_zero
+    hΔ hpos hupdate hmiss
+  apply frequently_atTop.mpr
+  intro N
+  obtain ⟨N₀, hN₀⟩ := eventually_atTop.mp hnext
+  obtain ⟨i, hi, hactive⟩ := frequently_atTop.mp hidentified (max N N₀)
+  have hiN := (le_max_left N N₀).trans hi
+  have hi₀ := (le_max_right N N₀).trans hi
+  have hex : ∃ j, P.η₁ ≤ ρ (i + j) := by
+    obtain ⟨k, hk, hsk⟩ := frequently_atTop.mp hsuccess i
+    exact ⟨k - i, by simpa [Nat.add_sub_of_le hk] using hsk⟩
+  let j := Nat.find hex
+  have hj : P.η₁ ≤ ρ (i + j) := Nat.find_spec hex
+  refine ⟨i + j, hiN.trans (Nat.le_add_right _ _), hj, ?_⟩
+  cases hjn : j with
+  | zero => simpa using hactive
+  | succ l =>
+    have hfail : ρ (i + l) < P.η₁ :=
+      lt_of_not_ge (Nat.find_min hex (show l < j by rw [hjn]; exact Nat.lt_succ_self l))
+    exact hN₀ (i + l) (hi₀.trans (Nat.le_add_right _ _)) hfail
+
+open Chapter06 in
+private theorem eventually_iterate_eq_limit_of_finitely_successful
+    {f : E → ℝ} {P : BTRParams} {sufficient : ℕ → (E → ℝ) → E → E → Prop}
+    (run : BTRRun f P sufficient) {z : E}
+    (hx : Tendsto run.x atTop (𝓝 z)) (hf : ¬ ∃ᶠ k in atTop, k ∈ run.successful) :
+    ∀ᶠ k in atTop, run.x k = z := by
+  obtain ⟨N, hN⟩ := eventually_atTop.mp (not_frequently.mp hf)
+  have hconst : ∀ k ≥ N, run.x k = run.x N := by
+    intro k hk
+    induction k, hk using Nat.le_induction with
+    | base => rfl
+    | succ k hk ih => exact (run.iterate_eq_of_unsuccessful (hN k hk)).trans ih
+  have hxN : run.x N = z := tendsto_nhds_unique
+    (tendsto_const_nhds.congr' (eventually_atTop.mpr ⟨N, fun k hk ↦ (hconst k hk).symm⟩)) hx
+  exact eventually_atTop.mpr ⟨N, fun k hk ↦ (hconst k hk).trans hxN⟩
+
+open Optimization Chapter06 in
+/-- Theorem 12.3.8 for a convergent BTR run with vanishing radii. The corrected
+argument uses trial tangent gradients and preserves all constraints active at
+the Cauchy point, as required by AA.5. -/
+theorem theorem_12_3_8_of_convergent_run_of_radius_tendsto_zero
+    [Fintype ι] [CompleteSpace E] [FiniteDimensional ℝ E]
+    {C : Set E} {c : ι → E → ℝ} {f : E → ℝ} {P : BTRParams}
+    {sufficient : ℕ → (E → ℝ) → E → E → Prop}
+    (run : BTRRun f P sufficient) (Q : GeneralizedCauchyParams) {u : ℕ → E} {z : E}
+    (hC : Chapter03.AC2 C) (hset : Chapter03.AC7 C c)
+    (hc : ∀ i, Continuous (c i)) (hn : ∀ i, Continuous (gradient (c i)))
+    (hg : Continuous (gradient f))
+    (hind : LinearIndependent ℝ (fun i : activeConstraintSet c z ↦ gradient (c i) z))
+    (hstat : HasStrictActiveMultipliers c (fun i ↦ gradient (c i)) (gradient f) z)
+    (hnormal : ∀ y ∈ C, ∀ i ∈ activeConstraintSet c y,
+      -gradient (c i) y ∈ normalDirections C y)
+    (hx : Tendsto run.x atTop (𝓝 z)) (hΔ : Tendsto run.Δ atTop (𝓝 0))
+    (hxC : ∀ k, run.x k ∈ C) (hstep : ∀ k, ‖run.s k‖ ≤ run.Δ k)
+    (hfeas : ∀ k, run.x k + run.s k ∈ C)
+    (hface : ∀ k, activeConstraintSet c (u k) ⊆ activeConstraintSet c (run.x k + run.s k))
+    (hQ : ∀ k, Chapter03.ActiveLinearizedConeMatches C c (u k))
+    (htrial : ∀ k, IsApproxGeneralizedCauchyPoint Q C f (run.model k) (run.x k) (run.Δ k) (u k))
+    (hcmp : ∀ k, run.model k (run.x k + run.s k) ≤ run.model k (u k))
+    {β B : ℝ} (hβ : 0 < β)
+    (hTaylorC : ∀ k, run.model k (u k) -
+      (run.model k (run.x k) + ⟪gradient f (run.x k), u k - run.x k⟫) ≤
+      β * ‖u k - run.x k‖ ^ 2 / 2)
+    (hTaylor : ∀ k, |run.model k (run.x k + run.s k) - run.model k (run.x k) -
+      ⟪gradient f (run.x k), run.s k⟫| ≤ β * run.Δ k ^ 2)
+    (hval : ∀ k, f (run.x k) = run.model k (run.x k))
+    (herr : ∀ k, |f (run.x k + run.s k) - run.model k (run.x k + run.s k)| ≤ B * run.Δ k ^ 2) :
+    ∀ᶠ k in atTop, activeConstraintSet c (run.x k) = activeConstraintSet c z ∧
+      activeConstraintSet c (u k) = activeConstraintSet c z := by
+  have hu' : Tendsto (fun k ↦ u k - run.x k) atTop (𝓝 0) :=
+    squeeze_zero_norm (fun k ↦ by obtain ⟨_, _, _, h, _⟩ := htrial k; exact h) hΔ
+  have hu : Tendsto u atTop (𝓝 z) := by
+    simpa only [sub_add_cancel, zero_add] using hu'.add hx
+  have hy : Tendsto (fun k ↦ run.x k + run.s k) atTop (𝓝 z) := by
+    simpa only [add_zero] using hx.add (squeeze_zero_norm hstep hΔ)
+  have hface' : ∀ᶠ k in atTop, activeConstraintSet c (u k) = activeConstraintSet c z →
+      activeConstraintSet c (run.x k + run.s k) = activeConstraintSet c z :=
+    (eventually_activeConstraintSet_subset_of_tendsto hc hy).mono fun k hk huA ↦
+      Set.Subset.antisymm hk (huA ▸ hface k)
+  obtain ⟨κ, hκ, hmiss⟩ := eventually_verySuccessful_of_active_mismatch Q P
+    hC hset hc hn hg hind hstat hx hu hΔ (.of_forall hQ) hβ
+    (.of_forall fun k ↦ ⟨hxC k, run.delta_pos k, htrial k⟩) (.of_forall hTaylorC)
+    (.of_forall fun k ↦ ⟨hval k, hcmp k, herr k⟩)
+  have hnext := eventually_rejection_then_identified run hg hn hstat hnormal hx hΔ hstep
+    hfeas hface' hβ.le hκ hTaylor hval herr hmiss
+  have hkeep := eventually_CauchyTrial_preserves_active_face
+    hC hset hc hn hg hind hstat hnormal hx hu (.of_forall hQ)
+    (.of_forall fun k ↦ by
+      obtain ⟨t, ht, he, _⟩ := htrial k
+      exact ⟨hxC k, t, ht, he⟩)
+  have hsucc_eq (k : ℕ) (hk : k ∈ run.successful) :
+      run.x (k + 1) = run.x k + run.s k := by
+    rw [run.iterate_update, acceptStep_of_le hk]
+  have hbase : ∀ᶠ k in atTop, activeConstraintSet c (run.x k) = activeConstraintSet c z := by
+    by_cases hf : ∃ᶠ k in atTop, k ∈ run.successful
+    · have hseed := frequently_successful_identified_of_radius_tendsto_zero
+        hΔ run.delta_pos run.radius_update (hmiss.mono fun _ hk h ↦ (hk h).2)
+        (hnext.mono fun _ hk hr ↦ hk (not_le.mpr hr)) hf
+      obtain ⟨N, hN⟩ := eventually_atTop.mp (hkeep.and hface')
+      obtain ⟨j, hj, hjS, hjA⟩ := frequently_atTop.mp hseed N
+      have hjx : activeConstraintSet c (run.x (j + 1)) = activeConstraintSet c z := by
+        rw [hsucc_eq j hjS]
+        exact (hN j hj).2 hjA
+      refine eventually_atTop.mpr ⟨j + 1, fun k hk ↦ ?_⟩
+      induction k, hk using Nat.le_induction with
+      | base => exact hjx
+      | succ k hk ih =>
+        by_cases hks : k ∈ run.successful
+        · rw [hsucc_eq k hks]
+          have hkN := hj.trans ((Nat.le_succ j).trans hk)
+          exact (hN k hkN).2 ((hN k hkN).1 ih)
+        · rwa [run.iterate_eq_of_unsuccessful hks]
+    · exact (eventually_iterate_eq_limit_of_finitely_successful run hx hf).mono
+        fun k hk ↦ congrArg (activeConstraintSet c) hk
+  exact hbase.and (hbase.mp hkeep)
+
+open Optimization Chapter06 in
+/-- A convergent run also identifies its limiting face if the chosen Cauchy
+times stay bounded above and away from zero. This case permits positive
+limiting radii and needs no model curvature estimate. -/
+theorem theorem_12_3_8_of_bounded_trial_times
+    [Fintype ι] [CompleteSpace E] [FiniteDimensional ℝ E]
+    {C : Set E} {c : ι → E → ℝ} {f : E → ℝ} {P : BTRParams}
+    {sufficient : ℕ → (E → ℝ) → E → E → Prop}
+    (run : BTRRun f P sufficient) {t : ℕ → ℝ} {z : E} {a b : ℝ}
+    (hC : Chapter03.AC2 C) (hset : Chapter03.AC7 C c) (hz : z ∈ C)
+    (hstat : -gradient f z ∈ normalDirections C z)
+    (hc : ∀ i, Continuous (c i)) (hn : ∀ i, Continuous (gradient (c i)))
+    (hg : Continuous (gradient f))
+    (hind : LinearIndependent ℝ (fun i : activeConstraintSet c z ↦ gradient (c i) z))
+    (hmul : HasStrictActiveMultipliers c (fun i ↦ gradient (c i)) (gradient f) z)
+    (hx : Tendsto run.x atTop (𝓝 z)) (ha : 0 < a)
+    (ht : ∀ᶠ k in atTop, a ≤ t k ∧ t k ≤ b)
+    (hQ : ∀ᶠ k in atTop, Chapter03.ActiveLinearizedConeMatches C c
+      (projectedGradientPath C f (run.x k) (t k)))
+    (hface : ∀ᶠ k in atTop, activeConstraintSet c (projectedGradientPath C f (run.x k) (t k)) ⊆
+      activeConstraintSet c (run.x k + run.s k)) :
+    ∀ᶠ k in atTop, activeConstraintSet c (run.x k) = activeConstraintSet c z ∧
+      activeConstraintSet c (projectedGradientPath C f (run.x k) (t k)) =
+        activeConstraintSet c z := by
+  have htrial := eventually_activeConstraintSet_eq_projectedGradientPath
+    hC hset hz hstat hc hn hg hind hmul hx ha ht hQ
+  have hsuc : Tendsto (fun k : ℕ ↦ k + 1) atTop atTop :=
+    tendsto_atTop_mono (fun k ↦ Nat.le_succ k) tendsto_id
+  have hsub := eventually_activeConstraintSet_subset_of_tendsto hc (hx.comp hsuc)
+  have hacc : ∀ᶠ k in atTop, k ∈ run.successful →
+      activeConstraintSet c (run.x (k + 1)) = activeConstraintSet c z := by
+    filter_upwards [htrial, hface, hsub] with k htk hfk hsk
+    intro hsucc
+    have hupdate : run.x (k + 1) = run.x k + run.s k := by
+      rw [run.iterate_update, acceptStep_of_le hsucc]
+    exact Set.Subset.antisymm hsk (by rw [hupdate, ← htk]; exact hfk)
+  have hbase : ∀ᶠ k in atTop, activeConstraintSet c (run.x k) = activeConstraintSet c z := by
+    by_cases hf : ∃ᶠ k in atTop, k ∈ run.successful
+    · obtain ⟨N, hN⟩ := eventually_atTop.mp hacc
+      obtain ⟨j, hj, hjs⟩ := frequently_atTop.mp hf N
+      refine eventually_atTop.mpr ⟨j + 1, fun k hk ↦ ?_⟩
+      induction k, hk using Nat.le_induction with
+      | base => exact hN j hj hjs
+      | succ k hk ih =>
+        by_cases hks : k ∈ run.successful
+        · exact hN k (hj.trans ((Nat.le_succ j).trans hk)) hks
+        · rwa [run.iterate_eq_of_unsuccessful hks]
+    · exact (eventually_iterate_eq_limit_of_finitely_successful run hx hf).mono
+        fun k hk ↦ congrArg (activeConstraintSet c) hk
+  exact hbase.and htrial
 
 open Optimization in
 /-- Missing an active constraint at a generalized Cauchy trial does not
