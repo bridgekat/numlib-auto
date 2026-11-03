@@ -197,4 +197,50 @@ theorem preconditioned_lanczos_orthonormal_5_2_51
     rw [hinner, real_inner_self_eq_norm_sq, Arnoldi.norm_vec_eq_one_of_ne_zero Hbar
       (S.adjoint r₀) hi, one_pow]
 
+open scoped Matrix in
+/-- The Lanczos matrix relation for the transformed system gives the
+preconditioned relation (5.2.52). Orthonormality of the transformed basis
+and orthogonality of the residual column then give the reduced matrix
+identity (5.2.53). The vector `e` is the final coordinate vector. -/
+theorem preconditioned_lanczos_matrix_relations_5_2_52_53
+    {n m : Type*} [Fintype n] [DecidableEq n] [Fintype m] [DecidableEq m]
+    (H R Rinv : Matrix n n ℝ) (Qbar : Matrix n m ℝ) (T : Matrix m m ℝ)
+    (qbar : n → ℝ) (e : m → ℝ) (γ : ℝ)
+    (hL : Rinv * R = 1) (hR : R * Rinv = 1)
+    (hLanczos : (Rinvᵀ * H * Rinv) * Qbar - Qbar * T = γ • Matrix.vecMulVec qbar e)
+    (horth : Qbarᵀ * Qbar = 1) (hperp : Qbarᵀ *ᵥ qbar = 0) :
+    let Q := Rinv * Qbar
+    let M := Rᵀ * R
+    H * Q - M * Q * T = γ • Matrix.vecMulVec (Rᵀ *ᵥ qbar) e ∧ Qᵀ * H * Q = T := by
+  let Hbar := Rinvᵀ * H * Rinv
+  let Q := Rinv * Qbar
+  have htrans : Rᵀ * Rinvᵀ = 1 := by
+    rw [← Matrix.transpose_mul, hL, Matrix.transpose_one]
+  have hleft : Rᵀ * (Hbar * Qbar) = H * Q := by
+    change Rᵀ * ((Rinvᵀ * H * Rinv) * Qbar) = H * (Rinv * Qbar)
+    simp only [← Matrix.mul_assoc, htrans, Matrix.one_mul]
+  have hMQ : (Rᵀ * R) * Q = Rᵀ * Qbar := by
+    change (Rᵀ * R) * (Rinv * Qbar) = Rᵀ * Qbar
+    calc
+      _ = Rᵀ * ((R * Rinv) * Qbar) := by simp only [Matrix.mul_assoc]
+      _ = _ := by rw [hR, Matrix.one_mul]
+  change H * Q - (Rᵀ * R) * Q * T = _ ∧ Qᵀ * H * Q = _
+  constructor
+  · have hr := congrArg (fun X : Matrix n m ℝ ↦ Rᵀ * X) hLanczos
+    change Rᵀ * (Hbar * Qbar - Qbar * T) = _ at hr
+    rw [Matrix.mul_sub, hleft, ← Matrix.mul_assoc Rᵀ Qbar T, ← hMQ,
+      Matrix.mul_smul, Matrix.mul_vecMulVec] at hr
+    exact hr
+  · have hsum : Hbar * Qbar = Qbar * T + γ • Matrix.vecMulVec qbar e :=
+      sub_eq_iff_eq_add'.mp hLanczos
+    calc
+      Qᵀ * H * Q = Qbarᵀ * (Hbar * Qbar) := by
+        change (Rinv * Qbar)ᵀ * H * (Rinv * Qbar) =
+          Qbarᵀ * ((Rinvᵀ * H * Rinv) * Qbar)
+        simp only [Matrix.transpose_mul, Matrix.mul_assoc]
+      _ = T := by
+        rw [hsum, Matrix.mul_add, ← Matrix.mul_assoc Qbarᵀ Qbar T, horth,
+          Matrix.one_mul, Matrix.mul_smul, Matrix.mul_vecMulVec, hperp]
+        simp
+
 end ConnGouldToint.Chapter05

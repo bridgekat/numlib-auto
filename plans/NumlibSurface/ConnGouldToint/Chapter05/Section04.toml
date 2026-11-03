@@ -1,6 +1,5 @@
 namespace = "ConnGouldToint.Chapter05"
 
-desc = "Null-space and projected preconditioned conjugate-gradient recurrences, with the saddle-system implementation of the projected inverse."
 
 [[node]]
 id = "projectedPCG"

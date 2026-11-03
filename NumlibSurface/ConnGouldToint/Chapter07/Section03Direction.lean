@@ -53,6 +53,7 @@ noncomputable def linpackForwardSubst {n : ℕ} (L : Matrix (Fin n) (Fin n) ℝ)
 termination_by i => i.val
 decreasing_by exact (Finset.mem_filter.mp j.property).2
 
+/-- The computed forward substitution satisfies the greedy row equation. -/
 theorem linpackForwardSubst_apply {n : ℕ} (L : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) :
     let b := ∑ j ∈ Finset.univ.filter (· < i), L i j * linpackForwardSubst L j
     linpackForwardSubst L i = (linpackSign b - b) / L i i := by
