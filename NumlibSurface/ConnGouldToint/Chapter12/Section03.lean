@@ -731,19 +731,13 @@ theorem theorem_12_3_4_relaxed [CompleteSpace E] {R : Set E} {f : E → ℝ} {x 
   exact le_min hε hχ
 
 open Optimization in
-/-- At small radii, a Cauchy trial with a tangent-gradient lower bound yields
-model decrease linear in the radius. This estimate uses the actual feasible
-trial and does not compare full and relaxed criticality measures. -/
-theorem cauchyDecrease_linear_of_tangentProjection_lower [CompleteSpace E]
-    (P : GeneralizedCauchyParams) {C : Set E} (hclosed : IsClosed C) (hconv : Convex ℝ C)
-    {f m : E → ℝ} {x u : E} (hx : x ∈ C) {Δ β γ : ℝ}
-    (hΔ : 0 < Δ) (hβ : 0 < β) (hγ : 0 < γ)
-    (hsmall : β * Δ / 2 < (1 - P.lowerSlope) * γ)
-    (hc : IsApproxGeneralizedCauchyPoint P C f m x Δ u)
-    (hproj : γ ≤ ‖bestApprox (tangentDirections C u) (-gradient f x)‖)
-    (hTaylor : m u - (m x + ⟪gradient f x, u - x⟫) ≤ β * ‖u - x‖ ^ 2 / 2) :
-    P.upperSlope * (P.radiusFraction * γ) * Δ ≤ m x - m u := by
-  obtain ⟨t, ht, rfl, hball, hupper, hstop⟩ := hc
+private theorem cauchyProjection_linear_lower [CompleteSpace E] {C : Set E}
+    (hclosed : IsClosed C) (hconv : Convex ℝ C) {f : E → ℝ} {x : E} (hx : x ∈ C)
+    {t γ : ℝ} (ht : 0 < t) (hγ : 0 < γ)
+    (hproj : γ ≤ ‖bestApprox (tangentDirections C (projectedGradientPath C f x t))
+      (-gradient f x)‖) :
+    let u := projectedGradientPath C f x t
+    0 < ‖u - x‖ ∧ γ * ‖u - x‖ ≤ -⟪gradient f x, u - x⟫ := by
   let u := projectedGradientPath C f x t
   let r := ‖u - x‖
   let L := -⟪gradient f x, u - x⟫
@@ -764,6 +758,26 @@ theorem cauchyDecrease_linear_of_tangentProjection_lower [CompleteSpace E]
       t * (γ * r) = (γ * t) * r := by ring
       _ ≤ r * r := mul_le_mul_of_nonneg_right htγ hrpos.le
       _ ≤ t * L := by simpa only [pow_two, L] using hvar
+  exact ⟨hrpos, hlin⟩
+
+open Optimization in
+/-- At small radii, a Cauchy trial with a tangent-gradient lower bound yields
+model decrease linear in the radius. This estimate uses the actual feasible
+trial and does not compare full and relaxed criticality measures. -/
+theorem cauchyDecrease_linear_of_tangentProjection_lower [CompleteSpace E]
+    (P : GeneralizedCauchyParams) {C : Set E} (hclosed : IsClosed C) (hconv : Convex ℝ C)
+    {f m : E → ℝ} {x u : E} (hx : x ∈ C) {Δ β γ : ℝ}
+    (hΔ : 0 < Δ) (hβ : 0 < β) (hγ : 0 < γ)
+    (hsmall : β * Δ / 2 < (1 - P.lowerSlope) * γ)
+    (hc : IsApproxGeneralizedCauchyPoint P C f m x Δ u)
+    (hproj : γ ≤ ‖bestApprox (tangentDirections C u) (-gradient f x)‖)
+    (hTaylor : m u - (m x + ⟪gradient f x, u - x⟫) ≤ β * ‖u - x‖ ^ 2 / 2) :
+    P.upperSlope * (P.radiusFraction * γ) * Δ ≤ m x - m u := by
+  obtain ⟨t, ht, rfl, hball, hupper, hstop⟩ := hc
+  let u := projectedGradientPath C f x t
+  let r := ‖u - x‖
+  let L := -⟪gradient f x, u - x⟫
+  obtain ⟨hrpos, hlin⟩ := cauchyProjection_linear_lower hclosed hconv hx ht hγ hproj
   have hL : 0 ≤ L := (mul_nonneg hγ.le hrpos.le).trans hlin
   have hgoal : P.radiusFraction * γ * Δ ≤ L := by
     rcases hstop with hR | hlow | hend
@@ -806,6 +820,48 @@ theorem cauchyDecrease_linear_of_tangentProjection_lower [CompleteSpace E]
       change m u ≤ m x + P.upperSlope * ⟪gradient f x, u - x⟫ at hupper
       dsimp only [L]
       linarith only [hupper]
+
+open Optimization in
+/-- A Cauchy trial with a tangent-gradient gap and small displacement has
+radius bounded by a constant times its displacement. The radius itself
+need not be assumed small. -/
+theorem radius_le_mul_displacement_of_tangentProjection_lower [CompleteSpace E]
+    (P : GeneralizedCauchyParams) {C : Set E} (hclosed : IsClosed C) (hconv : Convex ℝ C)
+    {f m : E → ℝ} {x u : E} (hx : x ∈ C) {Δ β γ G : ℝ}
+    (hΔ : 0 < Δ) (hγ : 0 < γ) (hG : ‖gradient f x‖ ≤ G)
+    (hsmall : β * ‖u - x‖ / 2 < (1 - P.lowerSlope) * γ)
+    (hc : IsApproxGeneralizedCauchyPoint P C f m x Δ u)
+    (hproj : γ ≤ ‖bestApprox (tangentDirections C u) (-gradient f x)‖)
+    (hTaylor : m u - (m x + ⟪gradient f x, u - x⟫) ≤ β * ‖u - x‖ ^ 2 / 2) :
+    Δ ≤ max P.radiusFraction⁻¹ (P.endpointFactor * G / γ) * ‖u - x‖ := by
+  obtain ⟨t, ht, rfl, _, _, hstop⟩ := hc
+  let u := projectedGradientPath C f x t
+  let r := ‖u - x‖
+  let L := -⟪gradient f x, u - x⟫
+  obtain ⟨hrpos, hlin⟩ := cauchyProjection_linear_lower hclosed hconv hx ht hγ hproj
+  rcases hstop with hR | hlow | hend
+  · have h := (le_div_iff₀ P.fraction_pos).mpr (by simpa only [mul_comm] using hR)
+    calc
+      Δ ≤ P.radiusFraction⁻¹ * r := by simpa only [div_eq_mul_inv, mul_comm] using h
+      _ ≤ _ := mul_le_mul_of_nonneg_right (le_max_left _ _) hrpos.le
+  · exfalso
+    have hrel : (1 - P.lowerSlope) * L ≤ β * r ^ 2 / 2 := by
+      dsimp only [L, r]
+      linarith only [hTaylor, hlow]
+    have hrel' := (mul_le_mul_of_nonneg_left hlin (sub_nonneg.mpr P.lower_lt_one.le)).trans hrel
+    have hstrict := mul_lt_mul_of_pos_right hsmall hrpos
+    change β * r / 2 * r < (1 - P.lowerSlope) * γ * r at hstrict
+    nlinarith only [hstrict, hrel']
+  · have hprod := mul_le_mul_of_nonneg_right (hproj.trans hend) hΔ.le
+    rw [mul_assoc, div_mul_cancel₀ _ hΔ.ne'] at hprod
+    have hbound := (abs_real_inner_le_norm (gradient f x) (u - x)).trans
+      (mul_le_mul_of_nonneg_right hG hrpos.le)
+    have hp := hprod.trans (mul_le_mul_of_nonneg_left hbound P.endpoint_pos.le)
+    calc
+      Δ ≤ (P.endpointFactor * G / γ) * r := by
+        rw [div_mul_eq_mul_div]
+        exact (le_div_iff₀ hγ).mpr (by nlinarith only [hp])
+      _ ≤ _ := mul_le_mul_of_nonneg_right (le_max_right _ _) hrpos.le
 
 open Optimization Chapter06 in
 /-- At vanishing radii near a strictly complementary limit, a misidentified
@@ -981,18 +1037,16 @@ theorem eventually_CauchyTrial_preserves_active_face [Fintype ι] [CompleteSpace
   exact (not_lt_of_ge ((hgapk hbad).trans (hspeed.trans hle))) hsmall
 
 open Optimization Chapter06 in
-/-- A rejection cannot immediately precede a misidentified Cauchy trial
-near a strictly complementary limit at vanishing radii. The old endpoint
-inherits the identified Cauchy face, allowing comparison at the common center. -/
-theorem eventually_rejection_then_identified [Fintype ι] [CompleteSpace E]
+private theorem eventually_rejection_then_identifiedOn [Fintype ι] [CompleteSpace E]
     {C : Set E} {c : ι → E → ℝ} {f : E → ℝ} {P : BTRParams}
     {sufficient : ℕ → (E → ℝ) → E → E → Prop}
-    (run : BTRRun f P sufficient) {u : ℕ → E} {z : E}
+    (run : BTRRun f P sufficient) {u : ℕ → E} {z : E} {l : Filter ℕ}
+    (hl : l ≤ atTop)
     (hg : Continuous (gradient f)) (hn : ∀ i, Continuous (gradient (c i)))
     (hstat : HasStrictActiveMultipliers c (fun i ↦ gradient (c i)) (gradient f) z)
     (hnormal : ∀ y ∈ C, ∀ i ∈ activeConstraintSet c y,
       -gradient (c i) y ∈ normalDirections C y)
-    (hx : Tendsto run.x atTop (𝓝 z)) (hΔ : Tendsto run.Δ atTop (𝓝 0))
+    (hx : Tendsto run.x l (𝓝 z)) (hΔ : Tendsto run.Δ atTop (𝓝 0))
     (hstep : ∀ k, ‖run.s k‖ ≤ run.Δ k)
     (hfeas : ∀ k, run.x k + run.s k ∈ C)
     (hface : ∀ᶠ k in atTop, activeConstraintSet c (u k) = activeConstraintSet c z →
@@ -1005,31 +1059,33 @@ theorem eventually_rejection_then_identified [Fintype ι] [CompleteSpace E]
     (hmiss : ∀ᶠ k in atTop, activeConstraintSet c (u k) ≠ activeConstraintSet c z →
       κ * run.Δ k ≤ run.model k (run.x k) - run.model k (run.x k + run.s k) ∧
       k ∈ run.verySuccessful) :
-    ∀ᶠ k in atTop, k ∉ run.successful →
+    ∀ᶠ k in l, k ∉ run.successful →
       activeConstraintSet c (u (k + 1)) = activeConstraintSet c z := by
   obtain ⟨w, hw, hwz, hwn⟩ := exists_continuous_normal_on_active_face hn hstat hnormal
   let y (k : ℕ) := run.x k + run.s k
-  have hsn : Tendsto run.s atTop (𝓝 0) := squeeze_zero_norm hstep hΔ
-  have hy : Tendsto y atTop (𝓝 z) := by simpa only [add_zero] using hx.add hsn
+  have hΔl := hΔ.mono_left hl
+  have hsn : Tendsto run.s l (𝓝 0) := (squeeze_zero_norm hstep hΔ).mono_left hl
+  have hy : Tendsto y l (𝓝 z) := by simpa only [add_zero] using hx.add hsn
   let d (k : ℕ) := ‖-gradient f (run.x k) - w (y k)‖
-  have hd : Tendsto d atTop (𝓝 0) := by
+  have hd : Tendsto d l (𝓝 0) := by
     simpa only [d, hwz, sub_self, norm_zero, Function.comp_apply] using
       ((hg.continuousAt.tendsto.comp hx).neg.sub (hw.continuousAt.tendsto.comp hy)).norm
   let a := κ * P.γ₁ / 2
   have ha : 0 < a := half_pos (mul_pos hκ P.gamma₁_pos)
-  have hsmall₁ : ∀ᶠ k in atTop, 2 * β * run.Δ k + 2 * d k < a := by
-    have hlim := (hΔ.const_mul (2 * β)).add (hd.const_mul 2)
-    have hlim' : Tendsto (fun k ↦ 2 * β * run.Δ k + 2 * d k) atTop (𝓝 0) := by
+  have hsmall₁ : ∀ᶠ k in l, 2 * β * run.Δ k + 2 * d k < a := by
+    have hlim := (hΔl.const_mul (2 * β)).add (hd.const_mul 2)
+    have hlim' : Tendsto (fun k ↦ 2 * β * run.Δ k + 2 * d k) l (𝓝 0) := by
       simpa only [mul_zero, add_zero] using hlim
     exact hlim'.eventually (gt_mem_nhds ha)
-  have hsmall₂ : ∀ᶠ k in atTop, B * run.Δ k < (1 - P.η₁) * a := by
+  have hsmall₂ : ∀ᶠ k in l, B * run.Δ k < (1 - P.η₁) * a := by
     have hpos := mul_pos (sub_pos.mpr (P.eta₁_le_eta₂.trans_lt P.eta₂_lt_one)) ha
-    have hlim : Tendsto (fun k ↦ B * run.Δ k) atTop (𝓝 0) := by
-      simpa only [mul_zero] using hΔ.const_mul B
+    have hlim : Tendsto (fun k ↦ B * run.Δ k) l (𝓝 0) := by
+      simpa only [mul_zero] using hΔl.const_mul B
     exact hlim.eventually (gt_mem_nhds hpos)
   have hsuc : Tendsto (fun k : ℕ ↦ k + 1) atTop atTop :=
     tendsto_atTop_mono (fun k ↦ Nat.le_succ k) tendsto_id
-  filter_upwards [hmiss, hsuc.eventually hmiss, hsmall₁, hsmall₂, hface]
+  filter_upwards [hmiss.filter_mono hl, (hsuc.eventually hmiss).filter_mono hl, hsmall₁, hsmall₂,
+    hface.filter_mono hl]
     with k hmk hmk' hs₁ hs₂ hfacek
   intro hreject
   by_contra! hbad
@@ -1076,6 +1132,36 @@ theorem eventually_rejection_then_identified [Fintype ι] [CompleteSpace E]
   apply hreject
   simpa [BTRRun.successful, btrRatio, y] using le_reductionRatio_of_abs_sub_le hp he
 
+open Optimization Chapter06 in
+/-- A rejection cannot immediately precede a misidentified Cauchy trial
+near a strictly complementary limit at vanishing radii. The old endpoint
+inherits the identified Cauchy face, allowing comparison at the common center. -/
+theorem eventually_rejection_then_identified [Fintype ι] [CompleteSpace E]
+    {C : Set E} {c : ι → E → ℝ} {f : E → ℝ} {P : BTRParams}
+    {sufficient : ℕ → (E → ℝ) → E → E → Prop}
+    (run : BTRRun f P sufficient) {u : ℕ → E} {z : E}
+    (hg : Continuous (gradient f)) (hn : ∀ i, Continuous (gradient (c i)))
+    (hstat : HasStrictActiveMultipliers c (fun i ↦ gradient (c i)) (gradient f) z)
+    (hnormal : ∀ y ∈ C, ∀ i ∈ activeConstraintSet c y,
+      -gradient (c i) y ∈ normalDirections C y)
+    (hx : Tendsto run.x atTop (𝓝 z)) (hΔ : Tendsto run.Δ atTop (𝓝 0))
+    (hstep : ∀ k, ‖run.s k‖ ≤ run.Δ k)
+    (hfeas : ∀ k, run.x k + run.s k ∈ C)
+    (hface : ∀ᶠ k in atTop, activeConstraintSet c (u k) = activeConstraintSet c z →
+      activeConstraintSet c (run.x k + run.s k) = activeConstraintSet c z)
+    {β B κ : ℝ} (hβ : 0 ≤ β) (hκ : 0 < κ)
+    (hTaylor : ∀ k, |run.model k (run.x k + run.s k) - run.model k (run.x k) -
+      ⟪gradient f (run.x k), run.s k⟫| ≤ β * run.Δ k ^ 2)
+    (hval : ∀ k, f (run.x k) = run.model k (run.x k))
+    (herr : ∀ k, |f (run.x k + run.s k) - run.model k (run.x k + run.s k)| ≤ B * run.Δ k ^ 2)
+    (hmiss : ∀ᶠ k in atTop, activeConstraintSet c (u k) ≠ activeConstraintSet c z →
+      κ * run.Δ k ≤ run.model k (run.x k) - run.model k (run.x k + run.s k) ∧
+      k ∈ run.verySuccessful) :
+    ∀ᶠ k in atTop, k ∉ run.successful →
+      activeConstraintSet c (u (k + 1)) = activeConstraintSet c z :=
+  eventually_rejection_then_identifiedOn run le_rfl hg hn hstat hnormal hx hΔ
+    hstep hfeas hface hβ hκ hTaylor hval herr hmiss
+
 omit [NormedAddCommGroup E] [InnerProductSpace ℝ E] in
 open Chapter06 in
 /-- At vanishing radii there are arbitrarily late identified successful
@@ -1110,6 +1196,48 @@ theorem frequently_successful_identified_of_radius_tendsto_zero
       lt_of_not_ge (Nat.find_min hex (show l < j by rw [hjn]; exact Nat.lt_succ_self l))
     exact hN₀ (i + l) (hi₀.trans (Nat.le_add_right _ _)) hfail
 
+omit [InnerProductSpace ℝ E] in
+private theorem convergent_subseq_of_compact_atTop {K : Set E} {x : ℕ → E} {j : ℕ → ℕ}
+    (hK : IsCompact K) (hx : ∀ k, x k ∈ K) (hj : Tendsto j atTop atTop) :
+    ∃ z : E, ∃ i : ℕ → ℕ, StrictMono i ∧ StrictMono (j ∘ i) ∧
+      Tendsto (x ∘ (j ∘ i)) atTop (𝓝 z) := by
+  obtain ⟨q, hq, hjq⟩ := strictMono_subseq_of_tendsto_atTop hj
+  obtain ⟨z, _, r, hr, hz⟩ := hK.isSeqCompact (fun k ↦ hx (j (q k)))
+  exact ⟨z, q ∘ r, hq.comp hr, hjq.comp hr, hz⟩
+
+omit [InnerProductSpace ℝ E] in
+private theorem eventually_of_compact_local {K : Set E} {x : ℕ → E} {p : ℕ → Prop}
+    (hK : IsCompact K) (hx : ∀ k, x k ∈ K)
+    (hlocal : ∀ z (j : ℕ → ℕ), StrictMono j → Tendsto (x ∘ j) atTop (𝓝 z) →
+      ∀ᶠ k in atTop, p (j k)) :
+    ∀ᶠ k in atTop, p k := by
+  by_contra! hbad
+  obtain ⟨j, hj, hjbad⟩ := extraction_of_frequently_atTop hbad
+  obtain ⟨z, i, hi, hji, hz⟩ := convergent_subseq_of_compact_atTop hK hx hj.tendsto_atTop
+  obtain ⟨k, hk⟩ := (hlocal z (j ∘ i) hji hz).exists
+  exact hjbad (i k) hk
+
+omit [InnerProductSpace ℝ E] in
+private theorem exists_pos_eventually_of_compact_local {K : Set E} {x : ℕ → E}
+    {p : ℝ → ℕ → Prop} (hK : IsCompact K) (hx : ∀ k, x k ∈ K)
+    (hmono : ∀ {a b : ℝ} {k : ℕ}, a ≤ b → p b k → p a k)
+    (hlocal : ∀ z (j : ℕ → ℕ), StrictMono j → Tendsto (x ∘ j) atTop (𝓝 z) →
+      ∃ a > 0, ∀ᶠ k in atTop, p a (j k)) :
+    ∃ a > 0, ∀ᶠ k in atTop, p a k := by
+  classical
+  by_contra! hbad
+  let a (n : ℕ) := (1 : ℝ) / ((n : ℝ) + 1)
+  have hbad' (n : ℕ) : ∃ k ≥ n, ¬p (a n) k :=
+    frequently_atTop.mp (hbad (a n) (by dsimp [a]; positivity)) n
+  choose j hj hjbad using hbad'
+  have hjtop : Tendsto j atTop atTop := tendsto_atTop_mono hj tendsto_id
+  obtain ⟨z, i, hi, hji, hz⟩ := convergent_subseq_of_compact_atTop hK hx hjtop
+  obtain ⟨b, hb, hgood⟩ := hlocal z (j ∘ i) hji hz
+  have halim : Tendsto a atTop (𝓝 0) := tendsto_one_div_add_atTop_nhds_zero_nat
+  have hab := (halim.comp hi.tendsto_atTop).eventually (gt_mem_nhds hb)
+  obtain ⟨k, hak, hpk⟩ := (hab.and hgood).exists
+  exact hjbad (i k) (hmono hak.le hpk)
+
 open Chapter06 in
 private theorem eventually_iterate_eq_limit_of_finitely_successful
     {f : E → ℝ} {P : BTRParams} {sufficient : ℕ → (E → ℝ) → E → E → Prop}
@@ -1125,6 +1253,142 @@ private theorem eventually_iterate_eq_limit_of_finitely_successful
   have hxN : run.x N = z := tendsto_nhds_unique
     (tendsto_const_nhds.congr' (eventually_atTop.mpr ⟨N, fun k hk ↦ (hconst k hk).symm⟩)) hx
   exact eventually_atTop.mpr ⟨N, fun k hk ↦ (hconst k hk).trans hxN⟩
+
+open Optimization Chapter06 in
+/-- In a compact run with vanishing radii, all cluster points, late iterates,
+and late Cauchy trials share an active set. The proof obtains uniform model
+decrease on mismatched trials by compactness and strict complementarity. -/
+theorem theorem_12_3_8_of_compact_run_of_radius_tendsto_zero
+    [Fintype ι] [CompleteSpace E] [FiniteDimensional ℝ E]
+    {C : Set E} {c : ι → E → ℝ} {f : E → ℝ} {P : BTRParams}
+    {sufficient : ℕ → (E → ℝ) → E → E → Prop}
+    (run : BTRRun f P sufficient) (Q : GeneralizedCauchyParams) {u : ℕ → E} {S K : Set E}
+    (hC : Chapter03.AC2 C) (hset : Chapter03.AC7 C c)
+    (hc : ∀ i, Continuous (c i)) (hn : ∀ i, Continuous (gradient (c i)))
+    (hg : Continuous (gradient f))
+    (hind : ∀ z ∈ S, LinearIndependent ℝ (fun i : activeConstraintSet c z ↦ gradient (c i) z))
+    (hstat : ∀ z ∈ S, HasStrictActiveMultipliers c (fun i ↦ gradient (c i)) (gradient f) z)
+    (hnormal : ∀ y ∈ C, ∀ i ∈ activeConstraintSet c y,
+      -gradient (c i) y ∈ normalDirections C y)
+    (hS : IsCompact S) (hK : IsCompact K) (hxK : ∀ k, run.x k ∈ K)
+    (hlim : ∀ z, z ∈ S ↔ ∃ j : ℕ → ℕ, StrictMono j ∧ Tendsto (run.x ∘ j) atTop (𝓝 z))
+    (hΔ : Tendsto run.Δ atTop (𝓝 0))
+    (hxC : ∀ k, run.x k ∈ C) (hstep : ∀ k, ‖run.s k‖ ≤ run.Δ k)
+    (hfeas : ∀ k, run.x k + run.s k ∈ C)
+    (hface : ∀ k, activeConstraintSet c (u k) ⊆ activeConstraintSet c (run.x k + run.s k))
+    (hQ : ∀ k, Chapter03.ActiveLinearizedConeMatches C c (u k))
+    (htrial : ∀ k, IsApproxGeneralizedCauchyPoint Q C f (run.model k) (run.x k) (run.Δ k) (u k))
+    (hcmp : ∀ k, run.model k (run.x k + run.s k) ≤ run.model k (u k))
+    {β B : ℝ} (hβ : 0 < β)
+    (hTaylorC : ∀ k, run.model k (u k) -
+      (run.model k (run.x k) + ⟪gradient f (run.x k), u k - run.x k⟫) ≤
+      β * ‖u k - run.x k‖ ^ 2 / 2)
+    (hTaylor : ∀ k, |run.model k (run.x k + run.s k) - run.model k (run.x k) -
+      ⟪gradient f (run.x k), run.s k⟫| ≤ β * run.Δ k ^ 2)
+    (hval : ∀ k, f (run.x k) = run.model k (run.x k))
+    (herr : ∀ k, |f (run.x k + run.s k) - run.model k (run.x k + run.s k)| ≤ B * run.Δ k ^ 2) :
+    ∃ A : Set ι, (∀ z ∈ S, activeConstraintSet c z = A) ∧
+      ∀ᶠ k in atTop, activeConstraintSet c (run.x k) = A ∧ activeConstraintSet c (u k) = A := by
+  have hsucc_eq (k : ℕ) (hk : k ∈ run.successful) :
+      run.x (k + 1) = run.x k + run.s k := by
+    rw [run.iterate_update, acceptStep_of_le hk]
+  have hsn : Tendsto run.s atTop (𝓝 0) := squeeze_zero_norm hstep hΔ
+  have hxs : Tendsto (fun k ↦ dist (run.x (k + 1)) (run.x k)) atTop (𝓝 0) := by
+    refine squeeze_zero' (g := fun k ↦ ‖run.s k‖) (.of_forall fun _ ↦ dist_nonneg) ?_ ?_
+    · apply Eventually.of_forall
+      intro k
+      by_cases hk : k ∈ run.successful
+      · rw [hsucc_eq k hk, dist_eq_norm, add_sub_cancel_left]
+      · rw [run.iterate_eq_of_unsuccessful hk, dist_self]
+        exact norm_nonneg _
+    · simpa only [norm_zero] using hsn.norm
+  obtain ⟨A, hA⟩ := activeConstraintSet_eq_on_limits_of_vanishing_steps hS hK hxK hlim hxs
+    hc hn hg hind hstat
+  have hu' : Tendsto (fun k ↦ u k - run.x k) atTop (𝓝 0) :=
+    squeeze_zero_norm (fun k ↦ by obtain ⟨_, _, _, h, _⟩ := htrial k; exact h) hΔ
+  have huLocal (z : E) (j : ℕ → ℕ) (hj : StrictMono j)
+      (hz : Tendsto (run.x ∘ j) atTop (𝓝 z)) : Tendsto (u ∘ j) atTop (𝓝 z) := by
+    change Tendsto (fun k ↦ u (j k)) atTop (𝓝 z)
+    simpa only [Function.comp_apply, sub_add_cancel, zero_add] using
+      (hu'.comp hj.tendsto_atTop).add hz
+  have hface' : ∀ᶠ k in atTop, activeConstraintSet c (u k) = A →
+      activeConstraintSet c (run.x k + run.s k) = A := by
+    apply eventually_of_compact_local hK hxK
+    intro z j hj hz
+    have hzS := (hlim z).mpr ⟨j, hj, hz⟩
+    have hy : Tendsto (fun k ↦ run.x (j k) + run.s (j k)) atTop (𝓝 z) := by
+      simpa only [Function.comp_apply, add_zero] using hz.add (hsn.comp hj.tendsto_atTop)
+    filter_upwards [eventually_activeConstraintSet_subset_of_tendsto hc hy] with k hk
+    intro huA
+    exact Set.Subset.antisymm ((hA z hzS) ▸ hk) (huA ▸ hface (j k))
+  have hmiss0 : ∃ κ > 0, ∀ᶠ k in atTop, activeConstraintSet c (u k) ≠ A →
+      κ * run.Δ k ≤ run.model k (run.x k) - run.model k (run.x k + run.s k) ∧
+      k ∈ run.verySuccessful := by
+    apply exists_pos_eventually_of_compact_local hK hxK
+    · intro a b k hab hb hneq
+      obtain ⟨hpred, hvery⟩ := hb hneq
+      exact ⟨(mul_le_mul_of_nonneg_right hab (run.delta_pos k).le).trans hpred, hvery⟩
+    · intro z j hj hz
+      have hzS := (hlim z).mpr ⟨j, hj, hz⟩
+      obtain ⟨κ, hκ, hh⟩ := eventually_verySuccessful_of_active_mismatch
+        (m := run.model ∘ j) (s := run.s ∘ j) Q P
+        hC hset hc hn hg (hind z hzS) (hstat z hzS) hz (huLocal z j hj hz)
+        (hΔ.comp hj.tendsto_atTop) (.of_forall fun k ↦ hQ (j k)) hβ
+        (.of_forall fun k ↦ ⟨hxC (j k), run.delta_pos (j k), htrial (j k)⟩)
+        (.of_forall fun k ↦ hTaylorC (j k))
+        (.of_forall fun k ↦ ⟨hval (j k), hcmp (j k), herr (j k)⟩)
+      exact ⟨κ, hκ, (hA z hzS) ▸ hh⟩
+  obtain ⟨κ, hκ, hmiss⟩ := hmiss0
+  have hnext : ∀ᶠ k in atTop, k ∉ run.successful → activeConstraintSet c (u (k + 1)) = A := by
+    apply eventually_of_compact_local hK hxK
+    intro z j hj hz
+    have hzS := (hlim z).mpr ⟨j, hj, hz⟩
+    have hAz := hA z hzS
+    have he := eventually_rejection_then_identifiedOn run hj.tendsto_atTop
+      hg hn (hstat z hzS) hnormal hz hΔ hstep hfeas (hAz.symm ▸ hface')
+      hβ.le hκ hTaylor hval herr (hAz.symm ▸ hmiss)
+    exact hAz ▸ he
+  have hkeep : ∀ᶠ k in atTop, activeConstraintSet c (run.x k) = A →
+      activeConstraintSet c (u k) = A := by
+    apply eventually_of_compact_local hK hxK
+    intro z j hj hz
+    have hzS := (hlim z).mpr ⟨j, hj, hz⟩
+    have hh := eventually_CauchyTrial_preserves_active_face
+      hC hset hc hn hg (hind z hzS) (hstat z hzS) hnormal hz (huLocal z j hj hz)
+      (.of_forall fun k ↦ hQ (j k)) (.of_forall fun k ↦ by
+        obtain ⟨t, ht, he, _⟩ := htrial (j k)
+        exact ⟨hxC (j k), t, ht, he⟩)
+    exact (hA z hzS) ▸ hh
+  have hbase : ∀ᶠ k in atTop, activeConstraintSet c (run.x k) = A := by
+    by_cases hf : ∃ᶠ k in atTop, k ∈ run.successful
+    · have hseed := frequently_successful_identified_of_radius_tendsto_zero
+        hΔ run.delta_pos run.radius_update (hmiss.mono fun _ hk h ↦ (hk h).2)
+        (hnext.mono fun _ hk hr ↦ hk (not_le.mpr hr)) hf
+      obtain ⟨N, hN⟩ := eventually_atTop.mp (hkeep.and hface')
+      obtain ⟨j, hj, hjS, hjA⟩ := frequently_atTop.mp hseed N
+      have hjx : activeConstraintSet c (run.x (j + 1)) = A := by
+        rw [hsucc_eq j hjS]
+        exact (hN j hj).2 hjA
+      refine eventually_atTop.mpr ⟨j + 1, fun k hk ↦ ?_⟩
+      induction k, hk using Nat.le_induction with
+      | base => exact hjx
+      | succ k hk ih =>
+        by_cases hks : k ∈ run.successful
+        · rw [hsucc_eq k hks]
+          have hkN := hj.trans ((Nat.le_succ j).trans hk)
+          exact (hN k hkN).2 ((hN k hkN).1 ih)
+        · rwa [run.iterate_eq_of_unsuccessful hks]
+    · obtain ⟨N, hN⟩ := eventually_atTop.mp (not_frequently.mp hf)
+      have hconst : ∀ k ≥ N, run.x k = run.x N := by
+        intro k hk
+        induction k, hk using Nat.le_induction with
+        | base => rfl
+        | succ k hk ih => exact (run.iterate_eq_of_unsuccessful (hN k hk)).trans ih
+      have hlimN : Tendsto run.x atTop (𝓝 (run.x N)) :=
+        tendsto_const_nhds.congr' (eventually_atTop.mpr ⟨N, fun k hk ↦ (hconst k hk).symm⟩)
+      have hAN := hA _ ((hlim _).mpr ⟨id, strictMono_id, hlimN⟩)
+      exact eventually_atTop.mpr ⟨N, fun k hk ↦ (congrArg (activeConstraintSet c) (hconst k hk)).trans hAN⟩
+  exact ⟨A, hA, hbase.and (hbase.mp hkeep)⟩
 
 open Optimization Chapter06 in
 /-- Theorem 12.3.8 for a convergent BTR run with vanishing radii. The corrected
@@ -1159,52 +1423,21 @@ theorem theorem_12_3_8_of_convergent_run_of_radius_tendsto_zero
     (herr : ∀ k, |f (run.x k + run.s k) - run.model k (run.x k + run.s k)| ≤ B * run.Δ k ^ 2) :
     ∀ᶠ k in atTop, activeConstraintSet c (run.x k) = activeConstraintSet c z ∧
       activeConstraintSet c (u k) = activeConstraintSet c z := by
-  have hu' : Tendsto (fun k ↦ u k - run.x k) atTop (𝓝 0) :=
-    squeeze_zero_norm (fun k ↦ by obtain ⟨_, _, _, h, _⟩ := htrial k; exact h) hΔ
-  have hu : Tendsto u atTop (𝓝 z) := by
-    simpa only [sub_add_cancel, zero_add] using hu'.add hx
-  have hy : Tendsto (fun k ↦ run.x k + run.s k) atTop (𝓝 z) := by
-    simpa only [add_zero] using hx.add (squeeze_zero_norm hstep hΔ)
-  have hface' : ∀ᶠ k in atTop, activeConstraintSet c (u k) = activeConstraintSet c z →
-      activeConstraintSet c (run.x k + run.s k) = activeConstraintSet c z :=
-    (eventually_activeConstraintSet_subset_of_tendsto hc hy).mono fun k hk huA ↦
-      Set.Subset.antisymm hk (huA ▸ hface k)
-  obtain ⟨κ, hκ, hmiss⟩ := eventually_verySuccessful_of_active_mismatch Q P
-    hC hset hc hn hg hind hstat hx hu hΔ (.of_forall hQ) hβ
-    (.of_forall fun k ↦ ⟨hxC k, run.delta_pos k, htrial k⟩) (.of_forall hTaylorC)
-    (.of_forall fun k ↦ ⟨hval k, hcmp k, herr k⟩)
-  have hnext := eventually_rejection_then_identified run hg hn hstat hnormal hx hΔ hstep
-    hfeas hface' hβ.le hκ hTaylor hval herr hmiss
-  have hkeep := eventually_CauchyTrial_preserves_active_face
-    hC hset hc hn hg hind hstat hnormal hx hu (.of_forall hQ)
-    (.of_forall fun k ↦ by
-      obtain ⟨t, ht, he, _⟩ := htrial k
-      exact ⟨hxC k, t, ht, he⟩)
-  have hsucc_eq (k : ℕ) (hk : k ∈ run.successful) :
-      run.x (k + 1) = run.x k + run.s k := by
-    rw [run.iterate_update, acceptStep_of_le hk]
-  have hbase : ∀ᶠ k in atTop, activeConstraintSet c (run.x k) = activeConstraintSet c z := by
-    by_cases hf : ∃ᶠ k in atTop, k ∈ run.successful
-    · have hseed := frequently_successful_identified_of_radius_tendsto_zero
-        hΔ run.delta_pos run.radius_update (hmiss.mono fun _ hk h ↦ (hk h).2)
-        (hnext.mono fun _ hk hr ↦ hk (not_le.mpr hr)) hf
-      obtain ⟨N, hN⟩ := eventually_atTop.mp (hkeep.and hface')
-      obtain ⟨j, hj, hjS, hjA⟩ := frequently_atTop.mp hseed N
-      have hjx : activeConstraintSet c (run.x (j + 1)) = activeConstraintSet c z := by
-        rw [hsucc_eq j hjS]
-        exact (hN j hj).2 hjA
-      refine eventually_atTop.mpr ⟨j + 1, fun k hk ↦ ?_⟩
-      induction k, hk using Nat.le_induction with
-      | base => exact hjx
-      | succ k hk ih =>
-        by_cases hks : k ∈ run.successful
-        · rw [hsucc_eq k hks]
-          have hkN := hj.trans ((Nat.le_succ j).trans hk)
-          exact (hN k hkN).2 ((hN k hkN).1 ih)
-        · rwa [run.iterate_eq_of_unsuccessful hks]
-    · exact (eventually_iterate_eq_limit_of_finitely_successful run hx hf).mono
-        fun k hk ↦ congrArg (activeConstraintSet c) hk
-  exact hbase.and (hbase.mp hkeep)
+  have hlim (w : E) : w ∈ ({z} : Set E) ↔
+      ∃ j : ℕ → ℕ, StrictMono j ∧ Tendsto (run.x ∘ j) atTop (𝓝 w) := by
+    constructor
+    · rintro rfl
+      exact ⟨id, strictMono_id, hx⟩
+    · rintro ⟨j, hj, hjw⟩
+      exact tendsto_nhds_unique hjw (hx.comp hj.tendsto_atTop)
+  obtain ⟨A, hA, hfinal⟩ := theorem_12_3_8_of_compact_run_of_radius_tendsto_zero run Q
+    hC hset hc hn hg
+    (by rintro w rfl; exact hind)
+    (by rintro w rfl; exact hstat) hnormal
+    (isCompact_singleton (x := z)) hx.isCompact_insert_range
+    (fun k ↦ Set.mem_insert_of_mem _ (Set.mem_range_self k)) hlim
+    hΔ hxC hstep hfeas hface hQ htrial hcmp hβ hTaylorC hTaylor hval herr
+  exact (hA z (Set.mem_singleton z)).symm ▸ hfinal
 
 open Optimization Chapter06 in
 /-- A convergent run also identifies its limiting face if the chosen Cauchy

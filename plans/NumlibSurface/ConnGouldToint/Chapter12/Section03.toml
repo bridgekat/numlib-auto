@@ -123,3 +123,11 @@ source = "Conn–Gould–Toint, Theorem 12.3.8 for convergent runs with bounded 
 [[node]]
 id = "activeConstraintSet_eq_on_limits_of_vanishing_steps"
 source = "Conn–Gould–Toint, Section 12.3, common active set of all cluster points when iterate displacements vanish"
+
+[[node]]
+id = "theorem_12_3_8_of_compact_run_of_radius_tendsto_zero"
+source = "Conn–Gould–Toint, corrected Theorem 12.3.8 for compact runs with vanishing radii"
+
+[[node]]
+id = "radius_le_mul_displacement_of_tangentProjection_lower"
+source = "Conn–Gould–Toint, Section 12.3, radius estimate at a Cauchy trial with an active-set mismatch"
