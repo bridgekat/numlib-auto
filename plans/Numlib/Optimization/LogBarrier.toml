@@ -11,3 +11,18 @@ id = "mem_frontier_nonnegativeOrthant"
 
 [[node]]
 id = "tendsto_logBarrier_of_bounded_of_infDist_frontier"
+
+[[node]]
+id = "contDiffAt_logBarrier"
+
+[[node]]
+id = "fderiv_logBarrier_apply"
+
+[[node]]
+id = "fderiv_fderiv_logBarrier_apply"
+
+[[node]]
+id = "infDist_frontier_le_coordinate"
+
+[[node]]
+id = "norm_fderiv_fderiv_logBarrier_le"

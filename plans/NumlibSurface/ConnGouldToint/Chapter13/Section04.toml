@@ -1,0 +1,21 @@
+namespace = "ConnGouldToint.Chapter13"
+
+[[node]]
+id = "logBarrierModel"
+source = "Conn–Gould–Toint, (13.4.2)"
+
+[[node]]
+id = "logBarrier_hessian"
+source = "Conn–Gould–Toint, (13.4.8)"
+
+[[node]]
+id = "logBarrier_contDiffOn"
+source = "Conn–Gould–Toint, Lemma 13.4.1 (AC.1c)"
+
+[[node]]
+id = "logBarrier_hessian_bounded"
+source = "Conn–Gould–Toint, Lemma 13.4.1 (AC.4c)"
+
+[[node]]
+id = "logBarrierModel_eq_taylor"
+source = "Conn–Gould–Toint, (13.4.2)"

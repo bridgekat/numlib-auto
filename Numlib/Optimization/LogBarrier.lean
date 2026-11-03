@@ -1,4 +1,4 @@
-import Mathlib.Analysis.SpecialFunctions.Log.Basic
+import Mathlib.Analysis.SpecialFunctions.Log.Deriv
 import Mathlib.Analysis.Normed.Group.Constructions
 import Mathlib.Topology.MetricSpace.HausdorffDistance
 import Mathlib.Topology.MetricSpace.Pseudo.Pi
@@ -6,7 +6,7 @@ import Mathlib.Topology.MetricSpace.Pseudo.Pi
 /-! # Boundary behavior of the logarithmic barrier -/
 
 open Filter Metric
-open scoped BigOperators Topology
+open scoped BigOperators Topology ContDiff
 
 namespace Optimization
 
@@ -90,5 +90,98 @@ theorem tendsto_logBarrier_of_bounded_of_infDist_frontier [Nonempty ι]
   have hs' := (le_div_iff₀ hμ).mp hs
   unfold logBarrier
   nlinarith only [hs']
+
+private def coordinate (i : ι) : (ι → ℝ) →L[ℝ] ℝ :=
+  ContinuousLinearMap.proj i
+
+private noncomputable def logBarrierFDeriv (μ : ℝ) (x : ι → ℝ) : (ι → ℝ) →L[ℝ] ℝ :=
+  (-μ) • ∑ i, (x i)⁻¹ • coordinate i
+
+/-- The log barrier is smooth at every strictly positive vector. -/
+theorem contDiffAt_logBarrier (μ : ℝ) {x : ι → ℝ} (hx : ∀ i, 0 < x i) {n : ℕ∞ω} :
+    ContDiffAt ℝ n (logBarrier μ) x := by
+  have hi (i : ι) : ContDiffAt ℝ n (fun y : ι → ℝ ↦ Real.log (y i)) x :=
+    (coordinate i).contDiff.contDiffAt.log (hx i).ne'
+  exact (ContDiffAt.sum fun i (_ : i ∈ Finset.univ) ↦ hi i).const_smul (-μ)
+
+private theorem hasFDerivAt_logBarrier (μ : ℝ) {x : ι → ℝ} (hx : ∀ i, 0 < x i) :
+    HasFDerivAt (logBarrier μ) (logBarrierFDeriv μ x) x := by
+  have hi (i : ι) : HasFDerivAt (fun y : ι → ℝ ↦ Real.log (y i))
+      ((x i)⁻¹ • coordinate i) x :=
+    let h : HasDerivAt Real.log (x i)⁻¹ (coordinate i x) :=
+      Real.hasDerivAt_log (hx i).ne'
+    h.comp_hasFDerivAt x (coordinate i).hasFDerivAt
+  exact (HasFDerivAt.fun_sum fun i (_ : i ∈ Finset.univ) ↦ hi i).const_smul (-μ)
+
+/-- The directional derivative of the logarithmic barrier. -/
+theorem fderiv_logBarrier_apply (μ : ℝ) {x : ι → ℝ} (hx : ∀ i, 0 < x i) (d : ι → ℝ) :
+    fderiv ℝ (logBarrier μ) x d = -μ * ∑ i, (x i)⁻¹ * d i := by
+  rw [(hasFDerivAt_logBarrier μ hx).fderiv]
+  simp [logBarrierFDeriv, coordinate]
+
+/-- The log-barrier Hessian is diagonal, with entries `μ / xᵢ²`. -/
+theorem fderiv_fderiv_logBarrier_apply (μ : ℝ) {x : ι → ℝ} (hx : ∀ i, 0 < x i)
+    (d e : ι → ℝ) :
+    fderiv ℝ (fderiv ℝ (logBarrier μ)) x d e =
+      μ * ∑ i, ((x i) ^ 2)⁻¹ * d i * e i := by
+  have hU : Set.univ.pi (fun _ : ι ↦ Set.Ioi (0 : ℝ)) ∈ 𝓝 x :=
+    (isOpen_set_pi Set.finite_univ fun _ _ ↦ isOpen_Ioi).mem_nhds (by simpa using hx)
+  have hEq : fderiv ℝ (logBarrier μ) =ᶠ[𝓝 x] logBarrierFDeriv μ := by
+    filter_upwards [hU] with y hy
+    exact (hasFDerivAt_logBarrier μ (by simpa using hy)).fderiv
+  have hi (i : ι) : HasFDerivAt (fun y : ι → ℝ ↦ (y i)⁻¹)
+      (-((x i) ^ 2)⁻¹ • coordinate i) x :=
+    (hasDerivAt_inv (hx i).ne').comp_hasFDerivAt x (coordinate i).hasFDerivAt
+  have hD := (HasFDerivAt.fun_sum fun i (_ : i ∈ Finset.univ) ↦
+    (hi i).smul_const (coordinate i)).const_smul (-μ)
+  rw [hEq.fderiv_eq]
+  change fderiv ℝ ((-μ) • fun y : ι → ℝ ↦
+    ∑ i, (y i)⁻¹ • coordinate i) x d e = _
+  rw [hD.fderiv]
+  simp [coordinate, Finset.sum_neg_distrib, mul_assoc]
+
+/-- Each coordinate of a positive vector bounds its distance to the orthant boundary. -/
+theorem infDist_frontier_le_coordinate {x : ι → ℝ} (hx : ∀ i, 0 < x i) (i : ι) :
+    infDist x (frontier (nonnegativeOrthant ι)) ≤ x i := by
+  classical
+  let y := Function.update x i 0
+  have hy : y ∈ frontier (nonnegativeOrthant ι) := by
+    apply mem_frontier_nonnegativeOrthant.mpr
+    refine ⟨fun j ↦ ?_, i, Function.update_self i 0 x⟩
+    by_cases hj : j = i
+    · subst j
+      rw [show y i = 0 from Function.update_self i 0 x]
+    · rw [show y j = x j from Function.update_of_ne hj 0 x]
+      exact (hx j).le
+  refine (infDist_le_dist_of_mem hy).trans ((dist_pi_le_iff (hx i).le).mpr fun j ↦ ?_)
+  by_cases hj : j = i
+  · subst j
+    rw [show y i = 0 from Function.update_self i 0 x, Real.dist_eq, sub_zero, abs_of_pos (hx i)]
+  · rw [show y j = x j from Function.update_of_ne hj 0 x, dist_self]
+    exact (hx i).le
+
+/-- A coordinate lower bound gives a uniform operator-norm bound on the Hessian. -/
+theorem norm_fderiv_fderiv_logBarrier_le (μ : ℝ) {x : ι → ℝ}
+    {ε : ℝ} (hε : 0 < ε) (hx : ∀ i, ε ≤ x i) :
+    ‖fderiv ℝ (fderiv ℝ (logBarrier μ)) x‖ ≤ |μ| * Fintype.card ι * (ε ^ 2)⁻¹ := by
+  apply ContinuousLinearMap.opNorm_le_bound _ (by positivity)
+  intro d
+  apply ContinuousLinearMap.opNorm_le_bound _ (by positivity)
+  intro e
+  rw [fderiv_fderiv_logBarrier_apply μ (fun i ↦ hε.trans_le (hx i)), Real.norm_eq_abs, abs_mul]
+  calc
+    _ ≤ |μ| * ∑ i, |((x i) ^ 2)⁻¹ * d i * e i| :=
+      mul_le_mul_of_nonneg_left (Finset.abs_sum_le_sum_abs _ _) (abs_nonneg _)
+    _ ≤ |μ| * ∑ _ : ι, (ε ^ 2)⁻¹ * ‖d‖ * ‖e‖ := by
+      apply mul_le_mul_of_nonneg_left _ (abs_nonneg _)
+      apply Finset.sum_le_sum
+      intro i _
+      have hi : ((x i) ^ 2)⁻¹ ≤ (ε ^ 2)⁻¹ :=
+        (inv_le_inv₀ (pow_pos (hε.trans_le (hx i)) 2) (pow_pos hε 2)).mpr
+          (pow_le_pow_left₀ hε.le (hx i) 2)
+      simp only [abs_mul, abs_of_nonneg (inv_nonneg.mpr (sq_nonneg (x i))), ← Real.norm_eq_abs]
+      exact mul_le_mul (mul_le_mul hi (norm_le_pi_norm d i) (norm_nonneg _) (by positivity))
+        (norm_le_pi_norm e i) (norm_nonneg _) (by positivity)
+    _ = _ := by simp only [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]; ring
 
 end Optimization

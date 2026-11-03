@@ -80,6 +80,9 @@ themselves.
 
 Chapter 13 covers the logarithmic barrier. AC.8 holds for uniformly bounded positive paths.
 On an unbounded approach to the boundary, a growing coordinate can cancel a vanishing one.
+The log-barrier Hessian is diagonal and uniformly bounded away from the boundary.
+The quadratic model uses the exact second-order Taylor data.
+
 
 Chapter 14 covers the quadratic penalty and first-order multiplier estimate. In (14.2.3),
 both derivatives in the stationarity condition are evaluated at the feasible point.
