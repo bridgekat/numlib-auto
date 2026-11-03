@@ -21,6 +21,26 @@ id = "theorem_9_4_1"
 source = "Conn–Gould–Toint, Theorem 9.4.1 and (9.4.12)"
 
 [[node]]
+id = "newtonDifferenceTable"
+source = "Conn–Gould–Toint, Algorithm 9.4.2, Steps 0–1"
+
+[[node]]
+id = "newtonDifferenceTable_eq_finiteDifference"
+source = "Conn–Gould–Toint, Algorithm 9.4.2, loop invariant"
+
+[[node]]
+id = "algorithm_9_4_2"
+source = "Conn–Gould–Toint, Algorithm 9.4.2"
+
+[[node]]
+id = "algorithm_9_4_2_eq_coefficient"
+source = "Conn–Gould–Toint, Algorithm 9.4.2 and (9.4.13)"
+
+[[node]]
+id = "algorithm_9_4_2_interpolates"
+source = "Conn–Gould–Toint, Algorithm 9.4.2 and (9.4.9)"
+
+[[node]]
 id = "generalizedFiniteDifference_sub"
 
 [[node]]

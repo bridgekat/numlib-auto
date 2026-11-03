@@ -34,6 +34,54 @@ noncomputable def newtonInterpolationCoefficient (f : E → ℝ)
     (l : ℕ) (i : Fin (n l)) : ℝ :=
   generalizedFiniteDifference f y N l (y l i)
 
+/-- The nodal table of Algorithm 9.4.2 after `k` passes. Pass `k + 1`
+uses the finished block `k` to update every later block, leaving the finished
+entries unchanged. Only the function values at the supplied nodes are used. -/
+noncomputable def newtonDifferenceTable
+    (values : (l : ℕ) → Fin (n l) → ℝ) (y : (l : ℕ) → Fin (n l) → E)
+    (N : (l : ℕ) → Fin (n l) → E → ℝ) :
+    ℕ → (l : ℕ) → Fin (n l) → ℝ
+  | 0 => values
+  | k + 1 => fun l i ↦
+      if k < l then
+        newtonDifferenceTable values y N k l i -
+          ∑ j, newtonDifferenceTable values y N k k j * N k j (y l i)
+      else newtonDifferenceTable values y N k l i
+
+/-- At pass `k`, later rows contain the order-`k` residual values and the
+finished rows retain their generalized finite differences. -/
+theorem newtonDifferenceTable_eq_finiteDifference (f : E → ℝ)
+    (y : (l : ℕ) → Fin (n l) → E) (N : (l : ℕ) → Fin (n l) → E → ℝ)
+    (k l : ℕ) (i : Fin (n l)) :
+    newtonDifferenceTable (fun j a ↦ f (y j a)) y N k l i =
+      generalizedFiniteDifference f y N (min k l) (y l i) := by
+  induction k generalizing l with
+  | zero => simp [newtonDifferenceTable, generalizedFiniteDifference]
+  | succ k ih =>
+    by_cases h : k < l
+    · have hkl : k + 1 ≤ l := Nat.succ_le_of_lt h
+      simp only [newtonDifferenceTable, ite_eq_left h, ih,
+        min_eq_left h.le, min_self, min_eq_left hkl, generalizedFiniteDifference]
+    · have hle : l ≤ k := le_of_not_gt h
+      simp only [newtonDifferenceTable, ite_eq_right h, ih,
+        min_eq_right hle, min_eq_right (hle.trans (Nat.le_succ _))]
+
+/-- Algorithm 9.4.2 returns the table on the blocks of degrees zero through
+`d`, after `d` passes. -/
+noncomputable def algorithm_9_4_2 (values : (l : ℕ) → Fin (n l) → ℝ)
+    (y : (l : ℕ) → Fin (n l) → E) (N : (l : ℕ) → Fin (n l) → E → ℝ)
+    (d : ℕ) (l : Fin (d + 1)) (i : Fin (n l)) : ℝ :=
+  newtonDifferenceTable values y N d l i
+
+/-- The returned table gives exactly the coefficients of (9.4.13).
+This computation is valid for every input table of objective values. -/
+theorem algorithm_9_4_2_eq_coefficient (f : E → ℝ) (y : (l : ℕ) → Fin (n l) → E)
+    (N : (l : ℕ) → Fin (n l) → E → ℝ) (d : ℕ) (l : Fin (d + 1)) (i : Fin (n l)) :
+    algorithm_9_4_2 (fun j a ↦ f (y j a)) y N d l i =
+      newtonInterpolationCoefficient f y N l i := by
+  rw [algorithm_9_4_2, newtonDifferenceTable_eq_finiteDifference,
+    min_eq_right (Nat.le_of_lt_succ l.isLt), newtonInterpolationCoefficient]
+
 /-- The interpolating model (9.4.9) in the supplied block basis. -/
 noncomputable def newtonInterpolationModel (f : E → ℝ)
     (y : (l : ℕ) → Fin (n l) → E) (N : (l : ℕ) → Fin (n l) → E → ℝ) (d : ℕ) (x : E) : ℝ :=
@@ -82,6 +130,18 @@ theorem theorem_9_4_1 (f : E → ℝ) (y : (l : ℕ) → Fin (n l) → E)
   dsimp only [diff]
   rw [generalizedFiniteDifference_eq_sub_sum f y N (y j k) j]
   ring
+
+/-- With the Newton identities, the coefficients returned by Algorithm 9.4.2
+give an interpolating model on the nodes of every included block. -/
+theorem algorithm_9_4_2_interpolates (f : E → ℝ) (y : (l : ℕ) → Fin (n l) → E)
+    (N : (l : ℕ) → Fin (n l) → E → ℝ) {d : ℕ} (hN : IsNewtonFundamentalFamily y N d)
+    (l : Fin (d + 1)) (i : Fin (n l)) :
+    (∑ j : Fin (d + 1), ∑ a,
+      algorithm_9_4_2 (fun j a ↦ f (y j a)) y N d j a * N j a (y l i)) = f (y l i) := by
+  simp_rw [algorithm_9_4_2_eq_coefficient]
+  rw [Fin.sum_univ_eq_sum_range
+    (fun j ↦ ∑ a, newtonInterpolationCoefficient f y N j a * N j a (y l i))]
+  exact theorem_9_4_1 f y N hN l (Nat.le_of_lt_succ l.isLt) i
 
 /-- Generalized finite differences are linear in the supplied values. -/
 theorem generalizedFiniteDifference_sub (f g : E → ℝ)

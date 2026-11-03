@@ -5,6 +5,42 @@ id = "quadraticObjective"
 source = "Conn–Gould–Toint, (5.1.1)"
 
 [[node]]
+id = "conjugateDirectionStep"
+source = "Conn–Gould–Toint, Algorithm 5.1.1, (5.1.23)–(5.1.26)"
+
+[[node]]
+id = "algorithm_5_1_1"
+source = "Conn–Gould–Toint, Algorithm 5.1.1"
+
+[[node]]
+id = "algorithm_5_1_1_zero"
+source = "Conn–Gould–Toint, Algorithm 5.1.1, initialization"
+
+[[node]]
+id = "algorithm_5_1_1_succ"
+source = "Conn–Gould–Toint, Algorithm 5.1.1 and (5.1.23)–(5.1.26)"
+
+[[node]]
+id = "algorithm_5_1_1_eq_projectedCG"
+source = "Conn–Gould–Toint, Algorithm 5.1.1 and Section 5.1.4"
+
+[[node]]
+id = "ConjugateDirectionStepDefined"
+source = "Conn–Gould–Toint, Algorithm 5.1.1, division conditions"
+
+[[node]]
+id = "conjugateDirectionStepDefined_iff"
+source = "Conn–Gould–Toint, Algorithm 5.1.1, division conditions"
+
+[[node]]
+id = "algorithm_5_1_1_conjugate"
+source = "Conn–Gould–Toint, Algorithm 5.1.1, conjugacy"
+
+[[node]]
+id = "algorithm_5_1_1_stepDefined_iff"
+source = "Conn–Gould–Toint, Algorithm 5.1.1, positive-curvature case"
+
+[[node]]
 id = "algorithm_5_1_2"
 source = "Conn–Gould–Toint, Algorithm 5.1.2"
 

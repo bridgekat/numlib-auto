@@ -19,6 +19,96 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 noncomputable abbrev quadraticObjective (c : E) (H : E →L[ℝ] E) : E → ℝ :=
   Subproblem.quadModel c H
 
+/-- One pass of the conjugate-direction recurrence (5.1.23)–(5.1.26).
+The state contains only the residual and the direction. -/
+noncomputable def conjugateDirectionStep (H : E →ₗ[ℝ] E) (state : E × E) : E × E :=
+  let Hp := H state.2
+  let α := ‖state.1‖ ^ 2 / ⟪state.2, Hp⟫
+  let r' := state.1 + α • Hp
+  let β := ‖r'‖ ^ 2 / ‖state.1‖ ^ 2
+  (r', -r' + β • state.2)
+
+/-- Algorithm 5.1.1 generates conjugate directions from an arbitrary
+initial residual, without computing the iterates of Algorithm 5.1.2. -/
+noncomputable def algorithm_5_1_1 (H : E →ₗ[ℝ] E) (r₀ : E) (k : ℕ) : E × E :=
+  (conjugateDirectionStep H)^[k] (r₀, -r₀)
+
+/-- Algorithm 5.1.1 starts from the prescribed residual and its negative. -/
+theorem algorithm_5_1_1_zero (H : E →ₗ[ℝ] E) (r₀ : E) :
+    algorithm_5_1_1 H r₀ 0 = (r₀, -r₀) := rfl
+
+/-- The state satisfies the four recurrences (5.1.23)–(5.1.26).
+Lean uses total division, so a valid numerical step also requires both
+displayed denominators to be nonzero. -/
+theorem algorithm_5_1_1_succ (H : E →ₗ[ℝ] E) (r₀ : E) (k : ℕ) :
+    let current := algorithm_5_1_1 H r₀ k
+    let α := ‖current.1‖ ^ 2 / ⟪current.2, H current.2⟫
+    let r' := current.1 + α • H current.2
+    let β := ‖r'‖ ^ 2 / ‖current.1‖ ^ 2
+    algorithm_5_1_1 H r₀ (k + 1) = (r', -r' + β • current.2) :=
+  Function.iterate_succ_apply' _ _ _
+
+private theorem conjugateDirectionStep_eq_CG_step (H : E →ₗ[ℝ] E) (state : CG.State E) :
+    conjugateDirectionStep H (-state.r, state.p) = (-(CG.step H state).r, (CG.step H state).p) := by
+  let α : ℝ := ‖-state.r‖ ^ 2 / ⟪state.p, H state.p⟫
+  let r' := -state.r + α • H state.p
+  let β : ℝ := ‖r'‖ ^ 2 / ‖-state.r‖ ^ 2
+  have hα : CG.alpha H state = α := by
+    rw [CG.alpha, real_inner_self_eq_norm_sq, ← real_inner_comm (H state.p) state.p]
+    simp only [α, norm_neg]
+  have hr : -(CG.step H state).r = r' := by
+    rw [CG.step_r, hα, neg_sub, sub_eq_add_neg, add_comm]
+  have hβ : CG.beta H state = β := by
+    rw [CG.beta, real_inner_self_eq_norm_sq, real_inner_self_eq_norm_sq]
+    simp only [β, ← hr, norm_neg]
+  change (r', -r' + β • state.p) = (-(CG.step H state).r, (CG.step H state).p)
+  rw [CG.step_p, hβ, ← hr, neg_neg]
+
+/-- Algorithm 5.1.1 agrees with the residual and direction in the backbone
+CG iteration. The backbone residual uses the opposite sign. -/
+theorem algorithm_5_1_1_eq_projectedCG (H : E →ₗ[ℝ] E) (r₀ : E) (k : ℕ) :
+    algorithm_5_1_1 H r₀ k =
+      (-(CG.iterate H (-r₀) 0 k).r, (CG.iterate H (-r₀) 0 k).p) := by
+  induction k with
+  | zero => simp [algorithm_5_1_1_zero]
+  | succ k ih =>
+    change (conjugateDirectionStep H)^[k + 1] (r₀, -r₀) = _
+    rw [Function.iterate_succ_apply', ← algorithm_5_1_1, ih, CG.iterate_succ]
+    exact conjugateDirectionStep_eq_CG_step _ _
+
+/-- The two division operations of Algorithm 5.1.1 are defined in ordinary
+arithmetic when the residual is nonzero and the direction has nonzero curvature. -/
+def ConjugateDirectionStepDefined (H : E →ₗ[ℝ] E) (state : E × E) : Prop :=
+  state.1 ≠ 0 ∧ ⟪state.2, H state.2⟫ ≠ 0
+
+/-- The step condition is equivalent to nonvanishing of the two denominators
+in (5.1.23) and (5.1.25). -/
+theorem conjugateDirectionStepDefined_iff (H : E →ₗ[ℝ] E) (state : E × E) :
+    ConjugateDirectionStepDefined H state ↔
+      ⟪state.2, H state.2⟫ ≠ 0 ∧ ‖state.1‖ ^ 2 ≠ 0 := by
+  rw [ConjugateDirectionStepDefined, pow_ne_zero_iff two_ne_zero, norm_ne_zero_iff, and_comm]
+
+/-- For a symmetric coercive Hessian, distinct directions produced by
+Algorithm 5.1.1 are conjugate. -/
+theorem algorithm_5_1_1_conjugate {H : E →ₗ[ℝ] E} (hH : H.IsSymmetricCoercive)
+    (r₀ : E) {i j : ℕ} (hij : i ≠ j) :
+    ⟪(algorithm_5_1_1 H r₀ i).2, H (algorithm_5_1_1 H r₀ j).2⟫ = 0 := by
+  rw [algorithm_5_1_1_eq_projectedCG, algorithm_5_1_1_eq_projectedCG, real_inner_comm]
+  exact CG.inner_apply_direction_eq_zero (-r₀) 0 hH hij.symm
+
+/-- For a symmetric coercive Hessian, Algorithm 5.1.1 has a defined next
+step whenever its residual is nonzero. -/
+theorem algorithm_5_1_1_stepDefined_iff {H : E →ₗ[ℝ] E} (hH : H.IsSymmetricCoercive)
+    (r₀ : E) (k : ℕ) :
+    ConjugateDirectionStepDefined H (algorithm_5_1_1 H r₀ k) ↔
+      (algorithm_5_1_1 H r₀ k).1 ≠ 0 := by
+  refine ⟨fun h ↦ h.1, fun hr ↦ ⟨hr, ?_⟩⟩
+  rw [algorithm_5_1_1_eq_projectedCG] at hr ⊢
+  have hr' : (CG.iterate H (-r₀) 0 k).r ≠ 0 := by simpa only [Prod.fst, neg_ne_zero] using hr
+  have hpos := CG.re_inner_apply_direction_pos (-r₀) 0 hH hr'
+  rw [real_inner_comm]
+  exact ne_of_gt hpos
+
 /-- Algorithm 5.1.2. The state of the conjugate gradient recurrence. The library
 stores the residual `-gₖ` in place of the gradient `gₖ`. -/
 noncomputable abbrev algorithm_5_1_2 (H : E →ₗ[ℝ] E) (c x₀ : E) (k : ℕ) : CG.State E :=
