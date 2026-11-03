@@ -34,3 +34,7 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 5.3"
 [[node]]
 id = "bestApprox_eq_starProjection"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 5.4"
+
+[[node]]
+id = "bestApprox_closedBall_eq_radial"
+source = "Conn–Gould–Toint, corrected (12.1.3)"

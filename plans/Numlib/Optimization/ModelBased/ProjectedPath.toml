@@ -1,0 +1,23 @@
+namespace = "Optimization"
+desc = "A projection of a ray onto a closed convex set. Use the variational characterization for stationarity and monotonicity. The residual divided by the ray parameter is normal, so nonexpansiveness bounds the tangent projection of the ray direction."
+
+[[node]]
+id = "projectedRay"
+
+[[node]]
+id = "normalDirections"
+
+[[node]]
+id = "tangentDirections"
+
+[[node]]
+id = "projectedRay_eq_of_normal"
+
+[[node]]
+id = "projectedRay_eq_self_iff"
+
+[[node]]
+id = "norm_projectedRay_sub_le"
+
+[[node]]
+id = "norm_tangentProjection_projectedRay_le"

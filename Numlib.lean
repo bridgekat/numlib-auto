@@ -756,6 +756,7 @@ import Numlib.Optimization.ModelBased.InexactRatio
 import Numlib.Optimization.ModelBased.InexactTaylor
 import Numlib.Optimization.ModelBased.PowRegularizedModel
 import Numlib.Optimization.ModelBased.QuadraticModel
+import Numlib.Optimization.ModelBased.ProjectedPath
 import Numlib.Optimization.ModelBased.RatioTest
 import Numlib.Optimization.ModelBased.ReferenceDecrease
 import Numlib.Optimization.ModelBased.RegularizationUpdate

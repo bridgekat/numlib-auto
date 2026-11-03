@@ -4,6 +4,7 @@ import NumlibSurface.ConnGouldToint.Chapter06
 import NumlibSurface.ConnGouldToint.Chapter07
 import NumlibSurface.ConnGouldToint.Chapter08
 import NumlibSurface.ConnGouldToint.Chapter10
+import NumlibSurface.ConnGouldToint.Chapter12
 import NumlibSurface.ConnGouldToint.Chapter16
 
 /-!
@@ -33,6 +34,9 @@ exclusion of the hard case through eigenvector nonorthogonality.
 
 Chapter 10 covers cumulative model decrease for the nonmonotone acceptance rule.
 The reference schedule in (10.1.2) requires strict decrease only when the reference changes.
+
+Chapter 12 covers the projected-gradient path. In (12.1.3), the radial projection
+formula applies outside the closed ball, and points inside project to themselves.
 
 Chapter 16 covers the uniform least-squares Hessian bound, exact minimization of the scalar
 epigraph merit function, and the Fischer–Burmeister residual formulation of complementarity.

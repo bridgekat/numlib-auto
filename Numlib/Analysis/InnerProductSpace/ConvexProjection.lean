@@ -121,6 +121,51 @@ theorem lipschitzWith_bestApprox : LipschitzWith 1 (bestApprox K) :=
 
 end Hilbert
 
+section ClosedBall
+
+variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] {r : ℝ}
+
+/-- Projection onto a closed ball is the identity inside the ball and radial outside. -/
+theorem bestApprox_closedBall_eq_radial (x y : V) (hr : 0 ≤ r) :
+    bestApprox (Metric.closedBall x r) y =
+      if ‖y - x‖ ≤ r then y else x + (r / ‖y - x‖) • (y - x) := by
+  let C := Metric.closedBall x r
+  have hconv : Convex ℝ C := convex_closedBall x r
+  by_cases hy : ‖y - x‖ ≤ r
+  · rw [ite_eq_left hy]
+    apply IsBestApprox.bestApprox_eq hconv
+    refine ⟨Metric.mem_closedBall.mpr (by rwa [dist_eq_norm]), ?_⟩
+    intro w _
+    simp
+  rw [ite_eq_right hy]
+  let a := ‖y - x‖
+  have ha : 0 < a := hr.trans_lt (lt_of_not_ge hy)
+  have hs : 0 ≤ r / a := div_nonneg hr ha.le
+  have hs' : r / a ≤ 1 := (div_le_one ha).2 (le_of_not_ge hy)
+  let z := x + (r / a) • (y - x)
+  have hz : z ∈ C := by
+    apply Metric.mem_closedBall.mpr
+    rw [dist_eq_norm, show z - x = (r / a) • (y - x) by simp [z], norm_smul,
+      Real.norm_eq_abs, abs_of_nonneg hs]
+    exact (div_mul_cancel₀ r ha.ne').le
+  have hd : ‖y - z‖ = a - r := by
+    rw [show y - z = (1 - r / a) • (y - x) by
+      rw [sub_smul, one_smul]
+      simp only [z]
+      abel, norm_smul, Real.norm_eq_abs, abs_of_nonneg (sub_nonneg.mpr hs')]
+    change (1 - r / a) * a = a - r
+    rw [sub_mul, one_mul, div_mul_cancel₀ r ha.ne']
+  apply IsBestApprox.bestApprox_eq hconv
+  refine ⟨hz, fun w hw ↦ ?_⟩
+  have hw' : ‖w - x‖ ≤ r := by simpa [C, Metric.mem_closedBall, dist_eq_norm] using hw
+  have htri : a ≤ ‖y - w‖ + ‖w - x‖ := by
+    rw [show a = ‖(y - w) + (w - x)‖ by rw [sub_add_sub_cancel]]
+    exact norm_add_le _ _
+  rw [hd]
+  exact sub_le_iff_le_add.mpr (htri.trans (add_le_add_right hw' _))
+
+end ClosedBall
+
 section Subspace
 
 variable {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [InnerProductSpace 𝕜 V]
