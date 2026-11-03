@@ -1,0 +1,89 @@
+namespace = "ConnGouldToint.Chapter15"
+
+[[node]]
+id = "sqpMerit"
+source = "Conn–Gould–Toint, Section 15.4.1.1"
+
+[[node]]
+id = "sqpNormalModel"
+source = "Conn–Gould–Toint, Section 15.4.1.1"
+
+[[node]]
+id = "sqpOverallModel"
+source = "Conn–Gould–Toint, (15.4.4)"
+
+[[node]]
+id = "sqpTangentialModel"
+source = "Conn–Gould–Toint, (15.4.5)"
+
+[[node]]
+id = "sqpOverallModel_decrease"
+source = "Conn–Gould–Toint, (15.4.6)"
+
+[[node]]
+id = "sqpPenaltyThreshold"
+source = "Conn–Gould–Toint, (15.4.8)"
+
+[[node]]
+id = "sqpPenaltyThreshold_le_iff"
+source = "Conn–Gould–Toint, (15.4.7)–(15.4.8)"
+
+[[node]]
+id = "IsSQPNormalScaling"
+source = "Conn–Gould–Toint, (15.4.12)"
+
+[[node]]
+id = "sqpNormalModel_decrease_scaled"
+source = "Conn–Gould–Toint, (15.4.16)"
+
+[[node]]
+id = "sqpNormalizedMerit"
+source = "Conn–Gould–Toint, Section 15.4.1.4"
+
+[[node]]
+id = "lemma_15_4_1"
+source = "Conn–Gould–Toint, Lemma 15.4.1"
+
+[[node]]
+id = "lemma_15_4_2"
+source = "Conn–Gould–Toint, Lemma 15.4.2"
+
+[[node]]
+id = "lemma_15_4_3"
+source = "Conn–Gould–Toint, Lemma 15.4.3"
+
+[[node]]
+id = "lemma_15_4_5"
+source = "Conn–Gould–Toint, Lemma 15.4.5"
+
+[[node]]
+id = "lemma_15_4_7"
+source = "Conn–Gould–Toint, Lemma 15.4.7"
+
+[[node]]
+id = "sqpPenaltyUpdate"
+source = "Conn–Gould–Toint, Algorithm 15.4.1 Step 2"
+
+[[node]]
+id = "sqpPenaltyUpdate_eventually_constant"
+source = "Conn–Gould–Toint, stabilization argument of Theorem 15.4.8"
+
+[[node]]
+id = "theorem_15_4_8"
+source = "Conn–Gould–Toint, Theorem 15.4.8"
+
+[[node]]
+id = "lemma_15_4_9"
+source = "Conn–Gould–Toint, Lemma 15.4.9 with corrected positive coefficient"
+
+[[node]]
+id = "printed_tangential_coefficient_nonpos"
+source = "Conn–Gould–Toint, counterexample to the coefficient in the proof of Lemma 15.4.9"
+
+[[node]]
+id = "lemma_15_4_4"
+source = "Conn–Gould–Toint, Lemma 15.4.4"
+
+[[node]]
+id = "theorem_15_4_6"
+source = "Conn–Gould–Toint, Theorem 15.4.6"

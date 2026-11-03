@@ -147,6 +147,10 @@ both derivatives in the stationarity condition are evaluated at the feasible poi
 Chapter 15 covers local SQP convergence. Theorem 15.2.1(i) needs supplied multipliers
 to stay near the root multiplier from the first iteration. A convergent multiplier
 sequence can otherwise make the first stationary subproblem inconsistent.
+The composite SQP analysis evaluates the normal-step estimate at the Cauchy
+step and uses Lipschitz control along the full trial segments. The radius
+argument in Theorem 15.4.6 uses the very-successful update. The corrected
+coefficient in Lemma 15.4.9 stays positive for every nonnegative model bound.
 
 Chapter 16 covers the uniform least-squares Hessian bound, exact minimization of the scalar
 epigraph merit function, and the Fischer–Burmeister residual formulation of complementarity.
