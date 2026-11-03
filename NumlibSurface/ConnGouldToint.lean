@@ -185,8 +185,11 @@ A cubic model shows that the printed test can accept a strict increase.
 Chapter 13 covers the logarithmic barrier. Theorem 13.2.1 uses a lower objective
 bound to bound the barrier along the run. For log barriers, AC.8 holds on
 uniformly bounded positive paths.
-The curvature limit superior in Theorem 13.4.2 supplies arbitrarily late
-qualifying indices. The full inner-algorithm justification remains open.
+Theorem 13.4.2 has an inner convergence proof for Algorithm 13.3.1 under a
+uniform clearance, matching smooth objective extension, and uniform model
+estimates. The extension preserves the acceptance ratios and the limits
+give arbitrarily late coordinate stopping indices. The unconditional
+inner limit argument and the extension to Algorithm 13.2.1 remain open.
 The strong-criticality counterexample in Section 13.4 uses a smooth cutoff
 to meet the lower-boundedness requirement that the printed quadratic fails.
 On an unbounded approach to the boundary, a growing coordinate can cancel a vanishing one.

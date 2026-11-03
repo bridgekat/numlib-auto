@@ -103,3 +103,23 @@ source = "Conn–Gould–Toint, Hessian formula in (13.4.4)"
 [[node]]
 id = "logBarrierCounterRegularized_convergent_stops"
 source = "Bounded-below repair of the limit counterexample after Conn–Gould–Toint, Corollary 13.4.4"
+
+[[node]]
+id = "SecondPrimalBarrierInnerRun.toBTRRun"
+source = "Conn–Gould–Toint, the Section 13.3 reduction to basic trust-region convergence"
+
+[[node]]
+id = "theorem_13_4_2_inner_of_extension"
+source = "Conn–Gould–Toint, inner first- and second-order limits in Theorem 13.4.2 for the second primal algorithm"
+
+[[node]]
+id = "theorem_13_4_2_of_extension"
+source = "Conn–Gould–Toint, Theorem 13.4.2 for Algorithm 13.3.1 on a uniformly positive layer admitting a smooth extension"
+
+[[node]]
+id = "barrierEuclideanCoordinates"
+source = "Conn–Gould–Toint, Euclidean coordinates in (13.4.3)–(13.4.5)"
+
+[[node]]
+id = "theorem_13_4_2_of_local_extension"
+source = "Conn–Gould–Toint, coordinate transfer for Theorem 13.4.2 under local agreement with a smooth extension"

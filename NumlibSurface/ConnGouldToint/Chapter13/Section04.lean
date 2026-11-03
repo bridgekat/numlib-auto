@@ -1,3 +1,5 @@
+import Mathlib.Analysis.InnerProductSpace.PiL2
+import NumlibSurface.ConnGouldToint.Chapter13.Section03
 import NumlibSurface.ConnGouldToint.Chapter13.Section01
 import Mathlib.Order.LiminfLimsup
 import Mathlib.Analysis.Calculus.BumpFunction.FiniteDimension
@@ -213,6 +215,324 @@ theorem theorem_13_4_2_of_inner_limits {f : (ι → ℝ) → ℝ} {x : ℕ → �
   exact ⟨hx j, hj.2.le, fun d ↦
     (mul_le_mul_of_nonneg_right hj.1.le (Finset.sum_nonneg fun i _ ↦ sq_nonneg (d i))).trans
       (hmin j d)⟩
+
+section InnerConvergence
+
+open Chapter06 Set
+open Metric
+
+variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [CompleteSpace E]
+
+/-- Algorithm 13.3.1 is a BTR run for any objective extension that matches
+all iterates and trials. Its step already passes the fraction-to-boundary
+test before the ratio is evaluated. -/
+noncomputable def SecondPrimalBarrierInnerRun.toBTRRun
+    {P : BTRParams} {C : Set E} {σ : ℝ} {φ F : E → ℝ}
+    (r : SecondPrimalBarrierInnerRun P C σ φ)
+    (hx : ∀ j, F (r.x j) = φ (r.x j))
+    (hs : ∀ j, F (r.x j + r.s j) = φ (r.x j + r.s j)) :
+    BTRRun F P (fun _ _ _ _ ↦ True) where
+  x := r.x
+  s := r.s
+  Δ := r.Δ
+  p := fun _ ↦ normSeminorm ℝ E
+  norm_separates := fun _ _ h ↦ norm_eq_zero.mp h
+  model := r.model
+  delta_initial_pos := r.initial_radius_pos
+  feasible := fun j ↦ by simpa [trustRegion] using r.step_feasible j
+  sufficient_decrease := fun _ ↦ trivial
+  predicted_pos := r.predicted_pos
+  iterate_update := by
+    intro j
+    classical
+    rw [r.iterate_update, primalBarrierRatio, ite_eq_left (r.trial_admissible j)]
+    simp only [Optimization.acceptStep, btrRatio, Optimization.reductionRatio, hx, hs]
+    split_ifs with h
+    · exact ite_eq_left h
+    · exact ite_eq_right h
+  radius_update := by
+    intro j
+    have h := r.radius_update j
+    rw [primalBarrierRatio, ite_eq_left (r.trial_admissible j)] at h
+    simpa only [btrRatio, Optimization.reductionRatio, hx, hs] using h
+
+private theorem barrier_fraction_mul_min_le {q a b c : ℝ}
+    (hq : 0 ≤ q) (hq1 : q ≤ 1) (ha : 0 ≤ a) (hb : 0 ≤ b) (hc : q * a ≤ c) :
+    q * min a b ≤ min a (min b c) :=
+  le_min ((mul_le_mul_of_nonneg_left (min_le_left _ _) hq).trans
+    (mul_le_of_le_one_left ha hq1))
+    (le_min ((mul_le_mul_of_nonneg_left (min_le_right _ _) hq).trans
+      (mul_le_of_le_one_left hb hq1)) ((mul_le_mul_of_nonneg_left (min_le_left _ _) hq).trans hc))
+
+private theorem sq_min_of_nonneg {a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) :
+    (min a b) ^ 2 = min (a ^ 2) (b ^ 2) := by
+  rcases le_total a b with h | h
+  · rw [min_eq_left h, min_eq_left ((sq_le_sq₀ ha hb).mpr h)]
+  · rw [min_eq_right h, min_eq_right ((sq_le_sq₀ hb ha).mpr h)]
+
+private theorem abs_sub_min_zero_le (a b : ℝ) : |min 0 a - min 0 b| ≤ |a - b| := by
+  rcases le_total a 0 with ha | ha <;> rcases le_total b 0 with hb | hb
+  · rw [min_eq_right ha, min_eq_right hb]
+  · rw [min_eq_right ha, min_eq_left hb, sub_zero, abs_of_nonpos ha,
+      abs_of_nonpos (sub_nonpos.mpr (ha.trans hb))]
+    linarith
+  · rw [min_eq_left ha, min_eq_right hb, abs_of_nonneg (sub_nonneg.mpr hb),
+      abs_of_nonneg (sub_nonneg.mpr (hb.trans ha))]
+    linarith
+  · simp [min_eq_left ha, min_eq_left hb]
+
+/-- The first-order limit and the frequently nonnegative curvature bound
+used by Theorem 13.4.2 for Algorithm 13.3.1. The extension has the same
+values at the iterates and trials and agrees with the model derivatives
+at the centers. A fixed positive clearance and uniform bounds on the
+first- and second-order measures remove the caps in (13.3.2) at the
+cost of fixed factors. -/
+theorem theorem_13_4_2_inner_of_extension [Nontrivial E]
+    {P : BTRParams} {C : Set E} {σ : ℝ} {φ F : E → ℝ}
+    (r : SecondPrimalBarrierInnerRun P C σ φ)
+    (hx : ∀ j, F (r.x j) = φ (r.x j))
+    (hs : ∀ j, F (r.x j + r.s j) = φ (r.x j + r.s j))
+    (hf : ContDiff ℝ 2 F) (hlower : BddBelow (range F))
+    {K L D G T : ℝ} (hD : 0 < D) (hG : 0 < G) (hT : 0 < T)
+    (hclear : ∀ j, D ≤ (1 - σ) * infDist (r.x j) (frontier C))
+    (hH : ∀ y, ‖fderiv ℝ (fderiv ℝ F) y‖ ≤ L)
+    (hβ₁ : ∀ j, 1 ≤ r.β j) (hβK : ∀ j, r.β j ≤ K)
+    (hGbd : ∀ j, ‖r.g j‖ ≤ G)
+    (hτbd : ∀ j, |r.τ j| ≤ T)
+    (hτ : ∀ j, r.τ j = min 0
+      (leastUnitCurvature (fderiv ℝ (fderiv ℝ (r.model j)) (r.x j))))
+    (hval : ∀ j, F (r.x j) = r.model j (r.x j))
+    (hgrad : ∀ j, fderiv ℝ F (r.x j) = fderiv ℝ (r.model j) (r.x j))
+    (herr : ∀ j, |F (r.x j + r.s j) - r.model j (r.x j + r.s j)| ≤ K * (r.Δ j) ^ 2)
+    (hm : ∀ j y, y ∈ segment ℝ (r.x j) (r.x j + r.s j) →
+      DifferentiableAt ℝ (r.model j) y)
+    (hDm : ∀ j y, y ∈ segment ℝ (r.x j) (r.x j + r.s j) →
+      DifferentiableAt ℝ (fderiv ℝ (r.model j)) y)
+    (hvar : ∀ ε > (0 : ℝ), ∃ δ > (0 : ℝ), ∀ j, r.Δ j ≤ δ →
+      ∀ y ∈ segment ℝ (r.x j) (r.x j + r.s j),
+        ‖fderiv ℝ (fderiv ℝ F) y - fderiv ℝ (fderiv ℝ F) (r.x j)‖ +
+        ‖fderiv ℝ (fderiv ℝ (r.model j)) y -
+          fderiv ℝ (fderiv ℝ (r.model j)) (r.x j)‖ ≤ ε)
+    (hagree : ModelHessianAgreement F r.model r.x) :
+    Tendsto (fun j ↦ ‖fderiv ℝ F (r.x j)‖) atTop (𝓝 0) ∧
+    ∀ ε > (0 : ℝ), ∃ᶠ j in atTop,
+      -ε < leastUnitCurvature (fderiv ℝ (fderiv ℝ F) (r.x j)) := by
+  let run := r.toBTRRun hx hs
+  have hΔ (j : ℕ) : 0 < r.Δ j := run.delta_pos j
+  have hβ (j : ℕ) := zero_lt_one.trans_le (hβ₁ j)
+  have hg (j : ℕ) : r.g j = gradient F (r.x j) := by
+    rw [r.gradient_model]
+    unfold gradient
+    rw [hgrad]
+  let q := min 1 (D / G)
+  have hq : 0 < q := lt_min zero_lt_one (div_pos hD hG)
+  have hq1 : q ≤ 1 := min_le_left _ _
+  let κ := min (1 / 2) (r.κ * q)
+  have hκ : κ ∈ Ioo (0 : ℝ) 1 :=
+    ⟨lt_min (by norm_num) (mul_pos r.decrease_constant hq),
+      (min_le_left _ _).trans_lt (by norm_num)⟩
+  have hdec (j : ℕ) : HasSufficientModelDecrease (r.model j) (r.x j) (r.s j)
+      (gradient F (r.x j)) (r.β j) (r.Δ j) κ := by
+    rw [← hg]
+    refine ⟨hκ, ?_⟩
+    have hGq : q * (‖r.g j‖ / r.β j) ≤ (1 - σ) * infDist (r.x j) (frontier C) := calc
+      _ ≤ q * ‖r.g j‖ := mul_le_mul_of_nonneg_left (div_le_self (norm_nonneg _) (hβ₁ j)) hq.le
+      _ ≤ q * G := mul_le_mul_of_nonneg_left (hGbd j) hq.le
+      _ ≤ D := (le_div_iff₀ hG).mp (min_le_right _ _)
+      _ ≤ _ := hclear j
+    have hcap := barrier_fraction_mul_min_le hq.le hq1
+      (div_nonneg (norm_nonneg _) (hβ j).le) (hΔ j).le hGq
+    have hmain := mul_le_mul_of_nonneg_left hcap (mul_nonneg r.decrease_constant.le (norm_nonneg (r.g j)))
+    have hm : r.κ * (‖r.g j‖ * min (‖r.g j‖ / r.β j)
+        (constrainedBarrierRadius (r.Δ j) σ (infDist (r.x j) (frontier C)))) ≤
+        r.model j (r.x j) - r.model j (r.x j + r.s j) :=
+      (mul_le_mul_of_nonneg_left (le_max_left _ _) r.decrease_constant.le).trans
+        (r.sufficient_decrease j)
+    calc
+      _ ≤ (r.κ * q) * ‖r.g j‖ * min (‖r.g j‖ / r.β j) (r.Δ j) :=
+        mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right (min_le_right _ _) (norm_nonneg _))
+          (le_min (div_nonneg (norm_nonneg _) (hβ j).le) (hΔ j).le)
+      _ = (r.κ * ‖r.g j‖) * (q * min (‖r.g j‖ / r.β j) (r.Δ j)) := by ring
+      _ ≤ _ := by
+        exact hmain.trans (by simpa only [constrainedBarrierRadius, mul_assoc] using hm)
+  have hgradlim := theorem_6_4_6 run r.β hβ hβK hval hdec herr hlower hf hH
+    (show (0 : ℝ) ≤ 1 by norm_num) (fun _ _ ↦ by simp [run, SecondPrimalBarrierInnerRun.toBTRRun])
+  have hcrit : Tendsto (fun j ↦ ‖fderiv ℝ F (r.x j)‖) atTop (𝓝 0) := by
+    simpa only [run, SecondPrimalBarrierInnerRun.toBTRRun, gradient, LinearIsometryEquiv.norm_map]
+      using hgradlim
+  have hsmall : smallRadiusModelAgreement run :=
+    smallRadiusModelAgreement_of_hessians run hf hm hDm hval hgrad hcrit hagree
+      zero_lt_one (fun j ↦ by
+        change ‖r.s j‖ ≤ 1 * r.Δ j
+        rw [one_mul]
+        exact r.step_feasible j) hvar
+  refine ⟨hcrit, ?_⟩
+  let curv (j : ℕ) := min 0 (leastUnitCurvature (fderiv ℝ (fderiv ℝ F) (r.x j)))
+  have ha : Tendsto (fun j ↦ |curv j - r.τ j|) atTop (𝓝 0) := by
+    refine squeeze_zero (fun _ ↦ abs_nonneg _) (fun j ↦ ?_) (hagree hcrit)
+    rw [hτ]
+    exact (abs_sub_min_zero_le _ _).trans
+      (abs_sub_leastUnitCurvature_le _ _)
+  let q₂ := min 1 (D ^ 2 / T ^ 2)
+  have hq₂ : 0 < q₂ := lt_min zero_lt_one (div_pos (sq_pos_of_pos hD) (sq_pos_of_pos hT))
+  have hsecond (j : ℕ) : HasNegativeCurvatureDecrease (r.model j) (r.x j) (r.s j)
+      (r.τ j) (r.Δ j) (r.κ * q₂) := by
+    refine ⟨mul_pos r.decrease_constant hq₂, fun hneg ↦ ?_⟩
+    let b := (1 - σ) * infDist (r.x j) (frontier C)
+    have hb : 0 < b := hD.trans_le (hclear j)
+    have hTq : q₂ * (r.τ j) ^ 2 ≤ b ^ 2 := calc
+      _ ≤ q₂ * T ^ 2 := mul_le_mul_of_nonneg_left
+        (by simpa only [sq_abs] using (sq_le_sq₀ (abs_nonneg _) hT.le).mpr (hτbd j)) hq₂.le
+      _ ≤ D ^ 2 := (le_div_iff₀ (sq_pos_of_pos hT)).mp (min_le_right _ _)
+      _ ≤ _ := (sq_le_sq₀ hD.le hb.le).mpr (hclear j)
+    have hcap := barrier_fraction_mul_min_le hq₂.le (min_le_left _ _)
+      (sq_nonneg (r.τ j)) (sq_nonneg (r.Δ j)) hTq
+    rw [← sq_min_of_nonneg (a := r.Δ j) (hΔ j).le hb.le] at hcap
+    have hh := mul_le_mul_of_nonneg_left hcap
+      (mul_nonneg r.decrease_constant.le (neg_nonneg.mpr hneg.le))
+    have hm : r.κ * (-r.τ j * min ((r.τ j) ^ 2)
+        (constrainedBarrierRadius (r.Δ j) σ (infDist (r.x j) (frontier C)) ^ 2)) ≤
+        r.model j (r.x j) - r.model j (r.x j + r.s j) :=
+      (mul_le_mul_of_nonneg_left (le_max_right _ _) r.decrease_constant.le).trans
+        (r.sufficient_decrease j)
+    rw [abs_of_neg hneg]
+    calc
+      _ = (r.κ * -r.τ j) * (q₂ * min ((r.τ j) ^ 2) ((r.Δ j) ^ 2)) := by ring
+      _ ≤ _ := hh.trans (by simpa only [constrainedBarrierRadius, mul_assoc, b] using hm)
+  intro ε hε
+  exact (theorem_6_6_4 run (mul_pos r.decrease_constant hq₂) hval hlower hsmall ha hsecond ε hε).mono
+    (fun j hj ↦ hj.trans_le (min_le_right _ _))
+
+omit [CompleteSpace E] in
+private theorem leastUnitCurvature_mul_norm_sq_le [Nontrivial E]
+    (H : E →L[ℝ] E →L[ℝ] ℝ) (v : E) :
+    leastUnitCurvature H * ‖v‖ ^ 2 ≤ H v v := by
+  by_cases hv : v = 0
+  · simp [hv]
+  have hvn : 0 < ‖v‖ := norm_pos_iff.mpr hv
+  let u : sphere (0 : E) 1 :=
+    ⟨‖v‖⁻¹ • v, mem_sphere_zero_iff_norm.mpr (by
+      rw [norm_smul, Real.norm_of_nonneg (inv_nonneg.mpr hvn.le), inv_mul_cancel₀ hvn.ne'])⟩
+  have hlower : BddBelow (range (fun u : sphere (0 : E) 1 ↦ H u u)) := by
+    refine ⟨-‖H‖, ?_⟩
+    rintro _ ⟨w, rfl⟩
+    have hw : ‖(w : E)‖ = 1 := norm_eq_of_mem_sphere w
+    have h₁ := (H w).le_opNorm (w : E)
+    have h₂ := H.le_opNorm (w : E)
+    simp only [hw, mul_one, Real.norm_eq_abs] at h₁ h₂
+    linarith [(abs_le.mp (h₁.trans h₂)).1]
+  have hq := ciInf_le hlower u
+  have hh := mul_le_mul_of_nonneg_right hq (sq_nonneg ‖v‖)
+  change leastUnitCurvature H * ‖v‖ ^ 2 ≤ H (‖v‖⁻¹ • v) (‖v‖⁻¹ • v) * ‖v‖ ^ 2 at hh
+  simp only [map_smul, smul_apply, smul_eq_mul] at hh
+  have heq : (‖v‖⁻¹ * (‖v‖⁻¹ * H v v)) * ‖v‖ ^ 2 = H v v := by field_simp
+  simpa only [heq] using hh
+
+end InnerConvergence
+
+section EuclideanStopping
+
+open Chapter06
+
+variable [Nonempty ι]
+
+omit [DecidableEq ι] [Nonempty ι] in
+private theorem barrier_euclidean_norm_sq (d : ι → ℝ) :
+    ‖(WithLp.toLp 2 d : EuclideanSpace ℝ ι)‖ ^ 2 = ∑ i, (d i) ^ 2 := by
+  rw [EuclideanSpace.norm_eq, Real.sq_sqrt]
+  · simp only [Real.norm_eq_abs, sq_abs]
+  · exact Finset.sum_nonneg fun _ _ ↦ sq_nonneg _
+
+/-- The continuous linear coordinate map into the Euclidean product. -/
+noncomputable def barrierEuclideanCoordinates : (ι → ℝ) →L[ℝ] EuclideanSpace ℝ ι :=
+  (PiLp.continuousLinearEquiv 2 ℝ (fun _ : ι ↦ ℝ)).symm.toContinuousLinearMap
+
+omit [DecidableEq ι] [Nonempty ι] in
+private theorem barrier_composed_hessian {F : EuclideanSpace ℝ ι → ℝ}
+    (hf : ContDiff ℝ 2 F) (x d : ι → ℝ) :
+    fderiv ℝ (fderiv ℝ (F ∘ barrierEuclideanCoordinates)) x d d =
+      fderiv ℝ (fderiv ℝ F) (barrierEuclideanCoordinates x)
+        (barrierEuclideanCoordinates d) (barrierEuclideanCoordinates d) := by
+  let T : (ι → ℝ) →L[ℝ] EuclideanSpace ℝ ι := barrierEuclideanCoordinates
+  let A : (EuclideanSpace ℝ ι →L[ℝ] ℝ) →L[ℝ] (ι → ℝ) →L[ℝ] ℝ :=
+    (ContinuousLinearMap.compL ℝ (ι → ℝ) (EuclideanSpace ℝ ι) ℝ).flip T
+  have he : fderiv ℝ (F ∘ T) = fun y ↦ A (fderiv ℝ F (T y)) := by
+    funext y
+    exact (((hf.differentiable (by norm_num) (T y)).hasFDerivAt).comp y T.hasFDerivAt).fderiv
+  have hdf := (hf.fderiv_right (m := 1) (by norm_num)).differentiable (by norm_num) (T x)
+  have hd := A.hasFDerivAt.comp x (hdf.hasFDerivAt.comp x T.hasFDerivAt)
+  change HasFDerivAt (fun y ↦ A (fderiv ℝ F (T y))) _ x at hd
+  change fderiv ℝ (fderiv ℝ (F ∘ T)) x d d = _
+  rw [he, hd.fderiv]
+  rfl
+
+/-- The inner limits give the coordinate stopping tests of Theorem 13.4.2.
+The two derivative identities are the gradient and Hessian transformation
+under the Euclidean coordinate map at the positive iterates. -/
+theorem theorem_13_4_2_of_extension {f : (ι → ℝ) → ℝ} {F : EuclideanSpace ℝ ι → ℝ}
+    {x : ℕ → EuclideanSpace ℝ ι} {μ εD εE : ℝ} (hD : 0 < εD) (hE : 0 < εE)
+    (hx : ∀ j i, 0 < (x j).ofLp i)
+    (hDmap : ∀ j i,
+      barrierCoordinateGradient f (x j).ofLp i - μ / (x j).ofLp i =
+        fderiv ℝ F (x j) (WithLp.toLp 2 (Pi.single i 1)))
+    (hHmap : ∀ j (d : ι → ℝ),
+      fderiv ℝ (fderiv ℝ f) (x j).ofLp d d + μ * ∑ i, (((x j).ofLp i) ^ 2)⁻¹ * d i * d i =
+        fderiv ℝ (fderiv ℝ F) (x j) (WithLp.toLp 2 d) (WithLp.toLp 2 d))
+    (hgrad : Tendsto (fun j ↦ ‖fderiv ℝ F (x j)‖) atTop (𝓝 0))
+    (hcurv : ∀ ε > (0 : ℝ), ∃ᶠ j in atTop,
+      -ε < leastUnitCurvature (fderiv ℝ (fderiv ℝ F) (x j))) :
+    ∃ᶠ j in atTop, BarrierSecondOrderStop f (x j).ofLp μ εD εE := by
+  have hDlim : Tendsto (fun j ↦
+      ∑ i, (barrierCoordinateGradient f (x j).ofLp i - μ / (x j).ofLp i) ^ 2) atTop (𝓝 0) := by
+    rw [← Finset.sum_const_zero (s := (Finset.univ : Finset ι))]
+    apply tendsto_finsetSum Finset.univ
+    intro i _
+    let v : EuclideanSpace ℝ ι := WithLp.toLp 2 (Pi.single i 1)
+    have hterm : Tendsto (fun j ↦
+        barrierCoordinateGradient f (x j).ofLp i - μ / (x j).ofLp i) atTop (𝓝 0) :=
+      squeeze_zero_norm' (a := fun j ↦ ‖fderiv ℝ F (x j)‖ * ‖v‖)
+        (Eventually.of_forall fun j ↦ by rw [hDmap]; exact (fderiv ℝ F (x j)).le_opNorm v)
+        (by simpa using hgrad.mul_const ‖v‖)
+    simpa only [zero_pow (by decide : (2 : ℕ) ≠ 0)] using hterm.pow 2
+  refine ((hcurv εE hE).and_eventually
+    (hDlim.eventually (gt_mem_nhds (sq_pos_of_pos hD)))).mono ?_
+  intro j hj
+  refine ⟨hx j, hj.2.le, fun d ↦ ?_⟩
+  rw [hHmap, ← barrier_euclidean_norm_sq]
+  exact (mul_le_mul_of_nonneg_right hj.1.le (sq_nonneg _)).trans
+    (leastUnitCurvature_mul_norm_sq_le _ _)
+
+/-- A smooth extension that agrees with the barrier objective in a
+neighborhood of each iterate satisfies the coordinate derivative identities
+in the stopping transfer. -/
+theorem theorem_13_4_2_of_local_extension {f : (ι → ℝ) → ℝ} {F : EuclideanSpace ℝ ι → ℝ}
+    {x : ℕ → EuclideanSpace ℝ ι} {μ εD εE : ℝ} (hD : 0 < εD) (hE : 0 < εE)
+    (hf : ContDiff ℝ 2 f) (hF : ContDiff ℝ 2 F) (hx : ∀ j i, 0 < (x j).ofLp i)
+    (hlocal : ∀ j, (F ∘ barrierEuclideanCoordinates) =ᶠ[𝓝 (x j).ofLp]
+      fun y ↦ logBarrierObjective f y μ)
+    (hgrad : Tendsto (fun j ↦ ‖fderiv ℝ F (x j)‖) atTop (𝓝 0))
+    (hcurv : ∀ ε > (0 : ℝ), ∃ᶠ j in atTop,
+      -ε < leastUnitCurvature (fderiv ℝ (fderiv ℝ F) (x j))) :
+    ∃ᶠ j in atTop, BarrierSecondOrderStop f (x j).ofLp μ εD εE := by
+  have hTx (j : ℕ) : barrierEuclideanCoordinates (x j).ofLp = x j :=
+    WithLp.toLp_ofLp 2 (x j)
+  refine theorem_13_4_2_of_extension hD hE hx ?_ ?_ hgrad hcurv
+  · intro j i
+    rw [← barrierCoordinateGradient_logBarrierObjective
+      (hf.differentiable (by norm_num) _) (hx j)]
+    unfold barrierCoordinateGradient
+    rw [← (hlocal j).fderiv_eq]
+    have hh := ((hF.differentiable (by norm_num) _).hasFDerivAt.comp
+      (x j).ofLp barrierEuclideanCoordinates.hasFDerivAt).fderiv
+    rw [hh, ContinuousLinearMap.comp_apply, hTx]
+    rfl
+  · intro j d
+    rw [← logBarrierObjective_hessian_apply hf (hx j), ← (hlocal j).fderiv.fderiv_eq,
+      barrier_composed_hessian hF, hTx]
+    rfl
+
+end EuclideanStopping
+
 
 /-- The asymptotically active constraints of a sequence. -/
 def AsymptoticallyActive {α : Type*} (l : Filter α) (x : α → ι → ℝ) (i : ι) : Prop :=
