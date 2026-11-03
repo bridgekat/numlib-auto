@@ -1,0 +1,25 @@
+namespace = "ConnGouldToint.Chapter15"
+
+[[node]]
+id = "theorem_15_4_22"
+source = "Conn–Gould–Toint, Theorem 15.4.22, with uniform trial and accepted-step bounds"
+
+[[node]]
+id = "theorem_15_4_23"
+source = "Conn–Gould–Toint, Theorem 15.4.23, Algorithm 15.4.6 with the correction step"
+
+[[node]]
+id = "theorem_15_4_24"
+source = "Conn–Gould–Toint, Theorem 15.4.24, with explicit trapping and step bounds"
+
+[[node]]
+id = "theorem_15_4_25"
+source = "Conn–Gould–Toint, Theorem 15.4.25, with compact-tail coverage and corrected curvature margin"
+
+[[node]]
+id = "ByrdOmojokunTangentialData"
+source = "Conn–Gould–Toint, model and penalty inputs to Theorem 15.4.22"
+
+[[node]]
+id = "ByrdOmojokunTangentialData.model_penalty"
+source = "Conn–Gould–Toint, (15.4.7) as ensured by the penalty update"

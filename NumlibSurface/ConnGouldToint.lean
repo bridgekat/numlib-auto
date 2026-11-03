@@ -202,6 +202,9 @@ Theorem 15.4.12 separates original-trial agreement from corrected accepted
 decrease. The local rate result uses eventual accepted-step conditions and
 multiplier convergence. Theorem 15.4.16 uses the maximum cluster curvature
 and requires the cluster set to control the tail, as relative compactness ensures.
+Theorems 15.4.22–25 treat the Byrd–Omojokun method with corrected steps.
+Theorem 15.4.23 corrects the printed algorithm reference, and Theorem 15.4.25
+uses the maximum cluster curvature.
 
 Chapter 16 covers the uniform least-squares Hessian bound, exact minimization of the scalar
 epigraph merit function, and the Fischer–Burmeister residual formulation of complementarity.

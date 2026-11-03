@@ -473,21 +473,20 @@ private theorem tendsto_zero_of_relaxed_steps {u v Δ : ℕ → ℝ} {S : Set �
 omit [InnerProductSpace ℝ E] [NormedSpace ℝ F] in
 private theorem sqp_tendsto_zero_of_normal_decrease (f : E → ℝ) (c : E → F) (x s : ℕ → E) (σ d Δ u : ℕ → ℝ)
     (S : Set ℕ) {fmin σmin η η₂ C L γ γ₂ : ℝ}
-    (hη : 0 < η) (hη₂ : η ≤ η₂) (hη₂' : η₂ < 1) (hC : 0 ≤ C)
+    (hη : 0 < η) (hη₂' : η₂ < 1) (hC : 0 ≤ C)
     (hL : 0 ≤ L) (hσmin : 0 < σmin) (hγ : 0 < γ) (hγ₂ : 0 ≤ γ₂) (hγ₂' : γ₂ < 1)
     (hf : ∀ k, fmin ≤ f (x k)) (hσ : ∀ k, σmin ≤ σ k) (hσmono : Monotone σ)
     (hΔ : ∀ k, 0 < Δ k) (hu : ∀ k, 0 ≤ u k)
-    (hratio : ∀ k, k ∈ S ↔ η ≤ Optimization.reductionRatio
-      (sqpMerit f c (σ k)) (x k) (s k) (d k))
     (hd_nonneg : ∀ k, 0 ≤ d k)
     (hpred : ∀ ε > 0, ∃ p > 0, ∃ b > 0, ∃ e > 0, ∀ k, ε ≤ u k →
       p * (1 + σ k) * min e (b * Δ k) ≤ d k)
     (herr : ∀ k, |sqpMerit f c (σ k) (x k + s k) -
       (sqpMerit f c (σ k) (x k) - d k)| ≤ C * (1 + σ k) * (Δ k) ^ 2)
     (hnext : ∀ k, γ * Δ k ≤ Δ (k + 1))
-    (hacc : ∀ k ∈ S, x (k + 1) = x k + s k)
+    (hacc : ∀ k ∈ S, η * d k ≤ sqpMerit f c (σ k) (x k) -
+      sqpMerit f c (σ k) (x (k + 1)))
     (hvery : ∀ k, η₂ ≤ Optimization.reductionRatio
-      (sqpMerit f c (σ k)) (x k) (s k) (d k) → Δ k ≤ Δ (k + 1))
+      (sqpMerit f c (σ k)) (x k) (s k) (d k) → k ∈ S ∧ Δ k ≤ Δ (k + 1))
     (hrej : ∀ k ∉ S, x (k + 1) = x k ∧ Δ (k + 1) ≤ γ₂ * Δ k)
     (hmove : ∀ k ∈ S, u k - u (k + 1) ≤ L * Δ k)
     (hstay : ∀ k ∉ S, u (k + 1) = u k) :
@@ -505,15 +504,7 @@ private theorem sqp_tendsto_zero_of_normal_decrease (f : E → ℝ) (c : E → F
       (div_le_div_of_nonneg_left (sub_nonneg.mpr (hf _)) (hσpos _) (hσmono (Nat.le_succ _)))
       le_rfl
   have hdrop (k : ℕ) (hk : k ∈ S) : η * (d k / σ k) ≤ v k - v (k + 1) := by
-    have hpos : 0 < d k := by
-      by_contra! hz
-      have hzero := le_antisymm hz (hd_nonneg k)
-      have hbad := (hratio k).mp hk
-      simp [Optimization.reductionRatio, hzero, not_le_of_gt hη] at hbad
-    have hactual := (le_div_iff₀ hpos).mp ((hratio k).mp hk)
-    change η * d k ≤ sqpMerit f c (σ k) (x k) -
-      sqpMerit f c (σ k) (x k + s k) at hactual
-    rw [← hacc k hk] at hactual
+    have hactual := hacc k hk
     have hnorm : sqpNormalizedMerit f c fmin (σ k) (x (k + 1)) ≤ v k - η * (d k / σ k) := by
       dsimp [v, sqpNormalizedMerit]
       rw [← mul_div_assoc, ← sub_div]
@@ -550,7 +541,7 @@ private theorem sqp_tendsto_zero_of_normal_decrease (f : E → ℝ) (c : E → F
         have h := Optimization.le_reductionRatio_of_abs_sub_le hpos
           ((herr k).trans (by nlinarith only [hbound, hbound']))
         linarith only [h]
-      exact ⟨(hratio k).mpr (hη₂.trans hv), hvery k hv⟩
+      exact hvery k hv
     · intro hS
       have hd : p * min e (b * Δ k) ≤ d k / σ k := by
         apply (le_div_iff₀ (hσpos k)).mpr
@@ -566,6 +557,17 @@ private theorem sqp_tendsto_zero_of_normal_decrease (f : E → ℝ) (c : E → F
   rw [show v k = sqpNormalizedMerit f c fmin (σ k) (x k) from rfl,
     hexpand _ (hσpos k).ne']
   exact add_nonneg (div_nonneg (sub_nonneg.mpr (hf k)) (hσpos k).le) (norm_nonneg _)
+
+omit [InnerProductSpace ℝ E] [NormedSpace ℝ F] in
+private theorem sqp_actual_decrease_of_ratio (f : E → ℝ) (c : E → F) (x s : E)
+    {σ η d : ℝ} (hη : 0 < η) (hd : 0 ≤ d)
+    (hr : η ≤ Optimization.reductionRatio (sqpMerit f c σ) x s d) :
+    η * d ≤ sqpMerit f c σ x - sqpMerit f c σ (x + s) := by
+  have hp : 0 < d := by
+    by_contra! h
+    have hz := le_antisymm h hd
+    simp [Optimization.reductionRatio, hz, not_le_of_gt hη] at hr
+  exact (le_div_iff₀ hp).mp hr
 
 omit [InnerProductSpace ℝ E] [NormedSpace ℝ F] in
 /-- Theorem 15.4.6 for the relaxed-linearization run. The model lower bound
@@ -592,8 +594,9 @@ theorem theorem_15_4_6 (f : E → ℝ) (c : E → F) (x s : ℕ → E) (σ d Δ 
     Filter.Tendsto (fun k => c (x k)) Filter.atTop (nhds 0) := by
   rw [tendsto_zero_iff_norm_tendsto_zero]
   refine sqp_tendsto_zero_of_normal_decrease f c x s σ d Δ (fun k => ‖c (x k)‖) S
-    hη hη₂ hη₂' hC hL hσmin hγ hγ₂ hγ₂' hf hσ hσmono hΔ
-    (fun k => norm_nonneg _) hratio ?_ ?_ herr hnext hacc hvery hrej ?_ ?_
+    hη hη₂' hC hL hσmin hγ hγ₂ hγ₂' hf hσ hσmono hΔ
+    (fun k => norm_nonneg _) ?_ ?_ herr hnext ?_
+    (fun k hk => ⟨(hratio k).mpr (hη₂.trans hk), hvery k hk⟩) hrej ?_ ?_
   · intro k
     exact (mul_nonneg (mul_nonneg hν.le (hσmin.le.trans (hσ k)))
       (le_min (norm_nonneg _) (mul_nonneg hb.le (hΔ k).le))).trans (hpred k)
@@ -610,6 +613,11 @@ theorem theorem_15_4_6 (f : E → ℝ) (c : E → F) (x s : ℕ → E) (σ d Δ 
     exact (mul_le_mul hcoeff (min_le_min_right _ hk)
       (le_min hε.le (mul_nonneg hb.le (hΔ k).le))
       (mul_nonneg hν.le (hσmin.le.trans (hσ k)))).trans (hpred k)
+  · intro k hk
+    rw [hacc k hk]
+    have hd := (mul_nonneg (mul_nonneg hν.le (hσmin.le.trans (hσ k)))
+      (le_min (norm_nonneg _) (mul_nonneg hb.le (hΔ k).le))).trans (hpred k)
+    exact sqp_actual_decrease_of_ratio f c (x k) (s k) hη hd ((hratio k).mp hk)
   · intro k hk
     rw [hacc k hk]
     calc
@@ -996,6 +1004,59 @@ theorem lemma_15_4_18 (f : E → ℝ) (c : E → F) (x : E)
     simpa only [mul_right_comm κ (u / ‖c x‖) (σ r)] using h r hr
 
 omit [InnerProductSpace ℝ E] [NormedSpace ℝ F] in
+/-- Normal criticality converges to zero with original-trial acceptance and
+the decrease of the actual accepted iterate. The uniform
+trial error and accepted-step variation bounds make the regularity
+required by the convergence argument explicit. -/
+theorem sqp_normal_criticality_of_accepted_decrease (f : E → ℝ) (c : E → F) (a : E → E)
+    (x s : ℕ → E) (σ d Δ : ℕ → ℝ) (S : Set ℕ)
+    {fmin σmin η η₂ κ cmax β ξ C L γ γ₂ : ℝ}
+    (hη : 0 < η) (hη₂' : η₂ < 1)
+    (hκ : 0 < κ) (hcmax : 0 < cmax) (hβ : 0 < β) (hξ : 0 < ξ)
+    (hC : 0 ≤ C) (hL : 0 ≤ L) (hσmin : 0 < σmin)
+    (hγ : 0 < γ) (hγ₂ : 0 ≤ γ₂) (hγ₂' : γ₂ < 1)
+    (hf : ∀ k, fmin ≤ f (x k)) (hσ : ∀ k, σmin ≤ σ k) (hσmono : Monotone σ)
+    (hΔ : ∀ k, 0 < Δ k)
+    (hpred : ∀ k, κ * σ k * (‖a (x k)‖ / cmax) *
+      min (ξ * Δ k) (‖a (x k)‖ / β) ≤ d k)
+    (herr : ∀ k, |sqpMerit f c (σ k) (x k + s k) -
+      (sqpMerit f c (σ k) (x k) - d k)| ≤ C * (1 + σ k) * (Δ k) ^ 2)
+    (hnext : ∀ k, γ * Δ k ≤ Δ (k + 1))
+    (hacc : ∀ k ∈ S, η * d k ≤ sqpMerit f c (σ k) (x k) -
+      sqpMerit f c (σ k) (x (k + 1)))
+    (hvery : ∀ k, η₂ ≤ Optimization.reductionRatio
+      (sqpMerit f c (σ k)) (x k) (s k) (d k) → k ∈ S ∧ Δ k ≤ Δ (k + 1))
+    (hrej : ∀ k ∉ S, x (k + 1) = x k ∧ Δ (k + 1) ≤ γ₂ * Δ k)
+    (hmove : ∀ k ∈ S, ‖a (x k)‖ - ‖a (x (k + 1))‖ ≤ L * Δ k) :
+    Filter.Tendsto (fun k => a (x k)) Filter.atTop (nhds 0) := by
+  rw [tendsto_zero_iff_norm_tendsto_zero]
+  refine sqp_tendsto_zero_of_normal_decrease f c x s σ d Δ (fun k => ‖a (x k)‖) S
+    hη hη₂' hC hL hσmin hγ hγ₂ hγ₂' hf hσ hσmono hΔ
+    (fun k => norm_nonneg _) ?_ ?_ herr hnext hacc hvery hrej hmove ?_
+  · intro k
+    have hs := hσmin.trans_le (hσ k)
+    exact (mul_nonneg (mul_nonneg (mul_nonneg hκ.le hs.le)
+      (div_nonneg (norm_nonneg _) hcmax.le)) (le_min (mul_nonneg hξ.le (hΔ k).le)
+      (div_nonneg (norm_nonneg _) hβ.le))).trans (hpred k)
+  · intro ε hε
+    let p := κ * (ε / cmax) * (σmin / (1 + σmin))
+    refine ⟨p, by dsimp [p]; positivity, ξ, hξ, ε / β, div_pos hε hβ, fun k hk => ?_⟩
+    have hs := hσmin.trans_le (hσ k)
+    have hh : σmin / (1 + σmin) * (1 + σ k) ≤ σ k := by
+      rw [div_mul_eq_mul_div]
+      apply (div_le_iff₀ (by positivity : 0 < 1 + σmin)).mpr
+      linarith only [hσ k]
+    have hcoeff : p * (1 + σ k) ≤ κ * σ k * (‖a (x k)‖ / cmax) := calc
+      _ = κ * (σmin / (1 + σmin) * (1 + σ k)) * (ε / cmax) := by dsimp [p]; ring
+      _ ≤ _ := mul_le_mul (mul_le_mul_of_nonneg_left hh hκ.le)
+        (div_le_div_of_nonneg_right hk hcmax.le) (div_nonneg hε.le hcmax.le) (by positivity)
+    rw [min_comm (ε / β)]
+    exact (mul_le_mul hcoeff (min_le_min_left _ (div_le_div_of_nonneg_right hk hβ.le))
+      (le_min (mul_nonneg hξ.le (hΔ k).le) (div_nonneg hε.le hβ.le)) (by positivity)).trans (hpred k)
+  · intro k hk
+    rw [(hrej k hk).1]
+
+omit [InnerProductSpace ℝ E] [NormedSpace ℝ F] in
 /-- Theorem 15.4.19. The normal criticality vector converges to zero under
 the bounded-residual Cauchy decrease estimate (15.4.133). The uniform
 trial error and accepted-step variation bounds make the regularity
@@ -1022,34 +1083,18 @@ theorem theorem_15_4_19 (f : E → ℝ) (c : E → F) (a : E → E)
     (hrej : ∀ k ∉ S, x (k + 1) = x k ∧ Δ (k + 1) ≤ γ₂ * Δ k)
     (hmove : ∀ k ∈ S, ‖a (x k)‖ - ‖a (x k + s k)‖ ≤ L * Δ k) :
     Filter.Tendsto (fun k => a (x k)) Filter.atTop (nhds 0) := by
-  rw [tendsto_zero_iff_norm_tendsto_zero]
-  refine sqp_tendsto_zero_of_normal_decrease f c x s σ d Δ (fun k => ‖a (x k)‖) S
-    hη hη₂ hη₂' hC hL hσmin hγ hγ₂ hγ₂' hf hσ hσmono hΔ
-    (fun k => norm_nonneg _) hratio ?_ ?_ herr hnext hacc hvery hrej ?_ ?_
-  · intro k
+  refine sqp_normal_criticality_of_accepted_decrease f c a x s σ d Δ S
+    hη hη₂' hκ hcmax hβ hξ hC hL hσmin hγ hγ₂ hγ₂' hf hσ hσmono hΔ
+    hpred herr hnext ?_ (fun k hk => ⟨(hratio k).mpr (hη₂.trans hk), hvery k hk⟩) hrej ?_
+  · intro k hk
+    rw [hacc k hk]
     have hs := hσmin.trans_le (hσ k)
-    exact (mul_nonneg (mul_nonneg (mul_nonneg hκ.le hs.le)
+    have hd := (mul_nonneg (mul_nonneg (mul_nonneg hκ.le hs.le)
       (div_nonneg (norm_nonneg _) hcmax.le)) (le_min (mul_nonneg hξ.le (hΔ k).le)
       (div_nonneg (norm_nonneg _) hβ.le))).trans (hpred k)
-  · intro ε hε
-    let p := κ * (ε / cmax) * (σmin / (1 + σmin))
-    refine ⟨p, by dsimp [p]; positivity, ξ, hξ, ε / β, div_pos hε hβ, fun k hk => ?_⟩
-    have hs := hσmin.trans_le (hσ k)
-    have hh : σmin / (1 + σmin) * (1 + σ k) ≤ σ k := by
-      rw [div_mul_eq_mul_div]
-      apply (div_le_iff₀ (by positivity : 0 < 1 + σmin)).mpr
-      linarith only [hσ k]
-    have hcoeff : p * (1 + σ k) ≤ κ * σ k * (‖a (x k)‖ / cmax) := calc
-      _ = κ * (σmin / (1 + σmin) * (1 + σ k)) * (ε / cmax) := by dsimp [p]; ring
-      _ ≤ _ := mul_le_mul (mul_le_mul_of_nonneg_left hh hκ.le)
-        (div_le_div_of_nonneg_right hk hcmax.le) (div_nonneg hε.le hcmax.le) (by positivity)
-    rw [min_comm (ε / β)]
-    exact (mul_le_mul hcoeff (min_le_min_left _ (div_le_div_of_nonneg_right hk hβ.le))
-      (le_min (mul_nonneg hξ.le (hΔ k).le) (div_nonneg hε.le hβ.le)) (by positivity)).trans (hpred k)
+    exact sqp_actual_decrease_of_ratio f c (x k) (s k) hη hd ((hratio k).mp hk)
   · intro k hk
     simpa only [hacc k hk] using hmove k hk
-  · intro k hk
-    rw [(hrej k hk).1]
 
 omit [InnerProductSpace ℝ E] [NormedSpace ℝ F] in
 /-- Corollary 15.4.20. The uniform lower singular-value bound in AA.14

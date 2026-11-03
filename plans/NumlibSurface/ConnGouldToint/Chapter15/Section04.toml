@@ -139,3 +139,7 @@ source = "Conn–Gould–Toint, (15.4.105)–(15.4.111), uniform two-case decrea
 [[node]]
 id = "sqp_normal_correction_progress"
 source = "Conn–Gould–Toint, small-radius original-trial guarantee in Theorem 15.4.12"
+
+[[node]]
+id = "sqp_normal_criticality_of_accepted_decrease"
+source = "Conn–Gould–Toint, extension of Theorem 15.4.19 to corrected accepted trials in Theorem 15.4.23"
