@@ -2,6 +2,10 @@ namespace = "ConnGouldToint.Chapter07"
 desc = "The unreduced symmetric tridiagonal matrix in the Lanczos subproblem. Reuse the backbone first-coordinate lemma for eigenvectors."
 
 [[node]]
+id = "theorem_7_5_10"
+source = "Conn–Gould–Toint, Theorem 7.5.10"
+
+[[node]]
 id = "lemma_7_5_11"
 source = "Conn–Gould–Toint, Lemma 7.5.11"
 
@@ -10,9 +14,17 @@ id = "theorem_7_5_12"
 source = "Conn–Gould–Toint, Theorem 7.5.12"
 
 [[node]]
+id = "corollary_7_5_13"
+source = "Conn–Gould–Toint, Corollary 7.5.13"
+
+[[node]]
 id = "theorem_7_5_14"
 source = "Conn–Gould–Toint, Theorem 7.5.14"
 
 [[node]]
 id = "theorem_7_5_15"
 source = "Conn–Gould–Toint, Theorem 7.5.15"
+
+[[node]]
+id = "theorem_7_5_16"
+source = "Conn–Gould–Toint, Theorem 7.5.16"

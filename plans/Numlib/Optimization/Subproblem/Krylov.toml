@@ -19,3 +19,7 @@ source = "Cartis–Gould–Toint, Lemma 10.2.1"
 [[node]]
 id = "krylov_multiplier_mono_trustRegion"
 source = "Cartis–Gould–Toint, Lemma 10.3.1"
+
+[[node]]
+id = "isMinOn_closedBall_of_isMinOn_invariant_subspace"
+source = "Conn–Gould–Toint, Theorem 7.5.16"

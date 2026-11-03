@@ -31,9 +31,9 @@ does not imply AN.3. A scaling counterexample and a fixed-norm version with Lips
 gradients along the iterates are formalized.
 
 Chapter 7 covers quadratic subproblems on spheres and balls and properties of Lanczos
-tridiagonals. The sphere and ball characterizations require a positive radius. Lemma 7.5.11
-is given for symmetric tridiagonals as used by Lanczos, and Theorem 7.5.12 expresses the
-exclusion of the hard case through eigenvector nonorthogonality.
+tridiagonals. The sphere and ball characterizations require a positive radius. Theorem 7.5.12
+expresses the exclusion of the hard case through eigenvector nonorthogonality. Theorem 7.5.16
+uses the preconditioner inner-product coordinates.
 
 Chapter 10 covers cumulative model decrease for the nonmonotone acceptance rule.
 The reference schedule in (10.1.2) requires strict decrease only when the reference changes.

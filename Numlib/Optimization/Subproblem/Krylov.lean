@@ -188,6 +188,56 @@ theorem IsTrustRegionMultiplier.galerkin_of_compressionL (hs : s ∈ K)
     ∀ v ∈ K, ⟪g + H s + μ • s, v⟫ = 0 :=
   (compressionL_shifted_iff hs).1 h.shifted
 
+/-- A trust-region minimizer on an invariant subspace containing the gradient is global
+if the gradient has a nonzero pairing with an eigenvector for the leftmost eigenvalue. -/
+theorem isMinOn_closedBall_of_isMinOn_invariant_subspace
+    (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hK : K ∈ Module.End.invtSubmodule (H : E →ₗ[ℝ] E))
+    (hg : g ∈ K) (heasy : ∃ v, H v = leftmost hH • v ∧ ⟪v, g⟫ ≠ 0)
+    (hΔ : 0 < Δ) (hs : s ∈ K) (hsΔ : ‖s‖ ≤ Δ)
+    (hmin : IsMinOn (quadModel g H) ((K : Set E) ∩ closedBall 0 Δ) s) :
+    IsMinOn (quadModel g H) (closedBall 0 Δ) s := by
+  have hinv : ∀ x ∈ K, H x ∈ K :=
+    (Module.End.mem_invtSubmodule_iff_forall_mem_of_mem (H : E →ₗ[ℝ] E)).mp hK
+  have hcomp := (isMinOn_subspace_iff_compression hs).mp hmin
+  have hsΔ' : ‖(⟨s, hs⟩ : K)‖ ≤ Δ := hsΔ
+  obtain ⟨μ, hμ⟩ := (isMinOn_closedBall_iff (isSymmetric_compressionL hH) hΔ hsΔ').mp hcomp
+  have hgal := hμ.galerkin_of_compressionL hs
+  let r := g + H s + μ • s
+  have hr : r ∈ K := K.add_mem (K.add_mem hg (hinv s hs)) (K.smul_mem _ hs)
+  have hr0 : r = 0 := inner_self_eq_zero.mp (hgal r hr)
+  have hshift : (H + μ • (1 : E →L[ℝ] E)) s = -g := by
+    rw [← add_eq_zero_iff_eq_neg]
+    simpa [r, add_apply, smul_apply, one_apply_eq_self, add_comm, add_left_comm, add_assoc] using hr0
+  obtain ⟨v, hv, hvg⟩ := heasy
+  let p := K.orthogonalProjectionOnto v
+  have hp₀ : p ≠ 0 := by
+    intro hp
+    apply hvg
+    have he := inner_orthogonalProjectionOnto_left v (⟨g, hg⟩ : K)
+    change ⟪p, (⟨g, hg⟩ : K)⟫ = ⟪v, g⟫ at he
+    simpa [hp] using he.symm
+  have hpair : ⟪p, compressionL H K p⟫ = leftmost hH * ‖p‖ ^ 2 := calc
+    _ = ⟪(p : E), H (p : E)⟫ := inner_compressionL_right p p
+    _ = ⟪v, H (p : E)⟫ := by
+      have he := inner_orthogonalProjectionOnto_left v (⟨H (p : E), hinv p p.2⟩ : K)
+      change ⟪(p : E), H (p : E)⟫ = ⟪v, H (p : E)⟫ at he
+      exact he
+    _ = ⟪H v, (p : E)⟫ := (hH v p).symm
+    _ = _ := by
+      have hself : ⟪v, (p : E)⟫ = ‖p‖ ^ 2 :=
+        (inner_orthogonalProjectionOnto_left v p).symm.trans (real_inner_self_eq_norm_sq p)
+      rw [hv, real_inner_smul_left, hself]
+  have hpos := (ContinuousLinearMap.isPositive_add_smul_one_iff
+    (isSymmetric_compressionL (K := K) hH) μ).mp hμ.isPositive p
+  simp only [add_apply, smul_apply, one_apply_eq_self, inner_add_right, inner_smul_right, hpair,
+    real_inner_self_eq_norm_sq] at hpos
+  have hleft : -leftmost hH ≤ μ := by
+    have hnorm : 0 < ‖p‖ ^ 2 := pow_pos (norm_pos_iff.mpr hp₀) 2
+    by_contra! hn
+    nlinarith [mul_neg_of_neg_of_pos (show leftmost hH + μ < 0 by linarith) hnorm]
+  exact (⟨hμ.nonneg, hshift, isPositive_add_smul_of_le (hH := hH) hleft, hμ.complementarity⟩ :
+    IsTrustRegionMultiplier g H Δ s μ).isMinOn hH
+
 end Compression
 
 /-! ### Krylov subspaces of a compression -/

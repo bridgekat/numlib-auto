@@ -173,16 +173,14 @@ theorem IsUnreducedUpperHessenberg.isTridiagonal_of_isSymm {ι R : Type*} [Linea
     {M : Matrix ι ι R} (hM : M.IsUnreducedUpperHessenberg) (hS : M.IsSymm) : M.IsTridiagonal :=
   fun i j h => h.elim (hM.1 i j) fun hk => by rw [← hS.apply i j]; exact hM.1 j i hk
 
-/-- **An eigenvector of a real symmetric unreduced tridiagonal matrix has a nonzero first
-component**: row `k` of `M s = θ s` determines `s_{k+1}` from `s_0, …, s_k`, the superdiagonal
-entry `M_{k,k+1} = M_{k+1,k}` being nonzero. -/
-theorem IsUnreducedUpperHessenberg.apply_zero_ne_zero_of_isSymm {n : ℕ}
-    {M : Matrix (Fin n) (Fin n) ℝ} (hM : M.IsUnreducedUpperHessenberg) (hS : M.IsSymm) {θ : ℝ}
-    {s : Fin n → ℝ} (hs : M *ᵥ s = θ • s) (hs0 : s ≠ 0) (h0 : 0 < n) : s ⟨0, h0⟩ ≠ 0 := by
-  have hT := hM.isTridiagonal_of_isSymm hS
-  have hsup : ∀ (i : ℕ) (h : i + 1 < n), M ⟨i, by omega⟩ ⟨i + 1, h⟩ ≠ 0 := fun i h => by
-    rw [← hS.apply]
-    exact (isUnreducedUpperHessenberg_iff_fin.1 hM).2 i h
+/-- An eigenvector of a tridiagonal matrix with nonzero superdiagonal has a nonzero first
+component. Row `k` of `M s = θ s` determines `s_{k+1}` from the previous coordinates. -/
+theorem IsTridiagonal.apply_zero_ne_zero_of_superdiag_ne_zero {R : Type*}
+    [CommRing R] [NoZeroDivisors R] {n : ℕ} {M : Matrix (Fin n) (Fin n) R}
+    (hT : M.IsTridiagonal)
+    (hsup : ∀ (i : ℕ) (hi : i + 1 < n), M ⟨i, by omega⟩ ⟨i + 1, hi⟩ ≠ 0)
+    {θ : R} {s : Fin n → R} (hs : M *ᵥ s = θ • s) (hs0 : s ≠ 0) (h0 : 0 < n) :
+    s ⟨0, h0⟩ ≠ 0 := by
   intro hz
   apply hs0
   have key : ∀ k (hk : k < n), s ⟨k, hk⟩ = 0 := by
@@ -210,6 +208,16 @@ theorem IsUnreducedUpperHessenberg.apply_zero_ne_zero_of_isSymm {n : ℕ}
         · simp
   funext i
   exact key i i.isLt
+
+/-- The first component of an eigenvector of a real symmetric unreduced tridiagonal matrix
+is nonzero. Symmetry transfers the nonzero subdiagonal to the superdiagonal. -/
+theorem IsUnreducedUpperHessenberg.apply_zero_ne_zero_of_isSymm {n : ℕ}
+    {M : Matrix (Fin n) (Fin n) ℝ} (hM : M.IsUnreducedUpperHessenberg) (hS : M.IsSymm) {θ : ℝ}
+    {s : Fin n → ℝ} (hs : M *ᵥ s = θ • s) (hs0 : s ≠ 0) (h0 : 0 < n) : s ⟨0, h0⟩ ≠ 0 := by
+  apply (hM.isTridiagonal_of_isSymm hS).apply_zero_ne_zero_of_superdiag_ne_zero _ hs hs0 h0
+  intro i hi
+  rw [← hS.apply]
+  exact (isUnreducedUpperHessenberg_iff_fin.1 hM).2 i hi
 
 /-- **The eigenvalues of a Hermitian unreduced upper Hessenberg matrix are simple** (such a matrix
 is tridiagonal): `Matrix.IsHermitian.eigenvalues` is injective. Two orthonormal eigenvectors for

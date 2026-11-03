@@ -226,3 +226,7 @@ id = "Matrix.IsUnreducedUpperHessenberg.apply_zero_ne_zero_of_isSymm"
 [[node]]
 id = "Sturm.eigenvalues_mem_Icc_bisectionIterate"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.10.2'
+
+[[node]]
+id = "Matrix.IsTridiagonal.apply_zero_ne_zero_of_superdiag_ne_zero"
+source = 'Conn–Gould–Toint, Trust-Region Methods, Lemma 7.5.11'
