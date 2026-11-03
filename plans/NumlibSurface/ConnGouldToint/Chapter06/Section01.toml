@@ -43,3 +43,7 @@ id = "BTRRun.iterate_eq_of_unsuccessful"
 
 [[node]]
 id = "BTRRun.objective_antitone"
+
+[[node]]
+id = "BTRRun.delta_lower_bound_from"
+source = "Conn–Gould–Toint, (6.6.22) and (6.6.40)"

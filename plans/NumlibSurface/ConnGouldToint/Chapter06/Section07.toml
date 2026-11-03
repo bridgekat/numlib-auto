@@ -2,8 +2,16 @@ namespace = "ConnGouldToint.Chapter06"
 
 [[node]]
 id = "scaledTrustNorm"
-source = "Conn–Gould–Toint, iteration-dependent scaling in Section 6.7"
+source = "Conn–Gould–Toint, (6.7.9)"
 
 [[node]]
 id = "theorem_6_7_1"
 source = "Conn–Gould–Toint, Theorem 6.7.1"
+
+[[node]]
+id = "scaledObjective"
+source = "Conn–Gould–Toint, (6.7.2)"
+
+[[node]]
+id = "scaledTrustNorm_sq"
+source = "Conn–Gould–Toint, (6.7.9)"

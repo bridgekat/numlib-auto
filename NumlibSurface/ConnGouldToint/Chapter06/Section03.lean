@@ -171,16 +171,20 @@ def HasSufficientModelDecrease (m : E → ℝ) (x s g : E) (β Δ κ : ℝ) : Pr
 
 variable [CompleteSpace E]
 
+/-- The model gradient at the current center, denoted by $g_k$ in (6.2.2).
+AM.3 requires it to equal the objective gradient there. -/
+noncomputable abbrev modelGradient (m : E → ℝ) (x : E) : E := gradient m x
+
 /-- Theorem 6.3.4. A step satisfying AA.1 strictly reduces the model and is nonzero
 at a noncritical point when the model and objective gradients agree (AM.3). -/
 theorem theorem_6_3_4 {f m : E → ℝ} {x s : E} {β Δ κ : ℝ} (hβ : 0 < β) (hΔ : 0 < Δ)
-    (hmatch : gradient m x = gradient f x) (hg : gradient f x ≠ 0)
-    (hdec : HasSufficientModelDecrease m x s (gradient m x) β Δ κ) :
+    (hmatch : modelGradient m x = gradient f x) (hg : gradient f x ≠ 0)
+    (hdec : HasSufficientModelDecrease m x s (modelGradient m x) β Δ κ) :
     m (x + s) < m x ∧ s ≠ 0 := by
-  have hgn : 0 < ‖gradient m x‖ := by
+  have hgn : 0 < ‖modelGradient m x‖ := by
     rw [hmatch]
     exact norm_pos_iff.mpr hg
-  have hpos : 0 < κ * ‖gradient m x‖ * min (‖gradient m x‖ / β) Δ :=
+  have hpos : 0 < κ * ‖modelGradient m x‖ * min (‖modelGradient m x‖ / β) Δ :=
     mul_pos (mul_pos hdec.1.1 hgn) (lt_min (div_pos hgn hβ) hΔ)
   have hlt := sub_pos.mp (hpos.trans_le hdec.2)
   exact ⟨hlt, fun hz ↦ by simp [hz] at hlt⟩

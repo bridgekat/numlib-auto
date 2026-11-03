@@ -43,3 +43,7 @@ source = "Conn–Gould–Toint, Theorem 6.3.3, with the first accepted Armijo in
 [[node]]
 id = "theorem_6_3_5"
 source = "Conn–Gould–Toint, Theorem 6.3.5"
+
+[[node]]
+id = "modelGradient"
+source = "Conn–Gould–Toint, AM.3 and (6.2.2)"

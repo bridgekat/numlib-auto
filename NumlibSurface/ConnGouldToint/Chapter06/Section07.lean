@@ -5,11 +5,25 @@ import NumlibSurface.ConnGouldToint.Chapter06.Section01
 
 namespace ConnGouldToint.Chapter06
 
+open scoped RealInnerProductSpace
+
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- The scaled trust-region norm is the ambient norm of the inverse-scaled vector. -/
+/-- The objective in scaled step coordinates, as defined in (6.7.2). -/
+def scaledObjective (f : E → ℝ) (x : E) (S : E ≃ₗ[ℝ] E) (w : E) : ℝ :=
+  f (x + S w)
+
+/-- The scaled trust-region norm is the ambient norm of the inverse-scaled vector in (6.7.9). -/
 noncomputable def scaledTrustNorm (S : E ≃ₗ[ℝ] E) : Seminorm ℝ E :=
   (normSeminorm ℝ E).comp S.symm.toLinearMap
+
+/-- The two squared norm formulas in (6.7.9). -/
+theorem scaledTrustNorm_sq [CompleteSpace E] (S : E ≃L[ℝ] E) (s : E) :
+    scaledTrustNorm S.toLinearEquiv s ^ 2 = ⟪S.symm s, S.symm s⟫ ∧
+      ⟪S.symm s, S.symm s⟫ =
+        ⟪s, S.symm.toContinuousLinearMap.adjoint (S.symm s)⟫ := by
+  refine ⟨(real_inner_self_eq_norm_sq (S.symm s)).symm, ?_⟩
+  exact (S.symm.toContinuousLinearMap.adjoint_inner_right s (S.symm s)).symm
 
 /-- Theorem 6.7.1. Uniform singular-value bounds for the scaling maps imply
 the two uniform norm comparisons of AN.1. -/

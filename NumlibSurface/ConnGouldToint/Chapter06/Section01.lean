@@ -179,5 +179,13 @@ def tail (run : BTRRun f P sufficient) (n : ℕ) :
   iterate_update k := run.iterate_update (n + k)
   radius_update k := run.radius_update (n + k)
 
+/-- The radius bound from a specified starting iteration, as used in
+(6.6.22) and (6.6.40). -/
+theorem delta_lower_bound_from (run : BTRRun f P sufficient) (n : ℕ) {θ : ℝ}
+    (hforce : ∀ k ≥ n, run.Δ k ≤ θ → k ∈ run.verySuccessful) (j : ℕ) :
+    min (P.γ₁ * θ) (run.Δ n) ≤ run.Δ (n + j) := by
+  simpa only [tail, Nat.add_zero, min_comm] using (run.tail n).delta_lower_bound (θ := θ)
+    (fun k hk ↦ hforce (n + k) (Nat.le_add_right _ _) hk) j
+
 end BTRRun
 end ConnGouldToint.Chapter06

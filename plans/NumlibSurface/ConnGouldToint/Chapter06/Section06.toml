@@ -111,3 +111,31 @@ source = "Conn–Gould–Toint, local curvature argument in Theorems 6.6.8 and 8
 [[node]]
 id = "false_of_local_radius_expansion"
 source = "Conn–Gould–Toint, local forced-expansion argument of Theorems 6.6.8 and 13.12.6"
+
+[[node]]
+id = "negativeCurvatureDropFloor"
+source = "Conn–Gould–Toint, (6.6.44), (6.6.46) and (6.6.48)"
+
+[[node]]
+id = "objective_drop_floor_of_successful_between"
+source = "Conn–Gould–Toint, (6.6.44), (6.6.46) and (6.6.48)"
+
+[[node]]
+id = "curvatureExpansionThreshold"
+source = "Conn–Gould–Toint, (6.6.43)"
+
+[[node]]
+id = "objective_drop_at_first_curvature_threshold_crossing"
+source = "Conn–Gould–Toint, (6.6.43)–(6.6.46)"
+
+[[node]]
+id = "curvatureExitRadius"
+source = "Conn–Gould–Toint, radius lower bound preceding (6.6.48)"
+
+[[node]]
+id = "objective_drop_of_curvature_expansion_block"
+source = "Conn–Gould–Toint, (6.6.42), (6.6.47) and (6.6.48)"
+
+[[node]]
+id = "negativeCurvatureDropFloor_pos"
+source = "Conn–Gould–Toint, (6.6.44), (6.6.46) and (6.6.48)"

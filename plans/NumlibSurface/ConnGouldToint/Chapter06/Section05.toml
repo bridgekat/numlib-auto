@@ -46,3 +46,11 @@ source = "Conn–Gould–Toint, neighborhood trapping argument in Theorems 6.5.2
 [[node]]
 id = "BTRRun.exists_delta_lower_bound_of_eventually_verySuccessful"
 source = "Conn–Gould–Toint, radius floor in Lemma 6.5.4 and Theorem 12.4.5"
+
+[[node]]
+id = "asymptoticConvexEntryRadius"
+source = "Conn–Gould–Toint, (6.5.6)"
+
+[[node]]
+id = "asymptoticConvexEntryRadius_controls_step"
+source = "Conn–Gould–Toint, (6.5.6)"

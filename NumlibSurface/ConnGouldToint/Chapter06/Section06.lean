@@ -208,6 +208,33 @@ theorem negativeCurvatureDecrease_lower_bound {m : E → ℝ} {x s : E} {τ Δ �
 
 variable {f : E → ℝ} {P : BTRParams} {sufficient : ℕ → (E → ℝ) → E → E → Prop}
 
+
+/-- The positive objective decrease used in (6.6.44), (6.6.46), and (6.6.48).
+The parameter a is half the absolute limiting curvature in those displays;
+r is the radius lower bound for the successful iteration. -/
+noncomputable def negativeCurvatureDropFloor (η κ a r : ℝ) : ℝ :=
+  η * (κ * a * min (a ^ 2) (r ^ 2))
+
+/-- The decrease floor is strictly positive when all its parameters are. -/
+theorem negativeCurvatureDropFloor_pos {η κ a r : ℝ}
+    (hη : 0 < η) (hκ : 0 < κ) (ha : 0 < a) (hr : 0 < r) :
+    0 < negativeCurvatureDropFloor η κ a r :=
+  mul_pos hη (mul_pos (mul_pos hκ ha) (lt_min (sq_pos_of_pos ha) (sq_pos_of_pos hr)))
+
+/-- One successful step with the given curvature and radius bounds supplies
+the decrease floor for the entire surrounding block of iterations. -/
+theorem objective_drop_floor_of_successful_between (run : BTRRun f P sufficient)
+    {p k q : ℕ} (hpk : p ≤ k) (hkq : k ≤ q) (hs : k ∈ run.successful)
+    {τ κ a r : ℝ} (ha : 0 < a) (hr : 0 ≤ r) (hrad : r ≤ run.Δ k) (hτ : τ ≤ -a)
+    (hsecond : HasNegativeCurvatureDecrease (run.model k) (run.x k) (run.s k)
+      τ (run.Δ k) κ) :
+    negativeCurvatureDropFloor P.η₁ κ a r ≤ f (run.x p) - f (run.x (q + 1)) := by
+  have hdrop := (mul_le_mul_of_nonneg_left
+    (negativeCurvatureDecrease_lower_bound hsecond ha hr hrad hτ) P.eta₁_pos.le).trans
+      (run.objective_drop_of_successful hs)
+  exact hdrop.trans (sub_le_sub (run.objective_antitone hpk)
+    (run.objective_antitone (Nat.succ_le_succ hkq)))
+
 /-- The normalized model error is uniformly small on late trials whose radii
 are small. This is the estimate used in the curvature acceptance argument. -/
 def smallRadiusModelAgreement (run : BTRRun f P sufficient) : Prop :=
@@ -326,17 +353,15 @@ theorem theorem_6_6_4 (run : BTRRun f P sufficient) {curv τ : ℕ → ℝ} {κ 
     linarith only [hk, hdiff, h]
   obtain ⟨δ, hδ, hvery⟩ := eventually_small_radius_very_successful run hval herr hκ ha hsecond
   obtain ⟨N, hN⟩ := eventually_atTop.mp (hτ.and hvery)
-  let r := min (run.Δ N) (P.γ₁ * δ)
-  have hr : 0 < r := lt_min (run.delta_pos N) (mul_pos P.gamma₁_pos hδ)
+  let r := min (P.γ₁ * δ) (run.Δ N)
+  have hr : 0 < r := lt_min (mul_pos P.gamma₁_pos hδ) (run.delta_pos N)
   have hrad (k : ℕ) (hk : N ≤ k) : r ≤ run.Δ k := by
-    have h := (run.tail N).delta_lower_bound (θ := δ)
-      (fun j hj ↦ (hN (N + j) (Nat.le_add_right _ _)).2
-        ((hN (N + j) (Nat.le_add_right _ _)).1) hj) (k - N)
+    have h := run.delta_lower_bound_from N (θ := δ)
+      (fun j hj hr ↦ (hN j hj).2 (hN j hj).1 hr) (k - N)
     change r ≤ run.Δ (N + (k - N)) at h
     simpa only [Nat.add_sub_of_le hk] using h
-  let d := P.η₁ * (κ * a * min (a ^ 2) (r ^ 2))
-  have hd : 0 < d := mul_pos P.eta₁_pos (mul_pos (mul_pos hκ ha)
-    (lt_min (sq_pos_of_pos ha) (sq_pos_of_pos hr)))
+  let d := negativeCurvatureDropFloor P.η₁ κ a r
+  have hd : 0 < d := negativeCurvatureDropFloor_pos P.eta₁_pos hκ ha hr
   obtain ⟨M, hM⟩ := eventually_atTop.mp
     ((objective_drop_tendsto_zero run hlower).eventually (gt_mem_nhds hd))
   let L := max N M
@@ -623,6 +648,92 @@ theorem theorem_6_6_7 [ProperSpace E] (run : BTRRun f P sufficient) {z : E}
 def HasForcedRadiusExpansion (run : BTRRun f P sufficient) (γ₃ γ₄ cap : ℝ) : Prop :=
   1 < γ₃ ∧ γ₃ ≤ γ₄ ∧ 0 < cap ∧ ∀ k ∈ run.verySuccessful, run.Δ k ≤ cap →
     γ₃ * run.Δ k ≤ run.Δ (k + 1) ∧ run.Δ (k + 1) ≤ γ₄ * run.Δ k
+
+
+/-- The radius at which the expansion cap or the small-radius acceptance
+threshold is first exceeded, as in (6.6.43). -/
+def curvatureExpansionThreshold (cap θ : ℝ) : ℝ := min cap θ
+
+/-- The two positive decrease bounds at the first crossing of (6.6.43).
+If the crossing iteration is rejected, use the preceding very successful
+iteration and its radius lower bound instead. -/
+theorem objective_drop_at_first_curvature_threshold_crossing (run : BTRRun f P sufficient)
+    {p j q : ℕ} (hp : p ∈ run.successful) (hpj : p ≤ j) (hjq : j ≤ q)
+    {γ₃ γ₄ cap θ : ℝ} (hexp : HasForcedRadiusExpansion run γ₃ γ₄ cap) (hθ : 0 < θ)
+    (hsmall : ∀ k, p ≤ k → k ≤ q → run.Δ k ≤ θ → k ∈ run.verySuccessful)
+    (hfirst : ∀ k, p ≤ k → k < j → run.Δ k ≤ curvatureExpansionThreshold cap θ)
+    (hcross : curvatureExpansionThreshold cap θ < run.Δ j)
+    {τ : ℕ → ℝ} {κ a : ℝ} (ha : 0 < a)
+    (hτ : ∀ k, p ≤ k → k ≤ q → τ k ≤ -a)
+    (hsecond : ∀ k, HasNegativeCurvatureDecrease (run.model k) (run.x k) (run.s k)
+      (τ k) (run.Δ k) κ) :
+    (j ∈ run.successful → negativeCurvatureDropFloor P.η₁ κ a
+      (curvatureExpansionThreshold cap θ) ≤ f (run.x p) - f (run.x (q + 1))) ∧
+    (j ∉ run.successful → negativeCurvatureDropFloor P.η₁ κ a
+      (curvatureExpansionThreshold cap θ / γ₄) ≤ f (run.x p) - f (run.x (q + 1))) := by
+  obtain ⟨hγ₃, hγ₄, hcap, hgrow⟩ := hexp
+  have hγ : 0 < γ₄ := by linarith
+  have ht : 0 < curvatureExpansionThreshold cap θ := lt_min hcap hθ
+  constructor
+  · intro hs
+    exact objective_drop_floor_of_successful_between run hpj hjq hs ha ht.le hcross.le
+      (hτ j hpj hjq) (hsecond j)
+  · intro hs
+    have hpj' : p < j := lt_of_le_of_ne hpj (fun h ↦ hs (h ▸ hp))
+    let k := j - 1
+    have hpk : p ≤ k := by dsimp [k]; omega
+    have hkj : k < j := by dsimp [k]; omega
+    have hkq : k ≤ q := hkj.le.trans hjq
+    have hbound := hfirst k hpk hkj
+    have hv := hsmall k hpk hkq (hbound.trans (min_le_right _ _))
+    have hstep := (hgrow k hv (hbound.trans (min_le_left _ _))).2
+    have he : k + 1 = j := by dsimp [k]; omega
+    rw [he] at hstep
+    exact objective_drop_floor_of_successful_between run hpk hkq
+      (run.verySuccessful_subset_successful hv) ha (div_nonneg ht.le hγ.le)
+      ((div_le_iff₀ hγ).mpr (by simpa [mul_comm] using hcross.le.trans hstep))
+      (hτ k hpk hkq) (hsecond k)
+
+/-- The exit radius floor immediately preceding (6.6.48). -/
+noncomputable def curvatureExitRadius (growth neighborhood normBound : ℝ) : ℝ :=
+  (growth - 1) * neighborhood / (2 * growth * normBound)
+
+/-- The decrease in (6.6.48) for a block whose radii grow geometrically,
+with total displacement requiring the sum of the radii to be large. -/
+theorem objective_drop_of_curvature_expansion_block (run : BTRRun f P sufficient)
+    (p n : ℕ) {γ R K : ℝ} (hγ : 1 < γ) (hR : 0 < R) (hK : 0 < K)
+    (hgrow : ∀ i < n, γ * run.Δ (p + i) ≤ run.Δ (p + (i + 1)))
+    (hpath : R / 2 ≤ K * ∑ i ∈ Finset.range (n + 1), run.Δ (p + i))
+    (hs : p + n ∈ run.successful) {τ κ a : ℝ} (ha : 0 < a) (hτ : τ ≤ -a)
+    (hsecond : HasNegativeCurvatureDecrease (run.model (p + n)) (run.x (p + n))
+      (run.s (p + n)) τ (run.Δ (p + n)) κ) :
+    negativeCurvatureDropFloor P.η₁ κ a (curvatureExitRadius γ R K) ≤
+      f (run.x p) - f (run.x (p + n + 1)) := by
+  have htel (m : ℕ) (hm : m ≤ n) :
+      (γ - 1) * ∑ i ∈ Finset.range m, run.Δ (p + i) ≤ run.Δ (p + m) - run.Δ p := by
+    induction m with
+    | zero => simp
+    | succ m ih =>
+      rw [Finset.sum_range_succ, mul_add]
+      have hh := hgrow m (by omega)
+      have hi := ih (by omega)
+      linarith only [hh, hi]
+  have hsum :
+      (γ - 1) * (∑ i ∈ Finset.range (n + 1), run.Δ (p + i)) ≤ γ * run.Δ (p + n) := by
+    rw [Finset.sum_range_succ, mul_add]
+    have ht := htel n le_rfl
+    linarith only [ht, run.delta_pos p]
+  have hscaled := (mul_le_mul_of_nonneg_left hpath (sub_nonneg.mpr hγ.le)).trans
+    (show (γ - 1) * (K * ∑ i ∈ Finset.range (n + 1), run.Δ (p + i)) ≤
+        K * (γ * run.Δ (p + n)) by
+      rw [mul_left_comm (γ - 1)]
+      exact mul_le_mul_of_nonneg_left hsum hK.le)
+  have hrad : curvatureExitRadius γ R K ≤ run.Δ (p + n) := by
+    unfold curvatureExitRadius
+    apply (div_le_iff₀ (by positivity)).mpr
+    linarith only [hscaled]
+  exact objective_drop_floor_of_successful_between run (Nat.le_add_right _ _) le_rfl hs ha
+    (by unfold curvatureExitRadius; positivity) hrad hτ hsecond
 
 omit [NormedSpace ℝ E] in
 /-- A local neighborhood cannot simultaneously force acceptance at small

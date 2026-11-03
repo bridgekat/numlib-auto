@@ -236,6 +236,25 @@ theorem norm_fderiv_lower_bound {f : E → ℝ} {x₀ : E}
   rw [sub_sub_cancel] at ht
   linarith only [ht, hx', hH (x - x₀)]
 
+/-- The entry radius in (6.5.6) for neighborhood radius R, model
+curvature μ, and the local upper gradient slope c. -/
+noncomputable def asymptoticConvexEntryRadius (R μ c : ℝ) : ℝ :=
+  μ * R / (2 * c + μ)
+
+/-- Entering the radius (6.5.6) keeps the next iterate within radius R
+whenever its displacement is bounded by the local gradient slope times 2/μ. -/
+theorem asymptoticConvexEntryRadius_controls_step {R μ c d step : ℝ}
+    (hμ : 0 < μ) (hc : 0 ≤ c)
+    (hd : d ≤ asymptoticConvexEntryRadius R μ c)
+    (hstep : step ≤ (2 / μ) * c * d) : d + step ≤ R := by
+  have hden : 0 < 2 * c + μ := by positivity
+  have hfactor : 0 ≤ (2 / μ) * c := by positivity
+  have hscaled := add_le_add hd (mul_le_mul_of_nonneg_left hd hfactor)
+  refine (add_le_add (le_refl d) hstep).trans (hscaled.trans_eq ?_)
+  unfold asymptoticConvexEntryRadius
+  field_simp
+  ring
+
 omit [NormedSpace ℝ E] in
 /-- A subsequential limit traps the full sequence under the local step bound. -/
 theorem tendsto_of_local_step_bound {x : ℕ → E} {x₀ : E} {u : ℕ → ℝ}
