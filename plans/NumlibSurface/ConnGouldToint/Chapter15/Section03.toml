@@ -1,0 +1,57 @@
+namespace = "ConnGouldToint.Chapter15"
+
+[[node]]
+id = "lemma_15_3_3"
+source = "Conn–Gould–Toint, Lemma 15.3.3, with quantitative KKT Taylor control"
+
+[[node]]
+id = "lemma_15_3_4"
+source = "Conn–Gould–Toint, Lemma 15.3.4, via local feasible restoration and strict exactness"
+
+[[node]]
+id = "sqp_model_target_error"
+source = "Conn–Gould–Toint, cancellation in (15.3.35) and (15.3.45)"
+
+[[node]]
+id = "lemma_15_3_5"
+source = "Conn–Gould–Toint, Lemma 15.3.5, with quantitative Taylor remainders"
+
+[[node]]
+id = "lemma_15_3_6"
+source = "Conn–Gould–Toint, Lemma 15.3.6, with quantitative Taylor remainders"
+
+[[node]]
+id = "theorem_15_3_7"
+source = "Conn–Gould–Toint, Theorem 15.3.7, for positive primal error"
+
+[[node]]
+id = "sqp_C2_newton_counterexample"
+source = "Conn–Gould–Toint, counterexample to Lemma 15.3.3 under only C²"
+
+[[node]]
+id = "sqp_penalty_support_iff"
+source = "Conn–Gould–Toint, (15.3.7)–(15.3.8) and the feasible-point penalty subgradient"
+
+[[node]]
+id = "theorem_15_3_2_first_order"
+source = "Conn–Gould–Toint, Theorem 15.3.2, first-order equivalence"
+
+[[node]]
+id = "theorem_15_3_2_second_order"
+source = "Conn–Gould–Toint, Theorem 15.3.2, second-order equivalence"
+
+[[node]]
+id = "sqpDistanceMerit"
+source = "Conn–Gould–Toint, (15.3.3), distance form"
+
+[[node]]
+id = "sqpDistanceModel"
+source = "Conn–Gould–Toint, (15.3.4), distance form"
+
+[[node]]
+id = "sqpDistanceModel_uniform_agreement"
+source = "Conn–Gould–Toint, model consistency used in Theorem 15.3.1"
+
+[[node]]
+id = "theorem_15_3_1"
+source = "Conn–Gould–Toint, Theorem 15.3.1, monotone run with explicit Clarke chain rule"

@@ -163,6 +163,10 @@ penalty term at a feasible point.
 Chapter 15 covers local SQP convergence. Theorem 15.2.1(i) needs supplied multipliers
 to stay near the root multiplier from the first iteration. A convergent multiplier
 sequence can otherwise make the first stationary subproblem inconsistent.
+Section 15.3 uses a distance penalty and explicit chain-rule, restoration, and
+Taylor estimates. A C² example violates the printed quadratic Newton estimate
+without additional Hessian regularity. The corrected merit ratio requires
+positive primal error.
 The composite SQP analysis evaluates the normal-step estimate at the Cauchy
 step and uses Lipschitz control along the full trial segments. The radius
 argument in Theorem 15.4.6 uses the very-successful update. The corrected
