@@ -124,6 +124,11 @@ Section 12.1 covers box projection, the projected-gradient path, and the critica
 In (12.1.3), the radial formula applies outside the closed ball. Points inside project to
 themselves.
 
+The corrected Theorem 12.2.1 uses model-gradient agreement at the base point.
+Opposite gradients can make every positive trial fail the upper decrease test.
+A critical starting point can be returned before computing the initial trial
+parameter. The generalized Cauchy decrease includes the tangent stopping test.
+
 Chapter 13 covers the logarithmic barrier. AC.8 holds for uniformly bounded positive paths.
 On an unbounded approach to the boundary, a growing coordinate can cancel a vanishing one.
 The log-barrier Hessian is diagonal and uniformly bounded away from the boundary.

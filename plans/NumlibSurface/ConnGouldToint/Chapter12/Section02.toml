@@ -1,0 +1,65 @@
+namespace = "ConnGouldToint.Chapter12"
+
+[[node]]
+id = "GeneralizedCauchyParams"
+source = "Conn–Gould–Toint, (12.2.3)"
+
+[[node]]
+id = "IsApproxGeneralizedCauchyPoint"
+source = "Conn–Gould–Toint, (12.2.1)–(12.2.4)"
+
+[[node]]
+id = "theorem_12_2_2"
+source = "Conn–Gould–Toint, Theorem 12.2.2"
+
+[[node]]
+id = "cappedCriticality"
+source = "Conn–Gould–Toint, (12.2.15)"
+
+[[node]]
+id = "theorem_12_2_2_of_taylor_bound"
+source = "Conn–Gould–Toint, Theorem 12.2.2 with its Taylor estimate explicit"
+
+[[node]]
+id = "cappedCriticality_decrease"
+source = "Conn–Gould–Toint, sufficient decrease following (12.2.15)"
+
+[[node]]
+id = "theorem_12_2_1_without_model_gradient_agreement_counterexample"
+source = "Conn–Gould–Toint, counterexample to Theorem 12.2.1 as printed"
+
+[[node]]
+id = "InfiniteCauchySearch"
+source = "Conn–Gould–Toint, Algorithm 12.2.2"
+
+[[node]]
+id = "not_infiniteCauchySearch"
+source = "Conn–Gould–Toint, bisection argument in Theorem 12.2.1"
+
+[[node]]
+id = "theorem_12_2_1"
+source = "Conn–Gould–Toint, corrected Theorem 12.2.1"
+
+[[node]]
+id = "CauchySearchState"
+source = "Conn–Gould–Toint, Algorithm 12.2.2"
+
+[[node]]
+id = "cauchySearchStep"
+source = "Conn–Gould–Toint, Algorithm 12.2.2"
+
+[[node]]
+id = "cauchySearchIterate"
+source = "Conn–Gould–Toint, Algorithm 12.2.2"
+
+[[node]]
+id = "exists_cauchySearch_accept"
+source = "Conn–Gould–Toint, finite stopping in Theorem 12.2.1"
+
+[[node]]
+id = "theorem_12_2_1_terminates"
+source = "Conn–Gould–Toint, corrected finite termination in Theorem 12.2.1"
+
+[[node]]
+id = "isApproxGeneralizedCauchyPoint_of_normal"
+source = "Conn–Gould–Toint, critical-point guard for Algorithm 12.2.2"
