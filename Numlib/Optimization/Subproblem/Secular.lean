@@ -1025,6 +1025,18 @@ theorem hasDerivAt_secular_rpow (hg : g ≠ 0) {lam : ℝ} (hlam : -leftmost hH 
   convert (hasDerivAt_secular hlam).rpow_const (p := β) (Or.inl (secular_pos hg hlam).ne') using 1
   ring
 
+/-- The second derivative of a power of the secular function above the leftmost pole. -/
+theorem iteratedDeriv_two_secular_rpow (hg : g ≠ 0) {lam : ℝ}
+    (hlam : -leftmost hH < lam) (β : ℝ) :
+    iteratedDeriv 2 (fun t => secular g H t ^ β) lam =
+      β * secular g H lam ^ (β - 1) * iteratedDeriv 2 (secular g H) lam +
+        β * (β - 1) * secular g H lam ^ (β - 2) * deriv (secular g H) lam ^ 2 := by
+  rw [(secular_rpow_eventuallyEq (g := g) hlam β).iteratedDeriv_eq,
+    (secular_eventuallyEq (g := g) hlam).iteratedDeriv_eq,
+    (secular_eventuallyEq (g := g) hlam).deriv_eq, secular_eq_secularSum hlam]
+  exact iteratedDeriv_two_secularSum_rpow secularWeight_nonneg
+    ((secularWeight_ne_zero_iff (hH := hH)).2 hg) β (mem_secularDomain_of_lt hlam)
+
 /-- `π ^ β` is smooth on `λ > -λ₁` for `g ≠ 0`. -/
 theorem contDiffOn_secular_rpow (hg : g ≠ 0) (β : ℝ) {n : WithTop ℕ∞} :
     ContDiffOn ℝ n (fun t => secular g H t ^ β) (Ioi (-leftmost hH)) :=

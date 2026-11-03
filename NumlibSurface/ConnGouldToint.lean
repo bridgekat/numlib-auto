@@ -41,6 +41,8 @@ Chapter 7 covers quadratic subproblems on spheres and balls and properties of La
 tridiagonals. The sphere and ball characterizations require a positive radius. Theorem 7.5.12
 expresses the exclusion of the hard case through eigenvector nonorthogonality. Theorem 7.5.16
 uses the preconditioner inner-product coordinates.
+The Moré–Sorensen iteration allows exact arrival at the root. The sufficient objective
+acceptance coefficient in the stopping rules is an upper bound on the chosen coefficient.
 
 Theorem 9.1.1 requires a positive ball radius. A radius-zero counterexample shows that
 validity at the center alone gives no gradient bound.

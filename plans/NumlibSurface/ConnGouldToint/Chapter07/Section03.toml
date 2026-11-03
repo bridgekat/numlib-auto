@@ -1,0 +1,65 @@
+namespace = "ConnGouldToint.Chapter07"
+
+[[node]]
+id = "shiftedStep"
+source = "Conn–Gould–Toint, (7.3.1)"
+
+[[node]]
+id = "phi"
+source = "Conn–Gould–Toint, (7.3.6)"
+
+[[node]]
+id = "phi_eq_inv_norm_sub_inv"
+source = "Conn–Gould–Toint, (7.3.6)"
+
+[[node]]
+id = "lemma_7_3_1"
+source = "Conn–Gould–Toint, Lemma 7.3.1"
+
+[[node]]
+id = "moreSorensenNewtonStep"
+source = "Conn–Gould–Toint, (7.3.11)"
+
+[[node]]
+id = "algorithm_7_3_1_step"
+source = "Conn–Gould–Toint, Algorithm 7.3.1"
+
+[[node]]
+id = "existsUnique_secular_root_of_phi_neg"
+source = "Conn–Gould–Toint, Lemma 7.3.2"
+
+[[node]]
+id = "moreSorensenNewtonStep_eq_root_of_eigenvector"
+source = "Conn–Gould–Toint, Lemma 7.3.2 (finite exact arrival)"
+
+[[node]]
+id = "lemma_7_3_2"
+source = "Conn–Gould–Toint, Lemma 7.3.2"
+
+[[node]]
+id = "lemma_7_3_3"
+source = "Conn–Gould–Toint, Lemma 7.3.3"
+
+[[node]]
+id = "IsAcceptableModelStep"
+source = "Conn–Gould–Toint, (7.3.19)"
+
+[[node]]
+id = "IsAcceptableModelStep.weaken"
+source = "Conn–Gould–Toint, corrected coefficient comparisons following Lemmas 7.3.5 and 7.3.6"
+
+[[node]]
+id = "lemma_7_3_5"
+source = "Conn–Gould–Toint, Lemma 7.3.5"
+
+[[node]]
+id = "lemma_7_3_6"
+source = "Conn–Gould–Toint, Lemma 7.3.6"
+
+[[node]]
+id = "acceptable_of_easy_stopping_rule"
+source = "Conn–Gould–Toint, Algorithm 7.3.5, Step 1"
+
+[[node]]
+id = "acceptable_of_hard_stopping_rule"
+source = "Conn–Gould–Toint, Algorithm 7.3.5, hard-case test"
