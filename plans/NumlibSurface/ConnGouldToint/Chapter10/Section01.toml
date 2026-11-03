@@ -1,0 +1,16 @@
+namespace = "ConnGouldToint.Chapter10"
+
+[[node]]
+id = "IsReferenceSchedule"
+source = "Conn–Gould–Toint, corrected (10.1.2)"
+
+[[node]]
+id = "acceptedDecrease"
+
+[[node]]
+id = "nonmonotoneRatio"
+source = "Conn–Gould–Toint, (10.1.3)"
+
+[[node]]
+id = "lemma_10_1_1"
+source = "Conn–Gould–Toint, Lemma 10.1.1"

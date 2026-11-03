@@ -757,6 +757,7 @@ import Numlib.Optimization.ModelBased.InexactTaylor
 import Numlib.Optimization.ModelBased.PowRegularizedModel
 import Numlib.Optimization.ModelBased.QuadraticModel
 import Numlib.Optimization.ModelBased.RatioTest
+import Numlib.Optimization.ModelBased.ReferenceDecrease
 import Numlib.Optimization.ModelBased.RegularizationUpdate
 import Numlib.Optimization.ModelBased.TRRun
 import Numlib.Optimization.ModelBased.TaylorModel

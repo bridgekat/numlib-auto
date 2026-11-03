@@ -1,5 +1,6 @@
 import NumlibSurface.ConnGouldToint.Chapter06
 import NumlibSurface.ConnGouldToint.Chapter08
+import NumlibSurface.ConnGouldToint.Chapter10
 import NumlibSurface.ConnGouldToint.Chapter16
 
 /-!
@@ -16,7 +17,10 @@ also includes the initial radius. For Theorem 8.1.8, uniform norm equivalence al
 does not imply AN.3. A scaling counterexample and a fixed-norm version with Lipschitz
 gradients along the iterates are formalized.
 
+Chapter 10 covers cumulative model decrease for the nonmonotone acceptance rule.
+The reference schedule in (10.1.2) requires strict decrease only when the reference changes.
+
 Chapter 16 covers exact minimization of the scalar epigraph merit function and the
-Fischer–Burmeister residual formulation of complementarity. In (16.2.24), the minimum value is a real
-number and the argmin is formalized as the singleton set containing that number.
+Fischer–Burmeister residual formulation of complementarity. Equation (16.2.24) gives a real
+minimum value. The argmin is formalized as the singleton set containing that value.
 -/
