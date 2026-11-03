@@ -111,3 +111,48 @@ id = "scalarColemanLiTimes_eq_scaledCauchyTimes"
 [[node]]
 id = "theorem_13_12_3_matrix_counterexample"
 source = "Counterexample to Conn–Gould–Toint, Theorem 13.12.3"
+
+[[node]]
+id = "continuous_scaledGradient"
+source = "Conn–Gould–Toint, continuity argument of Theorem 13.12.4"
+
+[[node]]
+id = "orthantFirstOrder_of_tendsto_scaledGradientNorm"
+source = "Conn–Gould–Toint, limit-point implication in Theorem 13.12.4"
+
+[[node]]
+id = "scaledEigenTimes"
+source = "Conn–Gould–Toint, (13.12.23)"
+
+[[node]]
+id = "IsScaledEigenTime"
+
+[[node]]
+id = "theorem_13_12_5"
+source = "Conn–Gould–Toint, corrected Theorem 13.12.5"
+
+[[node]]
+id = "colemanLiAcceptanceRatio"
+source = "Conn–Gould–Toint, (13.12.24)"
+
+[[node]]
+id = "colemanLiAcceptanceRatio_sub_one"
+
+[[node]]
+id = "scaledCauchyTime_sufficientDecrease"
+source = "Conn–Gould–Toint, AA.1b prerequisite for Theorem 13.12.4"
+
+[[node]]
+id = "norm_le_colemanLiScaledNorm"
+source = "Conn–Gould–Toint, AN.1b prerequisite for Theorem 13.12.4"
+
+[[node]]
+id = "norm_scaledHessian_le"
+source = "Conn–Gould–Toint, AM.4b prerequisite for Theorem 13.12.4"
+
+[[node]]
+id = "ScaledHessianConsistency"
+source = "Conn–Gould–Toint, (13.12.25)"
+
+[[node]]
+id = "scaledHessian_sub_eq"

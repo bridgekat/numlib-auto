@@ -92,6 +92,8 @@ The quadratic model uses the exact second-order Taylor data.
 Section 13.12 covers first-order and weak second-order stationarity under affine scaling.
 The corrected Cauchy decrease in Theorem 13.12.3 includes a fraction-to-boundary cap.
 A one-dimensional example violates the printed bound for every positive criticality cap.
+Theorem 13.12.5 gives positive decrease at the eigenpoint, with a feasibility cap
+covering every coordinate that decreases along the chosen ray.
 
 
 
