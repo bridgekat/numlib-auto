@@ -1,0 +1,5 @@
+namespace = "ConnGouldToint.Chapter15"
+
+[[node]]
+id = "sqp_trialSegment_counterexample"
+source = "Conn–Gould–Toint, missing trial-segment assumption in Lemma 15.4.3 and Theorems 15.4.10–11"
