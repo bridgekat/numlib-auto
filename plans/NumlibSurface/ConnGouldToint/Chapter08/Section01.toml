@@ -1,5 +1,4 @@
 namespace = "ConnGouldToint.Chapter08"
-desc = "Dual and bidual trust-region norms, with the Euclidean upper comparison from AN.1b."
 
 [[node]]
 id = "dualNorm"

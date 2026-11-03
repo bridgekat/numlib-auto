@@ -1,5 +1,4 @@
 namespace = "ConnGouldToint.Chapter05"
-desc = "Express the linear CG and PCG rates using the library recurrences. Use spectral bounds and the product form of the energy norm estimate so that it covers an exact initial solution."
 
 [[node]]
 id = "quadraticObjective"

@@ -1,5 +1,4 @@
 namespace = "ConnGouldToint.Chapter12"
-desc = "Projection onto boxes and balls, the projected-gradient path, and the linear criticality measure. The first-order condition is the variational inequality over feasible displacements. A quantitative estimate proves tangent-projection convergence under closed convex feasibility alone."
 
 [[node]]
 id = "projectedGradientPath"

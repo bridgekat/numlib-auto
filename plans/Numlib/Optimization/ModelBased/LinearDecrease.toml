@@ -1,5 +1,4 @@
 namespace = "Optimization"
-desc = "Largest linear decrease on feasible displacements. Use radial rescaling for radius variation and compare translated feasible balls for variation with the base point."
 [[node]]
 id = "linearDecrease"
 [[node]]

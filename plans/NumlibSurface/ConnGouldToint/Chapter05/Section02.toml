@@ -1,5 +1,4 @@
 namespace = "ConnGouldToint.Chapter05"
-desc = "An adapted Krylov basis grows by adding at most the image of its newest vector. The span hypothesis suffices for this inclusion."
 
 [[node]]
 id = "lemma_5_2_1"

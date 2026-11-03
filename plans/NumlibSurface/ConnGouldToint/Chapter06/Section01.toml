@@ -1,5 +1,4 @@
 namespace = "ConnGouldToint.Chapter06"
-desc = "Basic trust-region algorithm with iteration-dependent norms. The sufficient-decrease test is a parameter, as its specification is deferred to Section 6.3. Reuse the backbone reduction ratio and acceptance test. The book's radius update allows arbitrary expansion."
 
 [[node]]
 id = "trustRegion"

@@ -1,5 +1,4 @@
 namespace = "ConnGouldToint.Chapter07"
-desc = "Quadratic subproblem on the Euclidean sphere and ball. The positive-radius assumption restores the constraint qualification needed for the shifted system."
 
 [[node]]
 id = "q"

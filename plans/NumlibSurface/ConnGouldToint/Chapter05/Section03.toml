@@ -1,5 +1,4 @@
 namespace = "ConnGouldToint.Chapter05"
-desc = "For conjugate gradients on the normal equations, reuse the affine Krylov space property with the invariant range of A."
 
 [[node]]
 id = "theorem_5_3_1"
