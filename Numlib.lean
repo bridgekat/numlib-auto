@@ -770,6 +770,7 @@ import Numlib.Optimization.Optimality.TaylorStability
 import Numlib.Optimization.Optimality.Unconstrained
 import Numlib.Optimization.QuasiNewton
 import Numlib.Optimization.EpigraphPenalty
+import Numlib.Optimization.FischerBurmeister
 import Numlib.Optimization.ResidualPower
 import Numlib.Optimization.Subproblem.Bracketing
 import Numlib.Optimization.Subproblem.InverseIteration

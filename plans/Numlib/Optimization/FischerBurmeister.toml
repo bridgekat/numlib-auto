@@ -1,0 +1,7 @@
+namespace = "Numlib.Optimization"
+
+[[node]]
+id = "fischerBurmeister"
+
+[[node]]
+id = "fischerBurmeister_eq_zero_iff"

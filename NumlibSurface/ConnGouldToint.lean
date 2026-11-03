@@ -8,7 +8,7 @@ The surface library for Andrew R. Conn, Nicholas I. M. Gould, and Philippe L. To
 and constrained optimization, together with methods for solving the subproblems and applications
 to nonlinear equations.
 
-Coverage currently includes the scalar epigraph merit function and its exact minimization
-in Section 16.2. In (16.2.24), the minimum value is a real number and the argmin is formalized
-as the singleton set containing that number.
+Chapter 16 covers exact minimization of the scalar epigraph merit function and the
+Fischer–Burmeister residual formulation of complementarity. In (16.2.24), the minimum value is a real
+number and the argmin is formalized as the singleton set containing that number.
 -/

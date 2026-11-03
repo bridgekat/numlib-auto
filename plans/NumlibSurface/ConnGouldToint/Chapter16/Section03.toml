@@ -1,0 +1,21 @@
+namespace = "ConnGouldToint.Chapter16"
+
+[[node]]
+id = "IsComplementary"
+source = "Conn–Gould–Toint, (16.3.1)"
+
+[[node]]
+id = "fischerBurmeister"
+source = "Conn–Gould–Toint, (16.3.2)"
+
+[[node]]
+id = "complementarityResidual"
+source = "Conn–Gould–Toint, (16.3.3)"
+
+[[node]]
+id = "complementarityResidual_eq_zero_iff"
+source = "Conn–Gould–Toint, equivalence of (16.3.1) and (16.3.3)"
+
+[[node]]
+id = "complementarityMerit"
+source = "Conn–Gould–Toint, (16.3.7)"
