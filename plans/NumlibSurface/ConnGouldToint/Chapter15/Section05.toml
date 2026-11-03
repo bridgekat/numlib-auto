@@ -1,0 +1,117 @@
+namespace = "ConnGouldToint.Chapter15"
+
+[[node]]
+id = "sqpFilterViolation"
+source = "Conn–Gould–Toint, (15.5.3)"
+
+[[node]]
+id = "sqpFilterLinearFeasible"
+source = "Conn–Gould–Toint, (15.5.1a) and (15.5.1c)"
+
+[[node]]
+id = "sqpFilterAcceptsPair"
+source = "Conn–Gould–Toint, (15.5.7)"
+
+[[node]]
+id = "sqpFilterAccepts"
+source = "Conn–Gould–Toint, (15.5.7)"
+
+[[node]]
+id = "sqpFilterInsert"
+source = "Conn–Gould–Toint, filter insertion with corrected Pareto deletion"
+
+[[node]]
+id = "sqpFilterPrintedInsert"
+source = "Conn–Gould–Toint, printed margin deletion"
+
+[[node]]
+id = "sqpFilter_margin_deletion_counterexample"
+source = "Conn–Gould–Toint, counterexample to Lemma 15.5.2 for printed margin deletion"
+
+[[node]]
+id = "lemma_15_5_1"
+source = "Conn–Gould–Toint, Lemma 15.5.1"
+
+[[node]]
+id = "lemma_15_5_2"
+source = "Conn–Gould–Toint, Lemma 15.5.2 with Pareto deletion"
+
+[[node]]
+id = "lemma_15_5_3"
+source = "Conn–Gould–Toint, Lemma 15.5.3 with trial-segment Taylor bounds"
+
+[[node]]
+id = "lemma_15_5_4"
+source = "Conn–Gould–Toint, Lemma 15.5.4 with nondegenerate smallness criterion"
+
+[[node]]
+id = "lemma_15_5_5"
+source = "Conn–Gould–Toint, Lemma 15.5.5"
+
+[[node]]
+id = "lemma_15_5_6"
+source = "Conn–Gould–Toint, Lemma 15.5.6"
+
+[[node]]
+id = "lemma_15_5_7"
+source = "Conn–Gould–Toint, Lemma 15.5.7 with strict filter margin"
+
+[[node]]
+id = "sqpFilterAccepts_of_improvement"
+source = "Conn–Gould–Toint, preservation of filter acceptance used in Lemma 15.5.8"
+
+[[node]]
+id = "lemma_15_5_8"
+source = "Conn–Gould–Toint, Lemma 15.5.8 with explicit predecessor guarantees"
+
+[[node]]
+id = "lemma_15_5_9"
+source = "Conn–Gould–Toint, Lemma 15.5.9 with repaired filter insertion"
+
+[[node]]
+id = "lemma_15_5_10"
+source = "Conn–Gould–Toint, Lemma 15.5.10 with frequent successful iterations"
+
+[[node]]
+id = "lemma_15_5_11"
+source = "Conn–Gould–Toint, Lemma 15.5.11 with strict filter margins"
+
+[[node]]
+id = "lemma_15_5_12"
+source = "Conn–Gould–Toint, Lemma 15.5.12 on the final filter tail"
+
+[[node]]
+id = "theorem_15_5_13"
+source = "Conn–Gould–Toint, Theorem 15.5.13 with explicit continuity and criticality transfer"
+
+[[node]]
+id = "theorem_15_5_14"
+source = "Conn–Gould–Toint, Theorem 15.5.14 with repaired filter and explicit tail estimates"
+
+[[node]]
+id = "sqpFilterRadiusUpdate"
+source = "Conn–Gould–Toint, Algorithm 15.5.1 Steps 3 and 5 with completed radius rules"
+
+[[node]]
+id = "sqpFilter_unchanged_rejected_radius_counterexample"
+source = "Conn–Gould–Toint, counterexample to finite stalling exclusion when γ₁ = 1"
+
+[[node]]
+id = "sqpFilter_success_frequently_of_radius_floor"
+source = "Conn–Gould–Toint, strict rejection shrinkage excludes a frozen unsuccessful tail"
+
+[[node]]
+id = "sqpFilterCompatible"
+source = "Conn–Gould–Toint, (15.5.5)"
+
+[[node]]
+id = "sqpFilterSwitching"
+source = "Conn–Gould–Toint, (15.5.8)"
+
+[[node]]
+id = "sqpFilterCriticality"
+source = "Conn–Gould–Toint, tangential criticality at the normal-step base, after (15.5.5)"
+
+[[node]]
+id = "sqpFilterCriticality_zero_iff"
+source = "Conn–Gould–Toint, first-order characterization of the tangential criticality measure"

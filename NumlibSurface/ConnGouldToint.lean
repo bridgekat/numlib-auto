@@ -222,6 +222,10 @@ and requires the cluster set to control the tail, as relative compactness ensure
 Theorems 15.4.22–25 treat the Byrd–Omojokun method with corrected steps.
 Theorem 15.4.23 corrects the printed algorithm reference, and Theorem 15.4.25
 uses the maximum cluster curvature.
+Section 15.5 uses Pareto deletion so earlier filter exclusions survive.
+The printed margin-based deletion admits a bounded insertion stream
+with violations bounded away from zero. Strict rejection shrinkage
+prevents the verified smooth nonstationary stalling trace.
 
 Chapter 16 covers the uniform least-squares Hessian bound, exact minimization of the scalar
 epigraph merit function, and the Fischer–Burmeister residual formulation of complementarity.
