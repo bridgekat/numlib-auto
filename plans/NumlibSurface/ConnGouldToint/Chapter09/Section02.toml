@@ -3,3 +3,31 @@ namespace = "ConnGouldToint.Chapter09"
 [[node]]
 id = "lemma_9_2_4"
 source = "Conn–Gould–Toint, Lemma 9.2.4 and (9.2.6)–(9.2.8)"
+
+[[node]]
+id = "ConditionalRadiusRun"
+source = "Conn–Gould–Toint, (9.1.6)–(9.1.7)"
+
+[[node]]
+id = "conditionalRatio_ge_eta_of_small_valid_radius"
+source = "Conn–Gould–Toint, (9.2.3)–(9.2.5)"
+
+[[node]]
+id = "theorem_9_2_1"
+source = "Conn–Gould–Toint, corrected Theorem 9.2.1"
+
+[[node]]
+id = "theorem_9_2_1_of_model_bounds"
+source = "Conn–Gould–Toint, corrected Theorem 9.2.1 under model bounds"
+
+[[node]]
+id = "theorem_9_2_1_quadratic_counterexample"
+source = "Conn–Gould–Toint, counterexample to Theorem 9.2.1"
+
+[[node]]
+id = "ConditionalRadiusRun.exists_valid_small_radius"
+source = "Conn–Gould–Toint, radius convergence argument in Theorem 9.2.2"
+
+[[node]]
+id = "theorem_9_2_2"
+source = "Conn–Gould–Toint, corrected Theorem 9.2.2"

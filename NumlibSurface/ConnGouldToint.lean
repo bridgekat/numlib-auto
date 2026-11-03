@@ -67,6 +67,11 @@ The original direction-selection guarantee and the complete safeguarded algorith
 Weighted subproblems use the M-inner product or the explicit coordinate transformation.
 
 
+In Algorithm 9.1.1, the selected trial can reset the reference while the original
+trial still triggers contraction. A bounded-below quadratic example makes every
+iteration successful and every current model invalid, with radii tending to zero.
+The corrected Theorems 9.2.1–2 retain the current radius on invalid low-ratio
+iterations and contract only after model validity has been certified.
 Theorem 9.1.1 requires a positive ball radius. A radius-zero counterexample shows that
 validity at the center alone gives no gradient bound. Theorem 9.3.1 also needs
 a positive radius. Centered Taylor differences give the Hessian estimate even
