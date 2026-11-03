@@ -1,0 +1,62 @@
+namespace = "ConnGouldToint.Chapter12.ConstraintExample"
+desc = "Smooth inequality representation of an orthant with a degenerate remote active set for the counterexample to Theorem 12.3.8."
+
+[[node]]
+id = "Space"
+source = "Counterexample to Conn–Gould–Toint, Theorem 12.3.8"
+
+[[node]]
+id = "coordinate"
+source = "Counterexample to Conn–Gould–Toint, Theorem 12.3.8"
+
+[[node]]
+id = "constraints"
+source = "Counterexample to Conn–Gould–Toint, Theorem 12.3.8"
+
+[[node]]
+id = "feasible_iff"
+source = "Counterexample to Conn–Gould–Toint, Theorem 12.3.8"
+
+[[node]]
+id = "constraints_of_height_ge"
+source = "Counterexample to Conn–Gould–Toint, Theorem 12.3.8"
+
+[[node]]
+id = "constraints_at_remote"
+source = "Counterexample to Conn–Gould–Toint, Theorem 12.3.8"
+
+[[node]]
+id = "contDiff_constraints"
+source = "Counterexample to Conn–Gould–Toint, Theorem 12.3.8"
+
+[[node]]
+id = "fderiv_constraints_zero"
+source = "Counterexample to Conn–Gould–Toint, Theorem 12.3.8"
+
+[[node]]
+id = "active_at_zero"
+source = "Counterexample to Conn–Gould–Toint, Theorem 12.3.8"
+
+[[node]]
+id = "active_at_remote"
+source = "Counterexample to Conn–Gould–Toint, Theorem 12.3.8"
+
+[[node]]
+id = "gradient_constraints_zero"
+source = "Counterexample to Conn–Gould–Toint, Theorem 12.3.8"
+
+[[node]]
+id = "independent_active_at_zero"
+source = "Counterexample to Conn–Gould–Toint, Theorem 12.3.8"
+
+[[node]]
+id = "strict_multipliers_at_zero"
+source = "Counterexample to Conn–Gould–Toint, Theorem 12.3.8"
+
+[[node]]
+id = "ao4b_at_zero"
+source = "Counterexample to Conn–Gould–Toint, Theorem 12.3.8"
+
+[[node]]
+id = "fderiv_active_constraint_at_remote"
+source = "Counterexample to Conn–Gould–Toint, Theorem 12.3.8"
