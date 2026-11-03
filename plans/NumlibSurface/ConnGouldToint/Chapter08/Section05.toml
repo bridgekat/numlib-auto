@@ -1,0 +1,41 @@
+namespace = "ConnGouldToint.Chapter08"
+
+[[node]]
+id = "compositeObjective"
+source = "Conn–Gould–Toint, equations (8.5.1) and (8.5.2)"
+
+[[node]]
+id = "fderiv_compositeObjective"
+source = "Conn–Gould–Toint, equation (8.5.3)"
+
+[[node]]
+id = "second_fderiv_compositeObjective"
+source = "Conn–Gould–Toint, equations (8.5.4) and (8.5.5)"
+
+[[node]]
+id = "theorem_8_5_1_smooth"
+source = "Conn–Gould–Toint, Theorem 8.5.1 (i), (iv)"
+
+[[node]]
+id = "theorem_8_5_1_lower"
+source = "Conn–Gould–Toint, Theorem 8.5.1 (ii)"
+
+[[node]]
+id = "theorem_8_5_1_hessian"
+source = "Conn–Gould–Toint, Theorem 8.5.1 (iii), (vi)"
+
+[[node]]
+id = "theorem_8_5_1_agreement"
+source = "Conn–Gould–Toint, Theorem 8.5.1 (v)"
+
+[[node]]
+id = "theorem_8_5_2_hessian_agreement"
+source = "Conn–Gould–Toint, Theorem 8.5.2 (i), with center value and derivative agreement and bounded outer partial derivative"
+
+[[node]]
+id = "theorem_8_5_2_lipschitz_counterexample"
+source = "Conn–Gould–Toint, Theorem 8.5.2 (ii), counterexample to uniform AM.6"
+
+[[node]]
+id = "theorem_8_5_2_lipschitz"
+source = "Conn–Gould–Toint, Theorem 8.5.2 (ii), corrected with uniform constituent Hessian bounds"

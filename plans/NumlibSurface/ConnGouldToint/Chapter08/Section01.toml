@@ -31,3 +31,7 @@ source = "Conn–Gould–Toint, Theorem 8.1.8 (corrected AN.3 implication for fi
 [[node]]
 id = "dualNorm_tendsto_difference_zero"
 source = "Conn–Gould–Toint, Theorem 8.1.8 (corrected AN.3 implication with Lipschitz gradients)"
+
+[[node]]
+id = "lemma_8_1_6"
+source = "Conn–Gould–Toint, Lemma 8.1.6, scaled dual and bidual operator norms"

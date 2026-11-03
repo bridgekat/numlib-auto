@@ -1,3 +1,4 @@
+import Mathlib.Analysis.InnerProductSpace.Adjoint
 import Mathlib.Analysis.InnerProductSpace.Basic
 import Mathlib.Analysis.Normed.Operator.Basic
 import Mathlib.Tactic.Ring
@@ -180,5 +181,61 @@ theorem dualNorm_scaling_counterexample :
       (fun x ↦ by dsimp [q]; linarith) 1
   norm_num at hp hq
   exact ne_of_gt (lt_of_le_of_lt hq (lt_of_lt_of_le (by norm_num) hp))
+
+/-- Lemma 8.1.6. A change of variables by a continuous linear equivalence
+takes the ellipsoidal dual norm to the norm of the adjoint and the bidual
+operator norm to the norm of the congruence-transformed operator. -/
+theorem lemma_8_1_6 [CompleteSpace E] (S : E ≃L[ℝ] E) :
+    (∀ y, dualNorm (fun x => ‖S.symm x‖) y =
+      ‖(S : E →L[ℝ] E).adjoint y‖) ∧
+    ∀ H : E →L[ℝ] E, bidualNorm (fun x => ‖S.symm x‖) H =
+      ‖((S : E →L[ℝ] E).adjoint.comp H).comp (S : E →L[ℝ] E)‖ := by
+  have hdual (y : E) : dualNorm (fun x => ‖S.symm x‖) y =
+      ‖(S : E →L[ℝ] E).adjoint y‖ := by
+    let z := (S : E →L[ℝ] E).adjoint y
+    have he (x : E) : inner ℝ y x = inner ℝ z (S.symm x) := by
+      rw [show z = (S : E →L[ℝ] E).adjoint y from rfl,
+        ContinuousLinearMap.adjoint_inner_left]
+      simp
+    have hbound (x : E) : |inner ℝ y x| / ‖S.symm x‖ ≤ ‖z‖ := by
+      by_cases hx : S.symm x = 0
+      · simp [hx]
+      · rw [he]
+        exact (div_le_iff₀ (norm_pos_iff.mpr hx)).mpr
+          (abs_real_inner_le_norm z (S.symm x))
+    apply le_antisymm (ciSup_le hbound)
+    have hb : BddAbove (Set.range fun x : E => |inner ℝ y x| / ‖S.symm x‖) :=
+      ⟨‖z‖, by rintro _ ⟨x, rfl⟩; exact hbound x⟩
+    have hlo := le_ciSup hb (S z)
+    rw [he, S.symm_apply_apply, real_inner_self_eq_norm_sq, abs_of_nonneg (sq_nonneg _)] at hlo
+    by_cases hz : z = 0
+    · simpa only [hz, norm_zero, zero_pow (by decide : 2 ≠ 0), zero_div] using hlo
+    · rwa [pow_two, mul_div_cancel_right₀ _ (norm_ne_zero_iff.mpr hz)] at hlo
+  refine ⟨hdual, fun H => ?_⟩
+  let A := ((S : E →L[ℝ] E).adjoint.comp H).comp (S : E →L[ℝ] E)
+  let p := fun x : E => ‖S.symm x‖
+  change bidualNorm p H = ‖A‖
+  have he (x : E) : dualNorm p (H x) = ‖A (S.symm x)‖ := by
+    rw [hdual]
+    simp [A]
+  have hbound (x : E) : dualNorm p (H x) / p x ≤ ‖A‖ := by
+    rw [he]
+    by_cases hx : S.symm x = 0
+    · simp [p, hx]
+    · exact (div_le_iff₀ (norm_pos_iff.mpr hx)).mpr (A.le_opNorm _)
+  apply le_antisymm (ciSup_le hbound)
+  have hb : BddAbove (Set.range fun x : E => dualNorm p (H x) / p x) :=
+    ⟨‖A‖, by rintro _ ⟨x, rfl⟩; exact hbound x⟩
+  have htest (z : E) : ‖A z‖ / ‖z‖ ≤ bidualNorm p H := by
+    have h : dualNorm p (H (S z)) / p (S z) ≤ bidualNorm p H := le_ciSup hb (S z)
+    rw [he] at h
+    simpa only [p, S.symm_apply_apply] using h
+  change ‖A‖ ≤ bidualNorm p H
+  apply ContinuousLinearMap.opNorm_le_bound _
+  · simpa only [map_zero, norm_zero, zero_div] using htest 0
+  · intro z
+    by_cases hz : z = 0
+    · simp [hz]
+    · exact (div_le_iff₀ (norm_pos_iff.mpr hz)).mp (htest z)
 
 end ConnGouldToint.Chapter08

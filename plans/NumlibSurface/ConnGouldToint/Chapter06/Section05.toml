@@ -34,3 +34,11 @@ source = "Counterexample to Conn–Gould–Toint, Lemmas 6.5.3–4"
 [[node]]
 id = "abs_model_error_le"
 source = "Conn–Gould–Toint, model error estimate in Lemma 6.5.3"
+
+[[node]]
+id = "norm_fderiv_lower_bound"
+source = "Conn–Gould–Toint, local derivative lower bound in Theorems 6.5.2 and 8.4.8"
+
+[[node]]
+id = "tendsto_of_local_step_bound"
+source = "Conn–Gould–Toint, neighborhood trapping argument in Theorems 6.5.2 and 8.4.8"

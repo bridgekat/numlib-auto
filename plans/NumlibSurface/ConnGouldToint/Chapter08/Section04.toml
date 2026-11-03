@@ -1,0 +1,37 @@
+namespace = "ConnGouldToint.Chapter08"
+
+[[node]]
+id = "lemma_8_4_1"
+source = "Conn–Gould–Toint, Lemma 8.4.1"
+
+[[node]]
+id = "theorem_8_4_2"
+source = "Conn–Gould–Toint, Theorem 8.4.2, linear gradient error and quadratic curvature error"
+
+[[node]]
+id = "theorem_8_4_3"
+source = "Conn–Gould–Toint, Theorem 8.4.3"
+
+[[node]]
+id = "theorem_8_4_4"
+source = "Conn–Gould–Toint, Theorem 8.4.4, explicit constant capped by the scaled initial radius"
+
+[[node]]
+id = "frequently_model_gradient_norm_lt"
+source = "Conn–Gould–Toint, Theorem 8.4.5, weak convergence under AM.4d and AA.4"
+
+[[node]]
+id = "theorem_8_4_5"
+source = "Conn–Gould–Toint, Theorem 8.4.5, liminf formulation"
+
+[[node]]
+id = "theorem_8_4_6"
+source = "Conn–Gould–Toint, Theorem 8.4.6"
+
+[[node]]
+id = "theorem_8_4_7"
+source = "Conn–Gould–Toint, Theorem 8.4.7, convergence under AM.4f"
+
+[[node]]
+id = "theorem_8_4_8"
+source = "Conn–Gould–Toint, Theorem 8.4.8, corrected neighborhood-local model convexity hypothesis"

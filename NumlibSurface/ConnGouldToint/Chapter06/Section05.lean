@@ -212,7 +212,9 @@ theorem lemma_6_5_4 {P : BTRParams} {f : E → ℝ}
     · exact ih.trans ((run.radius_update k).very_successful (hN k hk))
     · exact hδN (k + 1) (Nat.succ_le_of_lt (lt_of_not_ge hk))
 
-private theorem norm_fderiv_lower_bound {f : E → ℝ} {x₀ : E}
+/-- A derivative that is bounded below at a stationary point stays linearly
+bounded below in the distance to that point in a neighborhood. -/
+theorem norm_fderiv_lower_bound {f : E → ℝ} {x₀ : E}
     (hf : DifferentiableAt ℝ (fderiv ℝ f) x₀) (hzero : fderiv ℝ f x₀ = 0)
     {σ : ℝ} (hσ : 0 < σ) (hH : ∀ v, σ * ‖v‖ ≤ ‖fderiv ℝ (fderiv ℝ f) x₀ v‖) :
     ∃ R > 0, ∀ x, ‖x - x₀‖ < R → (σ / 2) * ‖x - x₀‖ ≤ ‖fderiv ℝ f x‖ := by
@@ -227,7 +229,8 @@ private theorem norm_fderiv_lower_bound {f : E → ℝ} {x₀ : E}
   linarith only [ht, hx', hH (x - x₀)]
 
 omit [NormedSpace ℝ E] in
-private theorem tendsto_of_local_step_bound {x : ℕ → E} {x₀ : E} {u : ℕ → ℝ}
+/-- A subsequential limit traps the full sequence under the local step bound. -/
+theorem tendsto_of_local_step_bound {x : ℕ → E} {x₀ : E} {u : ℕ → ℝ}
     {R C c : ℝ} (hR : 0 < R) (hc : 0 < c)
     (hu : Tendsto u atTop (𝓝 0))
     {j : ℕ → ℕ} (hj : Tendsto j atTop atTop) (hx : Tendsto (x ∘ j) atTop (𝓝 x₀))
