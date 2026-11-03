@@ -1685,6 +1685,7 @@ theorem escapeModel_source_models :
       fderiv ℝ mf (escapePoint u) =
         fderiv ℝ (fun p : EscapeSpace ↦ barrierBilinearObjective p.ofLp) (escapePoint u) ∧
       (∀ p, ‖fderiv ℝ (fderiv ℝ mf) p‖ ≤ B) ∧
+      (∀ p q, fderiv ℝ (fderiv ℝ mf) p = fderiv ℝ (fderiv ℝ mf) q) ∧
       (∀ p q, fderiv ℝ (fderiv ℝ (escapeModel u)) p =
         fderiv ℝ (fderiv ℝ (escapeModel u)) q) ∧
       ∀ p, escapeModel u p = mf p +
@@ -1693,7 +1694,7 @@ theorem escapeModel_source_models :
   let a := (escapeA u - 1) * u ^ 2
   have hx0 : (escapePoint u).ofLp 0 = 1 / u := rfl
   have hx1 : (escapePoint u).ofLp 1 = escapeY u := rfl
-  refine ⟨escapeFModel u a, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  refine ⟨escapeFModel u a, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · unfold escapeFModel barrierBilinearObjective
     have h₀ : ContDiff ℝ 2 (escapeL 0) := (escapeL 0).contDiff
     have h₁ : ContDiff ℝ 2 (escapeL 1) := (escapeL 1).contDiff
@@ -1715,6 +1716,8 @@ theorem escapeModel_source_models :
         norm_add_le escapeFCross (a • escapeFDiagonal)
       _ ≤ ‖escapeFCross‖ + 9 * ‖escapeFDiagonal‖ :=
         add_le_add le_rfl (hd.trans (mul_le_mul_of_nonneg_right ha (norm_nonneg escapeFDiagonal)))
+  · intro p q
+    rw [escapeFModel_hessian, escapeFModel_hessian]
   · intro p q
     rw [escapeModel_hessian, escapeModel_hessian]
   · intro p
@@ -1888,6 +1891,117 @@ theorem theorem_13_4_2_unbounded_primal_inner_run :
     p.ofLp 0 * p.ofLp 1 + (-1 : ℝ) * ∑ i, Real.log (p.ofLp i)
   rw [Fin.sum_univ_two, Real.log_mul (hpos 0).ne' (hpos 1).ne']
   ring
+
+/-- The escape also satisfies Algorithm 13.3.1. Its trials already meet the
+fraction-to-boundary test, and the capped benchmarks can only decrease.
+The objective model has constant Hessian, and AM.5c holds because the
+model gradients stay away from zero. -/
+theorem theorem_13_4_2_unbounded_constrained_primal_inner_run :
+    ∃ r : SecondPrimalBarrierInnerRun Chapter06.defaultBTRParams escapeOrthant
+        (1 / 4) escapeObjective,
+      (∀ p ∈ interior escapeOrthant,
+        escapeObjective p = logBarrierObjective barrierBilinearObjective p.ofLp 1) ∧
+      ContDiff ℝ 2 barrierBilinearObjective ∧
+      (∃ H, ∀ p, ‖fderiv ℝ (fderiv ℝ barrierBilinearObjective) p‖ ≤ H) ∧
+      (∀ μ > 0, ∃ A : ℝ, ∀ p : Fin 2 → ℝ, (∀ i, 0 < p i) →
+        A ≤ logBarrierObjective barrierBilinearObjective p μ) ∧
+      (∃ B, ∀ j, ContDiff ℝ 2 (r.objectiveModel j) ∧
+        r.objectiveModel j (r.x j) = barrierBilinearObjective (r.x j).ofLp ∧
+        fderiv ℝ (r.objectiveModel j) (r.x j) =
+          fderiv ℝ (fun p : EscapeSpace ↦ barrierBilinearObjective p.ofLp) (r.x j) ∧
+        (∀ p, ‖fderiv ℝ (fderiv ℝ (r.objectiveModel j)) p‖ ≤ B) ∧
+        (∀ p q, fderiv ℝ (fderiv ℝ (r.objectiveModel j)) p =
+          fderiv ℝ (fderiv ℝ (r.objectiveModel j)) q) ∧
+        ∀ p, r.barrierModel j p = logBarrierModel (r.x j).ofLp (p - r.x j).ofLp 1) ∧
+      (∀ j εE, ¬ BarrierSecondOrderStop barrierBilinearObjective (r.x j).ofLp 1 (1 / 4) εE) ∧
+      (¬ Tendsto (fun j ↦ ‖r.g j‖) atTop (𝓝 0)) ∧
+      (∀ j, 2 ≤ primalBarrierRatio escapeOrthant (1 / 4) escapeObjective
+        (r.model j) (r.x j) (r.s j)) ∧
+      ∃ u : ℕ → ℝ, Tendsto u atTop (𝓝 0) ∧ (∀ j, 0 < u j) ∧
+        ∀ j, r.x j = escapePoint (u j) := by
+  classical
+  obtain ⟨r, hφ, hf, hH, hAW, hstop, hgrad, hdec, u, hu, htrial, hrun, hratio⟩ :=
+    theorem_13_4_2_unbounded_primal_inner_run
+  obtain ⟨B, hB⟩ := escapeModel_source_models
+  choose mf hmf using fun j ↦ hB (u j) (htrial j)
+  let H j := fderiv ℝ (fderiv ℝ (r.model j)) (r.x j)
+  let b j := 1 + ‖H j‖
+  let t j := min 0 (Chapter06.leastUnitCurvature (H j))
+  have hconst (j : ℕ) (p : EscapeSpace) :
+      fderiv ℝ (fderiv ℝ (r.model j)) p = H j := by
+    dsimp only [H]
+    rw [(hrun j).2.2]
+    exact (hmf j).2.2.2.2.2.1 _ _
+  have htrial_adm (j : ℕ) :
+      BarrierAdmissibleTrial escapeOrthant (1 / 4) (r.x j) (r.x j + r.s j) := by
+    by_contra hn
+    have h := hratio j
+    rw [primalBarrierRatio, ite_eq_right hn] at h
+    norm_num at h
+  let R : SecondPrimalBarrierInnerRun Chapter06.defaultBTRParams escapeOrthant
+      (1 / 4) escapeObjective := {
+    toPrimalBarrierInnerRun := r
+    fraction := by norm_num
+    objectiveModel := mf
+    barrierModel := fun j p ↦ logBarrierModel (r.x j).ofLp (p - r.x j).ofLp 1
+    model_split := fun j ↦ by
+      funext p
+      rw [(hrun j).1, (hrun j).2.2]
+      exact (hmf j).2.2.2.2.2.2 p
+    g := fun j ↦ gradient (r.model j) (r.x j)
+    β := b
+    τ := t
+    κ := 1 / 32768
+    decrease_constant := by norm_num
+    gradient_model := fun _ ↦ rfl
+    curvature_model := fun j ↦ by
+      have hball : r.x j ∈ closedBall (r.x j) (r.Δ j) :=
+        mem_closedBall_self ((norm_nonneg (r.s j)).trans (r.step_feasible j))
+      have he : (fun p ↦ ‖fderiv ℝ (fderiv ℝ (r.model j)) p‖) ''
+          closedBall (r.x j) (r.Δ j) = {‖H j‖} := by
+        ext z
+        constructor
+        · rintro ⟨p, _, rfl⟩
+          simp [hconst j p]
+        · rintro hz
+          obtain rfl := Set.mem_singleton_iff.mp hz
+          exact ⟨r.x j, hball, rfl⟩
+      simp [b, he]
+    nonpositive_least_curvature := fun j ↦ by
+      have he : Set.range (fun p : Metric.sphere (0 : EscapeSpace) 1 ↦ H j p p) =
+          (fun p ↦ H j p p) '' Metric.sphere (0 : EscapeSpace) 1 := by
+        ext z
+        exact ⟨fun ⟨p, h⟩ ↦ ⟨p, p.property, h⟩, fun ⟨p, hp, h⟩ ↦ ⟨⟨p, hp⟩, h⟩⟩
+      rw [show t j = min 0 (sInf (Set.range
+        (fun p : Metric.sphere (0 : EscapeSpace) 1 ↦ H j p p))) from rfl, he]
+    trial_admissible := htrial_adm
+    sufficient_decrease := fun j ↦ by
+      let δ := constrainedBarrierRadius (r.Δ j) (1 / 4)
+        (infDist (r.x j) (frontier escapeOrthant))
+      have hδ : 0 ≤ δ := le_min ((norm_nonneg (r.s j)).trans (r.step_feasible j))
+        (mul_nonneg (by norm_num) infDist_nonneg)
+      have hle : δ ≤ r.Δ j := min_le_left _ _
+      have ht : t j ≤ 0 := min_le_left _ _
+      obtain ⟨hfirst, hsecond⟩ := hdec j
+      unfold HasConstrainedBarrierDecrease
+      rw [mul_max_of_nonneg _ _ (by norm_num)]
+      apply max_le
+      · rw [← mul_assoc]
+        exact (mul_le_mul_of_nonneg_left (min_le_min le_rfl hle) (by positivity)).trans hfirst.2
+      · rcases ht.lt_or_eq with ht' | ht'
+        · rw [← mul_assoc]
+          have hh := hsecond.2 ht'
+          rw [abs_of_neg ht'] at hh
+          exact (mul_le_mul_of_nonneg_left (min_le_min le_rfl
+            (pow_le_pow_left₀ hδ hle 2)) (mul_nonneg (by norm_num) (neg_nonneg.mpr ht))).trans hh
+        · simpa only [ht', neg_zero, zero_mul, mul_zero] using (r.predicted_pos j).le }
+  refine ⟨R, hφ, hf, hH, hAW, ⟨B, fun j ↦ ?_⟩, hstop, hgrad, hratio,
+    u, hu, fun j ↦ (htrial j).parameter_pos, fun j ↦ (hrun j).1⟩
+  rw [show R.x j = r.x j from rfl, (hrun j).1]
+  refine ⟨(hmf j).1, (hmf j).2.1, (hmf j).2.2.1, (hmf j).2.2.2.1,
+    (hmf j).2.2.2.2.1, fun p ↦ ?_⟩
+  change logBarrierModel (r.x j).ofLp (p - r.x j).ofLp 1 = _
+  rw [(hrun j).1]
 
 end PrimalEscape
 

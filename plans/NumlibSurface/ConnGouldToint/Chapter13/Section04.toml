@@ -175,3 +175,7 @@ source = "Conn–Gould–Toint, Theorem 13.4.3 for completed runs of Algorithm 1
 [[node]]
 id = "PrimalLogBarrierOuterRun.weakSecondOrder_limit"
 source = "Conn–Gould–Toint, Corollary 13.4.4 for completed runs of Algorithm 13.4.1"
+
+[[node]]
+id = "theorem_13_4_2_unbounded_constrained_primal_inner_run"
+source = "Conn–Gould–Toint, counterexample to Theorem 13.4.2 for Algorithm 13.3.1"
