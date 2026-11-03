@@ -9,6 +9,14 @@ id = "lemma_7_5_2"
 source = "Conn–Gould–Toint, Lemma 7.5.2"
 
 [[node]]
+id = "inv_apply_last_zero_of_isUpperHessenberg"
+source = "Conn–Gould–Toint, proof of Lemma 7.5.3"
+
+[[node]]
+id = "lemma_7_5_3"
+source = "Conn–Gould–Toint, Lemma 7.5.3, equations (7.5.13)–(7.5.14) and zero residual criterion"
+
+[[node]]
 id = "cgPath"
 source = "Conn–Gould–Toint, Section 7.5.2, interpolated CG path"
 

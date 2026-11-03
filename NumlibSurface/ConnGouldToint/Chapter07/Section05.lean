@@ -15,6 +15,118 @@ namespace ConnGouldToint.Chapter07
 
 open Matrix
 
+/-- The bottom-left inverse entry is the signed product of the subdiagonal entries
+over the determinant. The deleted first row and last column leave an upper
+triangular minor. -/
+theorem inv_apply_last_zero_of_isUpperHessenberg {k : ℕ}
+    (A : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ) (hA : A.IsUpperHessenberg) :
+    A⁻¹ (Fin.last k) 0 = (-1 : ℝ) ^ k *
+      (∏ i : Fin k, A i.succ i.castSucc) / A.det := by
+  have hminor : (A.submatrix Fin.succ Fin.castSucc).IsUpperTriangular := by
+    intro i j hij
+    exact hA i.succ j.castSucc ⟨i.castSucc, by simpa using hij, by simp [Fin.lt_def]⟩
+  rw [Matrix.inv_def, Matrix.smul_apply, smul_eq_mul, Ring.inverse_eq_inv,
+    Matrix.adjugate_fin_succ_eq_det_submatrix]
+  simp only [Fin.val_zero, Fin.val_last, zero_add, Fin.succAbove_zero,
+    Fin.succAbove_last, Matrix.det_of_isUpperTriangular hminor, Matrix.submatrix_apply]
+  rw [div_eq_mul_inv, mul_comm]
+
+/-- Lemma 7.5.3. In the Lanczos coordinates the gradient after solving the
+leading block has support in its next coordinate. In the sign, the exponent
+`k + 1` includes the book's separate case `k = 0`. The vanishing criterion
+uses a nonzero initial gradient and nonzero earlier subdiagonal entries. -/
+theorem lemma_7_5_3 {k : ℕ}
+    (T : Matrix (Fin (k + 2)) (Fin (k + 2)) ℝ) (hT : T.IsTridiagonal)
+    (γ : ℝ) (hγ : γ ≠ 0)
+    (hprev : ∀ i : Fin k, T i.succ.castSucc i.castSucc.castSucc ≠ 0)
+    (hdet : (T.submatrix Fin.castSucc Fin.castSucc).det ≠ 0) :
+    let A := T.submatrix Fin.castSucc Fin.castSucc
+    let s := Fin.snoc (-(A⁻¹ *ᵥ Pi.single 0 γ)) 0
+    let r := Pi.single 0 γ + T *ᵥ s
+    let β := T (Fin.last (k + 1)) (Fin.last k).castSucc
+    r = Pi.single (Fin.last (k + 1))
+        ((-1 : ℝ) ^ (k + 1) * γ * (∏ i : Fin (k + 1), T i.succ i.castSucc) / A.det) ∧
+      ‖(WithLp.toLp 2 r : EuclideanSpace ℝ (Fin (k + 2)))‖ ^ 2 = γ ^ 2 * (∏ i : Fin (k + 1), T i.succ i.castSucc ^ 2) /
+        A.det ^ 2 ∧
+      (r = 0 ↔ β = 0) := by
+  classical
+  dsimp only
+  let A := T.submatrix Fin.castSucc Fin.castSucc
+  let x := A⁻¹ *ᵥ Pi.single 0 γ
+  let β := T (Fin.last (k + 1)) (Fin.last k).castSucc
+  let r := Pi.single (0 : Fin (k + 2)) γ + T *ᵥ Fin.snoc (-x) 0
+  let c := (-1 : ℝ) ^ (k + 1) * γ * (∏ i : Fin (k + 1), T i.succ i.castSucc) / A.det
+  change r = Pi.single (Fin.last (k + 1)) c ∧ _ ∧ (r = 0 ↔ β = 0)
+  have hA : A.IsUpperHessenberg :=
+    hT.isUpperHessenberg.submatrix_of_strictMono (fun _ _ h => Fin.castSucc_lt_castSucc_iff.mpr h)
+  have hx : A *ᵥ x = Pi.single 0 γ := by
+    let : Invertible A := Matrix.invertibleOfIsUnitDet A (isUnit_iff_ne_zero.mpr hdet)
+    dsimp only [x]
+    rw [Matrix.mulVec_mulVec, Matrix.mul_inv_of_invertible, Matrix.one_mulVec]
+  have hprod : (∏ i : Fin (k + 1), T i.succ i.castSucc) =
+      (∏ i : Fin k, A i.succ i.castSucc) * β := by
+    rw [Fin.prod_univ_castSucc]
+    simp only [A, β, Matrix.submatrix_apply, Fin.succ_castSucc, Fin.succ_last]
+  have hc : c = -(β * x (Fin.last k)) := by
+    dsimp only [c, x]
+    rw [hprod, Matrix.mulVec_single]
+    change _ = -(β * ((A⁻¹) (Fin.last k) 0 * γ))
+    rw [inv_apply_last_zero_of_isUpperHessenberg A hA, pow_succ]
+    ring
+  have hr : r = Pi.single (Fin.last (k + 1)) c := by
+    funext i
+    refine Fin.lastCases ?_ (fun j => ?_) i
+    · have hzero (j : Fin k) :
+          T (Fin.last (k + 1)) j.castSucc.castSucc = 0 :=
+        hT _ _ (Or.inl ⟨(Fin.last k).castSucc,
+          Fin.castSucc_lt_castSucc_iff.mpr (Fin.castSucc_lt_last j),
+          by simp [Fin.lt_def]⟩)
+      simp [r, Matrix.mulVec, dotProduct, Fin.sum_univ_castSucc, hzero, hc, β]
+    · have hs : (Pi.single (0 : Fin (k + 2)) γ : Fin (k + 2) → ℝ) j.castSucc =
+          (Pi.single (0 : Fin (k + 1)) γ : Fin (k + 1) → ℝ) j := by
+        by_cases hj : j = 0
+        · subst j
+          change (Pi.single 0 γ : Fin (k + 2) → ℝ) 0 = _
+          simp
+        · rw [Pi.single_eq_of_ne (by simpa using hj), Pi.single_eq_of_ne hj]
+      have hsingle : (Pi.single (Fin.last (k + 1)) c : Fin (k + 2) → ℝ) j.castSucc = 0 := by
+        rw [Pi.single_eq_of_ne (Fin.castSucc_ne_last j)]
+      have hrestrict : (T *ᵥ Fin.snoc (-x) 0) j.castSucc = -(A *ᵥ x) j := by
+        change (∑ i, T j.castSucc i * (Fin.snoc (-x) 0 : Fin (k + 2) → ℝ) i) = -(A *ᵥ x) j
+        rw [Fin.sum_univ_castSucc]
+        simp only [Fin.snoc_castSucc, Fin.snoc_last, mul_zero, add_zero, Pi.neg_apply,
+          mul_neg, Finset.sum_neg_distrib, Matrix.mulVec, dotProduct, A, Matrix.submatrix_apply]
+      change (Pi.single (0 : Fin (k + 2)) γ : Fin (k + 2) → ℝ) j.castSucc +
+        (T *ᵥ Fin.snoc (-x) 0) j.castSucc = _
+      rw [hs, hrestrict, hsingle, congrFun hx j, add_neg_cancel]
+  refine ⟨hr, ?_, ?_⟩
+  · rw [EuclideanSpace.real_norm_sq_eq]
+    change (∑ i, (r i) ^ 2) = _
+    rw [hr, Fintype.sum_eq_single (Fin.last (k + 1))]
+    · rw [Pi.single_eq_same]
+      dsimp only [c]
+      rw [div_pow, mul_pow, mul_pow, ← Finset.prod_pow]
+      have hsign : (((-1 : ℝ) ^ (k + 1)) ^ 2) = 1 := by
+        rw [← pow_mul, Nat.mul_comm, pow_mul]
+        norm_num
+      rw [hsign, one_mul]
+    · intro i hi
+      rw [Pi.single_eq_of_ne hi, zero_pow (by decide)]
+  · rw [hr]
+    have hsingle : (Pi.single (Fin.last (k + 1)) c : Fin (k + 2) → ℝ) = 0 ↔ c = 0 := by
+      constructor
+      · intro h
+        simpa using congrFun h (Fin.last (k + 1))
+      · intro h
+        simp [h]
+    rw [hsingle]
+    dsimp only [c]
+    rw [hprod, div_eq_mul_inv]
+    have hP : (∏ i : Fin k, A i.succ i.castSucc) ≠ 0 :=
+      Finset.prod_ne_zero_iff.mpr (fun i _ => hprev i)
+    have hA_det : A.det ≠ 0 := hdet
+    simp [mul_eq_zero, hγ, hP, hA_det]
+
 section TruncatedCG
 
 open Krylov
