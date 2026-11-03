@@ -31,6 +31,30 @@ structure ConditionalRadiusRun (η₀ η₁ γ₁ γ₂ : ℝ) (contractOnInvali
     radius (k + 1) = radius k
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] in
+/-- Corrected Lemma 9.1.2(ii). The finite-improvement guarantee applies to
+a block of rejected invalid models because the repaired update keeps both
+the center and the radius fixed until the next reference reset. -/
+theorem lemma_9_1_2_ii {η₀ η₁ γ₁ γ₂ : ℝ}
+    (run : ConditionalRadiusRun η₀ η₁ γ₁ γ₂ False) (x : ℕ → E)
+    (haccept : ∀ k, η₁ ≤ run.raw k → η₀ ≤ run.selected k)
+    (hstay : ∀ k, run.selected k < η₀ → x (k + 1) = x k)
+    (hfinish : ∀ N, ∃ j ≥ N,
+      (∀ k, N ≤ k → k < j → run.raw k < η₁ ∧ ¬run.valid k ∧
+        x k = x N ∧ run.radius k = run.radius N) → run.valid j) (N : ℕ) :
+    ∃ k ≥ N, η₀ ≤ run.selected k ∨ run.valid k := by
+  by_contra! h
+  have hraw (k : ℕ) (hk : N ≤ k) : run.raw k < η₁ :=
+    lt_of_not_ge fun hgood ↦ (not_le_of_gt (h k hk).1) (haccept k hgood)
+  have hconst (k : ℕ) (hk : N ≤ k) : x k = x N ∧ run.radius k = run.radius N := by
+    induction k, hk using Nat.le_induction with
+    | base => exact ⟨rfl, rfl⟩
+    | succ k hk ih =>
+      exact ⟨(hstay k (h k hk).1).trans ih.1,
+        (run.invalid_update k (hraw k hk) (h k hk).2 not_false).trans ih.2⟩
+  obtain ⟨j, hj, hcert⟩ := hfinish N
+  exact (h j hj).2 (hcert fun k hk _ ↦ ⟨hraw k hk, (h k hk).2, hconst k hk⟩)
+
+omit [NormedAddCommGroup E] [NormedSpace ℝ E] in
 /-- The ratio estimate in the proof of Theorem 9.2.1. The two endpoint bounds
 allow for conditional models that need not interpolate the center. -/
 theorem conditionalRatio_ge_eta_of_small_valid_radius {f m : E → ℝ} {x trial : E}
