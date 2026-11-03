@@ -37,6 +37,18 @@ id = "lemma_7_5_5"
 source = "Conn–Gould–Toint, Lemma 7.5.5"
 
 [[node]]
+id = "det_lt_det_add_smul_one_of_posDef"
+source = "Conn–Gould–Toint, proof of Lemma 7.5.6, determinant comparison"
+
+[[node]]
+id = "lemma_7_5_6_step"
+source = "Conn–Gould–Toint, Lemma 7.5.6, equations (7.5.23)–(7.5.24)"
+
+[[node]]
+id = "lemma_7_5_6"
+source = "Conn–Gould–Toint, Lemma 7.5.6 and equation (7.5.26), positive Lanczos iteration"
+
+[[node]]
 id = "theorem_7_5_10"
 source = "Conn–Gould–Toint, Theorem 7.5.10"
 

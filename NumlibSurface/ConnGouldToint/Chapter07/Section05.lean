@@ -1,3 +1,5 @@
+import Mathlib.Analysis.Matrix.PosDef
+import Numlib.Eigen.InverseEigenvalue
 import Mathlib.Algebra.Order.Star.Real
 import Numlib.Analysis.InnerProductSpace.Energy
 import Numlib.Eigen.Sturm
@@ -126,6 +128,158 @@ theorem lemma_7_5_3 {k : ℕ}
       Finset.prod_ne_zero_iff.mpr (fun i _ => hprev i)
     have hA_det : A.det ≠ 0 := hdet
     simp [mul_eq_zero, hγ, hP, hA_det]
+
+/-- A positive shift increases the determinant of a nonempty positive definite block. -/
+theorem det_lt_det_add_smul_one_of_posDef {n : Type*} [Fintype n] [DecidableEq n]
+    [Nonempty n] {A : Matrix n n ℝ} (hA : A.PosDef) {μ : ℝ} (hμ : 0 < μ) :
+    A.det < (A + μ • 1).det := by
+  have he := hA.isHermitian.det_sub_smul_one_eq_prod (-μ)
+  rw [neg_smul, sub_neg_eq_add] at he
+  rw [he, hA.isHermitian.det_eq_prod_eigenvalues]
+  exact Finset.prod_lt_prod_of_nonempty₀
+    (fun i _ => hA.eigenvalues_pos i) (fun i _ => by linarith) Finset.univ_nonempty
+
+/-- The first two comparisons of Lemma 7.5.6 hold for any nonzero right-hand
+side of the reduced system, including the one-dimensional first step. The
+vectors here are the negatives of the trial steps. -/
+theorem lemma_7_5_6_step {n : Type*} [Fintype n] [DecidableEq n]
+    {A : Matrix n n ℝ} (hA : A.PosDef) {b x y : n → ℝ} (hb : b ≠ 0)
+    {μ : ℝ} (hμ : 0 < μ) (hx : A *ᵥ x = b) (hy : (A + μ • 1) *ᵥ y = b) :
+    b ⬝ᵥ y < b ⬝ᵥ x ∧
+      ‖(WithLp.toLp 2 y : EuclideanSpace ℝ n)‖ <
+        ‖(WithLp.toLp 2 x : EuclideanSpace ℝ n)‖ := by
+  have hy₀ : y ≠ 0 := fun hz => hb (by simpa [hz] using hy.symm)
+  let d := x - y
+  have hy' : A *ᵥ y + μ • y = b := by
+    simpa only [Matrix.add_mulVec, Matrix.smul_mulVec, Matrix.one_mulVec] using hy
+  have hd : A *ᵥ d = μ • y := by
+    rw [show d = x - y from rfl, Matrix.mulVec_sub, hx, ← hy', add_sub_cancel_left]
+  have hd₀ : d ≠ 0 := fun h =>
+    hy₀ ((smul_eq_zero.mp (by simpa [h] using hd.symm)).resolve_left hμ.ne')
+  have hpos : 0 < d ⬝ᵥ (A *ᵥ d) := by
+    simpa using hA.dotProduct_mulVec_pos hd₀
+  rw [hd, dotProduct_smul] at hpos
+  have hcross : 0 < d ⬝ᵥ y := pos_of_mul_pos_right hpos hμ.le
+  have hself (z : n → ℝ) : 0 ≤ z ⬝ᵥ z :=
+    Finset.sum_nonneg (fun i _ => mul_self_nonneg (z i))
+  have hypos : 0 < y ⬝ᵥ y :=
+    (hself y).lt_of_ne (Ne.symm (mt dotProduct_self_eq_zero.mp hy₀))
+  have hsym : Aᵀ = A := (Matrix.isHermitian_iff_isSymm.mp hA.isHermitian).eq
+  have hlinear := dotProduct_transpose_mulVec A x d
+  rw [hsym, hx, hd, dotProduct_smul] at hlinear
+  have hxpos : 0 < x ⬝ᵥ y := by
+    change 0 < (x - y) ⬝ᵥ y at hcross
+    rw [sub_dotProduct] at hcross
+    linarith
+  refine ⟨?_, ?_⟩
+  · have hp : 0 < d ⬝ᵥ b := calc
+      0 < μ • (x ⬝ᵥ y) := mul_pos hμ hxpos
+      _ = _ := hlinear
+    rw [dotProduct_comm d b, show d = x - y from rfl, dotProduct_sub] at hp
+    linarith
+  · apply (pow_lt_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).mp
+    rw [← real_inner_self_eq_norm_sq, ← real_inner_self_eq_norm_sq,
+      EuclideanSpace.inner_eq_star_dotProduct, EuclideanSpace.inner_eq_star_dotProduct]
+    change y ⬝ᵥ y < x ⬝ᵥ x
+    have he : x = y + d := by dsimp [d]; abel
+    conv_rhs => rw [he]
+    rw [add_dotProduct, dotProduct_add, dotProduct_add, dotProduct_comm y d]
+    linarith [hself d]
+
+private theorem submatrix_castSucc_add_smul_one {k : ℕ}
+    (T : Matrix (Fin (k + 2)) (Fin (k + 2)) ℝ) (μ : ℝ) :
+    (T + μ • 1).submatrix Fin.castSucc Fin.castSucc =
+      T.submatrix Fin.castSucc Fin.castSucc + μ • 1 := by
+  ext i j
+  simp [Matrix.one_apply, Fin.castSucc_inj]
+
+/-- Lemma 7.5.6 at positive iterations. The current reduced matrix is `T`;
+its leading block produces the preceding Galerkin step. The shifted
+preceding residual is the gradient of the shifted model. The exact
+determinant ratio also gives (7.5.26). -/
+theorem lemma_7_5_6 {k : ℕ} {T : Matrix (Fin (k + 2)) (Fin (k + 2)) ℝ}
+    (hT : T.IsTridiagonal) (hpos : T.PosDef) {γ μ : ℝ} (hγ : γ ≠ 0) (hμ : 0 < μ)
+    (hprev : ∀ i : Fin k, T i.succ.castSucc i.castSucc.castSucc ≠ 0) :
+    let Tμ := T + μ • 1
+    let A := T.submatrix Fin.castSucc Fin.castSucc
+    let Aμ := A + μ • 1
+    let b : Fin (k + 2) → ℝ := Pi.single 0 γ
+    let b' : Fin (k + 1) → ℝ := Pi.single 0 γ
+    let x := T⁻¹ *ᵥ b
+    let y := Tμ⁻¹ *ᵥ b
+    let r := b + T *ᵥ Fin.snoc (-(A⁻¹ *ᵥ b')) 0
+    let rμ := b + Tμ *ᵥ Fin.snoc (-(Aμ⁻¹ *ᵥ b')) 0
+    rμ ≠ 0 →
+      b ⬝ᵥ y < b ⬝ᵥ x ∧
+      ‖(WithLp.toLp 2 y : EuclideanSpace ℝ (Fin (k + 2)))‖ <
+        ‖(WithLp.toLp 2 x : EuclideanSpace ℝ (Fin (k + 2)))‖ ∧
+      ‖(WithLp.toLp 2 rμ : EuclideanSpace ℝ (Fin (k + 2)))‖ =
+        (A.det / Aμ.det) * ‖(WithLp.toLp 2 r : EuclideanSpace ℝ (Fin (k + 2)))‖ ∧
+      ‖(WithLp.toLp 2 rμ : EuclideanSpace ℝ (Fin (k + 2)))‖ <
+        ‖(WithLp.toLp 2 r : EuclideanSpace ℝ (Fin (k + 2)))‖ := by
+  classical
+  dsimp only
+  let Tμ := T + μ • 1
+  let A := T.submatrix Fin.castSucc Fin.castSucc
+  let Aμ := A + μ • 1
+  let b : Fin (k + 2) → ℝ := Pi.single 0 γ
+  let b' : Fin (k + 1) → ℝ := Pi.single 0 γ
+  let r := b + T *ᵥ Fin.snoc (-(A⁻¹ *ᵥ b')) 0
+  let rμ := b + Tμ *ᵥ Fin.snoc (-(Aμ⁻¹ *ᵥ b')) 0
+  let rn := ‖(WithLp.toLp 2 r : EuclideanSpace ℝ (Fin (k + 2)))‖
+  let rμn := ‖(WithLp.toLp 2 rμ : EuclideanSpace ℝ (Fin (k + 2)))‖
+  change rμ ≠ 0 → _ ∧ _ ∧ rμn = (A.det / Aμ.det) * rn ∧ rμn < rn
+  intro hrμ
+  have hA : A.PosDef := hpos.submatrix (Fin.castSucc_injective _)
+  have hTμdet : 0 < Tμ.det := hpos.det_pos.trans (det_lt_det_add_smul_one_of_posDef hpos hμ)
+  have hAdet : 0 < A.det := hA.det_pos
+  have hdetlt : A.det < Aμ.det := det_lt_det_add_smul_one_of_posDef hA hμ
+  have hAμdet : 0 < Aμ.det := hAdet.trans hdetlt
+  have hsolve (M : Matrix (Fin (k + 2)) (Fin (k + 2)) ℝ) (hd : M.det ≠ 0) :
+      M *ᵥ (M⁻¹ *ᵥ b) = b := by
+    let : Invertible M := Matrix.invertibleOfIsUnitDet M (isUnit_iff_ne_zero.mpr hd)
+    rw [Matrix.mulVec_mulVec, Matrix.mul_inv_of_invertible, Matrix.one_mulVec]
+  have hb : b ≠ 0 := fun hz => hγ (by simpa [b] using congrFun hz (0 : Fin (k + 2)))
+  obtain ⟨hlin, hstep⟩ :=
+    lemma_7_5_6_step hpos hb hμ (hsolve T hpos.det_pos.ne') (hsolve Tμ hTμdet.ne')
+  refine ⟨hlin, hstep, ?_⟩
+  have hoff {i j : Fin (k + 2)} (hij : i ≠ j) : Tμ i j = T i j := by
+    simp [Tμ, Matrix.one_apply_ne hij]
+  have hTμ : Tμ.IsTridiagonal := by
+    intro i j hij
+    have hne : i ≠ j := by
+      rintro rfl
+      rcases hij with ⟨z, hz, hz'⟩ | ⟨z, hz, hz'⟩ <;> exact (lt_asymm hz hz').elim
+    rw [hoff hne, hT i j hij]
+  have hsub (i : Fin (k + 1)) : Tμ i.succ i.castSucc = T i.succ i.castSucc :=
+    hoff (Fin.ne_of_gt (by simp [Fin.lt_def]))
+  have hprevμ (i : Fin k) : Tμ i.succ.castSucc i.castSucc.castSucc ≠ 0 := by
+    rw [hoff (Fin.ne_of_gt (by simp [Fin.lt_def]))]
+    exact hprev i
+  have hprincipal : Tμ.submatrix Fin.castSucc Fin.castSucc = Aμ :=
+    submatrix_castSucc_add_smul_one T μ
+  obtain ⟨-, hsq, -⟩ := lemma_7_5_3 T hT γ hγ hprev hAdet.ne'
+  obtain ⟨-, hsqμ, -⟩ :=
+    lemma_7_5_3 Tμ hTμ γ hγ hprevμ (hprincipal.symm ▸ hAμdet.ne')
+  rw [hprincipal] at hsqμ
+  simp only [hsub] at hsqμ
+  change rn ^ 2 = γ ^ 2 * (∏ i : Fin (k + 1), T i.succ i.castSucc ^ 2) / A.det ^ 2 at hsq
+  have hratio : rμn = (A.det / Aμ.det) * rn := by
+    apply (pow_left_inj₀ (norm_nonneg _)
+      (mul_nonneg (div_nonneg hAdet.le hAμdet.le) (norm_nonneg _)) two_ne_zero).mp
+    change rμn ^ 2 = _
+    rw [mul_pow, div_pow]
+    change rμn ^ 2 = A.det ^ 2 / Aμ.det ^ 2 * rn ^ 2
+    rw [show rn ^ 2 = _ from hsq, show rμn ^ 2 = _ from hsqμ]
+    field_simp
+  refine ⟨hratio, ?_⟩
+  have hrμpos : 0 < rμn := norm_pos_iff.mpr (fun h => hrμ (WithLp.toLp_eq_zero 2 |>.mp h))
+  have hratpos := div_pos hAdet hAμdet
+  have hrpos : 0 < rn := by
+    rw [hratio] at hrμpos
+    exact pos_of_mul_pos_right hrμpos hratpos.le
+  rw [hratio]
+  exact mul_lt_of_lt_one_left hrpos ((div_lt_one hAμdet).mpr hdetlt)
 
 section TruncatedCG
 
