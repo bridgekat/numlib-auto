@@ -67,7 +67,9 @@ Weighted subproblems use the M-inner product or the explicit coordinate transfor
 Theorem 9.1.1 requires a positive ball radius. A radius-zero counterexample shows that
 validity at the center alone gives no gradient bound. Theorem 9.3.1 also needs
 a positive radius. Centered Taylor differences give the Hessian estimate even
-when the model and objective values at the center differ.
+when the model and objective values at the center differ. In (9.3.4), the
+model Hessian need only have a lower curvature bound tending to zero.
+Theorem 9.3.3 uses this bound to establish second-order criticality in the limit.
 
 Chapter 10 covers cumulative model decrease for the nonmonotone acceptance rule.
 The reference schedule in (10.1.2) requires strict decrease only when the reference changes.

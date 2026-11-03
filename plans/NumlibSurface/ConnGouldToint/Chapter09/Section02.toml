@@ -1,0 +1,5 @@
+namespace = "ConnGouldToint.Chapter09"
+
+[[node]]
+id = "lemma_9_2_4"
+source = "Conn–Gould–Toint, Lemma 9.2.4 and (9.2.6)–(9.2.8)"

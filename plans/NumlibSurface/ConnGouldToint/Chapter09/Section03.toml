@@ -14,3 +14,11 @@ source = "Conn–Gould–Toint, Theorem 9.3.1 and (9.3.2)"
 
 [[node]]
 id = "second_order_zero_radius_counterexample"
+
+[[node]]
+id = "corollary_9_3_2"
+source = "Conn–Gould–Toint, Corollary 9.3.2"
+
+[[node]]
+id = "theorem_9_3_3"
+source = "Conn–Gould–Toint, Theorem 9.3.3 and corrected (9.3.4)"
