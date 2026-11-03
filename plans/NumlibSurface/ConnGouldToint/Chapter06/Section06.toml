@@ -99,3 +99,11 @@ source = "Conn–Gould–Toint, geometric backtrack estimates in Theorems 6.6.2 
 [[node]]
 id = "continuous_leastUnitCurvature"
 source = "Conn–Gould–Toint, continuous Hessian curvature used in Theorems 6.6.5 and 10.3.1"
+
+[[node]]
+id = "not_negative_curvature_near_isolated_limit"
+source = "Conn–Gould–Toint, local curvature argument in Theorems 6.6.7 and 8.1.4"
+
+[[node]]
+id = "not_negative_curvature_near_limit_of_forced_expansion"
+source = "Conn–Gould–Toint, local curvature argument in Theorems 6.6.8 and 8.1.5"

@@ -1,3 +1,4 @@
+import Mathlib.Analysis.Matrix.Spectrum
 import NumlibSurface.ConnGouldToint.Chapter06.Section06
 import Mathlib.Analysis.InnerProductSpace.Adjoint
 import Mathlib.Analysis.InnerProductSpace.Basic
@@ -816,5 +817,359 @@ theorem corollary_8_1_11 {m : E → ℝ} (p : Seminorm ℝ E) {x d g : E}
       rw [← min_mul_of_nonneg _ _ (inv_nonneg.mpr hd.le)]
       ring
     _ ≤ _ := div_le_div_of_nonneg_right hlen hd.le
+
+private theorem negative_direction_near_limit [FiniteDimensional ℝ E]
+    {p : ℕ → Seminorm ℝ E} {ε K : ℝ} (hε : 0 < ε) (hK : 0 ≤ K)
+    (hAN : ∀ k w, ‖w‖ ≤ K * p k w) {x : ℕ → E} {z u : E}
+    (hu : u ∈ curvatureDirections p ε) {Q : E → E →L[ℝ] E →L[ℝ] ℝ}
+    (hcont : ContinuousAt (fun y => Q y u u) z)
+    {M : ℕ → E →L[ℝ] E →L[ℝ] ℝ} {τ e : ℕ → ℝ}
+    (hcurv : ∀ k w, w ≠ 0 → τ k ≤ M k w w / (p k w) ^ 2)
+    (herr : ∀ k w, w ≠ 0 → |Q (x k) w w - M k w w| / (p k w) ^ 2 ≤ e k)
+    (he : Tendsto e atTop (𝓝 0)) (hn : Q z u u < 0) :
+    ∃ a > 0, ∃ r > 0, ∀ᶠ k in atTop, dist (x k) z < r → τ k ≤ -a := by
+  have hu₀ : u ≠ 0 := fun h => by simp [h] at hn
+  obtain ⟨C, hC, hcomp⟩ := uniform_norm_comparison_on_curvatureDirections p hε
+  let B := C * ‖u‖
+  have hB : 0 < B := mul_pos hC (norm_pos_iff.mpr hu₀)
+  let a := -Q z u u / (4 * B ^ 2)
+  have ha : 0 < a := div_pos (neg_pos.mpr hn) (by positivity)
+  have haeq : (2 * a) * B ^ 2 = -Q z u u / 2 := by
+    dsimp [a]
+    field_simp [hB.ne']
+    ring
+  have hlocal : ∀ᶠ y in 𝓝 z, Q y u u < Q z u u / 2 :=
+    hcont.eventually (gt_mem_nhds (by linarith))
+  obtain ⟨r, hr, hnear⟩ := Metric.eventually_nhds_iff_ball.mp hlocal
+  refine ⟨a, ha, r, hr, ?_⟩
+  filter_upwards [he.eventually (gt_mem_nhds ha)] with k hek hk
+  have hpu := norm_pos_of_comparison hK (hAN k) hu₀
+  have hpow := sq_pos_of_pos hpu
+  have hp := pow_le_pow_left₀ hpu.le (hcomp k u hu) 2
+  have hF := hnear (x k) hk
+  have hFt : Q (x k) u u / (p k u) ^ 2 ≤ -(2 * a) := by
+    apply (div_le_iff₀ hpow).mpr
+    have hle := mul_le_mul_of_nonpos_left hp (show -(2 * a) ≤ 0 by linarith)
+    rw [neg_mul, haeq] at hle
+    linarith
+  have hq := (le_div_iff₀ hpow).mp (hcurv k u hu₀)
+  have hm := (div_le_iff₀ hpow).mp (herr k u hu₀)
+  have hf := (div_le_iff₀ hpow).mp hFt
+  have hτ : τ k ≤ -(2 * a) + e k := by
+    apply le_of_mul_le_mul_right _ hpow
+    nlinarith only [hq, hm, hf, neg_abs_le (Q (x k) u u - M k u u)]
+  linarith
+
+omit [InnerProductSpace ℝ E] in
+private theorem clipped_curvature_eventually_near {x : ℕ → E} {z : E} {τ : ℕ → ℝ}
+    {a cap : ℝ} :
+    (∃ r > 0, ∀ᶠ k in atTop, dist (x k) z < r → τ k ≤ -a) →
+    ∃ r > 0, ∀ᶠ k in atTop, dist (x k) z < r → max (-cap) (τ k) ≤ -min cap a := by
+  rintro ⟨r, hr, h⟩
+  refine ⟨r, hr, h.mono fun k hk hdist => ?_⟩
+  exact max_le (neg_le_neg (min_le_left _ _))
+    ((hk hdist).trans (neg_le_neg (min_le_right _ _)))
+
+open ConnGouldToint.Chapter06 in
+omit [InnerProductSpace ℝ E] in
+private theorem btr_step_norm_le_of_comparison [NormedSpace ℝ E]
+    {P : BTRParams} {f : E → ℝ} {sufficient : ℕ → (E → ℝ) → E → E → Prop}
+    (run : BTRRun f P sufficient) {K : ℝ} (hK : 0 ≤ K)
+    (hAN : ∀ k u, ‖u‖ ≤ K * run.p k u) (k : ℕ) :
+    ‖run.s k‖ ≤ K * run.Δ k := by
+  have h := run.feasible k
+  change run.p k (run.x k + run.s k - run.x k) ≤ run.Δ k at h
+  rw [add_sub_cancel_left] at h
+  exact (hAN k _).trans (mul_le_mul_of_nonneg_left h hK)
+
+open ConnGouldToint.Chapter06 in
+/-- Theorem 8.1.4 in directional form. An isolated limit has nonnegative
+objective Hessian on every cone from (8.1.6). The first-order convergence
+of the chosen criticality measure is the input from Section 8.1.2. -/
+theorem theorem_8_1_4 [FiniteDimensional ℝ E] [ProperSpace E]
+    {P : BTRParams} {f : E → ℝ} {sufficient : ℕ → (E → ℝ) → E → E → Prop}
+    (run : BTRRun f P sufficient) {z : E}
+    {j : ℕ → ℕ} (hj : StrictMono j) (hz : Tendsto (run.x ∘ j) atTop (𝓝 z))
+    (hiso : ∃ r > (0 : ℝ), ∀ y, dist y z < r → ∀ i : ℕ → ℕ,
+      StrictMono i → Tendsto (run.x ∘ i) atTop (𝓝 y) → y = z)
+    {π τ e : ℕ → ℝ} (hπ : Tendsto π atTop (𝓝 0))
+    (hf : ContDiff ℝ 2 f)
+    {κ K cap : ℝ} (hκ : 0 < κ) (hK : 0 < K) (hcap : 0 < cap)
+    (hAN : ∀ k u, ‖u‖ ≤ K * run.p k u)
+    (hcurv : ∀ k u, u ≠ 0 → τ k ≤
+      fderiv ℝ (fderiv ℝ (run.model k)) (run.x k) u u / (run.p k u) ^ 2)
+    (herror : ∀ k u, u ≠ 0 →
+      |fderiv ℝ (fderiv ℝ f) (run.x k) u u -
+       fderiv ℝ (fderiv ℝ (run.model k)) (run.x k) u u| / (run.p k u) ^ 2 ≤ e k)
+    (he : Tendsto e atTop (𝓝 0))
+    (hval : ∀ k, f (run.x k) = run.model k (run.x k))
+    (hlower : BddBelow (Set.range f)) (herr : smallRadiusModelAgreement run)
+    (hsecond : ∀ k, HasCappedNegativeCurvatureDecrease (run.model k) (run.x k) (run.s k)
+      (τ k) (run.Δ k) κ cap) :
+    Tendsto π atTop (𝓝 0) ∧ ∀ ε > 0, ∀ u ∈ curvatureDirections run.p ε,
+      0 ≤ fderiv ℝ (fderiv ℝ f) z u u := by
+  refine ⟨hπ, fun ε hε u hu => ?_⟩
+  by_contra! hn
+  have hC : ContinuousAt (fun y => fderiv ℝ (fderiv ℝ f) y u u) z := by
+    have h := ((hf.fderiv_right (by norm_num : (1 : WithTop ℕ∞) + 1 ≤ 2)).fderiv_right
+      (by norm_num : (0 : WithTop ℕ∞) + 1 ≤ 1)).continuous
+    fun_prop
+  obtain ⟨a, ha, hlocal⟩ := negative_direction_near_limit hε hK.le hAN hu hC
+    hcurv herror he hn
+  have hstep := btr_step_norm_le_of_comparison run hK.le hAN
+  exact not_negative_curvature_near_isolated_limit run hj hz hiso (lt_min hcap ha) hκ hK
+    hval hlower herr hstep (fun k => negativeCurvatureDecrease_clipped (hsecond k))
+    (clipped_curvature_eventually_near hlocal)
+
+open ConnGouldToint.Chapter06 in
+/-- Objective curvature in Theorem 8.1.5. Forced expansion excludes negative
+curvature in each cone direction with persistent norm comparison. -/
+theorem theorem_8_1_5_directional [FiniteDimensional ℝ E]
+    {P : BTRParams} {f : E → ℝ} {sufficient : ℕ → (E → ℝ) → E → E → Prop}
+    (run : BTRRun f P sufficient) {z : E}
+    {j : ℕ → ℕ} (hj : StrictMono j) (hz : Tendsto (run.x ∘ j) atTop (𝓝 z))
+    {τ e : ℕ → ℝ} (hf : ContDiff ℝ 2 f)
+    {κ K cap γ₃ γ₄ capExpand : ℝ} (hκ : 0 < κ) (hK : 0 < K) (hcap : 0 < cap)
+    (hAN : ∀ k u, ‖u‖ ≤ K * run.p k u)
+    (hcurv : ∀ k u, u ≠ 0 → τ k ≤
+      fderiv ℝ (fderiv ℝ (run.model k)) (run.x k) u u / (run.p k u) ^ 2)
+    (herror : ∀ k u, u ≠ 0 →
+      |fderiv ℝ (fderiv ℝ f) (run.x k) u u -
+       fderiv ℝ (fderiv ℝ (run.model k)) (run.x k) u u| / (run.p k u) ^ 2 ≤ e k)
+    (he : Tendsto e atTop (𝓝 0))
+    (hval : ∀ k, f (run.x k) = run.model k (run.x k))
+    (hlower : BddBelow (Set.range f)) (herr : smallRadiusModelAgreement run)
+    (hsecond : ∀ k, HasCappedNegativeCurvatureDecrease (run.model k) (run.x k) (run.s k)
+      (τ k) (run.Δ k) κ cap)
+    (hexpand : HasForcedRadiusExpansion run γ₃ γ₄ capExpand) :
+    ∀ ε > 0, ∀ u ∈ curvatureDirections run.p ε,
+      0 ≤ fderiv ℝ (fderiv ℝ f) z u u := by
+  have hstep := btr_step_norm_le_of_comparison run hK.le hAN
+  have hexclude (a : ℝ) (ha : 0 < a)
+      (hlocal : ∃ r > 0, ∀ᶠ k in atTop, dist (run.x k) z < r → τ k ≤ -a) : False :=
+    not_negative_curvature_near_limit_of_forced_expansion run hj hz (lt_min hcap ha) hκ hK
+      hval hlower herr hstep (fun k => negativeCurvatureDecrease_clipped (hsecond k))
+      hexpand (clipped_curvature_eventually_near hlocal)
+  intro ε hε u hu
+  by_contra! hn
+  have hC : ContinuousAt (fun y => fderiv ℝ (fderiv ℝ f) y u u) z := by
+    have h := ((hf.fderiv_right (by norm_num : (1 : WithTop ℕ∞) + 1 ≤ 2)).fderiv_right
+      (by norm_num : (0 : WithTop ℕ∞) + 1 ≤ 1)).continuous
+    fun_prop
+  obtain ⟨a, ha, hlocal⟩ := negative_direction_near_limit hε hK.le hAN hu hC
+    hcurv herror he hn
+  exact hexclude a ha hlocal
+
+
+open ConnGouldToint.Chapter06 in
+/-- Corrected Theorem 8.1.5 in directional form. Forced expansion excludes
+negative objective curvature in every direction with persistent norm
+comparison. For the scaled-model liminf, local persistence supplies the
+negative-curvature bound at the intervening iterations of the expansion
+argument. A bound along the convergent subsequence alone gives no such
+bound when the trust-region norms vary. -/
+theorem theorem_8_1_5 [FiniteDimensional ℝ E]
+    {P : BTRParams} {f : E → ℝ} {sufficient : ℕ → (E → ℝ) → E → E → Prop}
+    (run : BTRRun f P sufficient) {z : E}
+    {j : ℕ → ℕ} (hj : StrictMono j) (hz : Tendsto (run.x ∘ j) atTop (𝓝 z))
+    {τ e : ℕ → ℝ} (hf : ContDiff ℝ 2 f)
+    {κ K cap γ₃ γ₄ capExpand : ℝ} (hκ : 0 < κ) (hK : 0 < K) (hcap : 0 < cap)
+    (hAN : ∀ k u, ‖u‖ ≤ K * run.p k u)
+    (hcurv : ∀ k u, u ≠ 0 → τ k ≤
+      fderiv ℝ (fderiv ℝ (run.model k)) (run.x k) u u / (run.p k u) ^ 2)
+    (herror : ∀ k u, u ≠ 0 →
+      |fderiv ℝ (fderiv ℝ f) (run.x k) u u -
+       fderiv ℝ (fderiv ℝ (run.model k)) (run.x k) u u| / (run.p k u) ^ 2 ≤ e k)
+    (he : Tendsto e atTop (𝓝 0))
+    (hval : ∀ k, f (run.x k) = run.model k (run.x k))
+    (hlower : BddBelow (Set.range f)) (herr : smallRadiusModelAgreement run)
+    (hsecond : ∀ k, HasCappedNegativeCurvatureDecrease (run.model k) (run.x k) (run.s k)
+      (τ k) (run.Δ k) κ cap)
+    (hexpand : HasForcedRadiusExpansion run γ₃ γ₄ capExpand)
+    (hτb : (atTop : Filter ℕ).IsCoboundedUnder (· ≥ ·) (τ ∘ j))
+    (hpersist : ∀ a > (0 : ℝ), (∃ᶠ i in atTop, τ (j i) ≤ -a) →
+      ∃ b > 0, ∃ r > 0, ∀ᶠ k in atTop, dist (run.x k) z < r → τ k ≤ -b) :
+    0 ≤ liminf (τ ∘ j) atTop ∧ ∀ ε > 0, ∀ u ∈ curvatureDirections run.p ε,
+      0 ≤ fderiv ℝ (fderiv ℝ f) z u u := by
+  have hstep := btr_step_norm_le_of_comparison run hK.le hAN
+  have hexclude (a : ℝ) (ha : 0 < a)
+      (hlocal : ∃ r > 0, ∀ᶠ k in atTop, dist (run.x k) z < r → τ k ≤ -a) : False :=
+    not_negative_curvature_near_limit_of_forced_expansion run hj hz (lt_min hcap ha) hκ hK
+      hval hlower herr hstep (fun k => negativeCurvatureDecrease_clipped (hsecond k))
+      hexpand (clipped_curvature_eventually_near hlocal)
+  constructor
+  · by_contra! hn
+    let a := -liminf (τ ∘ j) atTop / 2
+    have ha : 0 < a := half_pos (neg_pos.mpr hn)
+    have hfreq : ∃ᶠ i in atTop, τ (j i) ≤ -a := by
+      by_contra! hfail
+      have hl := le_liminf_of_le hτb (hfail.mono fun i hi => hi.le)
+      dsimp [a] at hl
+      linarith
+    obtain ⟨b, hb, hlocal⟩ := hpersist a ha hfreq
+    exact hexclude b hb hlocal
+  · exact theorem_8_1_5_directional run hj hz hf hκ hK hcap hAN hcurv herror he
+      hval hlower herr hsecond hexpand
+
+section ReducedMatrices
+
+open Matrix
+
+/-- The least eigenvalue of a nonempty symmetric matrix. -/
+noncomputable def matrixLeastEigenvalue {n : Type*} [Fintype n] [DecidableEq n]
+    (A : Matrix n n ℝ) (hA : A.IsHermitian) : ℝ :=
+  ⨅ i, hA.eigenvalues i
+
+/-- Rayleigh comparison in arbitrary basis coordinates. The factor from the
+basis map is needed because its columns need not be orthonormal. -/
+theorem matrixLeastEigenvalue_lower_of_unit_directions
+    {n : Type*} [Fintype n] [DecidableEq n] [Nonempty n]
+    {A : Matrix n n ℝ} (hA : A.IsHermitian)
+    (Z : EuclideanSpace ℝ n →L[ℝ] E) {U : Set E}
+    (hZ : ∀ v, Z v ≠ 0 → ‖Z v‖⁻¹ • Z v ∈ U)
+    (Q : E →L[ℝ] E →L[ℝ] ℝ)
+    (hform : ∀ v : EuclideanSpace ℝ n, (WithLp.ofLp v) ⬝ᵥ (A *ᵥ WithLp.ofLp v) =
+      Q (Z v) (Z v))
+    {a : ℝ} (ha : 0 ≤ a) (hQ : ∀ u ∈ U, -a ≤ Q u u) :
+    -a * ‖Z‖ ^ 2 ≤ matrixLeastEigenvalue A hA := by
+  apply le_ciInf
+  intro i
+  let v := hA.eigenvectorBasis i
+  have hv : ‖v‖ = 1 := hA.eigenvectorBasis.orthonormal.1 i
+  have hval : hA.eigenvalues i = Q (Z v) (Z v) := by
+    have he := hA.eigenvalues_eq i
+    change hA.eigenvalues i = RCLike.re ((star (WithLp.ofLp v)) ⬝ᵥ (A *ᵥ WithLp.ofLp v)) at he
+    simpa only [star_trivial, RCLike.re_to_real, hform] using he
+  rw [hval]
+  by_cases hz : Z v = 0
+  · rw [hz]
+    simp only [map_zero]
+    exact mul_nonpos_of_nonpos_of_nonneg (neg_nonpos.mpr ha) (sq_nonneg _)
+  have hpos := norm_pos_iff.mpr hz
+  have hnorm : ‖Z v‖ ≤ ‖Z‖ := by simpa only [hv, mul_one] using Z.le_opNorm v
+  have hscaled := mul_le_mul_of_nonneg_right (hQ _ (hZ v hz)) (sq_nonneg ‖Z v‖)
+  have he : Q (‖Z v‖⁻¹ • Z v) (‖Z v‖⁻¹ • Z v) * ‖Z v‖ ^ 2 = Q (Z v) (Z v) := by
+    simp only [map_smul, smul_apply, smul_eq_mul]
+    field_simp [hpos.ne']
+  rw [he] at hscaled
+  exact (mul_le_mul_of_nonpos_left (pow_le_pow_left₀ hpos.le hnorm 2)
+    (neg_nonpos.mpr ha)).trans hscaled
+
+private theorem reduced_lower_of_infimum {n : Type*} [Fintype n] [DecidableEq n] [Nonempty n]
+    {A : Matrix n n ℝ} (hA : A.IsHermitian) {Z : EuclideanSpace ℝ n →L[ℝ] E}
+    {U : Set E} (hZ : ∀ v, Z v ≠ 0 → ‖Z v‖⁻¹ • Z v ∈ U)
+    {Q : E →L[ℝ] E →L[ℝ] ℝ} (hbound : BddBelow (Set.range fun u : U => Q u u))
+    (hform : ∀ v : EuclideanSpace ℝ n, (WithLp.ofLp v) ⬝ᵥ (A *ᵥ WithLp.ofLp v) =
+      Q (Z v) (Z v))
+    {a : ℝ} (ha : 0 ≤ a) (hQ : -a ≤ ⨅ u : U, Q u u) :
+    -a * ‖Z‖ ^ 2 ≤ matrixLeastEigenvalue A hA :=
+  matrixLeastEigenvalue_lower_of_unit_directions hA Z hZ Q hform ha
+    (fun u hu => hQ.trans (ciInf_le hbound ⟨u, hu⟩))
+
+/-- Lemma 8.1.1, basis-matrix formulation. Apply the directional conclusion
+to the normalized images of the coordinates of the basis matrix. -/
+theorem lemma_8_1_1_matrix {n : Type*} [Fintype n] [DecidableEq n] [Nonempty n]
+    {A : ℕ → Matrix n n ℝ} (hA : ∀ k, (A k).IsHermitian)
+    {Z : EuclideanSpace ℝ n →L[ℝ] E} {U : Set E}
+    (hZ : ∀ v, Z v ≠ 0 → ‖Z v‖⁻¹ • Z v ∈ U)
+    {Q : ℕ → E →L[ℝ] E →L[ℝ] ℝ}
+    (hbound : ∀ k, BddBelow (Set.range fun u : U => Q k u u))
+    (hform : ∀ k (v : EuclideanSpace ℝ n), (WithLp.ofLp v) ⬝ᵥ (A k *ᵥ WithLp.ofLp v) =
+      Q k (Z v) (Z v))
+    (hQb : (atTop : Filter ℕ).IsBoundedUnder (· ≥ ·) (fun k => ⨅ u : U, Q k u u))
+    (hQ : 0 ≤ liminf (fun k => ⨅ u : U, Q k u u) atTop)
+    (hEb : (atTop : Filter ℕ).IsCoboundedUnder (· ≥ ·)
+      (fun k => matrixLeastEigenvalue (A k) (hA k))) :
+    0 ≤ liminf (fun k => matrixLeastEigenvalue (A k) (hA k)) atTop := by
+  by_contra! hn
+  let L := liminf (fun k => matrixLeastEigenvalue (A k) (hA k)) atTop
+  let a := -L / (2 * (‖Z‖ ^ 2 + 1))
+  have ha : 0 < a := div_pos (neg_pos.mpr hn) (by positivity)
+  have hev := eventually_lt_of_lt_liminf ((neg_lt_zero.mpr ha).trans_le hQ) hQb
+  have hle : ∀ᶠ k in atTop, -a * ‖Z‖ ^ 2 ≤ matrixLeastEigenvalue (A k) (hA k) :=
+    hev.mono fun k hk => reduced_lower_of_infimum (hA k) hZ (hbound k) (hform k) ha.le hk.le
+  have hL : -a * ‖Z‖ ^ 2 ≤ L := le_liminf_of_le hEb hle
+  have hEq : (2 * a) * (‖Z‖ ^ 2 + 1) = -L := by dsimp [a]; field_simp
+  nlinarith only [hL, hEq, ha, mul_nonneg ha.le (sq_nonneg ‖Z‖)]
+
+/-- Theorem 8.1.3, basis-matrix formulation. Frequent lower bounds on the
+directional infimum transfer to the least reduced eigenvalue. -/
+theorem theorem_8_1_3_matrix {n : Type*} [Fintype n] [DecidableEq n] [Nonempty n]
+    {A : ℕ → Matrix n n ℝ} (hA : ∀ k, (A k).IsHermitian)
+    {Z : EuclideanSpace ℝ n →L[ℝ] E} {U : Set E}
+    (hZ : ∀ v, Z v ≠ 0 → ‖Z v‖⁻¹ • Z v ∈ U)
+    {Q : ℕ → E →L[ℝ] E →L[ℝ] ℝ}
+    (hbound : ∀ k, BddBelow (Set.range fun u : U => Q k u u))
+    (hform : ∀ k (v : EuclideanSpace ℝ n), (WithLp.ofLp v) ⬝ᵥ (A k *ᵥ WithLp.ofLp v) =
+      Q k (Z v) (Z v))
+    (hQb : (atTop : Filter ℕ).IsCoboundedUnder (· ≤ ·) (fun k => ⨅ u : U, Q k u u))
+    (hQ : 0 ≤ limsup (fun k => ⨅ u : U, Q k u u) atTop)
+    (hEb : (atTop : Filter ℕ).IsBoundedUnder (· ≤ ·)
+      (fun k => matrixLeastEigenvalue (A k) (hA k))) :
+    0 ≤ limsup (fun k => matrixLeastEigenvalue (A k) (hA k)) atTop := by
+  by_contra! hn
+  let L := limsup (fun k => matrixLeastEigenvalue (A k) (hA k)) atTop
+  let a := -L / (2 * (‖Z‖ ^ 2 + 1))
+  have ha : 0 < a := div_pos (neg_pos.mpr hn) (by positivity)
+  have hfreq : ∃ᶠ k in atTop, -a < ⨅ u : U, Q k u u := by
+    by_contra! hbad
+    exact (neg_lt_zero.mpr ha).not_ge (hQ.trans (limsup_le_of_le hQb hbad))
+  have hle : ∃ᶠ k in atTop, -a * ‖Z‖ ^ 2 ≤ matrixLeastEigenvalue (A k) (hA k) :=
+    hfreq.mono fun k hk => reduced_lower_of_infimum (hA k) hZ (hbound k) (hform k) ha.le hk.le
+  have hL : -a * ‖Z‖ ^ 2 ≤ L := le_limsup_of_frequently_le hle hEb
+  have hEq : (2 * a) * (‖Z‖ ^ 2 + 1) = -L := by dsimp [a]; field_simp
+  nlinarith only [hL, hEq, ha, mul_nonneg ha.le (sq_nonneg ‖Z‖)]
+
+/-- The matrix conclusion of Theorem 8.1.4 follows from directional
+nonnegativity at the isolated limit. -/
+theorem theorem_8_1_4_matrix {n : Type*} [Fintype n] [DecidableEq n] [Nonempty n]
+    {A : Matrix n n ℝ} (hA : A.IsHermitian) (Z : EuclideanSpace ℝ n →L[ℝ] E)
+    {U : Set E} (hZ : ∀ v, Z v ≠ 0 → ‖Z v‖⁻¹ • Z v ∈ U)
+    (Q : E →L[ℝ] E →L[ℝ] ℝ)
+    (hform : ∀ v : EuclideanSpace ℝ n, (WithLp.ofLp v) ⬝ᵥ (A *ᵥ WithLp.ofLp v) =
+      Q (Z v) (Z v))
+    (hQ : ∀ u ∈ U, 0 ≤ Q u u) :
+    0 ≤ matrixLeastEigenvalue A hA := by
+  simpa only [neg_zero, zero_mul] using
+    matrixLeastEigenvalue_lower_of_unit_directions hA Z hZ Q hform (a := 0) le_rfl
+      (fun u hu => by simpa only [neg_zero] using hQ u hu)
+
+/-- The matrix liminf conclusion of Theorem 8.1.5. Continuity of the
+objective Hessian along the convergent subsequence gives uniform convergence
+of its quadratic form on the unit directions in the cone. -/
+theorem theorem_8_1_5_matrix {n : Type*} [Fintype n] [DecidableEq n] [Nonempty n]
+    {A : ℕ → Matrix n n ℝ} (hA : ∀ k, (A k).IsHermitian)
+    {Z : EuclideanSpace ℝ n →L[ℝ] E} {U : Set E}
+    (hZ : ∀ v, Z v ≠ 0 → ‖Z v‖⁻¹ • Z v ∈ U)
+    (hunit : ∀ u ∈ U, ‖u‖ = 1)
+    {Q : ℕ → E →L[ℝ] E →L[ℝ] ℝ} {Q₀ : E →L[ℝ] E →L[ℝ] ℝ}
+    (ht : Tendsto Q atTop (𝓝 Q₀))
+    (hQ₀ : ∀ u ∈ U, 0 ≤ Q₀ u u)
+    (hform : ∀ k (v : EuclideanSpace ℝ n), (WithLp.ofLp v) ⬝ᵥ (A k *ᵥ WithLp.ofLp v) =
+      Q k (Z v) (Z v))
+    (hEb : (atTop : Filter ℕ).IsCoboundedUnder (· ≥ ·)
+      (fun k => matrixLeastEigenvalue (A k) (hA k))) :
+    0 ≤ liminf (fun k => matrixLeastEigenvalue (A k) (hA k)) atTop := by
+  by_contra! hn
+  let L := liminf (fun k => matrixLeastEigenvalue (A k) (hA k)) atTop
+  let a := -L / (2 * (‖Z‖ ^ 2 + 1))
+  have ha : 0 < a := div_pos (neg_pos.mpr hn) (by positivity)
+  have hev := (tendsto_iff_norm_sub_tendsto_zero.mp ht).eventually (gt_mem_nhds ha)
+  have hle : ∀ᶠ k in atTop, -a * ‖Z‖ ^ 2 ≤ matrixLeastEigenvalue (A k) (hA k) := by
+    filter_upwards [hev] with k hk
+    apply matrixLeastEigenvalue_lower_of_unit_directions (hA k) Z hZ (Q k) (hform k) ha.le
+    intro u hu
+    let D := Q k - Q₀
+    have hb := ((D u).le_opNorm u).trans
+      (mul_le_mul_of_nonneg_right (D.le_opNorm u) (norm_nonneg u))
+    rw [hunit u hu, mul_one, mul_one, Real.norm_eq_abs] at hb
+    have hh : -‖D‖ ≤ D u u := (neg_le_neg hb).trans (neg_abs_le _)
+    change -‖Q k - Q₀‖ ≤ Q k u u - Q₀ u u at hh
+    linarith [hQ₀ u hu]
+  have hL : -a * ‖Z‖ ^ 2 ≤ L := le_liminf_of_le hEb hle
+  have hEq : (2 * a) * (‖Z‖ ^ 2 + 1) = -L := by dsimp [a]; field_simp
+  nlinarith only [hL, hEq, ha, mul_nonneg ha.le (sq_nonneg ‖Z‖)]
+
+end ReducedMatrices
 
 end ConnGouldToint.Chapter08

@@ -530,28 +530,20 @@ theorem lemma_6_6_6 (run : BTRRun f P sufficient) {z : E}
   simpa only [dist_zero_right, Real.norm_eq_abs, abs_of_pos (run.delta_pos n)] using
     hsmall.trans_le (min_le_left _ _)
 
-/-- Theorem 6.6.7. An isolated subsequential limit is second-order critical.
-Only successful steps need the small-radius conclusion of Lemma 6.6.6. -/
-theorem theorem_6_6_7 [ProperSpace E] (run : BTRRun f P sufficient) {z : E}
+/-- Uniformly negative late model curvature is incompatible with an isolated limit. -/
+theorem not_negative_curvature_near_isolated_limit [ProperSpace E] (run : BTRRun f P sufficient) {z : E}
     {j : ℕ → ℕ} (hj : StrictMono j) (hz : Tendsto (run.x ∘ j) atTop (𝓝 z))
     (hiso : ∃ r > (0 : ℝ), ∀ y, dist y z < r → ∀ i : ℕ → ℕ,
       StrictMono i → Tendsto (run.x ∘ i) atTop (𝓝 y) → y = z)
-    {curv : E → ℝ} (hcurv : ContinuousAt curv z) {τ : ℕ → ℝ}
-    (hagree : Tendsto (fun k ↦ |curv (run.x k) - τ k|) atTop (𝓝 0))
-    (hgrad : Continuous (fderiv ℝ f))
-    (hcrit : Tendsto (fun k ↦ ‖fderiv ℝ f (run.x k)‖) atTop (𝓝 0))
+    {τ : ℕ → ℝ} {a κ K : ℝ} (ha : 0 < a) (hκ : 0 < κ) (hK : 0 < K)
     (hval : ∀ k, f (run.x k) = run.model k (run.x k))
     (hlower : BddBelow (range f)) (herr : smallRadiusModelAgreement run)
-    {κ K : ℝ} (hκ : 0 < κ) (hK : 0 < K) (hstep : ∀ k, ‖run.s k‖ ≤ K * run.Δ k)
+    (hstep : ∀ k, ‖run.s k‖ ≤ K * run.Δ k)
     (hsecond : ∀ k, HasNegativeCurvatureDecrease (run.model k) (run.x k) (run.s k)
-      (τ k) (run.Δ k) κ) :
-    fderiv ℝ f z = 0 ∧ 0 ≤ curv z := by
-  refine ⟨stationary_of_subsequence run hj hz hgrad hcrit, ?_⟩
-  by_contra! hneg
-  let a := -curv z / 4
-  have ha : 0 < a := div_pos (neg_pos.mpr hneg) (by norm_num)
-  have haz : curv z < -(2 * a) := by dsimp [a]; linarith
-  obtain ⟨r₀, hr₀, hlocal⟩ := eventually_modelCurvature_negative_near run hcurv hagree ha haz
+      (τ k) (run.Δ k) κ)
+    (hlocal : ∃ r > (0 : ℝ), ∀ᶠ k in atTop, dist (run.x k) z < r → τ k ≤ -a) :
+    False := by
+  obtain ⟨r₀, hr₀, hlocal⟩ := hlocal
   obtain ⟨r₁, hr₁, h₁⟩ := hiso
   let r := min r₀ r₁
   have hr : 0 < r := lt_min hr₀ hr₁
@@ -600,31 +592,24 @@ theorem theorem_6_6_7 [ProperSpace E] (run : BTRRun f P sufficient) {z : E}
     have hh := hnear (n - k)
     rw [Nat.add_sub_of_le hn] at hh
     exact (hN n (hkN.trans hn)).1.1 (hh.trans_lt (by linarith [min_le_left r₀ r₁]))⟩
-  have hfre := theorem_6_6_4 run hκ hval hlower herr hagree hsecond (a / 2) (half_pos ha)
-  have hle : ∀ᶠ n in atTop, curv (run.x n) ≤ -(a / 2) := by
-    filter_upwards [hτ, hagree.eventually_lt_const (half_pos ha)] with n hn hh
-    linarith only [hn, hh, le_abs_self (curv (run.x n) - τ n)]
-  exact hfre (hle.mono fun _ h ↦ not_lt_of_ge h)
+  have hfre := theorem_6_6_4 run (curv := τ) (τ := τ) hκ hval hlower herr (by simp) hsecond a ha
+  exact hfre (hτ.mono fun _ h => not_lt_of_ge h)
 
-/-- AA.3, compulsory geometric radius growth below the expansion cap. -/
-def HasForcedRadiusExpansion (run : BTRRun f P sufficient) (γ₃ γ₄ cap : ℝ) : Prop :=
-  1 < γ₃ ∧ γ₃ ≤ γ₄ ∧ 0 < cap ∧ ∀ k ∈ run.verySuccessful, run.Δ k ≤ cap →
-    γ₃ * run.Δ k ≤ run.Δ (k + 1) ∧ run.Δ (k + 1) ≤ γ₄ * run.Δ k
-
-/-- Theorem 6.6.8. With forced radius growth, all subsequential limits
-are second-order critical. Successive very successful trials near a
-negative-curvature limit have displacement controlled by radius growth. -/
-theorem theorem_6_6_8 (run : BTRRun f P sufficient) {z : E}
+/-- Theorem 6.6.7. An isolated subsequential limit is second-order critical.
+Only successful steps need the small-radius conclusion of Lemma 6.6.6. -/
+theorem theorem_6_6_7 [ProperSpace E] (run : BTRRun f P sufficient) {z : E}
     {j : ℕ → ℕ} (hj : StrictMono j) (hz : Tendsto (run.x ∘ j) atTop (𝓝 z))
+    (hiso : ∃ r > (0 : ℝ), ∀ y, dist y z < r → ∀ i : ℕ → ℕ,
+      StrictMono i → Tendsto (run.x ∘ i) atTop (𝓝 y) → y = z)
     {curv : E → ℝ} (hcurv : ContinuousAt curv z) {τ : ℕ → ℝ}
     (hagree : Tendsto (fun k ↦ |curv (run.x k) - τ k|) atTop (𝓝 0))
     (hgrad : Continuous (fderiv ℝ f))
     (hcrit : Tendsto (fun k ↦ ‖fderiv ℝ f (run.x k)‖) atTop (𝓝 0))
     (hval : ∀ k, f (run.x k) = run.model k (run.x k))
     (hlower : BddBelow (range f)) (herr : smallRadiusModelAgreement run)
-    {κ K γ₃ γ₄ cap : ℝ} (hκ : 0 < κ) (hK : 0 < K) (hstep : ∀ k, ‖run.s k‖ ≤ K * run.Δ k)
+    {κ K : ℝ} (hκ : 0 < κ) (hK : 0 < K) (hstep : ∀ k, ‖run.s k‖ ≤ K * run.Δ k)
     (hsecond : ∀ k, HasNegativeCurvatureDecrease (run.model k) (run.x k) (run.s k)
-      (τ k) (run.Δ k) κ) (hexpand : HasForcedRadiusExpansion run γ₃ γ₄ cap) :
+      (τ k) (run.Δ k) κ) :
     fderiv ℝ f z = 0 ∧ 0 ≤ curv z := by
   refine ⟨stationary_of_subsequence run hj hz hgrad hcrit, ?_⟩
   by_contra! hneg
@@ -632,6 +617,26 @@ theorem theorem_6_6_8 (run : BTRRun f P sufficient) {z : E}
   have ha : 0 < a := div_pos (neg_pos.mpr hneg) (by norm_num)
   have haz : curv z < -(2 * a) := by dsimp [a]; linarith
   obtain ⟨r, hr, hnear⟩ := eventually_modelCurvature_negative_near run hcurv hagree ha haz
+  exact not_negative_curvature_near_isolated_limit run hj hz hiso ha hκ hK hval hlower herr hstep hsecond ⟨r, hr, hnear⟩
+
+/-- AA.3, compulsory geometric radius growth below the expansion cap. -/
+def HasForcedRadiusExpansion (run : BTRRun f P sufficient) (γ₃ γ₄ cap : ℝ) : Prop :=
+  1 < γ₃ ∧ γ₃ ≤ γ₄ ∧ 0 < cap ∧ ∀ k ∈ run.verySuccessful, run.Δ k ≤ cap →
+    γ₃ * run.Δ k ≤ run.Δ (k + 1) ∧ run.Δ (k + 1) ≤ γ₄ * run.Δ k
+
+/-- Forced radius expansion precludes a limit near which late models are uniformly negative. -/
+theorem not_negative_curvature_near_limit_of_forced_expansion (run : BTRRun f P sufficient) {z : E}
+    {j : ℕ → ℕ} (hj : StrictMono j) (hz : Tendsto (run.x ∘ j) atTop (𝓝 z))
+    {τ : ℕ → ℝ} {a κ K : ℝ} (ha : 0 < a) (hκ : 0 < κ) (hK : 0 < K)
+    (hval : ∀ k, f (run.x k) = run.model k (run.x k))
+    (hlower : BddBelow (range f)) (herr : smallRadiusModelAgreement run)
+    (hstep : ∀ k, ‖run.s k‖ ≤ K * run.Δ k)
+    (hsecond : ∀ k, HasNegativeCurvatureDecrease (run.model k) (run.x k) (run.s k)
+      (τ k) (run.Δ k) κ)
+    {γ₃ γ₄ cap : ℝ} (hexpand : HasForcedRadiusExpansion run γ₃ γ₄ cap)
+    (hlocal : ∃ r > (0 : ℝ), ∀ᶠ k in atTop, dist (run.x k) z < r → τ k ≤ -a) :
+    False := by
+  obtain ⟨r, hr, hnear⟩ := hlocal
   obtain ⟨δ, hδ, hvery⟩ := eventually_small_radius_very_successful run hval herr hκ ha hsecond
   obtain ⟨hγ₃, hγ₄, hcap, hgrow⟩ := hexpand
   have hγ₄' : 0 < γ₄ := zero_lt_one.trans (hγ₃.trans_le hγ₄)
@@ -706,6 +711,29 @@ theorem theorem_6_6_8 (run : BTRRun f P sufficient) {z : E}
     (tendsto_pow_atTop_atTop_of_one_lt hγ₃).atTop_mul_const (run.delta_pos k)
   obtain ⟨n, hn⟩ := (ht.eventually_ge_atTop ε).exists
   exact (hinv n).2.1.not_ge (hn.trans (hinv n).2.2.2)
+
+/-- Theorem 6.6.8. With forced radius growth, all subsequential limits
+are second-order critical. Successive very successful trials near a
+negative-curvature limit have displacement controlled by radius growth. -/
+theorem theorem_6_6_8 (run : BTRRun f P sufficient) {z : E}
+    {j : ℕ → ℕ} (hj : StrictMono j) (hz : Tendsto (run.x ∘ j) atTop (𝓝 z))
+    {curv : E → ℝ} (hcurv : ContinuousAt curv z) {τ : ℕ → ℝ}
+    (hagree : Tendsto (fun k ↦ |curv (run.x k) - τ k|) atTop (𝓝 0))
+    (hgrad : Continuous (fderiv ℝ f))
+    (hcrit : Tendsto (fun k ↦ ‖fderiv ℝ f (run.x k)‖) atTop (𝓝 0))
+    (hval : ∀ k, f (run.x k) = run.model k (run.x k))
+    (hlower : BddBelow (range f)) (herr : smallRadiusModelAgreement run)
+    {κ K γ₃ γ₄ cap : ℝ} (hκ : 0 < κ) (hK : 0 < K) (hstep : ∀ k, ‖run.s k‖ ≤ K * run.Δ k)
+    (hsecond : ∀ k, HasNegativeCurvatureDecrease (run.model k) (run.x k) (run.s k)
+      (τ k) (run.Δ k) κ) (hexpand : HasForcedRadiusExpansion run γ₃ γ₄ cap) :
+    fderiv ℝ f z = 0 ∧ 0 ≤ curv z := by
+  refine ⟨stationary_of_subsequence run hj hz hgrad hcrit, ?_⟩
+  by_contra! hneg
+  let a := -curv z / 4
+  have ha : 0 < a := div_pos (neg_pos.mpr hneg) (by norm_num)
+  have haz : curv z < -(2 * a) := by dsimp [a]; linarith
+  obtain ⟨r, hr, hnear⟩ := eventually_modelCurvature_negative_near run hcurv hagree ha haz
+  exact not_negative_curvature_near_limit_of_forced_expansion run hj hz ha hκ hK hval hlower herr hstep hsecond hexpand ⟨r, hr, hnear⟩
 
 /-- Uniform continuity of the objective Hessian and AM.6 imply the
 small-radius estimate when the trial segments lie in the continuity domain. -/
