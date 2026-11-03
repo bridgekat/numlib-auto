@@ -409,6 +409,23 @@ theorem relaxedCriticality_lower_bound_of_nearby [CompleteSpace E]
   linarith only [h₁, h₁', h₂, h₂', hχ]
 
 open Optimization in
+/-- The relaxed criticality bound supported by the comparison in Theorem
+12.3.4. The transported trial must be feasible in the set used to compute
+criticality, and the linear decrease pays for the translation of the base. -/
+theorem theorem_12_3_4_relaxed [CompleteSpace E] {R : Set E} {f : E → ℝ} {x z d : E}
+    {ε : ℝ} (hε : ε ≤ 1) (hd : z + d ∈ R) (hdnorm : ‖d‖ ≤ 1 / 2)
+    (hxz : ‖z - x‖ ≤ 1 / 2)
+    (hgap : 2 * ε ≤ ⟪-gradient f z, d⟫)
+    (hgrad : ‖gradient f x - gradient f z‖ ≤ ε)
+    (htranslate : ‖gradient f x‖ * ‖z - x‖ ≤ ε / 2) :
+    ε ≤ cappedCriticality R f x := by
+  have hterm : ‖gradient f x - gradient f z‖ * ‖d‖ ≤ ε / 2 :=
+    (mul_le_mul_of_nonneg_left hdnorm (norm_nonneg _)).trans (by linarith)
+  have hb := relaxedCriticality_lower_bound_of_nearby (f := f) hd hdnorm hxz
+  have hχ : ε ≤ criticality R f x 1 := by linarith
+  exact le_min hε hχ
+
+open Optimization in
 /-- Missing an active constraint at a generalized Cauchy trial does not
 itself bound the full feasible criticality away from zero. On the
 nonnegative half-line the radius-boundary Cauchy trial is strictly

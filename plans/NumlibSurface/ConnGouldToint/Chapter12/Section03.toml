@@ -63,3 +63,7 @@ source = "Conn–Gould–Toint, Theorem 12.3.8 with connected limit set and asym
 [[node]]
 id = "lemma_12_3_7_of_normal_certificates"
 source = "Conn–Gould–Toint, Lemma 12.3.7 under a common limit active set and supported normal certificates"
+
+[[node]]
+id = "theorem_12_3_4_relaxed"
+source = "Conn–Gould–Toint, corrected relaxed criticality conclusion in Theorem 12.3.4"
