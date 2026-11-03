@@ -1,4 +1,5 @@
 import NumlibSurface.ConnGouldToint.Chapter14.Section02
+import Mathlib.Analysis.Calculus.Deriv.Pow
 
 /-! # Smooth exact penalties -/
 
@@ -152,6 +153,127 @@ theorem gradient_smoothExactPenalty_eq [FiniteDimensional ℝ F]
   have hc' := hc.differentiable (by norm_num) x
   exact (gradient_penalty_with_multiplier hf' hc' hy σ).trans (by
     rw [gradient_lagrangian_eq hf' hc'])
+
+/-- The corrected Hessian formula (14.6.4) at an arbitrary full-rank point.
+The final term differentiates the adjoint multiplier derivative while
+holding the constraint residual fixed. This term vanishes at feasibility.
+Three continuous derivatives of the data suffice off the feasible set. -/
+theorem fderiv_gradient_smoothExactPenalty_eq [FiniteDimensional ℝ F]
+    {f : G → ℝ} {c : G → F} (hf : ContDiff ℝ 3 f) (hc : ContDiff ℝ 3 c)
+    {x : G} (hfull : Function.Surjective (fderiv ℝ c x)) (σ : ℝ) :
+    let A := fderiv ℝ c x
+    let y := fun z ↦ leastSquaresMultiplier (fderiv ℝ c z) (gradient f z)
+    let D := fderiv ℝ y x
+    fderiv ℝ (gradient (smoothExactPenalty f c σ)) x =
+      fderiv ℝ (gradient (lagrangian f c (y x - σ • c x))) x -
+        A.adjoint.comp D - D.adjoint.comp A + σ • A.adjoint.comp A -
+        fderiv ℝ (fun z ↦ (fderiv ℝ y z).adjoint (c x)) x := by
+  dsimp only
+  let A := fderiv ℝ c
+  let y := fun z ↦ leastSquaresMultiplier (A z) (gradient f z)
+  let Adj : (G →L[ℝ] F) →L[ℝ] (F →L[ℝ] G) :=
+    (ContinuousLinearMap.adjoint (𝕜 := ℝ)).toContinuousLinearEquiv.toContinuousLinearMap
+  have hg : ContDiff ℝ 2 (gradient f) :=
+    (InnerProductSpace.toDual ℝ G).symm.toContinuousLinearEquiv.contDiff.comp
+      (hf.fderiv_right (by norm_num))
+  have hA : ContDiff ℝ 2 A := hc.fderiv_right (by norm_num)
+  have hy : ContDiffAt ℝ 2 y x := leastSquaresMultiplier_contDiffAt
+    hA.contDiffAt hg.contDiffAt (multiplierGram_isUnit_of_surjective hfull)
+  have hAdj : HasFDerivAt (fun z ↦ (A z).adjoint)
+      (fderiv ℝ (fun z ↦ (A z).adjoint) x) x :=
+    ((Adj.contDiff.comp hA).differentiable (by norm_num) x).hasFDerivAt
+  have hg' := (hg.differentiable (by norm_num) x).hasFDerivAt
+  have hf' := hf.differentiable (by norm_num)
+  have hc' := hc.differentiable (by norm_num)
+  have hy' := (hy.differentiableAt (by norm_num)).hasFDerivAt
+  have hD : DifferentiableAt ℝ (fun z ↦ (fderiv ℝ y z).adjoint) x :=
+    Adj.differentiableAt.comp x ((hy.fderiv_right (m := 1) (by norm_num)).differentiableAt one_ne_zero)
+  have heq : gradient (smoothExactPenalty f c σ) =ᶠ[𝓝 x] fun z ↦
+      gradient f z - (A z).adjoint (y z - σ • c z) - (fderiv ℝ y z).adjoint (c z) := by
+    filter_upwards [hy.eventually (by simp)] with z hz
+    exact gradient_penalty_with_multiplier (hf' z) (hc' z) (hz.differentiableAt (by norm_num)) σ
+  have hp := ((hg'.sub (hAdj.clm_apply (hy'.sub ((hc' x).hasFDerivAt.const_smul σ)))).sub
+    (hD.hasFDerivAt.clm_apply (hc' x).hasFDerivAt)).congr_of_eventuallyEq heq
+  have hL := (hg'.sub (hAdj.clm_apply (hasFDerivAt_const (y x - σ • c x) x))).congr_of_eventuallyEq
+    (f₁ := gradient (lagrangian f c (y x - σ • c x)))
+      (Filter.Eventually.of_forall fun z ↦ gradient_lagrangian_eq (hf' z) (hc' z) (y x - σ • c x))
+  have hExtra := hD.hasFDerivAt.clm_apply (hasFDerivAt_const (c x) x)
+  change fderiv ℝ (gradient (smoothExactPenalty f c σ)) x =
+    fderiv ℝ (gradient (lagrangian f c (y x - σ • c x))) x -
+      (A x).adjoint.comp (fderiv ℝ y x) - (fderiv ℝ y x).adjoint.comp (A x) +
+        σ • (A x).adjoint.comp (A x) -
+        fderiv ℝ (fun z ↦ (fderiv ℝ y z).adjoint (c x)) x
+  rw [hp.fderiv, hL.fderiv, hExtra.fderiv]
+  apply ContinuousLinearMap.ext
+  intro d
+  simp only [sub_apply, add_apply, ContinuousLinearMap.comp_apply, zero_apply,
+    ContinuousLinearMap.flip_apply, smul_apply, map_sub, map_zero, map_smul, zero_add,
+    Pi.sub_apply, Pi.smul_apply, A]
+  abel
+
+/-- The printed Hessian formula (14.6.4) fails at the infeasible point
+(x=1) for (f(x)=x^3), (c(x)=x), even with a full-rank constraint
+derivative and a positive penalty parameter. -/
+theorem smoothExactPenalty_printed_hessian_counterexample :
+    let f := fun z : ℝ ↦ z ^ 3
+    let c := fun z : ℝ ↦ z
+    let x : ℝ := 1
+    let A := fderiv ℝ c x
+    let y := fun z ↦ leastSquaresMultiplier (fderiv ℝ c z) (gradient f z)
+    let D := fderiv ℝ y x
+    fderiv ℝ (gradient (smoothExactPenalty f c 1)) x ≠
+      fderiv ℝ (gradient (lagrangian f c (y x - c x))) x -
+        A.adjoint.comp D - D.adjoint.comp A + A.adjoint.comp A := by
+  let f := fun z : ℝ ↦ z ^ 3
+  let c := fun z : ℝ ↦ z
+  let y := fun z ↦ leastSquaresMultiplier (fderiv ℝ c z) (gradient f z)
+  have hA (z : ℝ) : fderiv ℝ c z = 1 := (hasFDerivAt_id z).fderiv
+  have hy : y = fun z ↦ 3 * z ^ 2 := by
+    funext z
+    have hd : HasDerivAt f (3 * z ^ 2) z := by
+      have hp := (hasDerivAt_id z).pow 3
+      change HasDerivAt f ((3 : ℝ) * z ^ 2 * 1) z at hp
+      simpa only [mul_one] using hp
+    have hGram : multiplierGram (1 : ℝ →L[ℝ] ℝ) = 1 := by
+      simp [multiplierGram, ContinuousLinearMap.one_def, ContinuousLinearMap.adjoint_id]
+    simp [y, hA, leastSquaresMultiplier, hGram, gradient_eq_deriv', hd.deriv]
+  have hextra :
+      (fun z ↦ (fderiv ℝ y z).adjoint (c 1)) = fun z ↦ 6 * z := by
+    funext z
+    have hd : HasDerivAt y (6 * z) z := by
+      rw [hy]
+      have hp := ((hasDerivAt_id z).pow 2).const_mul (3 : ℝ)
+      change HasDerivAt (fun w : ℝ ↦ 3 * w ^ 2) (3 * (2 * z ^ 1 * 1)) z at hp
+      convert hp using 1
+      ring
+    have hAdj (L : ℝ →L[ℝ] ℝ) : L.adjoint 1 = L 1 := by
+      simpa [real_inner_comm] using
+        (ContinuousLinearMap.adjoint_inner_left (𝕜 := ℝ) L (1 : ℝ) (1 : ℝ))
+    rw [show c 1 = 1 from rfl, hAdj, fderiv_apply_one_eq_deriv, hd.deriv]
+  have hextra' : fderiv ℝ (fun z ↦ (fderiv ℝ y z).adjoint (c 1)) 1 (1 : ℝ) = 6 := by
+    rw [hextra, fderiv_apply_one_eq_deriv]
+    exact (show HasDerivAt (fun z : ℝ ↦ 6 * z) (6 * 1) 1 from
+      (hasDerivAt_id (1 : ℝ)).const_mul 6).deriv.trans (mul_one 6)
+  have hf : ContDiff ℝ 3 f := contDiff_id.pow 3
+  have hc : ContDiff ℝ 3 c := contDiff_id
+  have hsurj : Function.Surjective (fderiv ℝ c 1) := by
+    rw [hA]
+    exact Function.surjective_id
+  have he := fderiv_gradient_smoothExactPenalty_eq hf hc hsurj 1
+  dsimp only at he ⊢
+  change fderiv ℝ (gradient (smoothExactPenalty f c 1)) 1 ≠
+    fderiv ℝ (gradient (lagrangian f c (y 1 - c 1))) 1 -
+      (fderiv ℝ c 1).adjoint.comp (fderiv ℝ y 1) -
+      (fderiv ℝ y 1).adjoint.comp (fderiv ℝ c 1) + (fderiv ℝ c 1).adjoint.comp (fderiv ℝ c 1)
+  change _ = fderiv ℝ (gradient (lagrangian f c (y 1 - 1 • c 1))) 1 - _ - _ +
+    1 • (fderiv ℝ c 1).adjoint.comp (fderiv ℝ c 1) -
+    fderiv ℝ (fun z ↦ (fderiv ℝ y z).adjoint (c 1)) 1 at he
+  simp only [one_smul] at he
+  rw [he]
+  intro h
+  have hh := congrArg (fun L : ℝ →L[ℝ] ℝ ↦ L 1) h
+  simp only [sub_apply, hextra', y] at hh
+  linarith
 
 omit [CompleteSpace G] [CompleteSpace F] in
 private theorem hasFDerivAt_apply_of_continuous_at_zero {M : G → F →L[ℝ] G} {c : G → F} {x : G} {A : G →L[ℝ] F}

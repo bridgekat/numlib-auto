@@ -23,3 +23,11 @@ source = "Conn–Gould–Toint, Theorem 14.6.1"
 [[node]]
 id = "gradient_smoothExactPenalty_eq"
 source = "Conn–Gould–Toint, (14.6.3)"
+
+[[node]]
+id = "fderiv_gradient_smoothExactPenalty_eq"
+source = "Conn–Gould–Toint, corrected (14.6.4) away from feasibility"
+
+[[node]]
+id = "smoothExactPenalty_printed_hessian_counterexample"
+source = "Conn–Gould–Toint, counterexample to (14.6.4) away from feasibility"

@@ -301,8 +301,10 @@ Section 14.4 corrects the multiplier sign and handles every permitted
 penalty update between multiplier changes. Theorem 14.4.2 makes AA.9
 explicit. Section 14.5 uses a strict exact-penalty threshold and a
 surjective residual derivative in the multiplier bound. Section 14.6
-proves second-order equivalence and uses the printed Hessian formula
-at feasible points, where its omitted term vanishes.
+proves second-order equivalence at feasible points. The corrected Hessian
+formula (14.6.4) includes the derivative of the multiplier Jacobian
+acting on the constraint residual. A scalar cubic shows that this term
+can be nonzero away from feasibility.
 
 Chapter 15 covers local SQP convergence. Theorem 15.2.1(i) needs supplied multipliers
 to stay near the root multiplier from the first iteration. A convergent multiplier

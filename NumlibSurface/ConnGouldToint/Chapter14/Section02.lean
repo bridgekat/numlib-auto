@@ -130,15 +130,15 @@ theorem leastSquaresMultiplier_isMinOn {A : G →L[ℝ] F}
   exact le_add_of_nonneg_right (sq_nonneg _)
 
 /-- The least-squares multiplier is continuously differentiable near a point
-where the constraint Gram operator is invertible. -/
-theorem leastSquaresMultiplier_contDiffAt {A : G → G →L[ℝ] F} {g : G → G} {x : G}
-    (hA : ContDiffAt ℝ 1 A x) (hg : ContDiffAt ℝ 1 g x)
+where the constraint Gram operator is invertible, to the order of the input data. -/
+theorem leastSquaresMultiplier_contDiffAt {n} {A : G → G →L[ℝ] F} {g : G → G} {x : G}
+    (hA : ContDiffAt ℝ n A x) (hg : ContDiffAt ℝ n g x)
     (hu : IsUnit (multiplierGram (A x))) :
-    ContDiffAt ℝ 1 (fun z ↦ leastSquaresMultiplier (A z) (g z)) x := by
-  have hAdj : ContDiffAt ℝ 1 (fun z ↦ (A z).adjoint) x :=
+    ContDiffAt ℝ n (fun z ↦ leastSquaresMultiplier (A z) (g z)) x := by
+  have hAdj : ContDiffAt ℝ n (fun z ↦ (A z).adjoint) x :=
     (adjointCLM (G := G) (F := F)).contDiff.contDiffAt.comp x hA
-  have hB : ContDiffAt ℝ 1 (fun z ↦ multiplierGram (A z)) x := hA.clm_comp hAdj
-  have hInv : ContDiffAt ℝ 1 Ring.inverse (multiplierGram (A x)) := by
+  have hB : ContDiffAt ℝ n (fun z ↦ multiplierGram (A z)) x := hA.clm_comp hAdj
+  have hInv : ContDiffAt ℝ n Ring.inverse (multiplierGram (A x)) := by
     rw [← hu.unit_spec]
     exact contDiffAt_ringInverse ℝ hu.unit
   exact (hInv.comp x hB).clm_apply (hA.clm_apply hg)
