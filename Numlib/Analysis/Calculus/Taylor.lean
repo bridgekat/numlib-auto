@@ -886,3 +886,114 @@ theorem isLittleO_taylor_two {L : E → ℝ} {L' : E → E →L[ℝ] ℝ} {H : E
   simpa [hw] using hmv
 
 end Peano
+
+/-! ### Remainder bounds from Lipschitz estimates at the expansion point -/
+
+section LipschitzRemainder
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+  [NormedAddCommGroup F] [NormedSpace ℝ F]
+
+/-- The derivative of a function along the affine line with base point `x` and direction `s`. -/
+theorem DifferentiableAt.hasDerivAt_comp_add_smul {f : E → F} {x s : E} {t : ℝ}
+    (hf : DifferentiableAt ℝ f (x + t • s)) :
+    HasDerivAt (fun u : ℝ => f (x + u • s)) (fderiv ℝ f (x + t • s) s) t :=
+  hf.hasFDerivAt.comp_hasDerivAt t
+    (by simpa using ((hasDerivAt_id t).smul_const s).const_add x)
+
+private theorem norm_le_mul_pow_succ_of_norm_deriv_le
+    {g g' : ℝ → F} {n : ℕ} {C : ℝ}
+    (hzero : g 0 = 0) (hd : ∀ t ∈ Icc (0 : ℝ) 1, HasDerivAt g (g' t) t)
+    (hb : ∀ t ∈ Icc (0 : ℝ) 1, ‖g' t‖ ≤ C * t ^ n) :
+    ∀ t ∈ Icc (0 : ℝ) 1, ‖g t‖ ≤ C * t ^ (n + 1) / (n + 1 : ℝ) := by
+  have hB (t : ℝ) : HasDerivAt (fun u : ℝ => C * u ^ (n + 1) / (n + 1 : ℝ))
+      (C * t ^ n) t := by
+    refine ((((hasDerivAt_id t).fun_pow (n + 1)).const_mul C).div_const
+      (n + 1 : ℝ)).congr_deriv ?_
+    simp only [Nat.cast_add, Nat.cast_one, Nat.add_sub_cancel, id_eq, mul_one]
+    have hne : (n + 1 : ℝ) ≠ 0 := by positivity
+    field_simp
+  intro t ht
+  exact image_norm_le_of_norm_deriv_right_le_deriv_boundary
+    (fun u hu => (hd u hu).continuousAt.continuousWithinAt)
+    (fun u hu => (hd u (Ico_subset_Icc_self hu)).hasDerivWithinAt)
+    (by simp [hzero]) hB (fun u hu => hb u (Ico_subset_Icc_self hu)) ht
+
+/-- A pointwise Lipschitz bound on the Fréchet derivative gives the quadratic remainder
+bound along any segment in the differentiability domain. -/
+theorem norm_sub_firstOrder_le_of_lipschitzAt_segment {S : Set E} (hS : IsOpen S) {f : E → F}
+    (hf : ContDiffOn ℝ 1 f S) {x s : E} {γ : ℝ}
+    (hseg : ∀ t ∈ Icc (0 : ℝ) 1, x + t • s ∈ S)
+    (hlip : ∀ z ∈ S, ‖fderiv ℝ f z - fderiv ℝ f x‖ ≤ γ * ‖z - x‖) :
+    ‖f (x + s) - (f x + fderiv ℝ f x s)‖ ≤ (1 / 2 : ℝ) * γ * ‖s‖ ^ 2 := by
+  let d := fderiv ℝ f x s
+  let g : ℝ → F := fun t => f (x + t • s) - (f x + t • d)
+  have hg (t : ℝ) (ht : t ∈ Icc (0 : ℝ) 1) :
+      HasDerivAt g ((fderiv ℝ f (x + t • s) - fderiv ℝ f x) s) t := by
+    have h := DifferentiableAt.hasDerivAt_comp_add_smul
+      ((hf.contDiffAt (hS.mem_nhds (hseg t ht))).differentiableAt (by norm_num))
+    simpa [g, d] using h.fun_sub (((hasDerivAt_id t).smul_const d).const_add (f x))
+  have hb (t : ℝ) (ht : t ∈ Icc (0 : ℝ) 1) :
+      ‖(fderiv ℝ f (x + t • s) - fderiv ℝ f x) s‖ ≤ (γ * ‖s‖ ^ 2) * t ^ 1 := by
+    have h := hlip _ (hseg t ht)
+    rw [add_sub_cancel_left, norm_smul, Real.norm_of_nonneg ht.1] at h
+    calc
+      _ ≤ ‖fderiv ℝ f (x + t • s) - fderiv ℝ f x‖ * ‖s‖ :=
+        ContinuousLinearMap.le_opNorm _ _
+      _ ≤ (γ * (t * ‖s‖)) * ‖s‖ := mul_le_mul_of_nonneg_right h (norm_nonneg _)
+      _ = _ := by ring
+  have h := norm_le_mul_pow_succ_of_norm_deriv_le (n := 1) (by simp [g]) hg hb 1
+    (right_mem_Icc.2 zero_le_one)
+  norm_num [g, d] at h
+  convert h using 1; ring
+
+/-- A Hessian that is Lipschitz relative to the expansion point
+gives a cubic remainder for the second-order Taylor model. -/
+theorem abs_sub_secondOrder_le_of_lipschitzAt_segment {S : Set E} (hS : IsOpen S) {f : E → ℝ}
+    (hf : ContDiffOn ℝ 2 f S) {x s : E} {γ : ℝ}
+    (hseg : ∀ t ∈ Icc (0 : ℝ) 1, x + t • s ∈ S)
+    (hlip : ∀ z ∈ S, ‖fderiv ℝ (fderiv ℝ f) z - fderiv ℝ (fderiv ℝ f) x‖ ≤ γ * ‖z - x‖) :
+    |f (x + s) - (f x + fderiv ℝ f x s + (1 / 2 : ℝ) * fderiv ℝ (fderiv ℝ f) x s s)| ≤
+      (1 / 6 : ℝ) * γ * ‖s‖ ^ 3 := by
+  let H := fderiv ℝ (fderiv ℝ f)
+  let d := fderiv ℝ f x s
+  let q := H x s s
+  let g : ℝ → ℝ := fun t => f (x + t • s) - (f x + t * d + t ^ 2 / 2 * q)
+  let g' : ℝ → ℝ := fun t => fderiv ℝ f (x + t • s) s - (d + t * q)
+  have hg (t : ℝ) (ht : t ∈ Icc (0 : ℝ) 1) : HasDerivAt g (g' t) t := by
+    have h := DifferentiableAt.hasDerivAt_comp_add_smul
+      ((hf.contDiffAt (hS.mem_nhds (hseg t ht))).differentiableAt (by norm_num))
+    have hd := ((hasDerivAt_id t).mul_const d).const_add (f x)
+    have hq := (((hasDerivAt_id t).fun_pow 2).div_const 2).mul_const q
+    refine (h.fun_sub (hd.fun_add hq)).congr_deriv ?_
+    dsimp [g']
+    norm_num
+  have hg' (t : ℝ) (ht : t ∈ Icc (0 : ℝ) 1) :
+      HasDerivAt g' ((H (x + t • s) - H x) s s) t := by
+    have hF : ContDiffOn ℝ 1 (fderiv ℝ f) S := hf.fderiv_of_isOpen hS (by norm_num)
+    have h := (DifferentiableAt.hasDerivAt_comp_add_smul
+      ((hF.contDiffAt (hS.mem_nhds (hseg t ht))).differentiableAt (by norm_num))).clm_apply
+        (hasDerivAt_const t s)
+    simpa [H, g', q] using h.fun_sub (((hasDerivAt_id t).mul_const q).const_add d)
+  have hb (t : ℝ) (ht : t ∈ Icc (0 : ℝ) 1) :
+      ‖(H (x + t • s) - H x) s s‖ ≤ (γ * ‖s‖ ^ 3) * t ^ 1 := by
+    have h : ‖H (x + t • s) - H x‖ ≤ γ * ‖x + t • s - x‖ := hlip _ (hseg t ht)
+    rw [add_sub_cancel_left, norm_smul, Real.norm_of_nonneg ht.1] at h
+    calc
+      _ ≤ ‖(H (x + t • s) - H x) s‖ * ‖s‖ := ContinuousLinearMap.le_opNorm _ _
+      _ ≤ (‖H (x + t • s) - H x‖ * ‖s‖) * ‖s‖ :=
+        mul_le_mul_of_nonneg_right (ContinuousLinearMap.le_opNorm _ _) (norm_nonneg _)
+      _ ≤ (γ * (t * ‖s‖)) * ‖s‖ * ‖s‖ :=
+        mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right h (norm_nonneg _)) (norm_nonneg _)
+      _ = _ := by ring
+  have h1 (t : ℝ) (ht : t ∈ Icc (0 : ℝ) 1) :
+      ‖g' t‖ ≤ (γ * ‖s‖ ^ 3 / 2) * t ^ 2 := by
+    have h := norm_le_mul_pow_succ_of_norm_deriv_le (n := 1) (by simp [g', d]) hg' hb t ht
+    convert h using 1
+    norm_num; ring
+  have h := norm_le_mul_pow_succ_of_norm_deriv_le (n := 2) (by simp [g]) hg h1 1
+    (right_mem_Icc.2 zero_le_one)
+  simp only [g, d, q, H, one_smul, one_mul, one_pow, Real.norm_eq_abs] at h
+  convert h using 1; ring
+
+end LipschitzRemainder

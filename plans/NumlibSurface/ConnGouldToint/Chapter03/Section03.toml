@@ -1,0 +1,21 @@
+namespace = "ConnGouldToint.Chapter03"
+
+[[node]]
+id = "ConvergesQLinearly"
+source = "Conn, Gould and Toint, Trust-Region Methods, §3.3.1, Q-linear convergence, corrected"
+
+[[node]]
+id = "ConvergesQSuperlinearly"
+source = "Conn, Gould and Toint, Trust-Region Methods, §3.3.1, Q-superlinear convergence, corrected"
+
+[[node]]
+id = "ConvergesQQuadratically"
+source = "Conn, Gould and Toint, Trust-Region Methods, §3.3.1, Q-quadratic convergence, corrected"
+
+[[node]]
+id = "ConvergesRQuadratically"
+source = "Conn, Gould and Toint, Trust-Region Methods, §3.3.1, R-quadratic convergence"
+
+[[node]]
+id = "reciprocal_succ_counterexample"
+source = "Conn, Gould and Toint, Trust-Region Methods, §3.3.1, Q-quadratic convergence, erratum"

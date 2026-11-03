@@ -1,0 +1,17 @@
+namespace = "ConnGouldToint.Chapter03"
+
+[[node]]
+id = "theorem_3_2_1"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.1"
+
+[[node]]
+id = "AF1"
+source = "Conn, Gould and Toint, Trust-Region Methods, Assumption AF.1"
+
+[[node]]
+id = "theorem_3_2_2"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.2"
+
+[[node]]
+id = "theorem_3_2_3"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.3"
