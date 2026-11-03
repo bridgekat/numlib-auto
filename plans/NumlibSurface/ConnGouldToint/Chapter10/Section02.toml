@@ -1,0 +1,96 @@
+namespace = "ConnGouldToint.Chapter10"
+
+[[node]]
+id = "InvariantAlong"
+source = "Conn–Gould–Toint, Section 10.2.1, invariant subspace"
+
+[[node]]
+id = "PartiallySeparable"
+source = "Conn–Gould–Toint, (10.2.2)"
+
+[[node]]
+id = "separableObjective"
+source = "Conn–Gould–Toint, (10.2.1)"
+
+[[node]]
+id = "elementTrustRegion"
+source = "Conn–Gould–Toint, (10.2.3)"
+
+[[node]]
+id = "structuredTrustRegion"
+source = "Conn–Gould–Toint, Section 10.2.1, overall trust region"
+
+[[node]]
+id = "minimumRadius"
+source = "Conn–Gould–Toint, (10.2.4)"
+
+[[node]]
+id = "StructuredTRParams"
+source = "Conn–Gould–Toint, (10.2.5)"
+
+[[node]]
+id = "elementRatio_iff_fit"
+source = "Conn–Gould–Toint, (10.2.6)–(10.2.7), positive predicted decrease"
+
+[[node]]
+id = "elementRatio_zero_counterexample"
+source = "Conn–Gould–Toint, (10.2.6)–(10.2.7), zero-case counterexample"
+
+[[node]]
+id = "negligibleElements"
+source = "Conn–Gould–Toint, (10.2.8)"
+
+[[node]]
+id = "meaningfulElements"
+
+[[node]]
+id = "elementFit"
+source = "Conn–Gould–Toint, (10.2.9) and (10.2.12)"
+
+[[node]]
+id = "structuredSuccessful"
+source = "Conn–Gould–Toint, (10.2.10)"
+
+[[node]]
+id = "structuredSuccessful_iff_ratio"
+source = "Conn–Gould–Toint, (10.2.10) and Algorithm 10.2.2"
+
+[[node]]
+id = "negligibleFit"
+source = "Conn–Gould–Toint, (10.2.13)"
+
+[[node]]
+id = "StructuredRadiusUpdate"
+source = "Conn–Gould–Toint, Algorithm 10.2.1 and (10.2.11)"
+
+[[node]]
+id = "lemma_10_2_1_ii"
+source = "Conn–Gould–Toint, Lemma 10.2.1(ii) and (10.2.15)"
+
+[[node]]
+id = "lemma_10_2_1_i"
+source = "Conn–Gould–Toint, Lemma 10.2.1(i) and (10.2.14)"
+
+[[node]]
+id = "lemma_10_2_2"
+source = "Conn–Gould–Toint, Lemma 10.2.2 and (10.2.16)–(10.2.17)"
+
+[[node]]
+id = "structuredSufficientDecrease"
+source = "Conn–Gould–Toint, AA.1s"
+
+[[node]]
+id = "StructuredTRRun"
+source = "Conn–Gould–Toint, Algorithm 10.2.2"
+
+[[node]]
+id = "StructuredTRRun.delta_pos"
+source = "Conn–Gould–Toint, Lemma 10.2.1(ii)"
+
+[[node]]
+id = "theorem_10_2_3"
+source = "Conn–Gould–Toint, Theorem 10.2.3 and (10.2.18)"
+
+[[node]]
+id = "lemma_10_2_4"
+source = "Conn–Gould–Toint, Lemma 10.2.4 and (10.2.19)–(10.2.22)"

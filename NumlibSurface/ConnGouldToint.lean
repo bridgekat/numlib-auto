@@ -89,6 +89,9 @@ The reference schedule in (10.1.2) requires strict decrease only when the refere
 The accepted count in (10.1.11) includes iteration zero. The convergence proofs
 exclude an eventual positive gradient floor and use uniform gradient continuity
 from the bounded objective Hessian.
+In Section 10.2, the ratio and element-fit tests in (10.2.6)–(10.2.7) are
+equivalent when the individual predicted decrease is strictly positive.
+At zero predicted decrease the two tests can give different answers.
 
 Chapter 11 covers Clarke steepest descent using the support identity proved in (3.1.4).
 Pointwise smooth model matching does not give the uniform decrease in Lemma 11.1.3
