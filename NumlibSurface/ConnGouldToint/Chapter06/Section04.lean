@@ -1,7 +1,11 @@
+import Mathlib.Analysis.SpecificLimits.Basic
+import Mathlib.Topology.Order.MonotoneConvergence
 import Numlib.Analysis.Calculus.Taylor
 import NumlibSurface.ConnGouldToint.Chapter06.Section03
 
 /-! # Convergence to first-order critical points -/
+
+open Filter Topology
 
 namespace ConnGouldToint.Chapter06
 
@@ -134,5 +138,144 @@ theorem theorem_6_4_3 {P : BTRParams} {f : E → ℝ}
   have hg₀ : g k ≠ 0 := norm_pos_iff.mp (hgmin.trans_le (hg k))
   exact (theorem_6_4_2 (hβ k) (hβC k) (run.delta_pos k) hg₀ (hval k) (hdec k)
     (herr k) hsmall (run.radius_update k)).1
+
+/-- Theorem 6.4.4. A run with finitely many successful iterations is eventually
+constant at a first-order critical point. -/
+theorem theorem_6_4_4 {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
+    [CompleteSpace F] {P : BTRParams} {f : F → ℝ}
+    {sufficient : ℕ → (F → ℝ) → F → F → Prop} (run : BTRRun f P sufficient)
+    (β : ℕ → ℝ) {κ C : ℝ} (hβ : ∀ k, 0 < β k) (hβC : ∀ k, β k ≤ C)
+    (hval : ∀ k, f (run.x k) = run.model k (run.x k))
+    (hdec : ∀ k, HasSufficientModelDecrease (run.model k) (run.x k) (run.s k)
+      (gradient f (run.x k)) (β k) (run.Δ k) κ)
+    (herr : ∀ k, |f (run.x k + run.s k) - run.model k (run.x k + run.s k)| ≤
+      C * (run.Δ k) ^ 2) (hfinite : run.successful.Finite) :
+    ∃ x, (∀ᶠ k in atTop, run.x k = x) ∧ gradient f x = 0 := by
+  obtain ⟨N, hN⟩ := hfinite.bddAbove
+  let n := N + 1
+  have hfail (j : ℕ) :
+      btrRatio f (run.model (n + j)) (run.x (n + j)) (run.s (n + j)) < P.η₁ := by
+    apply lt_of_not_ge
+    intro h
+    have hle := hN (show n + j ∈ run.successful from h)
+    dsimp [n] at hle
+    omega
+  have hx (j : ℕ) : run.x (n + j) = run.x n := by
+    induction j with
+    | zero => rfl
+    | succ j ih =>
+      rw [show n + (j + 1) = n + j + 1 by omega, run.iterate_update,
+        Optimization.acceptStep_of_lt (hfail j), ih]
+  refine ⟨run.x n, eventually_atTop.mpr ⟨n, fun k hk ↦ ?_⟩, ?_⟩
+  · simpa only [Nat.add_sub_of_le hk] using hx (k - n)
+  · by_contra hg
+    have hγ : 0 < P.γ₂ := P.gamma₁_pos.trans_le P.gamma₁_le_gamma₂
+    have hrad (j : ℕ) : run.Δ (n + j) ≤ P.γ₂ ^ j * run.Δ n := by
+      induction j with
+      | zero => simp
+      | succ j ih =>
+        calc
+          run.Δ (n + (j + 1)) ≤ P.γ₂ * run.Δ (n + j) :=
+            ((run.radius_update (n + j)).unsuccessful (hfail j)).2
+          _ ≤ P.γ₂ * (P.γ₂ ^ j * run.Δ n) := mul_le_mul_of_nonneg_left ih hγ.le
+          _ = P.γ₂ ^ (j + 1) * run.Δ n := by rw [pow_succ]; ring
+    let θ := κ * ‖gradient f (run.x n)‖ * (1 - P.η₂) / C
+    have hθ : 0 < θ := div_pos (mul_pos (mul_pos (hdec n).1.1 (norm_pos_iff.mpr hg))
+      (sub_pos.mpr P.eta₂_lt_one)) ((hβ n).trans_le (hβC n))
+    have ht : Tendsto (fun j : ℕ ↦ P.γ₂ ^ j * run.Δ n) atTop (𝓝 0) := by
+      simpa only [zero_mul] using
+        (tendsto_pow_atTop_nhds_zero_of_lt_one hγ.le P.gamma₂_lt_one).mul_const (run.Δ n)
+    obtain ⟨j, hj⟩ := (ht.eventually (gt_mem_nhds hθ)).exists
+    have hsmall : run.Δ (n + j) ≤ κ * ‖gradient f (run.x (n + j))‖ * (1 - P.η₂) / C := by
+      rw [hx]
+      exact (hrad j).trans hj.le
+    have hgj : gradient f (run.x (n + j)) ≠ 0 := by rwa [hx]
+    have hs := (theorem_6_4_2 (hβ (n + j)) (hβC (n + j)) (run.delta_pos (n + j))
+      hgj (hval (n + j)) (hdec (n + j)) (herr (n + j)) hsmall
+      (run.radius_update (n + j))).1
+    exact (hfail j).not_ge (P.eta₁_le_eta₂.trans hs)
+
+/-- Theorem 6.4.5. For an objective bounded below, the liminf of the gradient norms
+on a basic trust-region run is zero. The bounds on model error and curvature are
+those established from the smooth model and norm assumptions in (6.4.3) and (6.3.2). -/
+theorem theorem_6_4_5 {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
+    [CompleteSpace F] {P : BTRParams} {f : F → ℝ}
+    {sufficient : ℕ → (F → ℝ) → F → F → Prop} (run : BTRRun f P sufficient)
+    (β : ℕ → ℝ) {κ C : ℝ} (hβ : ∀ k, 0 < β k) (hβC : ∀ k, β k ≤ C)
+    (hval : ∀ k, f (run.x k) = run.model k (run.x k))
+    (hdec : ∀ k, HasSufficientModelDecrease (run.model k) (run.x k) (run.s k)
+      (gradient f (run.x k)) (β k) (run.Δ k) κ)
+    (herr : ∀ k, |f (run.x k + run.s k) - run.model k (run.x k + run.s k)| ≤
+      C * (run.Δ k) ^ 2) (hlower : BddBelow (Set.range f)) :
+    liminf (fun k ↦ ‖gradient f (run.x k)‖) atTop = 0 := by
+  let value (k : ℕ) := f (run.x k)
+  let g (k : ℕ) := gradient f (run.x k)
+  let pred (k : ℕ) := run.model k (run.x k) - run.model k (run.x k + run.s k)
+  have hsuccess (k : ℕ) (hk : k ∈ run.successful) :
+      P.η₁ * pred k ≤ value k - value (k + 1) := by
+    have hr : P.η₁ ≤ Optimization.reductionRatio f (run.x k) (run.s k) (pred k) := hk
+    change P.η₁ * pred k ≤ f (run.x k) - f (run.x (k + 1))
+    rw [run.iterate_update, Optimization.acceptStep_of_le hr]
+    exact (Optimization.le_reductionRatio_iff (run.predicted_pos k)).mp hr
+  have hmono : Antitone value := by
+    apply antitone_nat_of_succ_le
+    intro k
+    by_cases hk : k ∈ run.successful
+    · exact sub_nonneg.mp ((mul_pos P.eta₁_pos (run.predicted_pos k)).le.trans (hsuccess k hk))
+    · have hr : Optimization.reductionRatio f (run.x k) (run.s k) (pred k) < P.η₁ :=
+        lt_of_not_ge hk
+      change f (run.x (k + 1)) ≤ f (run.x k)
+      rw [run.iterate_update, Optimization.acceptStep_of_lt hr]
+  have ht := tendsto_atTop_ciInf hmono
+    (hlower.mono (show Set.range value ⊆ Set.range f from fun _ ⟨k, hk⟩ ↦ ⟨run.x k, hk⟩))
+  have hdiff : Tendsto (fun k ↦ value k - value (k + 1)) atTop (𝓝 0) := by
+    simpa only [Function.comp_apply, sub_self] using ht.sub (ht.comp (tendsto_add_atTop_nat 1))
+  have hfreq (ε : ℝ) (hε : 0 < ε) : ∃ᶠ k in atTop, ‖g k‖ < ε := by
+    by_contra hn
+    have hev : ∀ᶠ k in atTop, ε ≤ ‖g k‖ := by
+      simpa only [Filter.Frequently, not_not, not_lt] using hn
+    obtain ⟨N, hN⟩ := eventually_atTop.mp hev
+    obtain ⟨r, hr, hrad⟩ := theorem_6_4_3 (run.tail N) (fun k ↦ g (N + k))
+      (fun k ↦ β (N + k)) hε (fun k ↦ hN _ (Nat.le_add_right N k))
+      (fun k ↦ hβ _) (fun k ↦ hβC _) (fun k ↦ hval _) (fun k ↦ hdec _)
+      (fun k ↦ herr _)
+    have hr' (k : ℕ) (hk : N ≤ k) : r ≤ run.Δ k := by
+      have h := hrad (k - N)
+      change r ≤ run.Δ (N + (k - N)) at h
+      simpa only [Nat.add_sub_of_le hk] using h
+    have hC : 0 < C := (hβ 0).trans_le (hβC 0)
+    have hκ : 0 < κ := (hdec 0).1.1
+    let a := P.η₁ * (κ * ε * min (ε / C) r)
+    have ha : 0 < a := mul_pos P.eta₁_pos (mul_pos (mul_pos hκ hε)
+      (lt_min (div_pos hε hC) hr))
+    obtain ⟨J, hJ⟩ := eventually_atTop.mp (hdiff.eventually (gt_mem_nhds ha))
+    have hfinite : run.successful.Finite := by
+      refine (Set.finite_le_nat (max N J)).subset fun k hk ↦ ?_
+      change k ≤ max N J
+      by_contra! hlarge
+      have hkN := (le_max_left N J).trans hlarge.le
+      have hkJ := (le_max_right N J).trans hlarge.le
+      have hquot : ε / C ≤ ‖g k‖ / β k :=
+        div_le_div₀ (norm_nonneg _) (hN _ hkN) (hβ k) (hβC k)
+      have hmin := min_le_min hquot (hr' k hkN)
+      have hpred : κ * ε * min (ε / C) r ≤ pred k :=
+        (mul_le_mul (mul_le_mul_of_nonneg_left (hN _ hkN) hκ.le) hmin
+          (le_min (div_nonneg hε.le hC.le) hr.le) (by positivity)).trans (hdec k).2
+      have hlowerStep := (mul_le_mul_of_nonneg_left hpred P.eta₁_pos.le).trans (hsuccess k hk)
+      exact (hJ _ hkJ).not_ge hlowerStep
+    obtain ⟨x, hx, hxg⟩ := theorem_6_4_4 run β hβ hβC hval hdec herr hfinite
+    obtain ⟨k, hk, hkg⟩ := (hx.and hev).exists
+    exact hε.not_ge (by simpa [g, hk, hxg] using hkg)
+  have hb : (atTop : Filter ℕ).IsBoundedUnder (· ≥ ·) (fun k ↦ ‖g k‖) :=
+    ⟨0, show ∀ᶠ k in atTop, 0 ≤ ‖g k‖ from Eventually.of_forall fun _ ↦ norm_nonneg _⟩
+  have hco : (atTop : Filter ℕ).IsCoboundedUnder (· ≥ ·) (fun k ↦ ‖g k‖) := by
+    refine ⟨1, fun b hb' ↦ ?_⟩
+    obtain ⟨k, hk, hk'⟩ := ((hfreq 1 zero_lt_one).and_eventually hb').exists
+    exact hk'.trans hk.le
+  change liminf (fun k ↦ ‖g k‖) atTop = 0
+  refine le_antisymm ?_ (le_liminf_of_le hco (Eventually.of_forall fun _ ↦ norm_nonneg _))
+  by_contra! hp
+  have hlim := liminf_le_of_frequently_le ((hfreq _ (half_pos hp)).mono fun _ h ↦ h.le) hb
+  linarith
 
 end ConnGouldToint.Chapter06

@@ -31,3 +31,6 @@ source = "Conn–Gould–Toint, Algorithm 6.1.1"
 [[node]]
 id = "BTRRun.delta_lower_bound"
 source = "Conn–Gould–Toint, Theorem 6.4.3 (radius update argument)"
+
+[[node]]
+id = "BTRRun.tail"

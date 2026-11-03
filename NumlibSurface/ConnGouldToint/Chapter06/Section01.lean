@@ -137,5 +137,21 @@ theorem delta_lower_bound (run : BTRRun f P sufficient) {θ : ℝ}
         · exact (h.unsuccessful (lt_of_not_ge h₁)).1
       exact (min_le_right _ _).trans (hmul.trans hstep)
 
+/-- Restart the indexing at iteration `n`, retaining the original iterates, models, and steps. -/
+def tail (run : BTRRun f P sufficient) (n : ℕ) :
+    BTRRun f P (fun k ↦ sufficient (n + k)) where
+  x k := run.x (n + k)
+  s k := run.s (n + k)
+  Δ k := run.Δ (n + k)
+  p k := run.p (n + k)
+  norm_separates k := run.norm_separates (n + k)
+  model k := run.model (n + k)
+  delta_initial_pos := run.delta_pos n
+  feasible k := run.feasible (n + k)
+  sufficient_decrease k := run.sufficient_decrease (n + k)
+  predicted_pos k := run.predicted_pos (n + k)
+  iterate_update k := run.iterate_update (n + k)
+  radius_update k := run.radius_update (n + k)
+
 end BTRRun
 end ConnGouldToint.Chapter06
