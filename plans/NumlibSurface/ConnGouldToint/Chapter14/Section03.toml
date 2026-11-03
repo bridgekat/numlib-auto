@@ -27,3 +27,39 @@ source = "Conn–Gould–Toint, corrected (14.3.15)"
 [[node]]
 id = "lemma_14_3_2_scaled_extremes"
 source = "Conn–Gould–Toint, corrected Lemma 14.3.2(ii)–(iii)"
+
+[[node]]
+id = "QuadraticPenaltyRun"
+source = "Conn–Gould–Toint, Algorithm 14.3.1, (14.3.1)–(14.3.2)"
+
+[[node]]
+id = "QuadraticPenaltyRun.multiplier"
+source = "Conn–Gould–Toint, Algorithm 14.3.1, Step 1 multiplier estimate"
+
+[[node]]
+id = "lemma_14_3_2_scaled_limits"
+source = "Conn–Gould–Toint, corrected Lemma 14.3.2(ii)–(iii), direct scaled limits"
+
+[[node]]
+id = "lemma_14_3_2_iv"
+source = "Conn–Gould–Toint, Lemma 14.3.2(iv)"
+
+[[node]]
+id = "reducedPenaltyHessian"
+source = "Conn–Gould–Toint, Lemma 14.3.2(i), nullspace compression"
+
+[[node]]
+id = "reducedPenaltyHessian_symmetric"
+source = "Conn–Gould–Toint, Lemma 14.3.2(i), symmetry of the nullspace compression"
+
+[[node]]
+id = "lemma_14_3_2_i"
+source = "Conn–Gould–Toint, corrected Lemma 14.3.2(i), fixed-Hessian model"
+
+[[node]]
+id = "lemma_14_3_2_i_of_feasible"
+source = "Conn–Gould–Toint, corrected Lemma 14.3.2(i), feasible-point Hessian limit"
+
+[[node]]
+id = "lemma_14_3_2_scaled_limits_of_feasible"
+source = "Conn–Gould–Toint, corrected Lemma 14.3.2(ii)–(iii), feasible-point Hessian limits"

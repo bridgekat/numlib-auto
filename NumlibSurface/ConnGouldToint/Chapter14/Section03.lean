@@ -1,5 +1,6 @@
 import NumlibSurface.ConnGouldToint.Chapter14.Section02
 import Mathlib.Analysis.Calculus.Deriv.Pow
+import Mathlib.Analysis.Calculus.FDeriv.Symmetric
 import Numlib.Optimization.Subproblem.Secular
 
 /-! # Quadratic penalty convergence -/
@@ -12,6 +13,24 @@ namespace ConnGouldToint.Chapter14
 variable {G F : Type*}
 variable [NormedAddCommGroup G] [InnerProductSpace ℝ G] [CompleteSpace G]
 variable [NormedAddCommGroup F] [InnerProductSpace ℝ F] [CompleteSpace F]
+
+/-- A run of Algorithm 14.3.1. The starting points of the inner solves,
+and the choices of iterates and tolerances, are supplied by the run. -/
+structure QuadraticPenaltyRun (f : G → ℝ) (c : G → F) (y : F) where
+  start : ℕ → G
+  iterate : ℕ → G
+  parameter : ℕ → ℝ
+  tolerance : ℕ → ℝ
+  parameter_pos : ∀ k, 0 < parameter k
+  parameter_tendsto : Tendsto parameter atTop (𝓝 0)
+  tolerance_tendsto : Tendsto tolerance atTop (𝓝 0)
+  residual_le : ∀ k,
+    ‖fderiv ℝ (augmentedLagrangian f c y (parameter k)) (iterate k)‖ ≤ tolerance k
+
+/-- The multiplier estimate reported after each inner solve of Algorithm 14.3.1. -/
+noncomputable def QuadraticPenaltyRun.multiplier {f : G → ℝ} {c : G → F} {y : F}
+    (run : QuadraticPenaltyRun f c y) (k : ℕ) : F :=
+  firstOrderMultiplier c y (run.parameter k) (run.iterate k)
 
 /-- Theorem 14.3.1(i)–(ii). A convergent subsequence of approximate
 minimizers of the fixed-multiplier penalty has a feasible, stationary limit.
@@ -263,5 +282,264 @@ theorem lemma_14_3_2_scaled_extremes [FiniteDimensional ℝ G] [Nontrivial G]
     rw [hpr] at h₂
     exact ⟨by linarith only [h₁, mul_le_mul_of_nonneg_left hbP hμ.le],
       by linarith only [h₂, hpB]⟩
+
+open Subproblem in
+omit [CompleteSpace G] in
+/-- Limit form of the corrected Lemma 14.3.2(ii)–(iii). Multiplying the
+error in either eigenvalue by the penalty parameter makes it tend to zero. -/
+theorem lemma_14_3_2_scaled_limits [FiniteDimensional ℝ G] [Nontrivial G]
+    {ι : Type*} {l : Filter ι} {μ : ι → ℝ} {P H : ι → G →L[ℝ] G}
+    {B : G →L[ℝ] G} (hP : ∀ i, (P i).toLinearMap.IsSymmetric)
+    (hB : B.toLinearMap.IsSymmetric) (hμ : Tendsto μ l (𝓝 0))
+    (hpos : ∀ᶠ i in l, 0 < μ i) (C : ℝ) (hbound : ∀ᶠ i in l, ‖H i‖ ≤ C)
+    (hmodel : ∀ᶠ i in l, P i = H i + (μ i)⁻¹ • B) :
+    Tendsto (fun i ↦ μ i * leftmost (hP i)) l (𝓝 (leftmost hB)) ∧
+      Tendsto (fun i ↦ μ i * rightmost (hP i)) l (𝓝 (rightmost hB)) := by
+  have hb := hμ.mul_const C
+  rw [zero_mul] at hb
+  have he := hpos.and (hbound.and hmodel)
+  constructor
+  · refine tendsto_iff_norm_sub_tendsto_zero.2 (squeeze_zero' (Eventually.of_forall
+      fun _ ↦ norm_nonneg _) ?_ hb)
+    filter_upwards [he] with i hi
+    rw [Real.norm_eq_abs]
+    exact (lemma_14_3_2_scaled_extremes (hP i) hB hi.1 hi.2.2).1.trans
+      (mul_le_mul_of_nonneg_left hi.2.1 hi.1.le)
+  · refine tendsto_iff_norm_sub_tendsto_zero.2 (squeeze_zero' (Eventually.of_forall
+      fun _ ↦ norm_nonneg _) ?_ hb)
+    filter_upwards [he] with i hi
+    rw [Real.norm_eq_abs]
+    exact (lemma_14_3_2_scaled_extremes (hP i) hB hi.1 hi.2.2).2.trans
+      (mul_le_mul_of_nonneg_left hi.2.1 hi.1.le)
+
+omit [CompleteSpace F] in
+/-- Lemma 14.3.2(iv). With a zero-dimensional constraint space the penalty
+Hessian is exactly the objective Hessian. -/
+theorem lemma_14_3_2_iv [Subsingleton F] (f : G → ℝ) (c : G → F)
+    (x : G) (y : F) (μ : ℝ) :
+    fderiv ℝ (gradient (augmentedLagrangian f c y μ)) x = fderiv ℝ (gradient f) x := by
+  congr 2
+  funext z
+  simp [augmentedLagrangian, lagrangian, Subsingleton.elim (c z) 0]
+
+section ReducedHessian
+
+variable [FiniteDimensional ℝ G] (A : G →L[ℝ] F)
+
+/-- The restriction of the Hessian quadratic form to the constraint nullspace,
+represented by its symmetric compression to the kernel subspace. -/
+noncomputable def reducedPenaltyHessian (H : G →L[ℝ] G) :
+    A.toLinearMap.ker →L[ℝ] A.toLinearMap.ker :=
+  let N := A.toLinearMap.ker.subtypeL
+  N.adjoint.comp (H.comp N)
+
+omit [CompleteSpace F] [FiniteDimensional ℝ G] in
+theorem reducedPenaltyHessian_symmetric {H : G →L[ℝ] G} (hH : H.toLinearMap.IsSymmetric) :
+    (reducedPenaltyHessian A H).toLinearMap.IsSymmetric := by
+  intro v w
+  change ⟪(A.toLinearMap.ker.subtypeL.adjoint) (H v), w⟫ =
+    ⟪v, (A.toLinearMap.ker.subtypeL.adjoint) (H w)⟫
+  rw [ContinuousLinearMap.adjoint_inner_left, ContinuousLinearMap.adjoint_inner_right]
+  exact hH v w
+
+open Subproblem in
+/-- Corrected Lemma 14.3.2(i) for a fixed Lagrangian Hessian. A positive
+penalty forces the minimum-Rayleigh directions into the constraint kernel
+in the limit. The compression uses the entire kernel. -/
+theorem lemma_14_3_2_i [Nontrivial G] [Nontrivial A.toLinearMap.ker]
+    {H : G →L[ℝ] G} (hH : H.toLinearMap.IsSymmetric)
+    (hP : ∀ μ : ℝ, (H + μ⁻¹ • A.adjoint.comp A).toLinearMap.IsSymmetric) :
+    Tendsto (fun μ ↦ leftmost (hP μ)) (𝓝[Set.Ioi (0 : ℝ)] 0)
+      (𝓝 (leftmost (reducedPenaltyHessian_symmetric A hH))) := by
+  let R := reducedPenaltyHessian A H
+  let hR := reducedPenaltyHessian_symmetric A hH
+  let lamMin := leftmost hR
+  let q : G → ℝ := fun v ↦ ⟪v, H v⟫
+  have hq : Continuous q := continuous_id.inner H.continuous
+  have hkernel (v : A.toLinearMap.ker) : ⟪v, R v⟫ = q v := by
+    exact ContinuousLinearMap.adjoint_inner_right A.toLinearMap.ker.subtypeL v (H v)
+  have hquad (μ : ℝ) (v : G) :
+      ⟪v, (H + μ⁻¹ • A.adjoint.comp A) v⟫ = q v + μ⁻¹ * ‖A v‖ ^ 2 := by
+    rw [add_apply, smul_apply, inner_add_right, real_inner_smul_right,
+      ContinuousLinearMap.comp_apply, ContinuousLinearMap.adjoint_inner_right,
+      real_inner_self_eq_norm_sq]
+  have hmin (v : G) (hv : A v = 0) (hunit : ‖v‖ = 1) : lamMin ≤ q v := by
+    let v' : A.toLinearMap.ker := ⟨v, hv⟩
+    have h := leftmost_mul_norm_sq_le (hH := hR) v'
+    rw [hkernel, show ‖v'‖ = 1 from hunit, one_pow, mul_one] at h
+    exact h
+  have hupper (μ : ℝ) : leftmost (hP μ) ≤ lamMin := by
+    obtain ⟨i, hi⟩ := exists_eigenvalues_eq_leftmost (hH := hR)
+    let v := hR.eigenvectorBasis rfl i
+    have hv : ‖(v : G)‖ = 1 := (hR.eigenvectorBasis rfl).norm_eq_one i
+    have hker : A (v : G) = 0 := v.property
+    have hvalue : q v = lamMin := by
+      rw [← hkernel, show R v = lamMin • v from (apply_eigenvectorBasis' (hH := hR) i).trans
+        (congrArg (fun t : ℝ ↦ t • v) hi), real_inner_smul_right, real_inner_self_eq_norm_sq,
+        show ‖v‖ = 1 from hv, one_pow, mul_one]
+    have h := leftmost_mul_norm_sq_le (hH := hP μ) (v : G)
+    rw [hv, one_pow, mul_one, hquad, hker, norm_zero, zero_pow (by decide : 2 ≠ 0),
+      mul_zero, add_zero, hvalue] at h
+    exact h
+  have hlarge (ε : ℝ) (hε : 0 < ε) :
+      ∃ δ > 0, ∀ μ ∈ Set.Ioo 0 δ, lamMin - ε ≤ leftmost (hP μ) := by
+    let S := Metric.sphere (0 : G) 1 ∩ {v | q v ≤ lamMin - ε}
+    have hS : IsCompact S := (isCompact_sphere _ _).inter_right
+      (isClosed_le hq continuous_const)
+    have hSunit (v : G) (hv : v ∈ S) : ‖v‖ = 1 := by
+      simpa [Metric.mem_sphere, dist_zero_right] using hv.1
+    have hbound (μ : ℝ) (hμ : 0 < μ) (v : G) (hv : ‖v‖ = 1)
+        (h : v ∉ S) : lamMin - ε ≤ ⟪v, (H + μ⁻¹ • A.adjoint.comp A) v⟫ := by
+      have hqv : lamMin - ε ≤ q v := by
+        by_contra! hn
+        exact h ⟨by simpa [Metric.mem_sphere, dist_zero_right] using hv, hn.le⟩
+      rw [hquad]
+      exact hqv.trans (le_add_of_nonneg_right (mul_nonneg (inv_nonneg.mpr hμ.le) (sq_nonneg _)))
+    have hRayleigh (μ : ℝ) (h :
+        ∀ v : G, ‖v‖ = 1 → lamMin - ε ≤ ⟪v, (H + μ⁻¹ • A.adjoint.comp A) v⟫) :
+        lamMin - ε ≤ leftmost (hP μ) := by
+      obtain ⟨i, hi⟩ := exists_eigenvalues_eq_leftmost (hH := hP μ)
+      let v := (hP μ).eigenvectorBasis rfl i
+      have hv : ‖v‖ = 1 := ((hP μ).eigenvectorBasis rfl).norm_eq_one i
+      have hv' := h v hv
+      rw [show (H + μ⁻¹ • A.adjoint.comp A) v = leftmost (hP μ) • v from
+        (apply_eigenvectorBasis' (hH := hP μ) i).trans (congrArg (fun t : ℝ ↦ t • v) hi),
+        real_inner_smul_right, real_inner_self_eq_norm_sq, hv, one_pow, mul_one] at hv'
+      exact hv'
+    by_cases hne : S.Nonempty
+    · obtain ⟨w, hw, hwmin⟩ := hS.exists_isMinOn hne
+        ((A.continuous.norm.pow 2).continuousOn)
+      let d := ‖A w‖ ^ 2
+      have hd : 0 < d := by
+        have hAw : A w ≠ 0 := fun he ↦ by
+          have h₁ := hmin w he (hSunit w hw)
+          have h₂ : q w ≤ lamMin - ε := hw.2
+          linarith
+        exact sq_pos_of_pos (norm_pos_iff.mpr hAw)
+      let C := |lamMin - ε| + ‖H‖ + 1
+      have hC : 0 < C := by dsimp [C]; positivity
+      refine ⟨d / C, div_pos hd hC, fun μ hμ ↦ hRayleigh μ ?_⟩
+      intro v hv
+      by_cases hvs : v ∈ S
+      · have hlow : -‖H‖ ≤ q v := by
+          have hi := (abs_le.mp (abs_real_inner_le_norm v (H v))).1
+          have hop := H.le_opNorm v
+          rw [hv, one_mul] at hi
+          rw [hv, mul_one] at hop
+          change -‖H‖ ≤ ⟪v, H v⟫
+          linarith
+        have hprod : C * μ ≤ d := by
+          have := (lt_div_iff₀ hC).mp hμ.2
+          linarith
+        have hdC : C ≤ μ⁻¹ * ‖A v‖ ^ 2 := by
+          rw [inv_mul_eq_div, le_div_iff₀ hμ.1]
+          exact hprod.trans (hwmin hvs)
+        rw [hquad]
+        dsimp [C] at hdC
+        linarith only [hlow, hdC, le_abs_self (lamMin - ε)]
+      · exact hbound μ hμ.1 v hv hvs
+    · exact ⟨1, zero_lt_one, fun μ hμ ↦
+        hRayleigh μ fun v hv ↦ hbound μ hμ.1 v hv (fun h ↦ hne ⟨v, h⟩)⟩
+  refine Metric.tendsto_nhds.2 fun ε hε ↦ ?_
+  obtain ⟨δ, hδ, hδbound⟩ := hlarge (ε / 2) (half_pos hε)
+  have hev : ∀ᶠ μ : ℝ in 𝓝[Set.Ioi (0 : ℝ)] 0, μ ∈ Set.Ioo 0 δ := by
+    have hup := (eventually_lt_nhds hδ).filter_mono
+      (nhdsWithin_le_nhds : 𝓝[Set.Ioi (0 : ℝ)] 0 ≤ 𝓝 0)
+    filter_upwards [self_mem_nhdsWithin, hup] with μ hlo hhi
+    exact ⟨hlo, hhi⟩
+  filter_upwards [hev] with μ hμ
+  rw [Real.dist_eq, abs_lt]
+  constructor <;> linarith [hupper μ, hδbound μ hμ]
+
+end ReducedHessian
+
+private theorem symmetric_fderiv_gradient {f : G → ℝ} (hf : ContDiff ℝ 2 f) (x : G) :
+    (fderiv ℝ (gradient f) x).toLinearMap.IsSymmetric := by
+  let J := (InnerProductSpace.toDual ℝ G).symm.toContinuousLinearEquiv
+  have hd : DifferentiableAt ℝ (fderiv ℝ f) x :=
+    (hf.fderiv_right (by norm_num) : ContDiff ℝ 1 (fderiv ℝ f)).differentiable one_ne_zero x
+  have h := J.hasFDerivAt.comp x hd.hasFDerivAt
+  change HasFDerivAt (gradient f) _ _ at h
+  have hs := hf.contDiffAt.isSymmSndFDerivAt (x := x) (by simp)
+  intro v w
+  change ⟪fderiv ℝ (gradient f) x v, w⟫ = ⟪v, fderiv ℝ (gradient f) x w⟫
+  rw [h.fderiv, ContinuousLinearMap.comp_apply, ContinuousLinearMap.comp_apply,
+    ← real_inner_comm v]
+  change ⟪(InnerProductSpace.toDual ℝ G).symm (fderiv ℝ (fderiv ℝ f) x v), w⟫ =
+    ⟪(InnerProductSpace.toDual ℝ G).symm (fderiv ℝ (fderiv ℝ f) x w), v⟫
+  simpa only [InnerProductSpace.toDual_symm_apply] using hs.eq v w
+
+private theorem symmetric_penalty_gram (A : G →L[ℝ] F) :
+    (A.adjoint.comp A).toLinearMap.IsSymmetric := by
+  intro v w
+  change ⟪A.adjoint (A v), w⟫ = ⟪v, A.adjoint (A w)⟫
+  rw [ContinuousLinearMap.adjoint_inner_left, ContinuousLinearMap.adjoint_inner_right]
+
+open Subproblem in
+omit [CompleteSpace G] in
+private theorem leftmost_congr [FiniteDimensional ℝ G] {P M : G →L[ℝ] G}
+    (he : P = M) (hP : P.toLinearMap.IsSymmetric) (hM : M.toLinearMap.IsSymmetric) :
+    leftmost hP = leftmost hM := by
+  subst M
+  rfl
+
+open Subproblem in
+/-- At a feasible point the multiplier in the penalty Hessian equals the
+fixed multiplier, so the corrected Lemma 14.3.2(i) applies directly. -/
+theorem lemma_14_3_2_i_of_feasible [FiniteDimensional ℝ G] [Nontrivial G]
+    {f : G → ℝ} {c : G → F} (hf : ContDiff ℝ 2 f) (hc : ContDiff ℝ 2 c)
+    {x : G} (hcx : c x = 0) (y : F) [Nontrivial (fderiv ℝ c x).toLinearMap.ker] :
+    let A := fderiv ℝ c x
+    let H := fderiv ℝ (gradient (lagrangian f c y)) x
+    ∃ (hH : H.toLinearMap.IsSymmetric)
+      (hP : ∀ μ : ℝ, (fderiv ℝ (gradient (augmentedLagrangian f c y μ)) x).toLinearMap.IsSymmetric),
+      Tendsto (fun μ ↦ leftmost (hP μ)) (𝓝[Set.Ioi (0 : ℝ)] 0)
+        (𝓝 (leftmost (reducedPenaltyHessian_symmetric A hH))) := by
+  let A := fderiv ℝ c x
+  let H := fderiv ℝ (gradient (lagrangian f c y)) x
+  have hL : ContDiff ℝ 2 (lagrangian f c y) := hf.sub (contDiff_const.inner ℝ hc)
+  have hH : H.toLinearMap.IsSymmetric := symmetric_fderiv_gradient hL x
+  have hM (μ : ℝ) : (H + μ⁻¹ • A.adjoint.comp A).toLinearMap.IsSymmetric :=
+    hH.add ((symmetric_penalty_gram A).smul rfl)
+  have he (μ : ℝ) :
+      fderiv ℝ (gradient (augmentedLagrangian f c y μ)) x = H + μ⁻¹ • A.adjoint.comp A := by
+    simpa [firstOrderMultiplier, hcx, H, A] using
+      fderiv_gradient_augmentedLagrangian_eq hf hc x y μ
+  have hP (μ : ℝ) :
+      (fderiv ℝ (gradient (augmentedLagrangian f c y μ)) x).toLinearMap.IsSymmetric :=
+    he μ ▸ hM μ
+  refine ⟨hH, hP, ?_⟩
+  have hfun : (fun μ ↦ leftmost (hP μ)) = fun μ ↦ leftmost (hM μ) := by
+    funext μ
+    exact leftmost_congr (he μ) (hP μ) (hM μ)
+  rw [hfun]
+  exact lemma_14_3_2_i A hH hM
+
+open Subproblem in
+/-- The scaled limits of Lemma 14.3.2(ii)–(iii) at a fixed feasible point.
+Here the first-order multiplier correction vanishes for every parameter. -/
+theorem lemma_14_3_2_scaled_limits_of_feasible [FiniteDimensional ℝ G] [Nontrivial G]
+    {f : G → ℝ} {c : G → F} (hf : ContDiff ℝ 2 f) (hc : ContDiff ℝ 2 c)
+    {x : G} (hcx : c x = 0) (y : F) :
+    let A := fderiv ℝ c x
+    ∃ (hB : (A.adjoint.comp A).toLinearMap.IsSymmetric)
+      (hP : ∀ μ : ℝ, (fderiv ℝ (gradient (augmentedLagrangian f c y μ)) x).toLinearMap.IsSymmetric),
+      Tendsto (fun μ ↦ μ * leftmost (hP μ)) (𝓝[Set.Ioi (0 : ℝ)] 0) (𝓝 (leftmost hB)) ∧
+        Tendsto (fun μ ↦ μ * rightmost (hP μ)) (𝓝[Set.Ioi (0 : ℝ)] 0) (𝓝 (rightmost hB)) := by
+  let A := fderiv ℝ c x
+  let H := fderiv ℝ (gradient (lagrangian f c y)) x
+  have hB := symmetric_penalty_gram A
+  have hL : ContDiff ℝ 2 (lagrangian f c y) := hf.sub (contDiff_const.inner ℝ hc)
+  have hH : H.toLinearMap.IsSymmetric := symmetric_fderiv_gradient hL x
+  have he (μ : ℝ) :
+      fderiv ℝ (gradient (augmentedLagrangian f c y μ)) x = H + μ⁻¹ • A.adjoint.comp A := by
+    simpa [firstOrderMultiplier, hcx, H, A] using
+      fderiv_gradient_augmentedLagrangian_eq hf hc x y μ
+  have hP (μ : ℝ) :
+      (fderiv ℝ (gradient (augmentedLagrangian f c y μ)) x).toLinearMap.IsSymmetric :=
+    he μ ▸ hH.add (hB.smul rfl)
+  refine ⟨hB, hP, lemma_14_3_2_scaled_limits hP hB (Filter.tendsto_id'.mpr nhdsWithin_le_nhds)
+    self_mem_nhdsWithin ‖H‖ (Eventually.of_forall fun _ ↦ le_rfl)
+    (Eventually.of_forall he)⟩
 
 end ConnGouldToint.Chapter14
