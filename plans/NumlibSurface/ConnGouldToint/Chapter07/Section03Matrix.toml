@@ -1,0 +1,21 @@
+namespace = "ConnGouldToint.Chapter07"
+
+[[node]]
+id = "linpackEuclideanDirection"
+source = "Conn–Gould–Toint, §7.3.7 (unit back-solve direction)"
+
+[[node]]
+id = "linpackEuclideanDirection_spec"
+source = "Conn–Gould–Toint, §7.3.7 (direction normalization and curvature transport)"
+
+[[node]]
+id = "linpackEuclideanCurvature_tendsto"
+source = "Conn–Gould–Toint, (7.3.16) (Euclidean shifted curvature)"
+
+[[node]]
+id = "moreSorensen_hard_matrix_run"
+source = "Conn–Gould–Toint, Theorem 7.3.4 (hard-case recurrence with LINPACK direction certificates)"
+
+[[node]]
+id = "linpackEuclidean_lower_bound"
+source = "Conn–Gould–Toint, Algorithm 7.3.4 Step 3b(ii) (certified lower bound from the transported direction)"

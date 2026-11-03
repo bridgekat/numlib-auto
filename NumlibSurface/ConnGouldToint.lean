@@ -103,8 +103,9 @@ multiplier and feasible interior stopping results are verified. The nonzero-grad
 recurrence includes the easy Newton and hard bracketing phases. Certified
 hard directions give convergence of model values and minimizing cluster
 points. Distinct hard-case corrections can tie in the model comparison.
-Factorization execution and automatic transport of direction certificates
-are separate from the safeguarded recurrence.
+Successful factorization and back-solve certificates supply the direction
+and curvature bounds in the Euclidean recurrence. Factorization execution,
+failed-pivot estimates and boundary-root choices are supplied as inputs.
 Weighted subproblems use the M-inner product or the explicit coordinate transformation.
 The nonnegative index in Lemma 7.5.8 is k. Theorem 7.5.9 covers stationary
 stops and both positive- and zero-curvature boundary stops for convex

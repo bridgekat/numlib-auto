@@ -122,6 +122,26 @@ theorem linpackCurvature_bound {n : ℕ} (hn : 0 < n)
         Matrix.det_transpose, Matrix.det_of_isLowerTriangular L hL]
       simp [pow_two]
 
+/-- Curvature tends to zero along a filter on which the Cholesky
+and magnitude-greedy row certificates hold eventually. -/
+theorem linpackCurvature_tendsto_zero_of_eventually {n : ℕ} (hn : 0 < n)
+    {ι : Type*} {f : Filter ι} {L : ι → Matrix (Fin n) (Fin n) ℝ} {v w y : ι → Fin n → ℝ}
+    (hcert : ∀ᶠ k in f, (L k).IsLowerTriangular ∧ (∀ i, 0 < L k i i) ∧
+      L k *ᵥ w k = v k ∧ (L k)ᵀ *ᵥ y k = w k ∧
+      ∀ i, v k i = linpackSign (v k i - L k i i * w k i))
+    (hlim : Tendsto (fun k => (L k * (L k)ᵀ).det) f (𝓝 0)) :
+    Tendsto (fun k => linpackCurvature (L k * (L k)ᵀ) (y k)) f (𝓝 0) := by
+  have ht : Tendsto (fun k => (n : ℝ)^n * (L k * (L k)ᵀ).det) f (𝓝 0) := by
+    simpa using tendsto_const_nhds.mul hlim (a := (n : ℝ)^n)
+  rw [Metric.tendsto_nhds]
+  intro ε hε
+  filter_upwards [hcert, ht.eventually (eventually_lt_nhds (pow_pos hε n))]
+    with k ⟨hL, hd, hw, hy, hv⟩ hk
+  have hb := linpackCurvature_bound hn hL hd hw hy hv
+  rw [Real.dist_eq, sub_zero, abs_of_nonneg hb.1]
+  by_contra! hc
+  exact (not_lt_of_ge (pow_le_pow_left₀ hε.le hc n)) (hb.2.trans_lt hk)
+
 /-- The normalized curvature tends to zero when the shifted Hessian
 determinants tend to zero. This proves (7.3.16) for the magnitude comparison. -/
 theorem linpackCurvature_tendsto_zero {n : ℕ} (hn : 0 < n)
@@ -130,18 +150,9 @@ theorem linpackCurvature_tendsto_zero {n : ℕ} (hn : 0 < n)
     (hw : ∀ k, L k *ᵥ w k = v k) (hy : ∀ k, (L k)ᵀ *ᵥ y k = w k)
     (hv : ∀ k i, v k i = linpackSign (v k i - L k i i * w k i))
     (hlim : Tendsto (fun k => (L k * (L k)ᵀ).det) atTop (𝓝 0)) :
-    Tendsto (fun k => linpackCurvature (L k * (L k)ᵀ) (y k)) atTop (𝓝 0) := by
-  have hb (k : ℕ) := linpackCurvature_bound hn (hL k) (hd k) (hw k) (hy k) (hv k)
-  have ht : Tendsto (fun k => (n : ℝ)^n * (L k * (L k)ᵀ).det) atTop (𝓝 0) := by
-    simpa using tendsto_const_nhds.mul hlim (a := (n : ℝ)^n)
-  rw [Metric.tendsto_atTop]
-  intro ε hε
-  obtain ⟨K, hK⟩ := eventually_atTop.mp
-    (ht.eventually (eventually_lt_nhds (pow_pos hε n)))
-  refine ⟨K, fun k hk => ?_⟩
-  rw [Real.dist_eq, sub_zero, abs_of_nonneg (hb k).1]
-  by_contra! hc
-  exact (not_lt_of_ge (pow_le_pow_left₀ hε.le hc n)) ((hb k).2.trans_lt (hK k hk))
+    Tendsto (fun k => linpackCurvature (L k * (L k)ᵀ) (y k)) atTop (𝓝 0) :=
+  linpackCurvature_tendsto_zero_of_eventually hn
+    (Eventually.of_forall fun k => ⟨hL k, hd k, hw k, hy k, hv k⟩) hlim
 
 /-- The Rayleigh quotient is the quadratic form at any unit normalization of
 the same direction. -/

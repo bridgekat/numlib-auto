@@ -47,3 +47,7 @@ source = "Conn–Gould–Toint, §7.3.7 (correction magnitude computed from the 
 [[node]]
 id = "failedCholeskyPivot_full_residual_counterexample"
 source = "Conn–Gould–Toint, (7.3.17) (counterexample to the full-matrix identity as printed)"
+
+[[node]]
+id = "linpackCurvature_tendsto_zero_of_eventually"
+source = "Conn–Gould–Toint, (7.3.16) (curvature limit along successful factorizations)"
