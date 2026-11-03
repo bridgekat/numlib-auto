@@ -100,5 +100,7 @@ Equation (16.2.24) gives a real minimum value. The argmin is the singleton conta
 Chapter 17 covers parameter and initial-radius choices. In (17.1.3), the factor
 1 − η₂ multiplies the common value and slope only. In (17.2.2), the radius is
 the ray parameter multiplied by the gradient norm. Both discrepancies are in print.
+The initial probe safeguards use a fallback strictly below one when shrinking.
+
 
 -/

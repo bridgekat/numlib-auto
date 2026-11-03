@@ -26,3 +26,42 @@ id = "norm_initialProbeDisplacement"
 [[node]]
 id = "initialProbeRatio"
 source = "Conn–Gould–Toint, (17.2.4)"
+
+[[node]]
+id = "ProbeRadiusParams"
+
+[[node]]
+id = "probePredictsBadly"
+source = "Conn–Gould–Toint, (17.2.5)"
+
+[[node]]
+id = "probePredictsWell"
+source = "Conn–Gould–Toint, (17.2.6)"
+
+[[node]]
+id = "probeInterpolationFactors"
+source = "Conn–Gould–Toint, (17.2.8)–(17.2.9)"
+
+[[node]]
+id = "probeFactorExtrema"
+source = "Conn–Gould–Toint, (17.2.10)"
+
+[[node]]
+id = "safeguardedProbeFactor"
+source = "Conn–Gould–Toint, (17.2.11)–(17.2.13), with strict shrinkage"
+
+[[node]]
+id = "safeguardedProbeFactor_mem"
+source = "Conn–Gould–Toint, (17.2.7)"
+
+[[node]]
+id = "probeRadiusUpdate"
+source = "Conn–Gould–Toint, (17.2.7)"
+
+[[node]]
+id = "recommendedProbeParams"
+source = "Conn–Gould–Toint, (17.2.14)"
+
+[[node]]
+id = "recommendedProbeLimits"
+source = "Conn–Gould–Toint, (17.2.14)"
