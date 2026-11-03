@@ -1026,7 +1026,7 @@ private theorem invariant_le (hAs : A.IsSymmetric) {k : ℕ}
 
 omit hA in
 /-- `⟪r_i, r_j⟫ = 0` for `i ≠ j` up to step `k` (`CG.inner_residual_eq_zero` localized). -/
-private theorem inner_residual_eq_zero' (hAs : A.IsSymmetric) {k : ℕ}
+theorem inner_residual_eq_zero_of_pos_prefix (hAs : A.IsSymmetric) {k : ℕ}
     (hpos : ∀ j < k, 0 < RCLike.re (inner 𝕜 (A (iterate A b x₀ j).p) (iterate A b x₀ j).p))
     {i j : ℕ} (hi : i ≤ k) (hj : j ≤ k) (h : i ≠ j) :
     inner 𝕜 (iterate A b x₀ i).r (iterate A b x₀ j).r = 0 := by
@@ -1054,7 +1054,7 @@ private theorem inner_residual_direction_eq' (hAs : A.IsSymmetric) {k : ℕ}
   | succ j hij ih =>
     intro hjk
     rw [iterate_succ_p, inner_add_right, inner_smul_right, ih (by omega),
-      inner_residual_eq_zero' b x₀ hAs hpos (by omega) hjk (show i ≠ j + 1 by omega), zero_add,
+      inner_residual_eq_zero_of_pos_prefix b x₀ hAs hpos (by omega) hjk (show i ≠ j + 1 by omega), zero_add,
       ← inner_self_eq_ofReal_norm_sq, ← inner_self_eq_ofReal_norm_sq, beta_mul_inner_self A b x₀ j]
 
 omit hA in

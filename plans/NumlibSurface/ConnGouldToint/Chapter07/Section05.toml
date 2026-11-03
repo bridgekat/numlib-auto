@@ -1,6 +1,34 @@
 namespace = "ConnGouldToint.Chapter07"
 
 [[node]]
+id = "theorem_7_5_1"
+source = "Conn–Gould–Toint, Theorem 7.5.1"
+
+[[node]]
+id = "lemma_7_5_2"
+source = "Conn–Gould–Toint, Lemma 7.5.2"
+
+[[node]]
+id = "cgPath"
+source = "Conn–Gould–Toint, Section 7.5.2, interpolated CG path"
+
+[[node]]
+id = "cgPathCoefficient"
+source = "Conn–Gould–Toint, (7.5.17)"
+
+[[node]]
+id = "cgPath_eq_segment"
+source = "Conn–Gould–Toint, Section 7.5.2, interpolated CG path"
+
+[[node]]
+id = "lemma_7_5_4"
+source = "Conn–Gould–Toint, Lemma 7.5.4"
+
+[[node]]
+id = "lemma_7_5_5"
+source = "Conn–Gould–Toint, Lemma 7.5.5"
+
+[[node]]
 id = "theorem_7_5_10"
 source = "Conn–Gould–Toint, Theorem 7.5.10"
 

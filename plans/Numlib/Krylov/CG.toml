@@ -114,3 +114,7 @@ id = "lanczos_beta_eq"
 [[node]]  # staged by ch11
 id = "lanczos_tridiag_eq_ldl"
 source = 'Golub–Van Loan, Matrix Computations, Equation (11.3.15)'
+
+[[node]]
+id = "inner_residual_eq_zero_of_pos_prefix"
+source = "Conn–Gould–Toint, Section 7.5.2"

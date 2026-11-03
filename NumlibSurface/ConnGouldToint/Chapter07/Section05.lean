@@ -1,6 +1,7 @@
 import Mathlib.Algebra.Order.Star.Real
 import Numlib.Analysis.InnerProductSpace.Energy
 import Numlib.Eigen.Sturm
+import Numlib.Krylov.Preconditioned
 import Numlib.Optimization.Subproblem.Krylov
 import Mathlib.LinearAlgebra.Matrix.PosDef
 
@@ -13,6 +14,321 @@ Section 7.5 of [conn2000trust].
 namespace ConnGouldToint.Chapter07
 
 open Matrix
+
+section TruncatedCG
+
+open Krylov
+open scoped RealInnerProductSpace
+
+variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+
+/-- Theorem 7.5.1. Starting at zero, PCG iterates grow strictly in the
+preconditioner norm for as long as all preceding directional curvatures
+are positive. The Hessian need only be symmetric. -/
+theorem theorem_7_5_1 {H M Minv : E →ₗ[ℝ] E} (hM : IsPreconditioner M Minv)
+    (hH : H.IsSymmetric) (g : E) (k : ℕ)
+    (hpos : ∀ i ≤ k, 0 < ⟪(PCG.iterate H Minv (-g) 0 i).p,
+      H (PCG.iterate H Minv (-g) 0 i).p⟫) :
+    ∀ j < k, energyNorm M (PCG.iterate H Minv (-g) 0 j).x <
+      energyNorm M (PCG.iterate H Minv (-g) 0 (j + 1)).x := by
+  let A := hM.energyEnd (Minv ∘ₗ H)
+  let b := hM.toEnergy (Minv (-g))
+  have hA : A.IsSymmetric := by
+    intro u v
+    obtain ⟨x, rfl⟩ := hM.toEnergy.surjective u
+    obtain ⟨y, rfl⟩ := hM.toEnergy.surjective v
+    change ⟪hM.energyEnd (Minv ∘ₗ H) (hM.toEnergy x), hM.toEnergy y⟫ =
+      ⟪hM.toEnergy x, hM.energyEnd (Minv ∘ₗ H) (hM.toEnergy y)⟫
+    rw [hM.inner_energyEnd_left H, hM.inner_energyEnd_right H]
+    exact hH x y
+  have hx (j : ℕ) : hM.toEnergy (PCG.iterate H Minv (-g) 0 j).x =
+      (CG.iterate A b 0 j).x := by
+    simpa only [map_zero, A, b] using PCG.toEnergy_iterate_x H Minv (-g) 0 hM j
+  have hp (j : ℕ) : hM.toEnergy (PCG.iterate H Minv (-g) 0 j).p =
+      (CG.iterate A b 0 j).p := by
+    simpa only [map_zero, A, b] using
+      (PCG.iterate_eq_CG_iterate_withEnergy H Minv (-g) 0 hM j).2.2.1
+  have hpos' (j : ℕ) (hj : j < k) :
+      0 < RCLike.re (inner ℝ (A (CG.iterate A b 0 j).p) (CG.iterate A b 0 j).p) := by
+    rw [← hp j]
+    change 0 < ⟪hM.energyEnd (Minv ∘ₗ H) (hM.toEnergy (PCG.iterate H Minv (-g) 0 j).p),
+      hM.toEnergy (PCG.iterate H Minv (-g) 0 j).p⟫
+    rw [hM.inner_energyEnd_left H, real_inner_comm]
+    exact hpos j hj.le
+  intro j hj
+  have h := CG.norm_iterate_lt_of_re_inner_apply_direction_pos b hA hpos' hj
+  rw [← hx j, ← hx (j + 1)] at h
+  exact h
+
+private theorem cg_residual_ne_zero_prefix (H : E →ₗ[ℝ] E) (g : E) {k : ℕ}
+    (hk : (CG.iterate H (-g) 0 k).r ≠ 0) {j : ℕ} (hj : j ≤ k) :
+    (CG.iterate H (-g) 0 j).r ≠ 0 := by
+  intro h
+  apply hk
+  rw [CG.iterate_eq_of_residual_eq_zero' H (-g) 0 h k hj, h]
+
+private theorem cg_direction_eq_residual_sum (H : E →ₗ[ℝ] E) (g : E) (k : ℕ)
+    (hk : (CG.iterate H (-g) 0 k).r ≠ 0) :
+    (CG.iterate H (-g) 0 k).p = ‖(CG.iterate H (-g) 0 k).r‖ ^ 2 •
+      ∑ i ∈ Finset.range (k + 1), (‖(CG.iterate H (-g) 0 i).r‖ ^ 2)⁻¹ •
+        (CG.iterate H (-g) 0 i).r := by
+  induction k with
+  | zero =>
+    have hne := pow_ne_zero 2 (norm_ne_zero_iff.mpr hk)
+    rw [CG.direction_zero, Finset.sum_range_one, smul_smul, mul_inv_cancel₀ hne, one_smul]
+  | succ j ih =>
+    have hj := cg_residual_ne_zero_prefix H g hk (Nat.le_succ j)
+    have hnj := pow_ne_zero 2 (norm_ne_zero_iff.mpr hj)
+    have hnk := pow_ne_zero 2 (norm_ne_zero_iff.mpr hk)
+    rw [CG.iterate_succ_p, CG.beta_iterate, real_inner_self_eq_norm_sq,
+      real_inner_self_eq_norm_sq, ih hj, smul_smul, div_mul_cancel₀ _ hnj]
+    conv_rhs => rw [Finset.sum_range_succ, smul_add, smul_smul, mul_inv_cancel₀ hnk, one_smul]
+    exact add_comm _ _
+
+private theorem cg_iterate_eq_direction_sum (H : E →ₗ[ℝ] E) (g : E) (k : ℕ) :
+    (CG.iterate H (-g) 0 k).x =
+      ∑ j ∈ Finset.range k, CG.alpha H (CG.iterate H (-g) 0 j) • (CG.iterate H (-g) 0 j).p := by
+  induction k with
+  | zero => simp [CG.iterate, CG.init]
+  | succ j ih => rw [CG.iterate_succ_x, ih, Finset.sum_range_succ]
+
+private theorem smul_sum_triangle (a : ℕ → ℝ) (v : ℕ → E) (k : ℕ) :
+    (∑ j ∈ Finset.range (k + 1), a j • ∑ i ∈ Finset.range (j + 1), v i) =
+      ∑ i ∈ Finset.range (k + 1), (∑ j ∈ Finset.Icc i k, a j) • v i := by
+  classical
+  calc
+    _ = ∑ j ∈ Finset.range (k + 1), ∑ i ∈ Finset.range (k + 1),
+        if i ≤ j then a j • v i else 0 := by
+      apply Finset.sum_congr rfl
+      intro j hj
+      rw [Finset.smul_sum, ← Finset.sum_filter]
+      congr 1
+      ext i
+      simp only [Finset.mem_range, Finset.mem_filter] at hj ⊢
+      omega
+    _ = ∑ i ∈ Finset.range (k + 1), ∑ j ∈ Finset.range (k + 1),
+        if i ≤ j then a j • v i else 0 := Finset.sum_comm
+    _ = _ := by
+      apply Finset.sum_congr rfl
+      intro i _
+      rw [← Finset.sum_filter, Finset.sum_smul]
+      congr 1
+      ext j
+      simp only [Finset.mem_filter, Finset.mem_range, Finset.mem_Icc]
+      omega
+
+/-- Lemma 7.5.2. The untruncated CG trial direction and next step expanded in
+the preceding residuals. Lean stores residuals with the opposite sign from the
+book's gradients, so both expansions have positive overall signs. -/
+theorem lemma_7_5_2 (H : E →ₗ[ℝ] E) (g : E) (k : ℕ)
+    (hk : (CG.iterate H (-g) 0 k).r ≠ 0) :
+    let r := fun i => (CG.iterate H (-g) 0 i).r
+    let α := fun i => CG.alpha H (CG.iterate H (-g) 0 i)
+    (CG.iterate H (-g) 0 k).p = ‖r k‖ ^ 2 •
+      (∑ i ∈ Finset.range (k + 1), (‖r i‖ ^ 2)⁻¹ • r i) ∧
+    (CG.iterate H (-g) 0 (k + 1)).x =
+      ∑ i ∈ Finset.range (k + 1), (∑ j ∈ Finset.Icc i k, α j * ‖r j‖ ^ 2) •
+        ((‖r i‖ ^ 2)⁻¹ • r i) := by
+  refine ⟨cg_direction_eq_residual_sum H g k hk, ?_⟩
+  dsimp only
+  rw [cg_iterate_eq_direction_sum]
+  calc
+    _ = ∑ j ∈ Finset.range (k + 1), (CG.alpha H (CG.iterate H (-g) 0 j) *
+          ‖(CG.iterate H (-g) 0 j).r‖ ^ 2) •
+        ∑ i ∈ Finset.range (j + 1), (‖(CG.iterate H (-g) 0 i).r‖ ^ 2)⁻¹ •
+          (CG.iterate H (-g) 0 i).r := by
+      apply Finset.sum_congr rfl
+      intro j hj
+      rw [cg_direction_eq_residual_sum H g j
+        (cg_residual_ne_zero_prefix H g hk (Nat.le_of_lt_succ (Finset.mem_range.mp hj))), smul_smul]
+    _ = _ := smul_sum_triangle _ _ k
+
+private noncomputable def cgPathWeight (j : ℕ) (t : ℝ) : ℝ :=
+  min 1 (max 0 (t - j))
+
+/-- The linear interpolation of the untruncated CG trial steps through step `k + 1`.
+Each path segment uses the full step length before its left endpoint, a fractional
+length inside the segment, and zero length for future steps. -/
+noncomputable def cgPath (H : E →ₗ[ℝ] E) (g : E) (k : ℕ) (t : ℝ) : E :=
+  ∑ j ∈ Finset.range (k + 1), (cgPathWeight j t * CG.alpha H (CG.iterate H (-g) 0 j)) •
+    (CG.iterate H (-g) 0 j).p
+
+/-- The residual-direction coefficient (7.5.17) along the interpolated CG path.
+The clipped weights express the floor and fractional-part formula without a
+separate endpoint convention. -/
+noncomputable def cgPathCoefficient (H : E →ₗ[ℝ] E) (g : E) (k i : ℕ) (t : ℝ) : ℝ :=
+  (∑ j ∈ Finset.Icc i k, (cgPathWeight j t * CG.alpha H (CG.iterate H (-g) 0 j)) *
+    ‖(CG.iterate H (-g) 0 j).r‖ ^ 2) / ‖(CG.iterate H (-g) 0 i).r‖
+
+/-- The interpolated path is the straight segment between the corresponding
+consecutive CG iterates. -/
+theorem cgPath_eq_segment (H : E →ₗ[ℝ] E) (g : E) {k j : ℕ} (hj : j ≤ k)
+    {t : ℝ} (ht : t ∈ Set.Icc (j : ℝ) ((j : ℝ) + 1)) :
+    cgPath H g k t = (CG.iterate H (-g) 0 j).x +
+      (t - j) • ((CG.iterate H (-g) 0 (j + 1)).x - (CG.iterate H (-g) 0 j).x) := by
+  have hz (i : ℕ) (hi : j < i) : cgPathWeight i t = 0 := by
+    have hji : (j : ℝ) + 1 ≤ i := by exact_mod_cast (Nat.succ_le_of_lt hi)
+    simp [cgPathWeight, max_eq_left (sub_nonpos.mpr (ht.2.trans hji))]
+  have hone (i : ℕ) (hi : i < j) : cgPathWeight i t = 1 := by
+    have hij : (i : ℝ) + 1 ≤ j := by exact_mod_cast (Nat.succ_le_of_lt hi)
+    have hp : 1 ≤ t - i := by linarith [ht.1]
+    exact min_eq_left (hp.trans (le_max_right _ _))
+  have hfrac : cgPathWeight j t = t - j := by
+    rw [cgPathWeight, max_eq_right (sub_nonneg.mpr ht.1), min_eq_right (by linarith [ht.2])]
+  unfold cgPath
+  rw [← Finset.sum_subset (Finset.range_mono (Nat.succ_le_succ hj))
+    (fun i _ hi => by
+      have hij : j < i := by
+        simp only [Finset.mem_range, not_lt] at hi
+        omega
+      simp [hz i hij])]
+  rw [Finset.sum_range_succ, hfrac, CG.iterate_succ_x, add_sub_cancel_left, smul_smul]
+  congr 1
+  rw [cg_iterate_eq_direction_sum]
+  apply Finset.sum_congr rfl
+  intro i hi
+  rw [hone i (Finset.mem_range.mp hi), one_mul]
+
+/-- Lemma 7.5.4. The trial path expands in the normalized residual vectors with
+coefficients (7.5.17). These vectors are the negatives of the normalized book
+gradients, absorbing the minus sign in (7.5.16). -/
+theorem lemma_7_5_4 (H : E →ₗ[ℝ] E) (g : E) (k : ℕ) (t : ℝ)
+    (hk : (CG.iterate H (-g) 0 k).r ≠ 0) :
+    cgPath H g k t =
+      ∑ i ∈ Finset.range (k + 1), cgPathCoefficient H g k i t •
+        (‖(CG.iterate H (-g) 0 i).r‖⁻¹ • (CG.iterate H (-g) 0 i).r) := by
+  unfold cgPath
+  calc
+    _ = ∑ j ∈ Finset.range (k + 1), ((cgPathWeight j t * CG.alpha H (CG.iterate H (-g) 0 j)) *
+          ‖(CG.iterate H (-g) 0 j).r‖ ^ 2) •
+        ∑ i ∈ Finset.range (j + 1), (‖(CG.iterate H (-g) 0 i).r‖ ^ 2)⁻¹ •
+          (CG.iterate H (-g) 0 i).r := by
+      apply Finset.sum_congr rfl
+      intro j hj
+      rw [cg_direction_eq_residual_sum H g j
+        (cg_residual_ne_zero_prefix H g hk (Nat.le_of_lt_succ (Finset.mem_range.mp hj))), smul_smul]
+    _ = _ := by
+      rw [smul_sum_triangle]
+      apply Finset.sum_congr rfl
+      intro i _
+      unfold cgPathCoefficient
+      rw [smul_smul, smul_smul, div_eq_mul_inv, mul_assoc, ← pow_two, inv_pow]
+
+private theorem cgPathWeight_mono (j : ℕ) : Monotone (cgPathWeight j) :=
+  fun _ _ h => min_le_min_left 1 (max_le_max_left 0 (sub_le_sub_right h _))
+
+private theorem cgPathWeight_pos_diff {j : ℕ} {s t : ℝ}
+    (hjs : (j : ℝ) ≤ s) (hs : s < (j : ℝ) + 1) (hst : s < t) :
+    cgPathWeight j s < cgPathWeight j t := by
+  unfold cgPathWeight
+  rw [max_eq_right (sub_nonneg.mpr hjs), min_eq_right (by linarith : s - j ≤ 1)]
+  exact lt_min (by linarith) ((sub_lt_sub_right hst _).trans_le (le_max_right _ _))
+
+/-- Lemma 7.5.5. Before a nonpositive curvature or zero-residual stop, the path
+coefficients grow strictly after their respective start times. The squared norm
+is their sum of squares, and the negative linear term is the first coefficient
+scaled by the initial gradient norm. Both quantities grow strictly along the path. -/
+theorem lemma_7_5_5 (H : E →ₗ[ℝ] E) (hH : H.IsSymmetric) (g : E) (k : ℕ)
+    (hpos : ∀ i ≤ k, 0 < ⟪H (CG.iterate H (-g) 0 i).p, (CG.iterate H (-g) 0 i).p⟫) :
+    (∀ i ≤ k, StrictMonoOn (cgPathCoefficient H g k i) (Set.Icc (i : ℝ) ((k : ℝ) + 1))) ∧
+      (∀ t : ℝ, -⟪g, cgPath H g k t⟫ = ‖g‖ * cgPathCoefficient H g k 0 t ∧
+        ‖cgPath H g k t‖ ^ 2 = ∑ i ∈ Finset.range (k + 1), (cgPathCoefficient H g k i t) ^ 2) ∧
+      StrictMonoOn (fun t => -⟪g, cgPath H g k t⟫) (Set.Icc 0 ((k : ℝ) + 1)) ∧
+      StrictMonoOn (fun t => ‖cgPath H g k t‖) (Set.Icc 0 ((k : ℝ) + 1)) := by
+  let r := fun i => (CG.iterate H (-g) 0 i).r
+  let ρ := fun i => cgPathCoefficient H g k i
+  have hk : r k ≠ 0 := by
+    intro hz
+    have hp := CG.direction_eq_zero_of_residual_eq_zero H (-g) 0 hz
+    simpa only [hp, map_zero, inner_zero_left, lt_self_iff_false] using hpos k le_rfl
+  have hn (i : ℕ) (hi : i ≤ k) : 0 < ‖r i‖ :=
+    norm_pos_iff.mpr (cg_residual_ne_zero_prefix H g hk hi)
+  have hα (i : ℕ) (hi : i ≤ k) : 0 < CG.alpha H (CG.iterate H (-g) 0 i) := by
+    rw [CG.alpha, real_inner_self_eq_norm_sq]
+    exact div_pos (pow_pos (hn i hi) 2) (hpos i hi)
+  have hmono (i : ℕ) : Monotone (ρ i) := by
+    intro s t hst
+    unfold ρ cgPathCoefficient
+    apply div_le_div_of_nonneg_right _ (norm_nonneg _)
+    apply Finset.sum_le_sum
+    intro j hj
+    exact mul_le_mul_of_nonneg_right
+      (mul_le_mul_of_nonneg_right (cgPathWeight_mono j hst)
+        (hα j (Finset.mem_Icc.mp hj).2).le) (sq_nonneg _)
+  have hρ0 (i : ℕ) (t : ℝ) : 0 ≤ ρ i t := by
+    unfold ρ cgPathCoefficient
+    apply div_nonneg _ (norm_nonneg _)
+    apply Finset.sum_nonneg
+    intro j hj
+    exact mul_nonneg (mul_nonneg (le_min zero_le_one (le_max_left _ _))
+      (hα j (Finset.mem_Icc.mp hj).2).le) (sq_nonneg _)
+  have hstrict (i : ℕ) (hi : i ≤ k) :
+      StrictMonoOn (ρ i) (Set.Icc (i : ℝ) ((k : ℝ) + 1)) := by
+    intro s hs t ht hst
+    have hs0 : 0 ≤ s := (Nat.cast_nonneg i).trans hs.1
+    let j := ⌊s⌋₊
+    have hij : i ≤ j := (Nat.le_floor_iff hs0).mpr hs.1
+    have hjk : j ≤ k := Nat.lt_succ_iff.mp ((Nat.floor_lt hs0).mpr (by
+      push_cast
+      exact hst.trans_le ht.2))
+    have hst' := cgPathWeight_pos_diff (j := j) (Nat.floor_le hs0) (Nat.lt_floor_add_one s) hst
+    unfold ρ cgPathCoefficient
+    apply div_lt_div_of_pos_right _ (hn i hi)
+    refine Finset.sum_lt_sum (fun l hl => ?_) ⟨j, Finset.mem_Icc.mpr ⟨hij, hjk⟩, ?_⟩
+    · exact mul_le_mul_of_nonneg_right
+        (mul_le_mul_of_nonneg_right (cgPathWeight_mono l hst.le)
+          (hα l (Finset.mem_Icc.mp hl).2).le) (sq_nonneg _)
+    · exact mul_lt_mul_of_pos_right (mul_lt_mul_of_pos_right hst' (hα j hjk))
+        (pow_pos (hn j hjk) 2)
+  let e : Fin (k + 1) → E := fun i => ‖r i‖⁻¹ • r i
+  have he : Orthonormal ℝ e := by
+    constructor
+    · intro i
+      dsimp [e]
+      rw [norm_smul, norm_inv, norm_norm, inv_mul_cancel₀ (hn i (Nat.le_of_lt_succ i.isLt)).ne']
+    · intro i j hij
+      have hcurv (l : ℕ) (hl : l < k + 1) :
+          0 < RCLike.re (inner ℝ (H (CG.iterate H (-g) 0 l).p) (CG.iterate H (-g) 0 l).p) :=
+        hpos l (Nat.le_of_lt_succ hl)
+      have hord := CG.inner_residual_eq_zero_of_pos_prefix (-g) 0 hH hcurv i.isLt.le j.isLt.le
+        (fun he => hij (Fin.ext he))
+      dsimp [e, r]
+      rw [real_inner_smul_left, real_inner_smul_right, hord, mul_zero, mul_zero]
+  have hp (t : ℝ) : cgPath H g k t = ∑ i : Fin (k + 1), ρ i t • e i := by
+    rw [lemma_7_5_4 H g k t hk]
+    exact (Fin.sum_univ_eq_sum_range (fun i => ρ i t • (‖r i‖⁻¹ • r i)) (k + 1)).symm
+  have hr₀ : r 0 = -g := by simp [r, CG.iterate, CG.init]
+  have hgpos : 0 < ‖g‖ := by simpa only [hr₀, norm_neg] using hn 0 (Nat.zero_le k)
+  have hg : -g = ‖g‖ • e 0 := by
+    change -g = ‖g‖ • (‖r 0‖⁻¹ • r 0)
+    rw [hr₀, norm_neg, smul_smul, mul_inv_cancel₀ hgpos.ne', one_smul]
+  have hlin (t : ℝ) : -⟪g, cgPath H g k t⟫ = ‖g‖ * ρ 0 t := by
+    rw [← inner_neg_left, hp, hg, real_inner_smul_left, he.inner_right_fintype]
+    rfl
+  have hnorm (t : ℝ) : ‖cgPath H g k t‖ ^ 2 =
+      ∑ i ∈ Finset.range (k + 1), (ρ i t) ^ 2 := by
+    rw [← real_inner_self_eq_norm_sq, hp]
+    rw [← Fin.sum_univ_eq_sum_range (fun i : ℕ => (ρ i t) ^ 2) (k + 1)]
+    simpa only [conj_trivial, ← sq] using
+      he.inner_sum (fun i => ρ i t) (fun i => ρ i t) Finset.univ
+  refine ⟨hstrict, fun t => ⟨hlin t, hnorm t⟩, ?_, ?_⟩
+  · intro s hs t ht hst
+    change -⟪g, cgPath H g k s⟫ < -⟪g, cgPath H g k t⟫
+    rw [hlin, hlin]
+    exact mul_lt_mul_of_pos_left
+      (hstrict 0 (Nat.zero_le k) (by simpa only [Nat.cast_zero] using hs)
+        (by simpa only [Nat.cast_zero] using ht) hst) hgpos
+  · intro s hs t ht hst
+    change ‖cgPath H g k s‖ < ‖cgPath H g k t‖
+    apply (pow_lt_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).mp
+    rw [hnorm, hnorm]
+    refine Finset.sum_lt_sum (fun i _ => pow_le_pow_left₀ (hρ0 i s) (hmono i hst.le) 2)
+      ⟨0, Finset.mem_range.mpr (Nat.succ_pos _), ?_⟩
+    exact (pow_lt_pow_iff_left₀ (hρ0 0 s) (hρ0 0 t) two_ne_zero).mpr
+      (hstrict 0 (Nat.zero_le k) (by simpa only [Nat.cast_zero] using hs)
+        (by simpa only [Nat.cast_zero] using ht) hst)
+
+end TruncatedCG
 
 /-- Theorem 7.5.10. The preconditioned Lanczos relation and the shifted reduced
 system give the full residual and its inverse-preconditioner energy norm. The next
