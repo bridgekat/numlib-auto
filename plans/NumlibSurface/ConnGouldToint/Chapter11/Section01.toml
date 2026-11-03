@@ -79,3 +79,35 @@ id = "oscillatoryModel_fails_cauchy_decrease"
 [[node]]
 id = "exists_cauchyLength_of_strict_decrease"
 source = "Conn–Gould–Toint, (11.1.8)"
+
+[[node]]
+id = "NonsmoothTRParams"
+source = "Conn–Gould–Toint, (11.1.15)"
+
+[[node]]
+id = "NonsmoothRadiusUpdate"
+source = "Conn–Gould–Toint, corrected (11.1.16)"
+
+[[node]]
+id = "NonsmoothTRRun"
+source = "Conn–Gould–Toint, Algorithm 11.1.1"
+
+[[node]]
+id = "NonsmoothTRRun.HasLocalSufficientDecrease"
+source = "Conn–Gould–Toint, (11.1.14), AA.1n"
+
+[[node]]
+id = "printedNonsmoothExpansion_infeasible"
+source = "Conn–Gould–Toint, counterexample to printed (11.1.16)"
+
+[[node]]
+id = "nonsmoothRadiusUpdate_exists"
+source = "Conn–Gould–Toint, corrected (11.1.16)"
+
+[[node]]
+id = "NonsmoothTRRun.pred"
+source = "Conn–Gould–Toint, Algorithm 11.1.1, Step 3"
+
+[[node]]
+id = "NonsmoothTRRun.ratio"
+source = "Conn–Gould–Toint, Algorithm 11.1.1, Step 3"

@@ -38,3 +38,11 @@ id = "compactPerturbedModel_not_uniform"
 
 [[node]]
 id = "compactPerturbedModel_rejected"
+
+[[node]]
+id = "lemma_11_2_4"
+source = "Conn–Gould–Toint, Lemma 11.2.4"
+
+[[node]]
+id = "theorem_11_2_5"
+source = "Conn–Gould–Toint, Theorem 11.2.5"

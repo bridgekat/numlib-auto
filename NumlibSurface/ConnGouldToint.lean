@@ -94,6 +94,9 @@ equivalent when the individual predicted decrease is strictly positive.
 At zero predicted decrease the two tests can give different answers.
 
 Chapter 11 covers Clarke steepest descent using the support identity proved in (3.1.4).
+The nonsmooth radius update caps the expansion lower bound in (11.1.16) at the
+maximum radius, which avoids an empty interval. A zero predicted decrease is
+treated as rejection.
 Pointwise smooth model matching does not give the uniform decrease in Lemma 11.1.3
 or Corollary 11.1.4. The corrected results require a uniform one-sided first-order
 model estimate near a nonstationary point.

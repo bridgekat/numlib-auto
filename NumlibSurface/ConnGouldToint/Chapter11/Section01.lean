@@ -1,4 +1,5 @@
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Deriv
+import Numlib.Optimization.ModelBased.RatioTest
 import Mathlib.Analysis.Calculus.Deriv.Pow
 import Numlib.Optimization.ModelBased.SupportDescent
 import Numlib.Optimization.Optimality.Clarke
@@ -41,6 +42,95 @@ noncomputable def minimumNormSubgradient (f : E → ℝ) (x : E) : E :=
 subgradient is zero. -/
 noncomputable def steepestDirection (f : E → ℝ) (x : E) : E :=
   negativeUnit (minimumNormSubgradient f x)
+
+/-- Parameters of Algorithm 11.1.1, with the bounds of (11.1.15). -/
+structure NonsmoothTRParams where
+  η₁ : ℝ
+  η₂ : ℝ
+  γ₁ : ℝ
+  γ₂ : ℝ
+  γ₃ : ℝ
+  Δmax : ℝ
+  eta₁_pos : 0 < η₁
+  eta₁_le_eta₂ : η₁ ≤ η₂
+  eta₂_lt_one : η₂ < 1
+  gamma₃_gt_one : 1 < γ₃
+  inv_gamma₃_le_gamma₁ : 1 / γ₃ ≤ γ₁
+  gamma₁_le_gamma₂ : γ₁ ≤ γ₂
+  gamma₂_lt_one : γ₂ < 1
+  radiusMax_pos : 0 < Δmax
+
+/-- The update (11.1.16). Capping the expansion lower bound keeps the
+very-successful interval nonempty when the current radius is close to the cap. -/
+structure NonsmoothRadiusUpdate (P : NonsmoothTRParams) (ρ Δ Δ' : ℝ) : Prop where
+  very_successful : P.η₂ ≤ ρ → min (P.γ₃ * Δ) P.Δmax ≤ Δ' ∧ Δ' ≤ P.Δmax
+  successful : P.η₁ ≤ ρ → ρ < P.η₂ → P.γ₂ * Δ ≤ Δ' ∧ Δ' ≤ Δ
+  unsuccessful : ρ < P.η₁ → P.γ₁ * Δ ≤ Δ' ∧ Δ' ≤ P.γ₂ * Δ
+
+/-- At the radius cap, the printed very-successful interval in (11.1.16)
+has no elements. -/
+theorem printedNonsmoothExpansion_infeasible (P : NonsmoothTRParams) :
+    ¬ ∃ Δ' : ℝ, P.γ₃ * P.Δmax ≤ Δ' ∧ Δ' ≤ P.Δmax := by
+  rintro ⟨Δ', hlo, hhi⟩
+  have hgt := mul_lt_mul_of_pos_right P.gamma₃_gt_one P.radiusMax_pos
+  rw [one_mul] at hgt
+  exact hgt.not_ge (hlo.trans hhi)
+
+/-- With capped expansion, a legal update exists for each ratio and
+each nonnegative current radius. -/
+theorem nonsmoothRadiusUpdate_exists (P : NonsmoothTRParams) (ρ Δ : ℝ) (hΔ : 0 ≤ Δ) :
+    ∃ Δ', NonsmoothRadiusUpdate P ρ Δ Δ' := by
+  by_cases h₂ : P.η₂ ≤ ρ
+  · refine ⟨min (P.γ₃ * Δ) P.Δmax, ⟨fun _ ↦ ⟨le_rfl, min_le_right _ _⟩, ?_, ?_⟩⟩
+    · exact fun _ h ↦ (h.not_ge h₂).elim
+    · exact fun h ↦ (h.not_ge (P.eta₁_le_eta₂.trans h₂)).elim
+  by_cases h₁ : P.η₁ ≤ ρ
+  · refine ⟨Δ, ⟨fun h ↦ (h₂ h).elim, fun _ _ ↦ ⟨?_, le_rfl⟩, ?_⟩⟩
+    · exact mul_le_of_le_one_left hΔ P.gamma₂_lt_one.le
+    · exact fun h ↦ (h.not_ge h₁).elim
+  · refine ⟨P.γ₂ * Δ, ⟨?_, fun h _ ↦ (h₁ h).elim, fun _ ↦ ⟨?_, le_rfl⟩⟩⟩
+    · exact fun h ↦ (h₁ (P.eta₁_le_eta₂.trans h)).elim
+    · exact mul_le_mul_of_nonneg_right P.gamma₁_le_gamma₂ hΔ
+
+/-- An infinite run of Algorithm 11.1.1 with a Euclidean trust region.
+The value and derivative agreement and the sufficient-decrease conditions
+are properties of the objective and model supplied separately. -/
+structure NonsmoothTRRun {I : Type*} (P : NonsmoothTRParams) (f : E → ℝ)
+    (m : E → I → E → ℝ) where
+  x : ℕ → E
+  parameter : ℕ → I
+  s : ℕ → E
+  Δ : ℕ → ℝ
+  radius_initial_pos : 0 < Δ 0
+  radius_initial_le : Δ 0 ≤ P.Δmax
+  step_bound : ∀ k, ‖s k‖ ≤ Δ k
+  next_x : ∀ k, x (k + 1) =
+    if P.η₁ ≤ reductionRatio f (x k) (s k)
+      (m (x k) (parameter k) 0 - m (x k) (parameter k) (s k))
+    then x k + s k else x k
+  next_radius : ∀ k, NonsmoothRadiusUpdate P
+    (reductionRatio f (x k) (s k) (m (x k) (parameter k) 0 - m (x k) (parameter k) (s k)))
+    (Δ k) (Δ (k + 1))
+
+namespace NonsmoothTRRun
+
+variable {I : Type*} {P : NonsmoothTRParams} {f : E → ℝ} {m : E → I → E → ℝ}
+
+/-- The predicted decrease at iteration `k`. -/
+def pred (R : NonsmoothTRRun P f m) (k : ℕ) : ℝ :=
+  m (R.x k) (R.parameter k) 0 - m (R.x k) (R.parameter k) (R.s k)
+
+/-- The acceptance ratio of Step 3. A zero predicted decrease is treated as rejection. -/
+noncomputable def ratio (R : NonsmoothTRRun P f m) (k : ℕ) : ℝ :=
+  reductionRatio f (R.x k) (R.s k) (R.pred k)
+
+/-- Assumption AA.1n, the local sufficient model decrease test (11.1.14). -/
+def HasLocalSufficientDecrease (R : NonsmoothTRRun P f m) (x : E) : Prop :=
+  ∃ ε δ κ : ℝ, 0 < ε ∧ 0 < δ ∧ 0 < κ ∧ κ < 1 ∧
+    ∀ k, R.x k ∈ ball x ε →
+      κ * ‖minimumNormSubgradient f (R.x k)‖ * min δ (R.Δ k) ≤ R.pred k
+
+end NonsmoothTRRun
 
 variable [CompleteSpace E]
 

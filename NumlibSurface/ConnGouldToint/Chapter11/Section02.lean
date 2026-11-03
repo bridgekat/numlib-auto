@@ -1,5 +1,6 @@
 import NumlibSurface.ConnGouldToint.Chapter11.Section01
 import Numlib.Optimization.ModelBased.RatioTest
+import Mathlib.Analysis.SpecificLimits.Basic
 import Mathlib.Topology.Compactness.Compact
 import Mathlib.Analysis.Real.Pi.Bounds
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Bounds
@@ -268,6 +269,232 @@ theorem lemma_11_2_3 [CompleteSpace E] {f : E → ℝ} {m : E → P → E → �
   rw [← hmatch y p]
   dsimp [pred] at herr' ⊢
   linarith
+
+private theorem NonsmoothTRParams.gamma₁_pos (Q : NonsmoothTRParams) : 0 < Q.γ₁ :=
+  (one_div_pos.mpr (zero_lt_one.trans Q.gamma₃_gt_one)).trans_le Q.inv_gamma₃_le_gamma₁
+
+omit [InnerProductSpace ℝ E] in
+private theorem NonsmoothTRRun.radius_bounds {Q : NonsmoothTRParams}
+    {f : E → ℝ} {m : E → P → E → ℝ} (R : NonsmoothTRRun Q f m) :
+    ∀ k, 0 < R.Δ k ∧ R.Δ k ≤ Q.Δmax ∧ Q.γ₁ * R.Δ k ≤ R.Δ (k + 1) := by
+  have hstep (k : ℕ) (hpos : 0 < R.Δ k) (hmax : R.Δ k ≤ Q.Δmax) :
+      Q.γ₁ * R.Δ k ≤ R.Δ (k + 1) ∧ R.Δ (k + 1) ≤ Q.Δmax := by
+    have h := R.next_radius k
+    have hγ₁ : Q.γ₁ ≤ 1 := (Q.gamma₁_le_gamma₂.trans Q.gamma₂_lt_one.le)
+    have hγ₂ : Q.γ₂ ≤ 1 := Q.gamma₂_lt_one.le
+    by_cases h₂ : Q.η₂ ≤ R.ratio k
+    · obtain ⟨hlo, hhi⟩ := h.very_successful h₂
+      refine ⟨(le_min ?_ ?_).trans hlo, hhi⟩
+      · exact mul_le_mul_of_nonneg_right (hγ₁.trans Q.gamma₃_gt_one.le) hpos.le
+      · exact (mul_le_of_le_one_left hpos.le hγ₁).trans hmax
+    by_cases h₁ : Q.η₁ ≤ R.ratio k
+    · obtain ⟨hlo, hhi⟩ := h.successful h₁ (lt_of_not_ge h₂)
+      exact ⟨(mul_le_mul_of_nonneg_right Q.gamma₁_le_gamma₂ hpos.le).trans hlo, hhi.trans hmax⟩
+    · obtain ⟨hlo, hhi⟩ := h.unsuccessful (lt_of_not_ge h₁)
+      exact ⟨hlo, hhi.trans ((mul_le_of_le_one_left hpos.le hγ₂).trans hmax)⟩
+  intro k
+  induction k with
+  | zero =>
+    exact ⟨R.radius_initial_pos, R.radius_initial_le,
+      (hstep 0 R.radius_initial_pos R.radius_initial_le).1⟩
+  | succ k ih =>
+    have hpos := (mul_pos Q.gamma₁_pos ih.1).trans_le ih.2.2
+    have hmax := (hstep k ih.1 ih.2.1).2
+    exact ⟨hpos, hmax, (hstep (k + 1) hpos hmax).1⟩
+
+omit [InnerProductSpace ℝ E] in
+private theorem NonsmoothTRRun.next_x_eq_ite {Q : NonsmoothTRParams}
+    {f : E → ℝ} {m : E → P → E → ℝ} (R : NonsmoothTRRun Q f m) (k : ℕ) :
+    R.x (k + 1) = if Q.η₁ ≤ R.ratio k then R.x k + R.s k else R.x k :=
+  R.next_x k
+
+omit [InnerProductSpace ℝ E] in
+private theorem NonsmoothTRRun.dist_next_le_radius {Q : NonsmoothTRParams}
+    {f : E → ℝ} {m : E → P → E → ℝ} (R : NonsmoothTRRun Q f m) (k : ℕ) :
+    dist (R.x k) (R.x (k + 1)) ≤ R.Δ k := by
+  rw [R.next_x_eq_ite]
+  by_cases h : Q.η₁ ≤ R.ratio k
+  · rw [ite_eq_left h, dist_comm, dist_eq_norm, add_sub_cancel_left]
+    exact R.step_bound k
+  · rw [ite_eq_right h, dist_self]
+    exact (R.radius_bounds k).1.le
+
+/-- Lemma 11.2.4. Around a nonstationary reference point, all visiting iterates
+have a common positive lower radius bound. The proof propagates a small radius
+backwards using a distance-plus-radius bound and the very-successful expansion. -/
+theorem lemma_11_2_4 [CompleteSpace E] {Q : NonsmoothTRParams} {f : E → ℝ}
+    {m : E → P → E → ℝ} (R : NonsmoothTRRun Q f m) {x : E} {U : Set E} {L : NNReal}
+    (hU : U ∈ 𝓝 x) (hL : LipschitzOnWith L f U)
+    (hx : (0 : E) ∉ clarkeSubgradient f x) (hmatch : modelValueMatches f m)
+    (herr : UniformNormalizedModelAgreementAt f m x) (hAA : R.HasLocalSufficientDecrease x) :
+    ∃ ε r : ℝ, 0 < ε ∧ 0 < r ∧ ∀ k, R.x k ∈ ball x ε → r ≤ R.Δ k := by
+  obtain ⟨ε₀, δ, κ, hε₀, hδ, hκ, _, hdec⟩ := hAA
+  obtain ⟨ε₁, T₁, hε₁, hT₁, hη⟩ := lemma_11_2_3 hU hL hx hmatch herr Q.eta₂_lt_one hκ hδ
+  let ε := min ε₀ ε₁
+  let T := min T₁ (Q.Δmax / Q.γ₃)
+  have hε : 0 < ε := lt_min hε₀ hε₁
+  have hγ₃ := zero_lt_one.trans Q.gamma₃_gt_one
+  have hT : 0 < T := lt_min hT₁ (div_pos Q.radiusMax_pos hγ₃)
+  let C := max (1 / Q.γ₁) (1 / (Q.γ₃ - 1))
+  have hC₁ : 1 / Q.γ₁ ≤ C := le_max_left _ _
+  have hC₂ : 1 / (Q.γ₃ - 1) ≤ C := le_max_right _ _
+  have hC : 0 < C := (one_div_pos.mpr Q.gamma₁_pos).trans_le hC₁
+  have hCexp : C + 1 ≤ C * Q.γ₃ := by
+    have h := (div_le_iff₀ (sub_pos.mpr Q.gamma₃_gt_one)).1 hC₂
+    linarith only [h]
+  let D := min (R.Δ 0) (Q.γ₁ * T)
+  have hD : 0 < D := lt_min R.radius_initial_pos (mul_pos Q.gamma₁_pos hT)
+  let bad (k : ℕ) := R.Δ k < D ∧ dist (R.x k) x + C * R.Δ k < ε
+  have hback (k : ℕ) (hn : bad (k + 1)) : bad k := by
+    have hΔpos := (R.radius_bounds k).1
+    have hΔnextpos := (R.radius_bounds (k + 1)).1
+    have hΔnext := (R.radius_bounds k).2.2
+    have hsmall : R.Δ k < T := lt_of_mul_lt_mul_left
+      (hΔnext.trans_lt (hn.1.trans_le (min_le_right _ _))) Q.gamma₁_pos.le
+    have hpre : R.Δ k ≤ C * R.Δ (k + 1) := by
+      calc
+        R.Δ k ≤ R.Δ (k + 1) / Q.γ₁ := (le_div_iff₀ Q.gamma₁_pos).2
+          (by simpa only [mul_comm] using hΔnext)
+        _ = (1 / Q.γ₁) * R.Δ (k + 1) := by ring
+        _ ≤ C * R.Δ (k + 1) := mul_le_mul_of_nonneg_right hC₁ hΔnextpos.le
+    have hdist := (dist_triangle (R.x k) (R.x (k + 1)) x).trans
+      (add_le_add (R.dist_next_le_radius k) le_rfl)
+    have hnear : R.x k ∈ ball x ε := by
+      rw [mem_ball]
+      linarith only [hdist, hpre, hn.2]
+    have hρ := hη (R.x k) (ball_subset_ball (min_le_right _ _) hnear)
+      (R.parameter k) (R.Δ k) hΔpos (hsmall.trans_le (min_le_left _ _))
+      (R.s k) (R.step_bound k) (hdec k (ball_subset_ball (min_le_left _ _) hnear))
+    have hcap : Q.γ₃ * R.Δ k ≤ Q.Δmax := by
+      have h := (le_div_iff₀ hγ₃).1 (hsmall.le.trans (min_le_right _ _))
+      simpa only [mul_comm] using h
+    have hexp := ((R.next_radius k).very_successful hρ).1
+    rw [min_eq_left hcap] at hexp
+    have hnondec : R.Δ k ≤ R.Δ (k + 1) :=
+      (le_mul_of_one_le_left hΔpos.le Q.gamma₃_gt_one.le).trans hexp
+    refine ⟨hnondec.trans_lt hn.1, ?_⟩
+    have hbudget : (C + 1) * R.Δ k ≤ C * R.Δ (k + 1) := calc
+      _ ≤ (C * Q.γ₃) * R.Δ k := mul_le_mul_of_nonneg_right hCexp hΔpos.le
+      _ = C * (Q.γ₃ * R.Δ k) := by ring
+      _ ≤ _ := mul_le_mul_of_nonneg_left hexp hC.le
+    linarith only [hdist, hbudget, hn.2]
+  have hgood (k : ℕ) : ¬ bad k := by
+    induction k with
+    | zero => exact fun h ↦ not_lt_of_ge (min_le_left _ _) h.1
+    | succ k ih => exact fun h ↦ ih (hback k h)
+  let r := min D (ε / (2 * C))
+  refine ⟨ε / 2, r, half_pos hε, lt_min hD (div_pos hε (by positivity)), ?_⟩
+  intro k hk
+  by_contra! hr
+  have hdist := mem_ball.1 hk
+  have hrD : R.Δ k < D := hr.trans_le (min_le_left _ _)
+  have hrε := (lt_div_iff₀ (mul_pos (by norm_num : 0 < (2 : ℝ)) hC)).1
+    (hr.trans_le (min_le_right _ _))
+  exact hgood k ⟨hrD, by linarith only [hdist, hrε]⟩
+
+private theorem NonsmoothTRRun.pred_nonneg {Q : NonsmoothTRParams}
+    {f : E → ℝ} {m : E → P → E → ℝ} (R : NonsmoothTRRun Q f m)
+    (hAA : ∀ x, R.HasLocalSufficientDecrease x) (k : ℕ) :
+    0 ≤ R.pred k := by
+  obtain ⟨ε, δ, κ, hε, hδ, hκ, _, hdec⟩ := hAA (R.x k)
+  exact (mul_nonneg (mul_nonneg hκ.le (norm_nonneg _))
+    (le_min hδ.le (R.radius_bounds k).1.le)).trans (hdec k (mem_ball_self hε))
+
+private theorem NonsmoothTRRun.acceptedDecrease {Q : NonsmoothTRParams}
+    {f : E → ℝ} {m : E → P → E → ℝ} (R : NonsmoothTRRun Q f m)
+    (hAA : ∀ x, R.HasLocalSufficientDecrease x) {k : ℕ} (h : Q.η₁ ≤ R.ratio k) :
+    Q.η₁ * R.pred k ≤ f (R.x k) - f (R.x (k + 1)) := by
+  have hp : 0 < R.pred k := by
+    refine lt_of_le_of_ne (R.pred_nonneg hAA k) (fun he ↦ ?_)
+    have hz : R.ratio k = 0 := by simp [NonsmoothTRRun.ratio, reductionRatio, ← he]
+    exact Q.eta₁_pos.not_ge (hz ▸ h)
+  rw [R.next_x_eq_ite, ite_eq_left h]
+  exact (le_reductionRatio_iff hp).1 h
+
+private theorem NonsmoothTRRun.antitone_value {Q : NonsmoothTRParams}
+    {f : E → ℝ} {m : E → P → E → ℝ} (R : NonsmoothTRRun Q f m)
+    (hAA : ∀ x, R.HasLocalSufficientDecrease x) :
+    Antitone (fun k ↦ f (R.x k)) := by
+  apply antitone_nat_of_succ_le
+  intro k
+  by_cases h : Q.η₁ ≤ R.ratio k
+  · exact sub_nonneg.1 ((mul_nonneg Q.eta₁_pos.le (R.pred_nonneg hAA k)).trans
+      (R.acceptedDecrease hAA h))
+  · rw [R.next_x_eq_ite, ite_eq_right h]
+
+/-- Theorem 11.2.5 with the uniform normalized model agreement required
+by corrected Lemma 11.2.3. Every limit point of a run is Clarke stationary.
+If the run stopped accepting near a nonstationary limit point, rejection
+would shrink the radius below the local lower bound. -/
+theorem theorem_11_2_5 [CompleteSpace E] {Q : NonsmoothTRParams} {f : E → ℝ}
+    {m : E → P → E → ℝ} (R : NonsmoothTRRun Q f m) {x : E} {U : Set E} {L : NNReal}
+    (hU : U ∈ 𝓝 x) (hL : LipschitzOnWith L f U)
+    (hmatch : modelValueMatches f m) (herr : UniformNormalizedModelAgreementAt f m x)
+    (hAA : ∀ y, R.HasLocalSufficientDecrease y)
+    {j : ℕ → ℕ} (hj : StrictMono j) (hx : Tendsto (R.x ∘ j) atTop (𝓝 x)) :
+    (0 : E) ∈ clarkeSubgradient f x := by
+  by_contra hnoncrit
+  obtain ⟨εr, r, hεr, hr, hrad⟩ := lemma_11_2_4 R hU hL hnoncrit hmatch herr (hAA x)
+  obtain ⟨εg, γ, hεg, hγ, hgrad⟩ := lemma_11_1_2 hU hL hnoncrit
+  obtain ⟨εa, δ, κ, hεa, hδ, hκ, _, hdec⟩ := hAA x
+  let ε := min εr (min εg εa)
+  have hε : 0 < ε := lt_min hεr (lt_min hεg hεa)
+  have hεr' : ε ≤ εr := min_le_left _ _
+  have hεg' : ε ≤ εg := (min_le_right _ _).trans (min_le_left _ _)
+  have hεa' : ε ≤ εa := (min_le_right _ _).trans (min_le_right _ _)
+  let d := κ * γ * min δ r
+  have hd : 0 < d := mul_pos (mul_pos hκ hγ) (lt_min hδ hr)
+  let a := Q.η₁ * d
+  have ha : 0 < a := mul_pos Q.eta₁_pos hd
+  have hvalue := R.antitone_value hAA
+  have hfx : Tendsto (fun n ↦ f (R.x (j n))) atTop (𝓝 (f x)) :=
+    (hL.continuousOn.continuousAt hU).tendsto.comp hx
+  have hfloor (k : ℕ) : f x ≤ f (R.x k) := by
+    apply le_of_tendsto hfx
+    filter_upwards [hj.tendsto_atTop.eventually_ge_atTop k] with n hn
+    exact hvalue hn
+  obtain ⟨n₀, hn₀⟩ := (hfx.eventually_lt_const (lt_add_of_pos_right _ ha)).exists
+  let K₀ := j n₀
+  have hlate (k : ℕ) (hk : K₀ ≤ k) (hnear : R.x k ∈ ball x ε) : R.ratio k < Q.η₁ := by
+    by_contra! h
+    have hg := hgrad (R.x k) (ball_subset_ball hεg' hnear)
+    have hΔ := hrad k (ball_subset_ball hεr' hnear)
+    have hp : d ≤ R.pred k := by
+      apply le_trans _ (hdec k (ball_subset_ball hεa' hnear))
+      exact mul_le_mul (mul_le_mul_of_nonneg_left hg hκ.le) (min_le_min le_rfl hΔ)
+        (le_min hδ.le hr.le) (mul_nonneg hκ.le (norm_nonneg _))
+    have hdrop := (mul_le_mul_of_nonneg_left hp Q.eta₁_pos.le).trans
+      (R.acceptedDecrease hAA h)
+    change a ≤ f (R.x k) - f (R.x (k + 1)) at hdrop
+    have hupper := (hvalue hk).trans_lt hn₀
+    linarith only [hdrop, hupper, hfloor (k + 1)]
+  obtain ⟨n₁, hn₁, hnear⟩ :
+      ∃ n, K₀ ≤ j n ∧ R.x (j n) ∈ ball x ε :=
+    ((hj.tendsto_atTop.eventually_ge_atTop K₀).and (hx.eventually (ball_mem_nhds x hε))).exists
+  let K := j n₁
+  have hγ₂ : 0 ≤ Q.γ₂ := Q.gamma₁_pos.le.trans Q.gamma₁_le_gamma₂
+  have htail (n : ℕ) :
+      R.x (K + n) = R.x K ∧ R.Δ (K + n) ≤ Q.γ₂ ^ n * R.Δ K := by
+    induction n with
+    | zero => simp
+    | succ n ih =>
+      have hk : K₀ ≤ K + n := hn₁.trans (Nat.le_add_right _ _)
+      have hnear' : R.x (K + n) ∈ ball x ε := ih.1.symm ▸ hnear
+      have hf := hlate (K + n) hk hnear'
+      refine ⟨?_, ?_⟩
+      · rw [← Nat.add_assoc, R.next_x_eq_ite, ite_eq_right hf.not_ge, ih.1]
+      · calc
+          R.Δ (K + (n + 1)) ≤ Q.γ₂ * R.Δ (K + n) := by
+            rw [← Nat.add_assoc]
+            exact ((R.next_radius (K + n)).unsuccessful hf).2
+          _ ≤ Q.γ₂ * (Q.γ₂ ^ n * R.Δ K) := mul_le_mul_of_nonneg_left ih.2 hγ₂
+          _ = Q.γ₂ ^ (n + 1) * R.Δ K := by ring
+  have hpow : Tendsto (fun n : ℕ ↦ Q.γ₂ ^ n * R.Δ K) atTop (𝓝 0) := by
+    simpa only [zero_mul] using
+      (tendsto_pow_atTop_nhds_zero_of_lt_one hγ₂ Q.gamma₂_lt_one).mul_const (R.Δ K)
+  obtain ⟨n, hn⟩ := (hpow.eventually_lt_const hr).exists
+  have hnear' : R.x (K + n) ∈ ball x ε := (htail n).1.symm ▸ hnear
+  exact (not_lt_of_ge (hrad _ (ball_subset_ball hεr' hnear'))) ((htail n).2.trans_lt hn)
 
 /-! ### A compact-parameter counterexample -/
 
