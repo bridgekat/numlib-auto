@@ -103,3 +103,39 @@ source = "Conn–Gould–Toint, scalar fixed-parameter run conditions in Algorit
 [[node]]
 id = "theorem_13_6_2_unbounded_run_counterexample"
 source = "Conn–Gould–Toint, counterexample to the uncorrected finite stopping theorem"
+
+[[node]]
+id = "theorem_13_6_4_aa8_of_reset_rejected"
+source = "Conn–Gould–Toint, corrected rejection branch for the AA.8 safeguard guarantee"
+
+[[node]]
+id = "primalDualStalledObjective"
+source = "Conn–Gould–Toint, objective for a bounded all-rejected counterexample to Theorem 13.6.4"
+
+[[node]]
+id = "ScalarPrimalDualRejectedTrial"
+source = "Conn–Gould–Toint, scalar rejected trial in Algorithm 13.6.1 with (13.6.19)"
+
+[[node]]
+id = "theorem_13_6_4_all_rejected_counterexample"
+source = "Conn–Gould–Toint, counterexample to the unrestricted AA.8 claim in Theorem 13.6.4"
+
+[[node]]
+id = "theorem_13_6_2_of_primal_stopping"
+source = "Conn–Gould–Toint, bounded-primal stopping transfer from the true barrier inner limits and AA.8"
+
+[[node]]
+id = "PrimalDualBarrierInnerRun.Successful"
+source = "Conn–Gould–Toint, Step 3 of Algorithm 13.6.1"
+
+[[node]]
+id = "PrimalDualBarrierInnerRun.dual_consistent_of_reset_rejected"
+source = "Conn–Gould–Toint, coordinate AA.8 for Algorithm 13.6.1 with the corrected safeguard"
+
+[[node]]
+id = "PrimalDualBarrierInnerRun.frequently_stop_of_extension_limits"
+source = "Conn–Gould–Toint, corrected Theorem 13.6.2 on a bounded primal inner run"
+
+[[node]]
+id = "PrimalDualBarrierInnerRun.frequently_stop_of_extension"
+source = "Conn–Gould–Toint, corrected inner convergence and finite stopping for Algorithm 13.6.1"

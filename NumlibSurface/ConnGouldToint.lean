@@ -219,11 +219,15 @@ the printed sign and unsigned distance test need these corrections.
 Theorem 13.6.2 derives finite stopping from the inner limits with bounded
 primal coordinates. An explicit all-successful scalar run with globally
 smooth objective and uniformly bounded Hessian has unbounded primal
-coordinates and never satisfies the complementarity test. The full inner
-limit argument under the corrected assumptions remains open.
-The safeguard analysis in Theorem 13.6.4 uses arbitrarily late successful
-iterations to derive AA.8 from vanishing steps. Its proof bounds the
-projection error directly without requiring the projection to become inactive.
+coordinates and never satisfies the complementarity test. For a uniformly
+positive bounded primal run, the inner convergence proof uses a smooth
+extension preserving the actual acceptance ratios, uniform model estimates,
+and AA.8.
+With arbitrarily late successful iterations, the printed safeguard
+in Theorem 13.6.4 yields AA.8. A smooth bounded all-rejected run shows
+that AA.8 can fail without that condition. Resetting the dual multiplier
+to its exact barrier value after rejection also ensures AA.8 under
+vanishing accepted displacements.
 The corrected primal scaling theorem in Section 13.7 retains the
 gradient-tolerance rate from the primal-dual theorem. A one-dimensional
 quadratic example shows why vanishing scaled tolerances alone are insufficient.

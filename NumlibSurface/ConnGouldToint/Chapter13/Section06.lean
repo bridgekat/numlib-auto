@@ -274,6 +274,73 @@ theorem theorem_13_6_2_of_inner_limits {f : (ι → ℝ) → ℝ} {x z : ℕ →
     (mul_le_mul_of_nonneg_right hj.1.le (Finset.sum_nonneg fun i _ ↦ sq_nonneg (d i))).trans
       (hmin j d)⟩
 
+/-- Under AA.8 and two-sided primal bounds, arbitrarily late tighter
+primal stopping tests give arbitrarily late primal-dual stopping tests.
+The lower primal bound transfers the true barrier Hessian test to the
+primal-dual Hessian, while the upper bound transfers dual consistency
+to unscaled complementarity. -/
+theorem theorem_13_6_2_of_primal_stopping {f : (ι → ℝ) → ℝ} {x z : ℕ → ι → ℝ}
+    {μ εD εC εE δ M : ℝ} (hD : 0 < εD) (hC : 0 < εC) (hE : 0 < εE)
+    (hδ : 0 < δ) (hM : 0 < M) (hxδ : ∀ j i, δ ≤ x j i) (hxM : ∀ j i, x j i ≤ M)
+    (hz : ∀ j i, 0 < z j i)
+    (hdual : ∀ i, Tendsto (fun j ↦ z j i - μ / x j i) atTop (𝓝 0))
+    (hfreq : ∃ᶠ j in atTop, BarrierSecondOrderStop f (x j) μ (εD / 2) (εE / 2)) :
+    ∃ᶠ j in atTop, PrimalDualBarrierStop f (x j) (z j) μ εD εC εE := by
+  let e (j : ℕ) (i : ι) := z j i - μ / x j i
+  have hsum : Tendsto (fun j ↦ ∑ i, (e j i) ^ 2) atTop (𝓝 0) := by
+    rw [← Finset.sum_const_zero (s := (Finset.univ : Finset ι))]
+    apply tendsto_finsetSum Finset.univ
+    intro i _
+    simpa only [zero_pow (by decide : (2 : ℕ) ≠ 0)] using (hdual i).pow 2
+  have hsmall {a : ℝ} (ha : 0 < a) : ∀ᶠ j in atTop, ∀ i, |e j i| ≤ a := by
+    apply eventually_all.mpr
+    intro i
+    have h := (continuous_abs.continuousAt.tendsto.comp (hdual i)).eventually
+      (gt_mem_nhds (show |(0 : ℝ)| < a by simpa using ha))
+    exact h.mono fun j hj ↦ hj.le
+  have hδE : 0 < δ * (εE / 2) := mul_pos hδ (half_pos hE)
+  refine (hfreq.and_eventually
+    ((hsum.eventually (gt_mem_nhds (sq_pos_of_pos (half_pos hD)))).and
+      ((hsmall (div_pos hC hM)).and (hsmall hδE)))).mono ?_
+  intro j hj
+  obtain ⟨hp, hsumj, hCj, hEj⟩ := hj
+  refine ⟨hp.1, hz j, ?_, ?_, ?_⟩
+  · let a (i : ι) := barrierCoordinateGradient f (x j) i - μ / x j i
+    have hsumle : (∑ i, (barrierCoordinateGradient f (x j) i - z j i) ^ 2) ≤
+        ∑ i, (2 * (a i) ^ 2 + 2 * (e j i) ^ 2) := by
+      apply Finset.sum_le_sum
+      intro i _
+      dsimp [a, e]
+      nlinarith [sq_nonneg (barrierCoordinateGradient f (x j) i - μ / x j i + (z j i - μ / x j i))]
+    refine hsumle.trans ?_
+    rw [Finset.sum_add_distrib, ← Finset.mul_sum, ← Finset.mul_sum]
+    linarith [hp.2.1]
+  · intro i
+    have heq : x j i * z j i - μ = x j i * e j i := by
+      unfold e
+      field_simp [(hp.1 i).ne']
+    rw [heq, abs_mul, abs_of_pos (hp.1 i)]
+    exact (mul_le_mul (hxM j i) (hCj i) (abs_nonneg _) hM.le).trans_eq
+      (mul_div_cancel₀ _ hM.ne')
+  · intro d
+    have hd (i : ι) : -(εE / 2) ≤ z j i / x j i - μ * ((x j i) ^ 2)⁻¹ := by
+      have heq : z j i / x j i - μ * ((x j i) ^ 2)⁻¹ = e j i / x j i := by
+        unfold e
+        field_simp [(hp.1 i).ne']
+      rw [heq]
+      apply (le_div_iff₀ (hp.1 i)).mpr
+      have hh := (abs_le.mp (hEj i)).1
+      have hmul := mul_le_mul_of_nonpos_left (hxδ j i) (show -(εE / 2) ≤ 0 by linarith)
+      linarith
+    have hcorr := Finset.sum_le_sum (s := Finset.univ) (fun i _ ↦
+      mul_le_mul_of_nonneg_right (hd i) (sq_nonneg (d i)))
+    rw [← Finset.mul_sum] at hcorr
+    simp_rw [sub_mul, Finset.sum_sub_distrib] at hcorr
+    have hh := hp.2.2 d
+    rw [Finset.mul_sum (s := Finset.univ) (a := μ)] at hh
+    simp only [pow_two, ← mul_assoc] at hcorr hh ⊢
+    linarith only [hcorr, hh]
+
 /-- Without bounded primal iterates AA.8 alone does not imply convergence
 of the unscaled complementarity residual, even with positive primal and
 dual coordinates and a uniform lower bound on the primal coordinates. -/
@@ -513,6 +580,177 @@ theorem theorem_13_6_4_aa8_of_frequently_successful
     by_cases ha : success j
     · exact hlate j (hJ.trans (Nat.le_succ J |>.trans hj)) ha
     · rwa [hprimal, hupdate, ite_eq_right ha, ite_eq_right ha]
+
+/-- Corrected safeguard update. After rejection, reset the dual coordinate
+to the exact barrier multiplier. This is the ordinary projection with
+zero effective step, so positivity, the AA.7 bound, and AA.8 hold
+without requiring arbitrarily late successful trials. -/
+theorem theorem_13_6_4_aa8_of_reset_rejected
+    {x z s : ℕ → ℝ} {success : ℕ → Prop} [DecidablePred success]
+    {l u μ ε : ℝ} (hl : 0 < l) (hl' : l < 1) (hu : 1 < u) (hμ : 0 < μ)
+    (hε : 0 < ε) (hx : ∀ j, ε ≤ x j) (hz : 0 < z 0)
+    (hprimal : ∀ j, x (j + 1) = if success j then x j + s j else x j)
+    (hupdate : ∀ j, z (j + 1) = if success j then
+      primalDualSafeguard l u μ (x j) (x (j + 1)) (z j) (s j) else μ / x (j + 1))
+    (hs : Tendsto (fun j ↦ x (j + 1) - x j) atTop (𝓝 0)) :
+    (∀ j, 0 < z j ∧ z j ≤ max u (max (z 0) (max (u / μ) (u * (μ / ε))))) ∧
+    Tendsto (fun j ↦ z j - μ / x j) atTop (𝓝 0) := by
+  have hp (j : ℕ) : 0 < x j := hε.trans_le (hx j)
+  have hzpos (j : ℕ) : 0 < z j := by
+    induction j with
+    | zero => exact hz
+    | succ j ih =>
+      rw [hupdate]
+      split_ifs
+      · exact (safeguard_bounds hl hl' hu hμ (hp (j + 1)) ih).1.trans_le (le_max_left _ _)
+      · exact div_pos hμ (hp (j + 1))
+  let t (j : ℕ) := if success j then s j else 0
+  have ht : Tendsto t atTop (𝓝 0) := by
+    have he (j : ℕ) : x (j + 1) - x j = t j := by
+      rw [hprimal]
+      unfold t
+      split_ifs <;> ring
+    simpa only [he] using hs
+  have hpr (j : ℕ) : x (j + 1) = if True then x j + t j else x j := by
+    simp only [ite_true]
+    rw [hprimal]
+    unfold t
+    split_ifs <;> simp
+  have hdu (j : ℕ) : z (j + 1) =
+      if True then primalDualSafeguard l u μ (x j) (x (j + 1)) (z j) (t j) else z j := by
+    simp only [ite_true]
+    by_cases hj : success j
+    · simp [hupdate j, t, hj]
+    · have hxe : x (j + 1) = x j := by rw [hprimal, ite_eq_right hj]
+      rw [hupdate, ite_eq_right hj]
+      obtain ⟨_, hlo, hhi⟩ := safeguard_bounds hl hl' hu hμ (hp j) (hzpos j)
+      simp only [t, ite_eq_right hj, hxe, primalDualSafeguard, primalDualPredictedMultiplier,
+        mul_zero, sub_zero, min_eq_right hhi, max_eq_right hlo]
+  exact ⟨theorem_13_6_4 (success := fun _ ↦ True) hl hl' hu hμ hε hx hz hdu,
+    theorem_13_6_4_aa8_of_frequently_successful (success := fun _ ↦ True)
+      hl hl' hu hμ hε hx hz hpr hdu ht (frequently_atTop.mpr fun N ↦ ⟨N, le_rfl, trivial⟩)⟩
+
+/-- A successful inner iteration, using the actual primal-dual model and
+the guarded barrier ratio of the inner run. -/
+def PrimalDualBarrierInnerRun.Successful {P : Chapter06.BTRParams} {f : (ι → ℝ) → ℝ} {σ μ : ℝ}
+    (r : PrimalDualBarrierInnerRun P f σ μ) (j : ℕ) : Prop :=
+  P.η₁ ≤ primalBarrierRatio (euclideanOrthant (ι := ι)) σ
+    (fun x ↦ logBarrierObjective f x.ofLp μ) (r.model j) (r.x j) (r.s j)
+
+omit [DecidableEq ι] in
+/-- The corrected rejection safeguard gives coordinate AA.8 on the
+actual inner run when its accepted displacements tend to zero. -/
+theorem PrimalDualBarrierInnerRun.dual_consistent_of_reset_rejected
+    {P : Chapter06.BTRParams} {f : (ι → ℝ) → ℝ} {σ μ : ℝ}
+    (r : PrimalDualBarrierInnerRun P f σ μ) {l u δ : ℝ}
+    (hl : 0 < l) (hl' : l < 1) (hu : 1 < u)
+    (hδ : 0 < δ) (hx : ∀ j i, δ ≤ (r.x j).ofLp i)
+    (hstep : Tendsto (fun j ↦ r.x (j + 1) - r.x j) atTop (𝓝 0))
+    (haccept : ∀ j i, r.Successful j → r.z (j + 1) i =
+      primalDualSafeguard l u μ ((r.x j).ofLp i) ((r.x (j + 1)).ofLp i) (r.z j i) ((r.s j).ofLp i))
+    (hreject : ∀ j i, ¬r.Successful j → r.z (j + 1) i = μ / (r.x (j + 1)).ofLp i) :
+    ∀ i, Tendsto (fun j ↦ r.z j i - μ / (r.x j).ofLp i) atTop (𝓝 0) := by
+  classical
+  intro i
+  have hpr (j : ℕ) : (r.x (j + 1)).ofLp i =
+      if r.Successful j then (r.x j).ofLp i + (r.s j).ofLp i else (r.x j).ofLp i := by
+    rw [r.iterate_update]
+    unfold PrimalDualBarrierInnerRun.Successful
+    split_ifs <;> rfl
+  let T := PiLp.continuousLinearEquiv 2 ℝ (fun _ : ι ↦ ℝ)
+  have hc : Continuous (fun x : EuclideanSpace ℝ ι ↦ x.ofLp i) :=
+    (continuous_apply i).comp T.continuous
+  have hs : Tendsto (fun j ↦ (r.x (j + 1)).ofLp i - (r.x j).ofLp i) atTop (𝓝 0) := by
+    have hh := hc.continuousAt.tendsto.comp hstep
+    change Tendsto (fun j ↦ (r.x (j + 1) - r.x j).ofLp i) atTop
+      (𝓝 ((0 : EuclideanSpace ℝ ι).ofLp i)) at hh
+    simpa only [WithLp.ofLp_sub, Pi.sub_apply, WithLp.ofLp_zero, Pi.zero_apply] using hh
+  exact (theorem_13_6_4_aa8_of_reset_rejected (success := r.Successful) hl hl' hu
+    r.barrier_parameter_pos hδ (fun j ↦ hx j i) (r.dual_pos 0 i) hpr
+    (fun j ↦ by
+      by_cases h : r.Successful j
+      · rw [ite_eq_left h]
+        exact haccept j i h
+      · rw [ite_eq_right h]
+        exact hreject j i h) hs).2
+
+/-- Corrected Theorem 13.6.2 for a bounded primal-dual inner run. The
+derivative and curvature limits can be obtained on the run's own
+acceptance ratios by applying the inner extension theorem to its second
+primal run. AA.8 then transfers both limits to the dual stopping tests. -/
+theorem PrimalDualBarrierInnerRun.frequently_stop_of_extension_limits [Nonempty ι]
+    {P : Chapter06.BTRParams} {f : (ι → ℝ) → ℝ} {σ μ : ℝ}
+    (r : PrimalDualBarrierInnerRun P f σ μ) {F : EuclideanSpace ℝ ι → ℝ}
+    {εD εC εE δ M : ℝ} (hD : 0 < εD) (hC : 0 < εC) (hE : 0 < εE)
+    (hf : ContDiff ℝ 2 f) (hF : ContDiff ℝ 2 F)
+    (hδ : 0 < δ) (hM : 0 < M)
+    (hxδ : ∀ j i, δ ≤ (r.x j).ofLp i) (hxM : ∀ j i, (r.x j).ofLp i ≤ M)
+    (hlocal : ∀ j, (F ∘ barrierEuclideanCoordinates) =ᶠ[𝓝 (r.x j).ofLp]
+      fun y ↦ logBarrierObjective f y μ)
+    (hgrad : Tendsto (fun j ↦ ‖fderiv ℝ F (r.x j)‖) atTop (𝓝 0))
+    (hcurv : ∀ ε > (0 : ℝ), ∃ᶠ j in atTop, -ε <
+      Chapter06.leastUnitCurvature (fderiv ℝ (fderiv ℝ F) (r.x j)))
+    (hAA8 : Tendsto (fun j ↦ ‖fderiv ℝ F (r.x j)‖) atTop (𝓝 0) →
+      ∀ i, Tendsto (fun j ↦ r.z j i - μ / (r.x j).ofLp i) atTop (𝓝 0)) :
+    ∃ᶠ j in atTop, PrimalDualBarrierStop f (r.x j).ofLp (r.z j) μ εD εC εE := by
+  have hprimal := theorem_13_4_2_of_local_extension (half_pos hD) (half_pos hE)
+    hf hF (fun j i ↦ hδ.trans_le (hxδ j i)) hlocal hgrad hcurv
+  exact theorem_13_6_2_of_primal_stopping hD hC hE hδ hM hxδ hxM r.dual_pos
+    (hAA8 hgrad) hprimal
+
+/-- The corrected inner convergence theorem for Algorithm 13.6.1.
+A smooth extension preserving all iterate and trial values lets the
+capped trust-region convergence proof use the actual primal-dual ratios.
+The bounded primal layer and AA.8 transfer its two limits to all three
+primal-dual stopping inequalities. -/
+theorem PrimalDualBarrierInnerRun.frequently_stop_of_extension [Nonempty ι]
+    {P : Chapter06.BTRParams} {f : (ι → ℝ) → ℝ} {σ μ : ℝ}
+    (r : PrimalDualBarrierInnerRun P f σ μ) {F : EuclideanSpace ℝ ι → ℝ}
+    {εD εC εE δ M K L D G T : ℝ}
+    (hD : 0 < εD) (hC : 0 < εC) (hE : 0 < εE)
+    (hf : ContDiff ℝ 2 f) (hF : ContDiff ℝ 2 F) (hlower : BddBelow (range F))
+    (hδ : 0 < δ) (hM : 0 < M)
+    (hxδ : ∀ j i, δ ≤ (r.x j).ofLp i) (hxM : ∀ j i, (r.x j).ofLp i ≤ M)
+    (hlocal : ∀ j, (F ∘ barrierEuclideanCoordinates) =ᶠ[𝓝 (r.x j).ofLp]
+      fun y ↦ logBarrierObjective f y μ)
+    (htrial : ∀ j, F (r.x j + r.s j) = logBarrierObjective f (r.x j + r.s j).ofLp μ)
+    (hDp : 0 < D) (hG : 0 < G) (hT : 0 < T)
+    (hclear : ∀ j, D ≤ (1 - σ) * Metric.infDist (r.x j) (frontier (euclideanOrthant (ι := ι))))
+    (hH : ∀ y, ‖fderiv ℝ (fderiv ℝ F) y‖ ≤ L)
+    (hβ₁ : ∀ j, 1 ≤ r.β j) (hβK : ∀ j, r.β j ≤ K)
+    (hGbd : ∀ j, ‖r.g j‖ ≤ G) (hτbd : ∀ j, |r.τ j| ≤ T)
+    (hτ : ∀ j, r.τ j = min 0
+      (Chapter06.leastUnitCurvature (fderiv ℝ (fderiv ℝ (r.model j)) (r.x j))))
+    (hval : ∀ j, F (r.x j) = r.model j (r.x j))
+    (hgrad : ∀ j, fderiv ℝ F (r.x j) = fderiv ℝ (r.model j) (r.x j))
+    (herr : ∀ j, |F (r.x j + r.s j) - r.model j (r.x j + r.s j)| ≤ K * (r.Δ j) ^ 2)
+    (hm : ∀ j y, y ∈ segment ℝ (r.x j) (r.x j + r.s j) →
+      DifferentiableAt ℝ (r.model j) y)
+    (hDm : ∀ j y, y ∈ segment ℝ (r.x j) (r.x j + r.s j) →
+      DifferentiableAt ℝ (fderiv ℝ (r.model j)) y)
+    (hvar : ∀ ε > (0 : ℝ), ∃ δ > (0 : ℝ), ∀ j, r.Δ j ≤ δ →
+      ∀ y ∈ segment ℝ (r.x j) (r.x j + r.s j),
+        ‖fderiv ℝ (fderiv ℝ F) y - fderiv ℝ (fderiv ℝ F) (r.x j)‖ +
+        ‖fderiv ℝ (fderiv ℝ (r.model j)) y -
+          fderiv ℝ (fderiv ℝ (r.model j)) (r.x j)‖ ≤ ε)
+    (hagree : Chapter06.ModelHessianAgreement F r.model r.x)
+    (hAA8 : Tendsto (fun j ↦ ‖r.g j‖) atTop (𝓝 0) →
+      ∀ i, Tendsto (fun j ↦ r.z j i - μ / (r.x j).ofLp i) atTop (𝓝 0)) :
+    ∃ᶠ j in atTop, PrimalDualBarrierStop f (r.x j).ofLp (r.z j) μ εD εC εE := by
+  have hx (j : ℕ) : F (r.x j) = logBarrierObjective f (r.x j).ofLp μ := by
+    have hh := (hlocal j).eq_of_nhds
+    change F (WithLp.toLp 2 (r.x j).ofLp) = _ at hh
+    rwa [WithLp.toLp_ofLp] at hh
+  obtain ⟨hg, hc⟩ := theorem_13_4_2_inner_of_extension r.toSecondPrimalBarrierInnerRun hx htrial
+    hF hlower hDp hG hT hclear hH hβ₁ hβK hGbd hτbd hτ hval hgrad herr hm hDm hvar hagree
+  apply r.frequently_stop_of_extension_limits hD hC hE hf hF hδ hM hxδ hxM hlocal hg hc
+  intro h
+  apply hAA8
+  have he (j : ℕ) : ‖r.g j‖ = ‖fderiv ℝ F (r.x j)‖ := by
+    rw [r.gradient_model]
+    unfold gradient
+    rw [LinearIsometryEquiv.norm_map, hgrad]
+  simpa only [he] using h
 
 /-- Holding both iterates on a rejected step cannot transfer a limit over
 successful indices to the full sequence when all later steps are rejected. -/
@@ -758,5 +996,211 @@ theorem theorem_13_6_2_unbounded_run_counterexample :
     norm_num
 
 end EscapeExample
+
+section RejectionExample
+
+open Metric Chapter06
+
+private noncomputable def stalledBump : ContDiffBump (1 : ℝ) := ⟨1 / 4, 1 / 2, by norm_num, by norm_num⟩
+
+private noncomputable def stalledLocal (x : ℝ) : ℝ := Real.log x + (x - 1) ^ 2 / 4
+
+/-- A smooth objective with barrier value `(x - 1)^2 / 4` near one
+and with a positive quadratic tail. -/
+noncomputable def primalDualStalledObjective (x : ℝ) : ℝ :=
+  stalledBump x * stalledLocal x + (1 - stalledBump x) * x ^ 2
+
+private theorem stalled_eq_local {x : ℝ} (hx : x ∈ ball (1 : ℝ) (1 / 4)) :
+    primalDualStalledObjective =ᶠ[𝓝 x] stalledLocal := by
+  filter_upwards [isOpen_ball.mem_nhds hx] with y hy
+  simp [primalDualStalledObjective, stalledBump.one_of_mem_closedBall (ball_subset_closedBall hy)]
+
+private theorem stalled_eq_outer {x : ℝ} (hx : x ∉ closedBall (1 : ℝ) (1 / 2)) :
+    primalDualStalledObjective =ᶠ[𝓝 x] (fun y : ℝ ↦ y ^ 2) := by
+  filter_upwards [isClosed_closedBall.isOpen_compl.mem_nhds hx] with y hy
+  have hb : stalledBump y = 0 :=
+    stalledBump.zero_of_le_dist (le_of_not_ge (show y ∉ closedBall (1 : ℝ) (1 / 2) from hy))
+  simp [primalDualStalledObjective, hb]
+
+private theorem stalled_contDiff : ContDiff ℝ 2 primalDualStalledObjective := by
+  rw [contDiff_iff_contDiffAt]
+  intro x
+  by_cases hx : x = 0
+  · subst x
+    have h := (contDiffAt_id (𝕜 := ℝ) (n := 2) (x := (0 : ℝ))).pow 2
+    exact h.congr_of_eventuallyEq (stalled_eq_outer (by norm_num [mem_closedBall, Real.dist_eq]))
+  have hlocal : ContDiffAt ℝ 2 stalledLocal x := by
+    unfold stalledLocal
+    exact (contDiffAt_id.log hx).add (((contDiffAt_id.sub contDiffAt_const).pow 2).div_const 4)
+  have hb : ContDiffAt ℝ 2 stalledBump x := stalledBump.contDiff.contDiffAt
+  exact (hb.mul hlocal).add ((contDiffAt_const.sub hb).mul (contDiffAt_id.pow 2))
+
+private theorem stalledLocal_deriv {x : ℝ} (hx : x ≠ 0) :
+    deriv stalledLocal x = x⁻¹ + (x - 1) / 2 := by
+  have h := (Real.hasDerivAt_log hx).add ((((hasDerivAt_id x).sub_const 1).pow 2).div_const 4)
+  have he := h.deriv
+  change deriv stalledLocal x = _ at he
+  rw [he]
+  simp only [id_eq, Nat.cast_ofNat, show (2 - 1 : ℕ) = 1 by decide, pow_one, mul_one]
+  ring
+
+private theorem stalled_center_derivatives :
+    deriv primalDualStalledObjective 1 = 1 ∧
+    deriv (deriv primalDualStalledObjective) 1 = -(1 / 2 : ℝ) := by
+  have h1 : (1 : ℝ) ∈ ball 1 (1 / 4) := mem_ball_self (by norm_num)
+  constructor
+  · rw [(stalled_eq_local h1).deriv_eq, stalledLocal_deriv (by norm_num)]
+    norm_num
+  have he : deriv primalDualStalledObjective =ᶠ[𝓝 (1 : ℝ)] fun x ↦ x⁻¹ + (x - 1) / 2 := by
+    filter_upwards [isOpen_ball.mem_nhds h1, isOpen_ne.mem_nhds (one_ne_zero : (1 : ℝ) ≠ 0)]
+      with y hy hy0
+    rw [(stalled_eq_local hy).deriv_eq, stalledLocal_deriv hy0]
+  rw [he.deriv_eq]
+  have hd := ((hasDerivAt_id (1 : ℝ)).inv (by norm_num : (1 : ℝ) ≠ 0)).add
+    (((hasDerivAt_id (1 : ℝ)).sub_const 1).div_const 2)
+  have hh := hd.deriv
+  change deriv (fun x : ℝ ↦ x⁻¹ + (x - 1) / 2) 1 = _ at hh
+  rw [hh]
+  norm_num
+
+private theorem stalled_hessian_bounded :
+    ∃ B : ℝ, ∀ x, |deriv (deriv primalDualStalledObjective) x| ≤ B := by
+  have hc : Continuous (deriv (deriv primalDualStalledObjective)) :=
+    ((stalled_contDiff.deriv' (n := 1)).deriv' (n := 0)).continuous
+  obtain ⟨B, hB⟩ := (isCompact_closedBall (1 : ℝ) (1 / 2)).exists_bound_of_continuousOn hc.continuousOn
+  refine ⟨max B 2, fun x ↦ ?_⟩
+  by_cases hx : x ∈ closedBall (1 : ℝ) (1 / 2)
+  · exact (by simpa only [Real.norm_eq_abs] using hB x hx : _ ≤ B).trans (le_max_left _ _)
+  · have he : deriv primalDualStalledObjective =ᶠ[𝓝 x] deriv (fun y : ℝ ↦ y ^ 2) := by
+      filter_upwards [isClosed_closedBall.isOpen_compl.mem_nhds hx] with y hy
+      exact (stalled_eq_outer hy).deriv_eq
+    rw [he.deriv_eq]
+    have hd (y : ℝ) : deriv (fun y : ℝ ↦ y ^ 2) y = 2 * y := by simp
+    have h := (hasDerivAt_id x |>.const_mul (2 : ℝ)).deriv
+    change deriv (fun y : ℝ ↦ 2 * y) x = _ at h
+    rw [funext hd, h]
+    simp
+
+private theorem stalled_barrier_bounded (μ : ℝ) (hμ : 0 < μ) :
+    BddBelow ((fun x : ℝ ↦ primalDualStalledObjective x - μ * Real.log x) '' Ioi 0) := by
+  obtain ⟨A, hA⟩ := (isCompact_closedBall (1 : ℝ) (1 / 2)).bddBelow_image
+    stalled_contDiff.continuous.continuousOn
+  refine ⟨min (A - 2 * μ) (-(μ ^ 2 / 4)), ?_⟩
+  rintro _ ⟨x, hx, rfl⟩
+  have hp : 0 < x := hx
+  have hl := Real.log_le_self hp.le
+  by_cases hb : x ∈ closedBall (1 : ℝ) (1 / 2)
+  · have hxb : x ≤ 2 := by
+      have h := abs_le.mp (show |x - 1| ≤ (1 / 2 : ℝ) by simpa [mem_closedBall, Real.dist_eq] using hb)
+      linarith [h.2]
+    have ha : A ≤ primalDualStalledObjective x := hA ⟨x, hb, rfl⟩
+    exact (min_le_left _ _).trans (by linarith [mul_le_mul_of_nonneg_left (hl.trans hxb) hμ.le])
+  · change min (A - 2 * μ) (-(μ ^ 2 / 4)) ≤ primalDualStalledObjective x - μ * Real.log x
+    rw [(stalled_eq_outer hb).eq_of_nhds]
+    exact (min_le_right _ _).trans (by
+      nlinarith [mul_le_mul_of_nonneg_left hl hμ.le, sq_nonneg (x - μ / 2)])
+
+/-- A scalar rejected trial of Algorithm 13.6.1 with unit barrier
+parameter, half fraction-to-boundary, and the exact Taylor objective
+model. The safeguarded dual branch (13.6.19) retains the old multiplier. -/
+structure ScalarPrimalDualRejectedTrial (P : BTRParams) (f : ℝ → ℝ)
+    (x z s Δ x' z' Δ' : ℝ) : Prop where
+  primal_pos : 0 < x
+  dual_pos : 0 < z
+  trial_pos : 0 < x + s
+  step_bound : |s| ≤ Δ
+  fractional_clearance : (1 / 2 : ℝ) * x ≤ x + s
+  model_decrease :
+    let g := deriv f x - x⁻¹
+    let h := deriv (deriv f) x + z / x
+    let τ := min 0 h
+    (1 / 4 : ℝ) * max (|g| * min (|g| / (1 + |h|)) (min Δ ((1 / 2 : ℝ) * x)))
+      (-τ * min (τ ^ 2) ((min Δ ((1 / 2 : ℝ) * x)) ^ 2)) ≤ -(g * s + h * s ^ 2 / 2)
+  predicted_pos :
+    let g := deriv f x - x⁻¹
+    let h := deriv (deriv f) x + z / x
+    0 < -(g * s + h * s ^ 2 / 2)
+  ratio_reject :
+    let g := deriv f x - x⁻¹
+    let h := deriv (deriv f) x + z / x
+    ((f x - Real.log x) - (f (x + s) - Real.log (x + s))) /
+      (-(g * s + h * s ^ 2 / 2)) < P.η₁
+  retain : x' = x ∧ z' = z
+  radius_update : P.γ₁ * Δ ≤ Δ' ∧ Δ' ≤ P.γ₂ * Δ
+
+/-- In a bounded primal-dual run with exact Taylor objective models,
+all trials can be rejected while the model gradients are zero and the
+steps tend to zero. The safeguard retains the dual coordinate at one
+quarter, so the AA.8 conclusion of Theorem 13.6.4 fails. -/
+theorem theorem_13_6_4_all_rejected_counterexample :
+    ∃ Δ : ℕ → ℝ,
+      ContDiff ℝ 2 primalDualStalledObjective ∧
+      (∃ B : ℝ, ∀ x, |deriv (deriv primalDualStalledObjective) x| ≤ B) ∧
+      (∀ μ > 0, BddBelow ((fun x ↦ primalDualStalledObjective x - μ * Real.log x) '' Ioi 0)) ∧
+      (∀ j, 0 < Δ j ∧
+        ScalarPrimalDualRejectedTrial defaultBTRParams primalDualStalledObjective
+          1 (1 / 4) (Δ j) (Δ j) 1 (1 / 4) (Δ (j + 1))) ∧
+      deriv primalDualStalledObjective 1 - (1 : ℝ)⁻¹ = 0 ∧ Tendsto Δ atTop (𝓝 0) ∧
+      ¬ Tendsto (fun _ : ℕ ↦ (1 / 4 : ℝ) - 1 / 1) atTop (𝓝 0) := by
+  let Δ (j : ℕ) := (1 / 2 : ℝ) ^ j * (1 / 8)
+  have hΔ (j : ℕ) : 0 < Δ j := by dsimp [Δ]; positivity
+  have hbound (j : ℕ) : Δ j ≤ 1 / 8 := by
+    dsimp only [Δ]
+    exact mul_le_of_le_one_left (by norm_num) (pow_le_one₀ (by norm_num) (by norm_num))
+  have hφ (s : ℝ) (hs : |s| < 1 / 4) :
+      primalDualStalledObjective (1 + s) - Real.log (1 + s) = s ^ 2 / 4 := by
+    have hh : 1 + s ∈ ball (1 : ℝ) (1 / 4) := by
+      simpa [mem_ball, Real.dist_eq, add_comm] using hs
+    rw [(stalled_eq_local hh).eq_of_nhds, stalledLocal]
+    ring
+  have hg : deriv primalDualStalledObjective 1 - (1 : ℝ)⁻¹ = 0 := by
+    rw [stalled_center_derivatives.1]
+    norm_num
+  have hh : deriv (deriv primalDualStalledObjective) 1 + (1 / 4 : ℝ) / 1 = -(1 / 4 : ℝ) := by
+    rw [stalled_center_derivatives.2]
+    norm_num
+  refine ⟨Δ, stalled_contDiff, stalled_hessian_bounded, stalled_barrier_bounded, ?_, hg, ?_, ?_⟩
+  · intro j
+    have hp := hΔ j
+    have hb := hbound j
+    refine ⟨hp, ⟨by norm_num, by norm_num, by linarith, ?_, by linarith, ?_, ?_, ?_,
+      ⟨rfl, rfl⟩, ?_⟩⟩
+    · rw [abs_of_pos hp]
+    · dsimp only
+      rw [hg, hh]
+      norm_num
+      have hmin : min (Δ j) (1 / 2) = Δ j := min_eq_left (by linarith)
+      have hs : (Δ j) ^ 2 ≤ (1 / 4 : ℝ) ^ 2 :=
+        (sq_le_sq₀ hp.le (by norm_num)).mpr (by linarith)
+      rw [hmin]
+      simp only [min_eq_right (show (Δ j) ^ 2 ≤ (1 / 16 : ℝ) by nlinarith)] at *
+      simp only [max_eq_right (by positivity : (0 : ℝ) ≤ (1 / 4) * (Δ j) ^ 2)]
+      nlinarith [sq_nonneg (Δ j)]
+    · dsimp only
+      rw [hg, hh]
+      nlinarith [sq_pos_of_pos hp]
+    · dsimp only
+      rw [hg, hh, hφ (Δ j) (by rw [abs_of_pos hp]; linarith)]
+      have hzero := hφ 0 (by norm_num)
+      simp only [add_zero, zero_pow (by decide : (2 : ℕ) ≠ 0), zero_div] at hzero
+      rw [hzero]
+      have hη : 0 < defaultBTRParams.η₁ := defaultBTRParams.eta₁_pos
+      apply lt_of_le_of_lt (div_nonpos_of_nonpos_of_nonneg ?_ ?_) hη
+      · nlinarith [sq_nonneg (Δ j)]
+      · nlinarith [sq_nonneg (Δ j)]
+    · have he : Δ (j + 1) = (1 / 2 : ℝ) * Δ j := by
+        simp only [Δ, pow_succ]
+        ring
+      rw [he]
+      exact ⟨le_rfl, le_rfl⟩
+  · simpa only [Δ, zero_mul] using
+      (tendsto_pow_atTop_nhds_zero_of_lt_one (by norm_num : (0 : ℝ) ≤ 1 / 2)
+        (by norm_num : (1 / 2 : ℝ) < 1)).mul_const (1 / 8 : ℝ)
+  · intro h
+    have he := tendsto_nhds_unique
+      (tendsto_const_nhds : Tendsto (fun _ : ℕ ↦ (1 / 4 : ℝ) - 1 / 1) atTop (𝓝 ((1 / 4 : ℝ) - 1 / 1))) h
+    norm_num at he
+
+end RejectionExample
 
 end ConnGouldToint.Chapter13
