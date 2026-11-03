@@ -67,3 +67,35 @@ source = "Conn–Gould–Toint, Theorem 13.2.3 from the Taylor-model assumptions
 [[node]]
 id = "PrimalBarrierInnerRun.boundary_separation"
 source = "Conn–Gould–Toint, AC.8 implication in Theorem 13.2.1"
+
+[[node]]
+id = "logBarrier_sublevel_coordinate_bound"
+source = "Conn–Gould–Toint, corrected compactness hypothesis for Theorems 13.2.1 and 13.4.2"
+
+[[node]]
+id = "logBarrier_sublevel_separation_of_global_lower"
+source = "Conn–Gould–Toint, boundary separation for Theorem 13.4.2 with a global objective lower bound"
+
+[[node]]
+id = "logBarrier_level_clearance_counterexample_of_bounded_hessian"
+source = "Conn–Gould–Toint, counterexample to inferring boundary separation from AF.1, AF.3 and AW.2"
+
+[[node]]
+id = "PrimalBarrierInnerRun.frequently_small_criticality"
+source = "Conn–Gould–Toint, transfer of the basic trust-region argument to the guarded ratio of Algorithm 13.2.1"
+
+[[node]]
+id = "PrimalBarrierInnerRun.gradient_norm_tendsto_zero"
+source = "Conn–Gould–Toint, first-order inner limit used in Theorem 13.4.2 for Algorithm 13.2.1"
+
+[[node]]
+id = "PrimalBarrierInnerRun.frequently_near_nonnegative_curvature"
+source = "Conn–Gould–Toint, second-order inner limit used in Theorem 13.4.2 for Algorithm 13.2.1"
+
+[[node]]
+id = "PrimalBarrierInnerRun.small_radius_model_error_of_hessians"
+source = "Conn–Gould–Toint, local Hessian agreement in the curvature argument for Algorithm 13.2.1"
+
+[[node]]
+id = "PrimalBarrierInnerRun.gradient_norm_variation_of_hessian_bound"
+source = "Conn–Gould–Toint, first-order variation estimate on the separated layer for Algorithm 13.2.1"

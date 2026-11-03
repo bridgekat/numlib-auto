@@ -1,4 +1,4 @@
-import NumlibSurface.ConnGouldToint.Chapter06.Section04
+import NumlibSurface.ConnGouldToint.Chapter06.Section06
 import NumlibSurface.ConnGouldToint.Chapter13.Section01
 
 /-! # First primal barrier inner algorithm -/
@@ -129,6 +129,7 @@ private theorem PrimalBarrierInnerRun.boundary_separation_of_reindexings
     linarith [hf j]
   exact barrier_boundary_separation r.interior_iterate hlevel hdiv
 
+omit [NormedSpace ℝ E] in
 /-- AC.8 separates an inner run from the boundary whenever the objective is
 bounded below along that run. -/
 theorem PrimalBarrierInnerRun.boundary_separation
@@ -414,5 +415,506 @@ theorem logBarrier_unbounded_level_counterexample :
     change (x j 0 * x j 1) ^ 2 + logBarrier (x j) 1 = 1
     rw [hprod, hb j]
     norm_num
+
+section GlobalLowerBound
+
+variable {ι : Type*} [Fintype ι]
+
+/-- Under a global lower bound on the objective and a bounded objective
+Hessian, a lower bound on the log-barrier objective at a larger parameter
+forces every fixed sublevel of the smaller-parameter barrier to be
+bounded. The proof compares each point to its translate by the all-ones
+vector, where every coordinate is at least one. -/
+theorem logBarrier_sublevel_coordinate_bound {f : (ι → ℝ) → ℝ} {μ ν L A U H : ℝ}
+    (hμ : 0 < μ) (hν : μ < ν) (hf : ContDiff ℝ 2 f)
+    (hlower : ∀ y, L ≤ f y)
+    (hH : ∀ y, ‖fderiv ℝ (fderiv ℝ f) y‖ ≤ H)
+    (hbar : ∀ y : ι → ℝ, (∀ i, 0 < y i) → A ≤ logBarrierObjective f y ν) :
+    ∃ M : ℝ, ∀ x : ι → ℝ, (∀ i, 0 < x i) →
+      logBarrierObjective f x μ ≤ U → ∀ i, x i ≤ M := by
+  let e : ι → ℝ := fun _ ↦ 1
+  let B := U + μ * ((U - A) / (ν - μ))
+  let D := 2 * B - L + H * ‖e‖ ^ 2
+  have hνpos : 0 < ν := hμ.trans hν
+  have hDf := hf.fderiv_right (m := 1) (by norm_num)
+  refine ⟨Real.exp ((D - A) / ν), fun x hx hlevel i ↦ ?_⟩
+  have hbarx := hbar x hx
+  change A ≤ f x + (-ν) * (∑ i, Real.log (x i)) at hbarx
+  change f x + (-μ) * (∑ i, Real.log (x i)) ≤ U at hlevel
+  have hlog : (∑ i, Real.log (x i)) ≤ (U - A) / (ν - μ) := by
+    apply (le_div_iff₀ (sub_pos.mpr hν)).mpr
+    linarith
+  have hfB : f x ≤ B := by
+    dsimp [B]
+    linarith [mul_le_mul_of_nonneg_left hlog hμ.le]
+  have htaylor (s : ι → ℝ) :
+      |f (x + s) - (f x + fderiv ℝ f x s)| ≤ (1 / 2 : ℝ) * H * ‖s‖ ^ 2 := by
+    rw [← Real.norm_eq_abs]
+    exact norm_sub_firstOrder_le_of_hessian_bound (convex_univ : Convex ℝ (univ : Set (ι → ℝ)))
+      (mem_univ x) (mem_univ (x + s))
+      (fun z _ ↦ hf.differentiable (by norm_num) z)
+      (fun z _ ↦ hDf.differentiable (by norm_num) z) (fun z _ ↦ hH z)
+  have hforward := (abs_le.mp (htaylor e)).2
+  have hback := (abs_le.mp (htaylor (-e))).2
+  rw [map_neg, norm_neg] at hback
+  have hfxe : f (x + e) ≤ D := by
+    dsimp [D]
+    linarith [hlower (x + -e)]
+  have hy (j : ι) : 0 < (x + e) j := by
+    change 0 < x j + 1
+    linarith [hx j]
+  have hbarxe := hbar (x + e) hy
+  change A ≤ f (x + e) + (-ν) * ∑ j, Real.log ((x + e) j) at hbarxe
+  have hs : (∑ j, Real.log ((x + e) j)) ≤ (D - A) / ν := by
+    apply (le_div_iff₀ hνpos).mpr
+    linarith
+  have hp (j : ι) : 0 ≤ Real.log ((x + e) j) := by
+    apply Real.log_nonneg
+    change 1 ≤ x j + 1
+    linarith [hx j]
+  have hi := (Finset.single_le_sum (fun j _ ↦ hp j) (Finset.mem_univ i)).trans hs
+  have he := Real.exp_le_exp.mpr hi
+  rw [Real.exp_log (hy i)] at he
+  change x i + 1 ≤ _ at he
+  linarith
+
+/-- The stronger global objective lower bound, together with AF.1, AF.3,
+and AW.2 at a larger parameter, supplies the clearance needed in the
+logarithmic barrier inner convergence proof. -/
+theorem logBarrier_sublevel_separation_of_global_lower [Nonempty ι]
+    {f : (ι → ℝ) → ℝ} {x : ℕ → ι → ℝ} {μ ν L A U H : ℝ}
+    (hμ : 0 < μ) (hν : μ < ν) (hf : ContDiff ℝ 2 f)
+    (hlower : ∀ y, L ≤ f y) (hH : ∀ y, ‖fderiv ℝ (fderiv ℝ f) y‖ ≤ H)
+    (hbar : ∀ y : ι → ℝ, (∀ i, 0 < y i) → A ≤ logBarrierObjective f y ν)
+    (hx : ∀ j i, 0 < x j i) (hlevel : ∀ j, logBarrierObjective f (x j) μ ≤ U) :
+    ∃ ε ∈ Ioo (0 : ℝ) 1, ∀ j,
+      ε ≤ infDist (x j) (frontier (Optimization.nonnegativeOrthant ι)) := by
+  obtain ⟨M, hM⟩ := logBarrier_sublevel_coordinate_bound hμ hν hf hlower hH hbar
+  exact logBarrier_bounded_level_separation hμ hx (fun j ↦ hM (x j) (hx j) (hlevel j))
+    (fun j ↦ hlower (x j)) hlevel
+
+end GlobalLowerBound
+
+private def barrierProjection (i : Fin 2) : (Fin 2 → ℝ) →L[ℝ] ℝ :=
+  ContinuousLinearMap.proj i
+
+private noncomputable def barrierBilinearObjective (x : Fin 2 → ℝ) : ℝ := x 0 * x 1
+
+private theorem barrierBilinearObjective_hessian (x : Fin 2 → ℝ) :
+    fderiv ℝ (fderiv ℝ barrierBilinearObjective) x =
+      (barrierProjection 0).smulRight (barrierProjection 1) +
+        (barrierProjection 1).smulRight (barrierProjection 0) := by
+  have hd (y : Fin 2 → ℝ) : fderiv ℝ barrierBilinearObjective y =
+      y 0 • barrierProjection 1 + y 1 • barrierProjection 0 := by
+    exact ((barrierProjection 0).hasFDerivAt.mul (barrierProjection 1).hasFDerivAt).fderiv
+  rw [funext hd]
+  have h := ((barrierProjection 0).hasFDerivAt (x := x) |>.smul_const (barrierProjection 1)).add
+    ((barrierProjection 1).hasFDerivAt (x := x) |>.smul_const (barrierProjection 0))
+  exact h.fderiv
+
+/-- AF.1, AF.3, and AW.2 as printed in Theorem 13.4.2 do not imply
+uniform clearance of log-barrier sublevels. For the bilinear objective
+the Hessian is constant, and all the barrier objectives are bounded below
+on the positive orthant. A constant-product path still approaches its
+boundary. This refutes the sublevel-separation implication, independently
+of whether a particular inner algorithm follows that path. -/
+theorem logBarrier_level_clearance_counterexample_of_bounded_hessian :
+    ∃ (f : (Fin 2 → ℝ) → ℝ) (x : ℕ → Fin 2 → ℝ),
+      ContDiff ℝ 2 f ∧ (∃ H, ∀ y, ‖fderiv ℝ (fderiv ℝ f) y‖ ≤ H) ∧
+      (∀ y : Fin 2 → ℝ, (∀ i, 0 < y i) → 0 ≤ f y) ∧
+      (∀ μ > 0, ∃ A : ℝ, ∀ y : Fin 2 → ℝ, (∀ i, 0 < y i) →
+        A ≤ logBarrierObjective f y μ) ∧
+      (∀ j i, 0 < x j i) ∧ (∀ j, logBarrierObjective f (x j) 1 = 1) ∧
+      Tendsto (fun j ↦ infDist (x j) (frontier (Optimization.nonnegativeOrthant (Fin 2))))
+        atTop (𝓝 0) := by
+  obtain ⟨x, hx, hd, hb, _⟩ := logBarrier_unbounded_boundary_counterexample
+  refine ⟨barrierBilinearObjective, x, by unfold barrierBilinearObjective; fun_prop,
+    ⟨_, fun y ↦ (congrArg norm (barrierBilinearObjective_hessian y)).le⟩,
+    fun y hy ↦ mul_nonneg (hy 0).le (hy 1).le, ?_, hx, ?_, hd⟩
+  · intro μ hμ
+    refine ⟨μ - μ * Real.log μ, fun y hy ↦ ?_⟩
+    have hp := mul_pos (hy 0) (hy 1)
+    have hl := Real.log_le_sub_one_of_pos (div_pos hp hμ)
+    rw [Real.log_div hp.ne' hμ.ne'] at hl
+    have hmul := mul_le_mul_of_nonneg_left hl hμ.le
+    simp only [mul_sub, mul_div_cancel₀ _ hμ.ne', mul_one] at hmul
+    change μ - μ * Real.log μ ≤ y 0 * y 1 + (-μ) * ∑ i, Real.log (y i)
+    rw [Fin.sum_univ_two, ← Real.log_mul (hy 0).ne' (hy 1).ne']
+    linarith [hmul]
+  · intro j
+    have h := hb j
+    change (-1 : ℝ) * ∑ i, Real.log (x j i) = 0 at h
+    rw [Fin.sum_univ_two, ← Real.log_mul (hx j 0).ne' (hx j 1).ne'] at h
+    have hlog : Real.log (x j 0 * x j 1) = 0 := by linarith
+    have hprod : x j 0 * x j 1 = 1 := by
+      have he := congrArg Real.exp hlog
+      rwa [Real.exp_log (mul_pos (hx j 0) (hx j 1)), Real.exp_zero] at he
+    change x j 0 * x j 1 + logBarrier (x j) 1 = 1
+    rw [hprod, hb j, add_zero]
+
+section FirstOrderLimit
+
+open Chapter06
+
+omit [NormedSpace ℝ E] in
+private theorem PrimalBarrierInnerRun.delta_pos' {P : BTRParams} {C : Set E} {σ : ℝ}
+    {φ : E → ℝ} (r : PrimalBarrierInnerRun P C σ φ) (j : ℕ) : 0 < r.Δ j := by
+  induction j with
+  | zero => exact r.initial_radius_pos
+  | succ j ih => exact (r.radius_update j).pos ih
+
+omit [NormedSpace ℝ E] in
+private theorem PrimalBarrierInnerRun.objective_drop {P : BTRParams} {C : Set E} {σ : ℝ}
+    {φ : E → ℝ} (r : PrimalBarrierInnerRun P C σ φ) {j : ℕ}
+    (h : P.η₁ ≤ primalBarrierRatio C σ φ (r.model j) (r.x j) (r.s j)) :
+    P.η₁ * (r.model j (r.x j) - r.model j (r.x j + r.s j)) ≤ φ (r.x j) - φ (r.x (j + 1)) := by
+  classical
+  have ha : BarrierAdmissibleTrial C σ (r.x j) (r.x j + r.s j) := by
+    by_contra ha
+    rw [primalBarrierRatio, ite_eq_right ha] at h
+    exact P.eta₁_pos.not_ge h
+  have hr := h
+  rw [primalBarrierRatio, ite_eq_left ha, btrRatio, Optimization.reductionRatio] at hr
+  rw [r.iterate_update, ite_eq_left h]
+  exact (le_div_iff₀ (r.predicted_pos j)).mp hr
+
+omit [NormedSpace ℝ E] in
+private theorem PrimalBarrierInnerRun.value_tendsto {P : BTRParams} {C : Set E} {σ : ℝ}
+    {φ : E → ℝ} (r : PrimalBarrierInnerRun P C σ φ)
+    (hlower : BddBelow (range fun j ↦ φ (r.x j))) :
+    Tendsto (fun j ↦ φ (r.x j)) atTop (𝓝 (⨅ j, φ (r.x j))) :=
+  tendsto_atTop_ciInf r.objective_antitone hlower
+
+omit [NormedSpace ℝ E] in
+/-- A guarded inner run has arbitrarily small criticality values if
+sufficiently short trials become very successful away from zero criticality,
+and a successful trial with radius bounded below gives a uniform positive
+objective decrease. This argument uses the actual guarded ratio. -/
+theorem PrimalBarrierInnerRun.frequently_small_criticality
+    {P : BTRParams} {C : Set E} {σ : ℝ} {φ : E → ℝ}
+    (r : PrimalBarrierInnerRun P C σ φ) (a : ℕ → ℝ)
+    (hlower : BddBelow (range fun j ↦ φ (r.x j)))
+    (hvery : ∀ ε > (0 : ℝ), ∃ δ > (0 : ℝ), ∀ᶠ j in atTop, ε ≤ a j → r.Δ j ≤ δ →
+      P.η₂ ≤ primalBarrierRatio C σ φ (r.model j) (r.x j) (r.s j))
+    (hdrop : ∀ ε > (0 : ℝ), ∀ d > (0 : ℝ), ∃ q > (0 : ℝ), ∀ j,
+      ε ≤ a j → d ≤ r.Δ j →
+      P.η₁ ≤ primalBarrierRatio C σ φ (r.model j) (r.x j) (r.s j) →
+      q ≤ φ (r.x j) - φ (r.x (j + 1))) :
+    ∀ ε > (0 : ℝ), ∃ᶠ j in atTop, a j < ε := by
+  intro ε hε
+  by_contra! hn
+  obtain ⟨δ, hδ, hvery⟩ := hvery ε hε
+  obtain ⟨N, hN⟩ := eventually_atTop.mp (hn.and hvery)
+  let d := min (r.Δ N) (P.γ₁ * δ)
+  have hd : 0 < d := lt_min (r.delta_pos' N) (mul_pos P.gamma₁_pos hδ)
+  have hrad (j : ℕ) (hj : N ≤ j) : d ≤ r.Δ j := by
+    induction j, hj using Nat.le_induction with
+    | base => exact min_le_left _ _
+    | succ j hj ih =>
+      let ρ := primalBarrierRatio C σ φ (r.model j) (r.x j) (r.s j)
+      have hu := r.radius_update j
+      by_cases hv : P.η₂ ≤ ρ
+      · exact ih.trans (hu.very_successful hv)
+      · have hΔ : δ < r.Δ j := lt_of_not_ge (fun h ↦ hv ((hN j hj).2 (hN j hj).1 h))
+        have hstep : P.γ₁ * r.Δ j ≤ r.Δ (j + 1) := by
+          by_cases hs : P.η₁ ≤ ρ
+          · exact (mul_le_mul_of_nonneg_right P.gamma₁_le_gamma₂ (r.delta_pos' j).le).trans
+              (hu.successful hs (lt_of_not_ge hv)).1
+          · exact (hu.unsuccessful (lt_of_not_ge hs)).1
+        exact (min_le_right _ _).trans
+          ((mul_le_mul_of_nonneg_left hΔ.le P.gamma₁_pos.le).trans hstep)
+  obtain ⟨q, hq, hdrop⟩ := hdrop ε hε d hd
+  have ht := r.value_tendsto hlower
+  have hdiff : Tendsto (fun j ↦ φ (r.x j) - φ (r.x (j + 1))) atTop (𝓝 0) := by
+    simpa only [Function.comp_apply, sub_self] using ht.sub (ht.comp (tendsto_add_atTop_nat 1))
+  obtain ⟨J, hJ⟩ := eventually_atTop.mp (hdiff.eventually (gt_mem_nhds hq))
+  let I := max N J
+  have hfail (j : ℕ) (hj : I ≤ j) :
+      primalBarrierRatio C σ φ (r.model j) (r.x j) (r.s j) < P.η₁ := by
+    have hn := (le_max_left N J).trans hj
+    exact lt_of_not_ge (fun h ↦ (hJ j ((le_max_right N J).trans hj)).not_ge
+      (hdrop j (hN j hn).1 (hrad j hn) h))
+  have hγ := P.gamma₁_pos.trans_le P.gamma₁_le_gamma₂
+  have hshrink (j : ℕ) : r.Δ (I + j) ≤ P.γ₂ ^ j * r.Δ I := by
+    induction j with
+    | zero => simp
+    | succ j ih =>
+      have hp := ((r.radius_update (I + j)).unsuccessful
+        (hfail (I + j) (Nat.le_add_right _ _))).2
+      rw [show I + (j + 1) = I + j + 1 by omega]
+      exact hp.trans ((mul_le_mul_of_nonneg_left ih hγ.le).trans_eq (by rw [pow_succ]; ring))
+  have hlim : Tendsto (fun j : ℕ ↦ P.γ₂ ^ j * r.Δ I) atTop (𝓝 0) := by
+    simpa only [zero_mul] using
+      (tendsto_pow_atTop_nhds_zero_of_lt_one hγ.le P.gamma₂_lt_one).mul_const (r.Δ I)
+  obtain ⟨j, hj⟩ := (hlim.eventually (gt_mem_nhds hd)).exists
+  exact hj.not_ge ((hrad _ ((le_max_left N J).trans (Nat.le_add_right I j))).trans (hshrink j))
+
+/-- The first-order inner limit of Algorithm 13.2.1 under fixed clearance,
+the uniform short-trial Taylor estimate, and a Lipschitz bound on the
+variation of the criticality measure between successive iterates. The
+fraction-to-boundary sentinel is kept throughout the acceptance proof. -/
+theorem PrimalBarrierInnerRun.gradient_norm_tendsto_zero
+    {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F] [FiniteDimensional ℝ F]
+    {P : BTRParams} {C : Set F} {σ : ℝ} {φ : F → ℝ}
+    (r : PrimalBarrierInnerRun P C σ φ) (hC : C ≠ univ)
+    (hσ : σ ∈ Ioo (0 : ℝ) 1) {δ : ℝ} (hδ : 0 < δ)
+    (hclear : ∀ j, δ ≤ infDist (r.x j) (frontier C))
+    (g : ℕ → F) (β : ℕ → ℝ) {κ K L : ℝ}
+    (hβ : ∀ j, 0 < β j) (hβK : ∀ j, β j ≤ K) (hL : 0 ≤ L)
+    (hval : ∀ j, φ (r.x j) = r.model j (r.x j))
+    (hdec : ∀ j, HasSufficientModelDecrease (r.model j) (r.x j) (r.s j) (g j) (β j) (r.Δ j) κ)
+    (herr : ∀ j, r.Δ j ≤ (1 - σ) * δ →
+      |φ (r.x j + r.s j) - r.model j (r.x j + r.s j)| ≤ K * (r.Δ j) ^ 2)
+    (hlower : BddBelow (range fun j ↦ φ (r.x j)))
+    (hvar : ∀ j, ‖g j‖ - ‖g (j + 1)‖ ≤ L * ‖r.x j - r.x (j + 1)‖) :
+    Tendsto (fun j ↦ ‖g j‖) atTop (𝓝 0) := by
+  let u (j : ℕ) := ‖g j‖
+  let v (j : ℕ) := φ (r.x j)
+  have hκ := (hdec 0).1.1
+  have hK := (hβ 0).trans_le (hβK 0)
+  have hgap : 0 < 1 - P.η₂ := sub_pos.mpr P.eta₂_lt_one
+  have hclearance : 0 < (1 - σ) * δ := mul_pos (sub_pos.mpr hσ.2) hδ
+  have hdrop {e : ℝ} (he : 0 < e) {j : ℕ} (hu : e ≤ u j)
+      (hs : P.η₁ ≤ primalBarrierRatio C σ φ (r.model j) (r.x j) (r.s j)) :
+      (P.η₁ * (κ * e)) * min (e / K) (r.Δ j) ≤ v j - v (j + 1) := by
+    have hquot := div_le_div₀ (norm_nonneg (g j)) hu (hβ j) (hβK j)
+    have hm := min_le_min hquot (le_refl (r.Δ j))
+    have hp := (mul_le_mul (mul_le_mul_of_nonneg_left hu hκ.le) hm
+      (le_min (div_nonneg he.le hK.le) (r.delta_pos' j).le) (by positivity)).trans (hdec j).2
+    simpa only [mul_assoc] using
+      (mul_le_mul_of_nonneg_left hp P.eta₁_pos.le).trans (r.objective_drop hs)
+  have hfreq : ∀ e > (0 : ℝ), ∃ᶠ j in atTop, u j < e := by
+    apply r.frequently_small_criticality u hlower
+    · intro e he
+      let D := min (κ * e * (1 - P.η₂) / K) ((1 - σ) * δ)
+      refine ⟨D, lt_min (div_pos (mul_pos (mul_pos hκ he) hgap) hK) hclearance,
+        Eventually.of_forall fun j hu hD ↦ ?_⟩
+      have hg : g j ≠ 0 := norm_pos_iff.mp (he.trans_le hu)
+      have hsmall : r.Δ j ≤ min (κ * ‖g j‖ * (1 - P.η₂) / K) ((1 - σ) * δ) :=
+        le_min ((hD.trans (min_le_left _ _)).trans (div_le_div_of_nonneg_right
+          (mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left hu hκ.le) hgap.le) hK.le))
+          (hD.trans (min_le_right _ _))
+      exact (theorem_13_2_3 hC hσ hδ (r.interior_iterate j) (hclear j) (hβ j) (hβK j)
+        (r.delta_pos' j) hg (r.step_feasible j) (hval j) (hdec j)
+        (herr j (hD.trans (min_le_right _ _))) hsmall (r.radius_update j)).2.1
+    · intro e he d hd
+      refine ⟨(P.η₁ * (κ * e)) * min (e / K) d,
+        mul_pos (mul_pos P.eta₁_pos (mul_pos hκ he)) (lt_min (div_pos he hK) hd),
+        fun j hu hj hs ↦ ?_⟩
+      exact (mul_le_mul_of_nonneg_left (min_le_min le_rfl hj)
+        (mul_nonneg P.eta₁_pos.le (mul_nonneg hκ.le he.le))).trans (hdrop he hu hs)
+  have ht := r.value_tendsto hlower
+  have hdiff : Tendsto (fun j ↦ v j - v (j + 1)) atTop (𝓝 0) := by
+    simpa only [v, Function.comp_apply, sub_self] using ht.sub (ht.comp (tendsto_add_atTop_nat 1))
+  have htail : Tendsto (fun j ↦ v j - ⨅ i, v i) atTop (𝓝 0) := by
+    simpa only [v, sub_self] using ht.sub_const (⨅ i, v i)
+  rw [Metric.tendsto_atTop]
+  intro ε hε
+  let e := ε / 2
+  have he : 0 < e := half_pos hε
+  let c := P.η₁ * (κ * e)
+  have hc : 0 < c := mul_pos P.eta₁_pos (mul_pos hκ he)
+  have hL1 : 0 < L + 1 := by linarith
+  obtain ⟨N, hN⟩ := eventually_atTop.mp (hdiff.eventually (gt_mem_nhds (mul_pos hc (div_pos he hK))))
+  obtain ⟨J, hJ⟩ := eventually_atTop.mp (htail.eventually (gt_mem_nhds (div_pos (mul_pos hc he) hL1)))
+  have hstep (j : ℕ) (hj : N ≤ j) (huj : e ≤ u j) :
+      c * (u j - u (j + 1)) ≤ L * (v j - v (j + 1)) := by
+    let ρ := primalBarrierRatio C σ φ (r.model j) (r.x j) (r.s j)
+    by_cases hs : P.η₁ ≤ ρ
+    · have hd := hdrop he huj hs
+      have hr : r.Δ j ≤ e / K := by
+        by_contra! hn
+        rw [min_eq_left hn.le] at hd
+        exact (hN j hj).not_ge hd
+      rw [min_eq_right hr] at hd
+      have hv := hvar j
+      rw [r.iterate_update, ite_eq_left hs, sub_add_cancel_left, norm_neg] at hv
+      have hstep := hv.trans (mul_le_mul_of_nonneg_left (r.step_feasible j) hL)
+      calc
+        _ ≤ c * (L * r.Δ j) := mul_le_mul_of_nonneg_left hstep hc.le
+        _ = L * (c * r.Δ j) := by ring
+        _ ≤ _ := mul_le_mul_of_nonneg_left hd hL
+    · have heq : r.x (j + 1) = r.x j := by rw [r.iterate_update, ite_eq_right hs]
+      have hh := hvar j
+      rw [heq, sub_self, norm_zero, mul_zero] at hh
+      simpa only [v, heq, sub_self, mul_zero] using mul_nonpos_of_nonneg_of_nonpos hc.le hh
+  refine ⟨max N J, fun k hk ↦ ?_⟩
+  change dist (u k) 0 < ε
+  rw [Real.dist_eq, sub_zero, abs_of_nonneg (norm_nonneg _)]
+  by_contra! hhigh
+  have hex := frequently_atTop.mp (hfreq e he) k
+  let j := Nat.find hex
+  have hj : k ≤ j ∧ u j < e := Nat.find_spec hex
+  have htel (i : ℕ) (hi : k ≤ i) : i ≤ j →
+      c * (u k - u i) ≤ L * (v k - v i) := by
+    induction i, hi using Nat.le_induction with
+    | base => simp
+    | succ i hi ih =>
+      intro hij
+      have hb : i < j := Nat.lt_of_succ_le hij
+      have hui : e ≤ u i := le_of_not_gt fun hh ↦ (Nat.find_min hex hb) ⟨hi, hh⟩
+      linarith only [ih hb.le, hstep i (((le_max_left N J).trans hk).trans hi) hui]
+  have hgap' : e < u k - u j := by dsimp [e] at hj ⊢; linarith [hj.2]
+  have hb : v k - ⨅ i, v i < c * e / (L + 1) := hJ k ((le_max_right N J).trans hk)
+  have hvle : (⨅ i, v i) ≤ v j := ciInf_le hlower j
+  have hdval : 0 ≤ v k - v j := sub_nonneg.mpr (r.objective_antitone hj.1)
+  have hlast : L * (v k - v j) < c * e := calc
+    _ ≤ (L + 1) * (v k - v j) := by gcongr; linarith
+    _ ≤ (L + 1) * (v k - ⨅ i, v i) :=
+      mul_le_mul_of_nonneg_left (sub_le_sub_left hvle _) hL1.le
+    _ < _ := by
+      have hh := (lt_div_iff₀ hL1).mp hb
+      rwa [mul_comm]
+  exact hlast.not_ge ((mul_le_mul_of_nonneg_left hgap'.le hc.le).trans (htel j hj.1 le_rfl))
+
+/-- The second-order inner curvature bound of Algorithm 13.2.1. The
+normalized model error is required only on sufficiently short trials,
+which pass the fraction-to-boundary test by the uniform clearance. -/
+theorem PrimalBarrierInnerRun.frequently_near_nonnegative_curvature
+    [FiniteDimensional ℝ E] {P : BTRParams} {C : Set E} {σ : ℝ} {φ : E → ℝ}
+    (r : PrimalBarrierInnerRun P C σ φ) (hC : C ≠ univ)
+    (hσ : σ ∈ Ioo (0 : ℝ) 1) {δ : ℝ} (hδ : 0 < δ)
+    (hclear : ∀ j, δ ≤ infDist (r.x j) (frontier C))
+    {curv τ : ℕ → ℝ} {κ : ℝ} (hκ : 0 < κ)
+    (hval : ∀ j, φ (r.x j) = r.model j (r.x j))
+    (hdec : ∀ j, HasNegativeCurvatureDecrease (r.model j) (r.x j) (r.s j)
+      (τ j) (r.Δ j) κ)
+    (herr : ∀ e > (0 : ℝ), ∃ D > (0 : ℝ), ∀ᶠ j in atTop, r.Δ j ≤ D →
+      |φ (r.x j + r.s j) - r.model j (r.x j + r.s j)| ≤ e * (r.Δ j) ^ 2)
+    (hagree : Tendsto (fun j ↦ |curv j - τ j|) atTop (𝓝 0))
+    (hlower : BddBelow (range fun j ↦ φ (r.x j))) :
+    ∀ ε > (0 : ℝ), ∃ᶠ j in atTop, -ε < curv j := by
+  have hη : 0 < 1 - P.η₂ := sub_pos.mpr P.eta₂_lt_one
+  have hΔc : 0 < (1 - σ) * δ := mul_pos (sub_pos.mpr hσ.2) hδ
+  have hfreq : ∀ e > (0 : ℝ), ∃ᶠ j in atTop, -τ j < e := by
+    apply r.frequently_small_criticality (fun j ↦ -τ j) hlower
+    · intro e he
+      obtain ⟨D, hD, hsmall⟩ := herr ((1 - P.η₂) * (κ * e)) (by positivity)
+      refine ⟨min e (min D ((1 - σ) * δ)), lt_min he (lt_min hD hΔc), ?_⟩
+      filter_upwards [hsmall] with j herr hj hd
+      have hD' := hd.trans (min_le_right _ _)
+      have hstep : dist (r.x j + r.s j) (r.x j) ≤
+          (1 - σ) * infDist (r.x j) (frontier C) := by
+        rw [dist_eq_norm, add_sub_cancel_left]
+        exact (r.step_feasible j).trans ((hD'.trans (min_le_right _ _)).trans
+          (mul_le_mul_of_nonneg_left (hclear j) (sub_nonneg.mpr hσ.2.le)))
+      have ha := (barrierBoundary_clearance hC (r.interior_iterate j) hσ hδ (hclear j) hstep).1
+      have hp := negativeCurvatureDecrease_lower_bound (hdec j) he (r.delta_pos' j).le
+        le_rfl (by linarith : τ j ≤ -e)
+      rw [min_eq_right ((sq_le_sq₀ (r.delta_pos' j).le he.le).mpr
+        (hd.trans (min_le_left _ _)))] at hp
+      have heq : |φ (r.x j + r.s j) -
+          (φ (r.x j) - (r.model j (r.x j) - r.model j (r.x j + r.s j)))| ≤
+          (1 - P.η₂) * (r.model j (r.x j) - r.model j (r.x j + r.s j)) := by
+        rw [hval j, sub_sub_cancel]
+        exact (herr (hD'.trans (min_le_left _ _))).trans
+          (by simpa only [mul_assoc] using mul_le_mul_of_nonneg_left hp hη.le)
+      rw [primalBarrierRatio, ite_eq_left ha, btrRatio]
+      simpa only [sub_sub_cancel] using
+        Optimization.le_reductionRatio_of_abs_sub_le (r.predicted_pos j) heq
+    · intro e he d hd
+      refine ⟨P.η₁ * (κ * e * min (e ^ 2) (d ^ 2)), mul_pos P.eta₁_pos
+        (mul_pos (mul_pos hκ he) (lt_min (sq_pos_of_pos he) (sq_pos_of_pos hd))),
+        fun j hj hrad hs ↦ ?_⟩
+      exact (mul_le_mul_of_nonneg_left
+        (negativeCurvatureDecrease_lower_bound (hdec j) he hd.le hrad (by linarith))
+        P.eta₁_pos.le).trans (r.objective_drop hs)
+  intro ε hε
+  refine ((hfreq (ε / 2) (half_pos hε)).and_eventually
+    (hagree.eventually (gt_mem_nhds (half_pos hε)))).mono ?_
+  intro j hj
+  linarith [neg_abs_le (curv j - τ j), hj.1, hj.2]
+
+private theorem barrier_hessian_sub {f m : E → ℝ} {x : E}
+    (hf : ContDiffAt ℝ 2 f x) (hm : ContDiffAt ℝ 2 m x) :
+    fderiv ℝ (fderiv ℝ (f - m)) x =
+      fderiv ℝ (fderiv ℝ f) x - fderiv ℝ (fderiv ℝ m) x := by
+  have he : fderiv ℝ (f - m) =ᶠ[𝓝 x] fderiv ℝ f - fderiv ℝ m := by
+    filter_upwards [hf.eventually (by norm_num), hm.eventually (by norm_num)] with y hfy hmy
+    exact ((hfy.differentiableAt (by norm_num)).hasFDerivAt.sub
+      (hmy.differentiableAt (by norm_num)).hasFDerivAt).fderiv
+  have hdf := ((hf.fderiv_right (m := 1) (by norm_num)).differentiableAt (by norm_num))
+  have hdm := ((hm.fderiv_right (m := 1) (by norm_num)).differentiableAt (by norm_num))
+  rw [he.fderiv_eq]
+  exact (hdf.hasFDerivAt.sub hdm.hasFDerivAt).fderiv
+
+/-- Center Hessian agreement and uniform Hessian variation on short
+interior trust regions give the normalized model error used by the
+second-order inner convergence proof. -/
+theorem PrimalBarrierInnerRun.small_radius_model_error_of_hessians
+    [FiniteDimensional ℝ E] {P : BTRParams} {C : Set E} {σ : ℝ} {φ : E → ℝ}
+    (r : PrimalBarrierInnerRun P C σ φ) (hC : C ≠ univ)
+    (hσ : σ ∈ Ioo (0 : ℝ) 1) {δ : ℝ} (hδ : 0 < δ)
+    (hclear : ∀ j, δ ≤ infDist (r.x j) (frontier C))
+    (hf : ∀ y ∈ interior C, ContDiffAt ℝ 2 φ y)
+    (hm : ∀ j y, y ∈ closedBall (r.x j) (r.Δ j) → y ∈ interior C →
+      ContDiffAt ℝ 2 (r.model j) y)
+    (hval : ∀ j, φ (r.x j) = r.model j (r.x j))
+    (hgrad : ∀ j, fderiv ℝ φ (r.x j) = fderiv ℝ (r.model j) (r.x j))
+    (hagree : Tendsto (fun j ↦ ‖fderiv ℝ (fderiv ℝ φ) (r.x j) -
+      fderiv ℝ (fderiv ℝ (r.model j)) (r.x j)‖) atTop (𝓝 0))
+    (hvar : ∀ e > (0 : ℝ), ∃ D > (0 : ℝ), ∀ j, r.Δ j ≤ D →
+      ∀ y ∈ closedBall (r.x j) (r.Δ j), y ∈ interior C →
+        ‖fderiv ℝ (fderiv ℝ φ) y - fderiv ℝ (fderiv ℝ φ) (r.x j)‖ +
+        ‖fderiv ℝ (fderiv ℝ (r.model j)) y -
+          fderiv ℝ (fderiv ℝ (r.model j)) (r.x j)‖ ≤ e) :
+    ∀ e > (0 : ℝ), ∃ D > (0 : ℝ), ∀ᶠ j in atTop, r.Δ j ≤ D →
+      |φ (r.x j + r.s j) - r.model j (r.x j + r.s j)| ≤ e * (r.Δ j) ^ 2 := by
+  intro e he
+  obtain ⟨D, hD, hv⟩ := hvar e he
+  refine ⟨min D ((1 - σ) * δ), lt_min hD (mul_pos (sub_pos.mpr hσ.2) hδ), ?_⟩
+  filter_upwards [hagree.eventually (gt_mem_nhds he)] with j hj hrad
+  have hΔ := (r.delta_pos' j).le
+  have hins (y : E) (hy : y ∈ closedBall (r.x j) (r.Δ j)) : y ∈ interior C :=
+    (barrierBoundary_clearance hC (r.interior_iterate j) hσ hδ (hclear j)
+      ((mem_closedBall.mp hy).trans ((hrad.trans (min_le_right _ _)).trans
+        (mul_le_mul_of_nonneg_left (hclear j) (sub_nonneg.mpr hσ.2.le))))).1.1
+  have hB (y : E) (hy : y ∈ closedBall (r.x j) (r.Δ j)) :
+      ‖fderiv ℝ (fderiv ℝ (φ - r.model j)) y‖ ≤ 2 * e := by
+    let F := fderiv ℝ (fderiv ℝ φ)
+    let M := fderiv ℝ (fderiv ℝ (r.model j))
+    rw [barrier_hessian_sub (hf y (hins y hy)) (hm j y hy (hins y hy))]
+    change ‖F y - M y‖ ≤ 2 * e
+    rw [show F y - M y = (F y - F (r.x j)) + (F (r.x j) - M (r.x j)) -
+      (M y - M (r.x j)) by abel]
+    have htri := norm_sub_le ((F y - F (r.x j)) + (F (r.x j) - M (r.x j)))
+      (M y - M (r.x j))
+    have hsum := norm_add_le (F y - F (r.x j)) (F (r.x j) - M (r.x j))
+    change ‖F (r.x j) - M (r.x j)‖ < e at hj
+    have hh := hv j (hrad.trans (min_le_left _ _)) y hy (hins y hy)
+    change ‖F y - F (r.x j)‖ + ‖M y - M (r.x j)‖ ≤ e at hh
+    linarith only [htri, hsum, hj, hh]
+  have ht := barrierTaylorRemainder (F := φ - r.model j) hΔ (r.step_feasible j)
+    (fun y hy ↦ (hf y (hins y hy)).sub (hm j y hy (hins y hy))) hB
+  have hd : fderiv ℝ (φ - r.model j) (r.x j) = 0 := by
+    have hx := r.interior_iterate j
+    have hcx : r.x j ∈ closedBall (r.x j) (r.Δ j) := mem_closedBall_self hΔ
+    rw [((hf _ hx).differentiableAt (by norm_num)).hasFDerivAt.sub
+      ((hm j _ hcx hx).differentiableAt (by norm_num)).hasFDerivAt |>.fderiv,
+      hgrad, sub_self]
+  simp only [Pi.sub_apply, hval, sub_self, hd, zero_apply, add_zero,
+    sub_zero] at ht
+  have hs := (sq_le_sq₀ (norm_nonneg _) hΔ).mpr (r.step_feasible j)
+  nlinarith only [ht, mul_le_mul_of_nonneg_left hs he.le]
+
+/-- A uniform Hessian bound on a convex region containing the accepted
+iterates supplies the gradient variation estimate for Algorithm 13.2.1. -/
+theorem PrimalBarrierInnerRun.gradient_norm_variation_of_hessian_bound
+    {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F] [CompleteSpace F]
+    {P : BTRParams} {C S : Set F} {σ : ℝ} {φ : F → ℝ}
+    (r : PrimalBarrierInnerRun P C σ φ)
+    (hS : Convex ℝ S) (hx : ∀ j, r.x j ∈ S)
+    (hf : ∀ x ∈ S, ContDiffAt ℝ 2 φ x)
+    {L : ℝ} (hH : ∀ x ∈ S, ‖fderiv ℝ (fderiv ℝ φ) x‖ ≤ L) :
+    ∀ j, ‖gradient φ (r.x j)‖ - ‖gradient φ (r.x (j + 1))‖ ≤
+      L * ‖r.x j - r.x (j + 1)‖ := by
+  intro j
+  have he := Convex.norm_image_sub_le_of_norm_fderiv_le
+    (fun x h ↦ ((hf x h).fderiv_right (m := 1) (by norm_num)).differentiableAt (by norm_num))
+    hH hS (hx (j + 1)) (hx j)
+  exact (norm_sub_norm_le _ _).trans (by
+    simpa only [gradient, ← map_sub, LinearIsometryEquiv.norm_map] using he)
+
+end FirstOrderLimit
 
 end ConnGouldToint.Chapter13

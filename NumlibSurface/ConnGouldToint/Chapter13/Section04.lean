@@ -432,7 +432,7 @@ end InnerConvergence
 
 section EuclideanStopping
 
-open Chapter06
+open Chapter06 Set
 
 variable [Nonempty ι]
 
@@ -530,6 +530,54 @@ theorem theorem_13_4_2_of_local_extension {f : (ι → ℝ) → ℝ} {F : Euclid
     rw [← logBarrierObjective_hessian_apply hf (hx j), ← (hlocal j).fderiv.fderiv_eq,
       barrier_composed_hessian hF, hTx]
     rfl
+
+omit [DecidableEq ι] in
+/-- A globally lower-bounded objective with bounded Hessian and AW.2 at a
+larger parameter gives uniform Euclidean clearance for the actual accepted
+iterates of a primal barrier inner run. -/
+theorem PrimalBarrierInnerRun.euclidean_clearance_of_global_lower
+    {P : BTRParams} {f : (ι → ℝ) → ℝ} {σ μ ν L A H : ℝ}
+    (r : PrimalBarrierInnerRun P
+      ((WithLp.ofLp : EuclideanSpace ℝ ι → (ι → ℝ)) ⁻¹' Optimization.nonnegativeOrthant ι)
+      σ (fun x ↦ logBarrierObjective f x.ofLp μ))
+    (hμ : 0 < μ) (hν : μ < ν) (hf : ContDiff ℝ 2 f)
+    (hlower : ∀ y, L ≤ f y) (hH : ∀ y, ‖fderiv ℝ (fderiv ℝ f) y‖ ≤ H)
+    (hbar : ∀ y : ι → ℝ, (∀ i, 0 < y i) → A ≤ logBarrierObjective f y ν) :
+    ∃ ε ∈ Set.Ioo (0 : ℝ) 1, ∀ j,
+      ε ≤ infDist (r.x j) (frontier
+        ((WithLp.ofLp : EuclideanSpace ℝ ι → (ι → ℝ)) ⁻¹' Optimization.nonnegativeOrthant ι)) := by
+  let T := (PiLp.continuousLinearEquiv 2 ℝ (fun _ : ι ↦ ℝ)).toHomeomorph
+  let O := Optimization.nonnegativeOrthant ι
+  let C := T ⁻¹' O
+  have hCfront : T ⁻¹' frontier O = frontier C := T.preimage_frontier O
+  have hxp (j : ℕ) (i : ι) : 0 < (r.x j).ofLp i := by
+    have hh : r.x j ∈ interior C := r.interior_iterate j
+    rw [← T.preimage_interior O] at hh
+    have hh' : (r.x j).ofLp ∈ interior O := hh
+    change (r.x j).ofLp ∈ interior (Set.univ.pi (fun _ : ι ↦ Ici (0 : ℝ))) at hh'
+    rw [interior_pi_set Set.finite_univ] at hh'
+    exact (by simpa only [Set.mem_pi, Set.mem_univ, true_implies, interior_Ici, Set.mem_Ioi] using hh' :
+      ∀ i, 0 < (r.x j).ofLp i) i
+  obtain ⟨ε, hε, hbound⟩ := logBarrier_sublevel_separation_of_global_lower
+    hμ hν hf hlower hH hbar hxp (fun j ↦ r.objective_antitone (Nat.zero_le j))
+  have hzero : (0 : EuclideanSpace ℝ ι) ∈ frontier C := by
+    rw [← hCfront]
+    apply Optimization.mem_frontier_nonnegativeOrthant.mpr
+    exact ⟨fun _ ↦ le_rfl, Classical.arbitrary ι, rfl⟩
+  refine ⟨ε, hε, fun j ↦ (le_infDist ⟨0, hzero⟩).mpr ?_⟩
+  intro y hy
+  have hy' : y.ofLp ∈ frontier O := by
+    rw [← hCfront] at hy
+    exact hy
+  obtain ⟨_, i, hi⟩ := Optimization.mem_frontier_nonnegativeOrthant.mp hy'
+  have hxi := (hbound j).trans (Optimization.infDist_frontier_le_coordinate (hxp j) i)
+  have hnorm : |(r.x j - y).ofLp i| ≤ ‖r.x j - y‖ := by
+    rw [EuclideanSpace.norm_eq]
+    apply (sq_le_sq₀ (abs_nonneg _) (Real.sqrt_nonneg _)).mp
+    rw [Real.sq_sqrt (Finset.sum_nonneg fun _ _ ↦ sq_nonneg _)]
+    exact Finset.single_le_sum (fun k _ ↦ sq_nonneg ‖(r.x j - y).ofLp k‖) (Finset.mem_univ i)
+  rw [WithLp.ofLp_sub, Pi.sub_apply, hi, sub_zero, abs_of_pos (hxp j i)] at hnorm
+  exact hxi.trans (by simpa only [dist_eq_norm] using hnorm)
 
 end EuclideanStopping
 

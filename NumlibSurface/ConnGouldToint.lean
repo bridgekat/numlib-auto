@@ -191,8 +191,12 @@ uniformly bounded positive paths.
 Theorem 13.4.2 has an inner convergence proof for Algorithm 13.3.1 under a
 uniform clearance, matching smooth objective extension, and uniform model
 estimates. The extension preserves the acceptance ratios and the limits
-give arbitrarily late coordinate stopping indices. The unconditional
-inner limit argument and the extension to Algorithm 13.2.1 remain open.
+give arbitrarily late coordinate stopping indices. For Algorithm 13.2.1 the first- and second-order inner limits are proved
+directly for the guarded ratio under uniform clearance and local model
+estimates. A global lower bound on the objective, together with the
+objective Hessian bound and AW.2 at a larger parameter, supplies
+clearance. A bilinear example rules out deducing clearance from the
+printed assumptions alone. The unconditional inner limit argument remains open.
 The strong-criticality counterexample in Section 13.4 uses a smooth cutoff
 to meet the lower-boundedness requirement that the printed quadratic fails.
 On an unbounded approach to the boundary, a growing coordinate can cancel a vanishing one.

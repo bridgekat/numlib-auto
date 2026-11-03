@@ -123,3 +123,7 @@ source = "Conn–Gould–Toint, Euclidean coordinates in (13.4.3)–(13.4.5)"
 [[node]]
 id = "theorem_13_4_2_of_local_extension"
 source = "Conn–Gould–Toint, coordinate transfer for Theorem 13.4.2 under local agreement with a smooth extension"
+
+[[node]]
+id = "PrimalBarrierInnerRun.euclidean_clearance_of_global_lower"
+source = "Conn–Gould–Toint, corrected uniform boundary clearance for the inner runs of Theorem 13.4.2"
