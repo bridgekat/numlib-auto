@@ -1,4 +1,6 @@
 import Numlib.Optimization.EpigraphPenalty
+import NumlibSurface.ConnGouldToint.Chapter11.Section02
+import Mathlib.Analysis.Calculus.ContDiff.RCLike
 import Mathlib.Order.Filter.Extr
 import Mathlib.Analysis.Calculus.FDeriv.Prod
 import Mathlib.Analysis.Normed.Operator.Bilinear
@@ -414,6 +416,160 @@ theorem theorem_16_2_2 [Nonempty ι] (c : E → Y) (p : ι → Y →L[ℝ] ℝ)
     rw [← hquad]
     exact hpos d hd (activeBranchCombination_le_iff (p := p) (v := fderiv ℝ c x d) |>.2 hactive)
 
+omit [NormedAddCommGroup E] [NormedSpace ℝ E] in
+/-- The maximum of affine branches is globally Lipschitz, with a constant
+bounded by the sum of the operator norms of the slopes. -/
+theorem lipschitzWith_polyhedralAffineMaximum [Nonempty ι]
+    (p : ι → Y →L[ℝ] ℝ) (b : ι → ℝ) :
+    LipschitzWith (∑ i, ‖p i‖₊) (polyhedralAffineMaximum p b) := by
+  apply LipschitzWith.of_dist_le_mul
+  intro y z
+  let K : ℝ := ((∑ i, ‖p i‖₊ : NNReal) : ℝ)
+  have hK (i : ι) : ‖p i‖ ≤ K := by
+    exact_mod_cast (Finset.single_le_sum (f := fun j ↦ ‖p j‖₊)
+      (fun _ _ ↦ zero_le) (Finset.mem_univ i))
+  have h (u v : Y) : polyhedralAffineMaximum p b u ≤
+      polyhedralAffineMaximum p b v + K * dist u v := by
+    apply Finset.sup'_le
+    intro i hi
+    have hv : affineResidualBranch (p i) (b i) v ≤ polyhedralAffineMaximum p b v :=
+      Finset.le_sup' (fun j ↦ affineResidualBranch (p j) (b j) v) hi
+    have hdiff : p i u - p i v ≤ K * dist u v := by
+      rw [← map_sub, dist_eq_norm]
+      have hnorm := (p i).le_opNorm (u - v)
+      rw [Real.norm_eq_abs] at hnorm
+      exact ((le_abs_self _).trans hnorm).trans
+        (mul_le_mul_of_nonneg_right (hK i) (norm_nonneg _))
+    dsimp [affineResidualBranch] at hv ⊢
+    linarith only [hv, hdiff]
+  have hzy := h z y
+  rw [dist_comm z y] at hzy
+  rw [Real.dist_eq]
+  change _ ≤ K * dist y z
+  exact abs_le.2 ⟨by linarith only [hzy], by linarith only [h y z]⟩
+
+private theorem exists_uniform_firstOrder_of_contDiff {c : E → Y}
+    (hc : ContDiff ℝ 1 c) (x : E) {a : ℝ} (ha : 0 < a) :
+    ∃ r > 0, ∀ y ∈ Metric.ball x r, ∀ s : E, ‖s‖ ≤ r →
+      ‖c (y + s) - c y - fderiv ℝ c y s‖ ≤ a * ‖s‖ := by
+  obtain ⟨r, hr, hclose⟩ := Metric.continuousAt_iff.1
+    (show ContinuousAt (fderiv ℝ c) x from (hc.continuous_fderiv one_ne_zero).continuousAt) (a / 2) (half_pos ha)
+  refine ⟨r / 3, by positivity, ?_⟩
+  intro y hy s hs
+  have hy' : y ∈ Metric.ball x r := Metric.ball_subset_ball (by linarith) hy
+  have hys : y + s ∈ Metric.ball x r := by
+    have hdy := Metric.mem_ball.1 hy
+    rw [Metric.mem_ball]
+    have ht := dist_triangle (y + s) y x
+    rw [dist_eq_norm (y + s) y, add_sub_cancel_left] at ht
+    linarith
+  let g : E → Y := fun z ↦ c z - fderiv ℝ c y z
+  have hdiff (z : E) : DifferentiableAt ℝ g z :=
+    (hc.differentiable one_ne_zero z).sub (ContinuousLinearMap.differentiableAt _)
+  have hbound (z : E) (hz : z ∈ Metric.ball x r) : ‖fderiv ℝ g z‖ ≤ a := by
+    rw [show g = fun z ↦ c z - fderiv ℝ c y z from rfl,
+      fderiv_fun_sub (hc.differentiable one_ne_zero z) (ContinuousLinearMap.differentiableAt _),
+      ContinuousLinearMap.fderiv]
+    rw [← dist_eq_norm]
+    have ht := dist_triangle (fderiv ℝ c z) (fderiv ℝ c x) (fderiv ℝ c y)
+    rw [dist_comm (fderiv ℝ c x)] at ht
+    linarith only [ht, hclose hz, hclose hy']
+  have he := (convex_ball x r).norm_image_sub_le_of_norm_fderiv_le
+    (fun z _ ↦ hdiff z) hbound hy' hys
+  have hcalc : g (y + s) - g y = c (y + s) - c y - fderiv ℝ c y s := by
+    dsimp [g]
+    rw [map_add]
+    abel
+  rwa [hcalc, add_sub_cancel_left] at he
+
 end EpigraphConditions
+
+section PolyhedralConvergence
+
+variable {E Y ι : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+  [NormedAddCommGroup Y] [NormedSpace ℝ Y] [Fintype ι]
+
+open Chapter11 in
+/-- A bounded family of quadratic terms gives uniform normalized model
+agreement for (16.2.4), using the affine maximum's Lipschitz bound. -/
+theorem polyhedralResidualModel_uniformAgreement
+    [Nonempty ι] {I : Type*} {c : E → Y}
+    (hc : ContDiff ℝ 1 c) (p : ι → Y →L[ℝ] ℝ) (b : ι → ℝ)
+    (B : I → E →L[ℝ] E →L[ℝ] ℝ) {M : ℝ} (hM : 0 ≤ M)
+    (hB : ∀ i, ‖B i‖ ≤ M) (x : E) :
+    UniformNormalizedModelAgreementAt (polyhedralResidualValue c p b)
+      (fun y i s ↦ polyhedralResidualModel c p b (B i) y s) x := by
+  intro a ha
+  let K : ℝ := ((∑ i, ‖p i‖₊ : NNReal) : ℝ)
+  have hK : 0 ≤ K := by positivity
+  have hK₁ : 0 < K + 1 := by positivity
+  have hM₁ : 0 < M + 1 := by positivity
+  obtain ⟨r, hr, hrem⟩ := exists_uniform_firstOrder_of_contDiff hc x
+    (div_pos (half_pos ha) hK₁)
+  let t := min r (a / (M + 1))
+  have ht : 0 < t := lt_min hr (div_pos ha hM₁)
+  refine ⟨t, t, ht, ht, ?_⟩
+  intro y hy i s hs
+  by_cases hzero : s = 0
+  · simp [normalizedModelError, hzero, ha.le]
+  have hn := norm_pos_iff.2 hzero
+  have hres : ‖c (y + s) - (c y + fderiv ℝ c y s)‖ ≤ (a / 2 / (K + 1)) * ‖s‖ := by
+    rw [← sub_sub]
+    exact hrem y (Metric.ball_subset_ball (min_le_left _ _) hy) s (hs.trans (min_le_left _ _))
+  have hlip := (lipschitzWith_polyhedralAffineMaximum p b).dist_le_mul
+    (c (y + s)) (c y + fderiv ℝ c y s)
+  rw [Real.dist_eq, dist_eq_norm] at hlip
+  have hpoly : |polyhedralResidualValue c p b (y + s) -
+        polyhedralAffineMaximum p b (c y + fderiv ℝ c y s)| ≤ a / 2 * ‖s‖ := by
+    apply hlip.trans
+    calc
+      K * ‖c (y + s) - (c y + fderiv ℝ c y s)‖ ≤ K * ((a / 2 / (K + 1)) * ‖s‖) :=
+        mul_le_mul_of_nonneg_left hres hK
+      _ = (K / (K + 1)) * (a / 2 * ‖s‖) := by ring
+      _ ≤ a / 2 * ‖s‖ := mul_le_of_le_one_left (by positivity)
+        ((div_le_one hK₁).2 (by linarith))
+  have hcurv : |B i s s| ≤ M * ‖s‖ ^ 2 := by
+    rw [← Real.norm_eq_abs]
+    calc
+      _ ≤ ‖B i s‖ * ‖s‖ := (B i s).le_opNorm s
+      _ ≤ (‖B i‖ * ‖s‖) * ‖s‖ :=
+        mul_le_mul_of_nonneg_right ((B i).le_opNorm s) (norm_nonneg _)
+      _ = ‖B i‖ * ‖s‖ ^ 2 := by ring
+      _ ≤ _ := mul_le_mul_of_nonneg_right (hB i) (sq_nonneg _)
+  have hsn := (le_div_iff₀ hM₁).1 (hs.trans (min_le_right _ _))
+  have hmul : M * ‖s‖ ≤ a := by nlinarith only [hsn, norm_nonneg s]
+  have hquad : |B i s s / 2| ≤ a / 2 * ‖s‖ := by
+    rw [abs_div, abs_of_nonneg (by norm_num : (0 : ℝ) ≤ 2)]
+    apply (div_le_iff₀ (by norm_num : (0 : ℝ) < 2)).2
+    exact hcurv.trans (by nlinarith only [mul_le_mul_of_nonneg_right hmul (norm_nonneg s)])
+  rw [normalizedModelError, abs_div, abs_of_nonneg hn.le]
+  apply (div_le_iff₀ hn).2
+  rw [polyhedralResidualModel, add_comm (B i s s / 2), ← sub_sub]
+  exact (abs_sub _ _).trans (by linarith only [hpoly, hquad])
+
+open Chapter11 in
+/-- Theorem 16.2.1 for Algorithm 11.1.1. Every subsequential limit of a
+monotone nonsmooth trust-region run for the polyhedral residual objective
+is Clarke stationary. -/
+theorem theorem_16_2_1_monotone
+    [CompleteSpace E] [Nonempty ι] {I : Type*} {c : E → Y}
+    (hc : ContDiff ℝ 1 c) (p : ι → Y →L[ℝ] ℝ) (b : ι → ℝ)
+    (B : I → E →L[ℝ] E →L[ℝ] ℝ) {M : ℝ} (hM : 0 ≤ M) (hB : ∀ i, ‖B i‖ ≤ M)
+    {Q : NonsmoothTRParams}
+    (R : NonsmoothTRRun Q (polyhedralResidualValue c p b)
+      (fun y i s ↦ polyhedralResidualModel c p b (B i) y s))
+    (hAA : ∀ y, R.HasLocalSufficientDecrease y)
+    {x : E} {j : ℕ → ℕ} (hj : StrictMono j) (hx : Tendsto (R.x ∘ j) atTop (𝓝 x)) :
+    (0 : E) ∈ Optimization.clarkeSubgradient (polyhedralResidualValue c p b) x := by
+  have hloc := (lipschitzWith_polyhedralAffineMaximum p b).locallyLipschitz.comp hc.locallyLipschitz
+  obtain ⟨L, U, hU, hL⟩ := hloc x
+  have hmatch : modelValueMatches (polyhedralResidualValue c p b)
+      (fun y i s ↦ polyhedralResidualModel c p b (B i) y s) := by
+    intro y i
+    simp [polyhedralResidualModel, polyhedralResidualValue]
+  exact theorem_11_2_5 R hU hL hmatch (polyhedralResidualModel_uniformAgreement hc p b B hM hB x)
+    hAA hj hx
+
+end PolyhedralConvergence
 
 end ConnGouldToint.Chapter16

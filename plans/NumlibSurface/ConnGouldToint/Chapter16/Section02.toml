@@ -83,3 +83,15 @@ source = "Conn–Gould–Toint, corrected (16.2.15)"
 [[node]]
 id = "theorem_16_2_2"
 source = "Conn–Gould–Toint, Theorem 16.2.2"
+
+[[node]]
+id = "lipschitzWith_polyhedralAffineMaximum"
+source = "Conn–Gould–Toint, (16.2.1)–(16.2.2)"
+
+[[node]]
+id = "polyhedralResidualModel_uniformAgreement"
+source = "Conn–Gould–Toint, (16.2.4), model accuracy from Theorem 11.5.1"
+
+[[node]]
+id = "theorem_16_2_1_monotone"
+source = "Conn–Gould–Toint, Theorem 16.2.1 for Algorithm 11.1.1"
