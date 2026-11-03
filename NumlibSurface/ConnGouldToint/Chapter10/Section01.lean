@@ -1,4 +1,5 @@
 import Numlib.Optimization.ModelBased.ReferenceDecrease
+import NumlibSurface.ConnGouldToint.Chapter06.Section04
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Algebra.BigOperators.Ring.Finset
 import Mathlib.Order.Interval.Finset.Nat
@@ -78,5 +79,25 @@ theorem lemma_10_1_1 (S : Set ℕ) (f trial d g β Δ : ℕ → ℝ) (r : ℕ �
       simp [Nat.Ico_succ_singleton, c, acceptedDecrease, hj, hreject j hj]
   have h := Optimization.reference_decrease_sum f (fun i ↦ η * κ * c i) hstep (k + 1)
   rwa [← Finset.mul_sum] at h
+
+open Chapter06 in
+/-- Theorem 10.1.2. The nonmonotone ratio dominates the current reduction ratio,
+so the small-radius acceptance bound also prevents radius contraction here. -/
+theorem theorem_10_1_2 {E : Type*} [NormedAddCommGroup E] {P : BTRParams}
+    {f m : E → ℝ} {x s g : E} {β Δ Δ' κ C : ℝ}
+    (S : Set ℕ) (values trial d : ℕ → ℝ) (r k : ℕ)
+    (hvalues : values k = f x) (htrial : trial k = f (x + s)) (hd : d k = m x - m (x + s))
+    (hβ : 0 < β) (hβC : β ≤ C) (hΔ : 0 < Δ) (hg : g ≠ 0)
+    (hval : f x = m x) (hdec : HasSufficientModelDecrease m x s g β Δ κ)
+    (herr : |f (x + s) - m (x + s)| ≤ C * Δ ^ 2)
+    (hsmall : Δ ≤ κ * ‖g‖ * (1 - P.η₂) / C)
+    (hupdate : BTRRadiusUpdate P (nonmonotoneRatio S values trial d r k) Δ Δ') :
+    P.η₂ ≤ nonmonotoneRatio S values trial d r k ∧ Δ ≤ Δ' := by
+  have hcurrent : P.η₂ ≤ btrRatio f m x s :=
+    btrRatio_ge_eta₂_of_small_radius hβ hβC hΔ hg hval hdec herr hsmall
+  have hdom : btrRatio f m x s ≤ nonmonotoneRatio S values trial d r k := by
+    simp only [nonmonotoneRatio, hvalues, htrial, hd, btrRatio, Optimization.reductionRatio]
+    exact le_max_right _ _
+  exact ⟨hcurrent.trans hdom, hupdate.very_successful (hcurrent.trans hdom)⟩
 
 end ConnGouldToint.Chapter10

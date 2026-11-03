@@ -73,16 +73,13 @@ theorem theorem_6_4_1 {f m : E → ℝ} {x s : E} (p : Seminorm ℝ E)
       _ = _ := by unfold uniformHessianConstant; ring
 
 omit [NormedSpace ℝ E] in
-/-- Theorem 6.4.2. Under the quadratic error bound (6.4.3), a small enough radius
-gives a very successful iteration. The curvature bound β is at most the error
-constant C by (6.3.2) and (6.4.4). -/
-theorem theorem_6_4_2 {P : BTRParams} {f m : E → ℝ} {x s g : E}
-    {β Δ Δ' κ C : ℝ} (hβ : 0 < β) (hβC : β ≤ C) (hΔ : 0 < Δ) (hg : g ≠ 0)
+/-- The acceptance-ratio estimate (6.4.12) before applying the radius update. -/
+theorem btrRatio_ge_eta₂_of_small_radius {P : BTRParams} {f m : E → ℝ} {x s g : E}
+    {β Δ κ C : ℝ} (hβ : 0 < β) (hβC : β ≤ C) (hΔ : 0 < Δ) (hg : g ≠ 0)
     (hval : f x = m x) (hdec : HasSufficientModelDecrease m x s g β Δ κ)
     (herr : |f (x + s) - m (x + s)| ≤ C * Δ ^ 2)
-    (hsmall : Δ ≤ κ * ‖g‖ * (1 - P.η₂) / C)
-    (hupdate : BTRRadiusUpdate P (btrRatio f m x s) Δ Δ') :
-    P.η₂ ≤ btrRatio f m x s ∧ Δ ≤ Δ' := by
+    (hsmall : Δ ≤ κ * ‖g‖ * (1 - P.η₂) / C) :
+    P.η₂ ≤ btrRatio f m x s := by
   have hC : 0 < C := hβ.trans_le hβC
   have hη : 0 < P.η₂ := P.eta₁_pos.trans_le P.eta₁_le_eta₂
   have hη' : 0 ≤ 1 - P.η₂ := sub_nonneg.mpr P.eta₂_lt_one.le
@@ -108,8 +105,20 @@ theorem theorem_6_4_2 {P : BTRParams} {f m : E → ℝ} {x s g : E}
       (1 - P.η₂) * (m x - m (x + s)) := by
     rw [hval, sub_sub_cancel]
     exact herr.trans (by nlinarith only [hprod, hbound])
-  have hsuccess : P.η₂ ≤ btrRatio f m x s := by
-    simpa [btrRatio] using Optimization.le_reductionRatio_of_abs_sub_le hpred herr'
+  simpa [btrRatio] using Optimization.le_reductionRatio_of_abs_sub_le hpred herr'
+
+omit [NormedSpace ℝ E] in
+/-- Theorem 6.4.2. Under the quadratic error bound (6.4.3), a small enough radius
+gives a very successful iteration. The curvature bound β is at most the error
+constant C by (6.3.2) and (6.4.4). -/
+theorem theorem_6_4_2 {P : BTRParams} {f m : E → ℝ} {x s g : E}
+    {β Δ Δ' κ C : ℝ} (hβ : 0 < β) (hβC : β ≤ C) (hΔ : 0 < Δ) (hg : g ≠ 0)
+    (hval : f x = m x) (hdec : HasSufficientModelDecrease m x s g β Δ κ)
+    (herr : |f (x + s) - m (x + s)| ≤ C * Δ ^ 2)
+    (hsmall : Δ ≤ κ * ‖g‖ * (1 - P.η₂) / C)
+    (hupdate : BTRRadiusUpdate P (btrRatio f m x s) Δ Δ') :
+    P.η₂ ≤ btrRatio f m x s ∧ Δ ≤ Δ' := by
+  have hsuccess := btrRatio_ge_eta₂_of_small_radius hβ hβC hΔ hg hval hdec herr hsmall
   exact ⟨hsuccess, hupdate.very_successful hsuccess⟩
 
 /-- Theorem 6.4.3. Uniformly nonzero gradients keep the radius bounded away
