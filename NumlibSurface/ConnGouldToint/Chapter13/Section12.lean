@@ -1466,4 +1466,124 @@ theorem theorem_13_12_3_matrix_counterexample (κmsd : ℝ) (hκ : 0 < κmsd) :
     rw [hray, show scaledGradientNorm xv gv = Real.sqrt x from scalarColemanLiGradientNorm hx]
     exact (scalarColemanLiModel_eq_unscaledModel hx 0) ▸ hlt
 
+section TRAM
+
+variable {m : Type*} [Fintype ι] [DecidableEq ι] [Fintype m] [DecidableEq m]
+
+/-- The slack step from (13.12.28), obtained by eliminating the linear
+constraint (13.12.32) when the slack vector is positive. -/
+noncomputable def tramSlackStep (A : Matrix m ι ℝ) (c : m → ℝ) (s : ι → ℝ) : m → ℝ :=
+  fun i ↦ (A *ᵥ s) i / Real.sqrt (c i)
+
+/-- The model correction (A^T C^{-1}Y A) of (13.12.34). For the modified
+model use the vector of absolute multiplier values for `y`. -/
+noncomputable def tramCorrection (A : Matrix m ι ℝ) (c y : m → ℝ) : Matrix ι ι ℝ :=
+  Aᵀ * Matrix.diagonal (fun i ↦ y i / c i) * A
+
+/-- The model in (13.12.34) in displacement coordinates. Both terms
+are evaluated at the free trial displacement `s`. -/
+noncomputable def tramModel (mf : (ι → ℝ) → ℝ) (A : Matrix m ι ℝ)
+    (c y : m → ℝ) (s : ι → ℝ) : ℝ :=
+  mf s + (1 / 2) * (s ⬝ᵥ (tramCorrection A c y *ᵥ s))
+
+/-- The metric (I+A^T C^{-1} A) of (13.12.35). -/
+noncomputable def tramMetric (A : Matrix m ι ℝ) (c : m → ℝ) : Matrix ι ι ℝ :=
+  1 + Aᵀ * Matrix.diagonal (fun i ↦ (c i)⁻¹) * A
+
+/-- The trust-region norm in (13.12.35), induced by the reduced metric. -/
+noncomputable def tramNorm (A : Matrix m ι ℝ) (c : m → ℝ) (s : ι → ℝ) : ℝ :=
+  Real.sqrt (s ⬝ᵥ (tramMetric A c *ᵥ s))
+
+omit [DecidableEq ι] in
+/-- A positive slack vector gives exactly one slack step for each primal
+step in (13.12.32). -/
+theorem tramSlackStep_unique (A : Matrix m ι ℝ) {c : m → ℝ} (hc : ∀ i, 0 < c i)
+    (s : ι → ℝ) (v : m → ℝ) :
+    Matrix.diagonal (fun i ↦ Real.sqrt (c i)) *ᵥ v = A *ᵥ s ↔
+      v = tramSlackStep A c s := by
+  constructor
+  · intro h
+    funext i
+    have hi := congrFun h i
+    rw [Matrix.mulVec_diagonal] at hi
+    exact (eq_div_iff (Real.sqrt_pos.2 (hc i)).ne').2 (by simpa [mul_comm] using hi)
+  · rintro rfl
+    funext i
+    rw [Matrix.mulVec_diagonal]
+    exact mul_div_cancel₀ _ (Real.sqrt_pos.2 (hc i)).ne'
+
+omit [DecidableEq ι] in
+private theorem tramCorrection_quadratic (A : Matrix m ι ℝ) {c : m → ℝ} (hc : ∀ i, 0 < c i)
+    (y : m → ℝ) (s : ι → ℝ) :
+    s ⬝ᵥ (tramCorrection A c y *ᵥ s) = ∑ i, y i * (tramSlackStep A c s i) ^ 2 := by
+  rw [tramCorrection, ← Matrix.mulVec_mulVec, ← Matrix.mulVec_mulVec,
+    Matrix.dotProduct_transpose_mulVec, dotProduct_comm, dotProduct]
+  apply Finset.sum_congr rfl
+  intro i _
+  rw [Matrix.mulVec_diagonal]
+  unfold tramSlackStep
+  rw [div_pow, Real.sq_sqrt (hc i).le]
+  ring
+
+omit [DecidableEq ι] in
+/-- The reduced model is the joint model evaluated at the unique slack step. -/
+theorem tramModel_eq_slackModel (mf : (ι → ℝ) → ℝ) (A : Matrix m ι ℝ) {c : m → ℝ}
+    (hc : ∀ i, 0 < c i) (y : m → ℝ) (s : ι → ℝ) :
+    tramModel mf A c y s = mf s + (1 / 2) * ∑ i, y i * (tramSlackStep A c s i) ^ 2 := by
+  rw [tramModel, tramCorrection_quadratic A hc]
+
+private theorem tramNorm_eq_slackNorm (A : Matrix m ι ℝ) {c : m → ℝ} (hc : ∀ i, 0 < c i)
+    (s : ι → ℝ) :
+    tramNorm A c s = Real.sqrt ((∑ i, s i ^ 2) + ∑ i, (tramSlackStep A c s i) ^ 2) := by
+  have hmetric : tramMetric A c = 1 + tramCorrection A c (fun _ ↦ 1) := by
+    simp [tramMetric, tramCorrection, one_div]
+  rw [tramNorm, hmetric, Matrix.add_mulVec, Matrix.one_mulVec, dotProduct_add,
+    tramCorrection_quadratic A hc]
+  simp only [one_mul]
+  congr 2
+  simp only [dotProduct, pow_two]
+
+/-- Eliminating the slack step preserves the original joint Euclidean
+trust-region bound (13.12.33). The reduced bound (13.12.35) uses the
+same radius, without the stray `n` in the printed display. -/
+theorem tramNorm_le_iff_exists_slack (A : Matrix m ι ℝ) {c : m → ℝ} (hc : ∀ i, 0 < c i)
+    (s : ι → ℝ) (Δ : ℝ) :
+    tramNorm A c s ≤ Δ ↔ ∃ v : m → ℝ,
+      Matrix.diagonal (fun i ↦ Real.sqrt (c i)) *ᵥ v = A *ᵥ s ∧
+      Real.sqrt ((∑ i, s i ^ 2) + ∑ i, v i ^ 2) ≤ Δ := by
+  simp only [tramSlackStep_unique A hc, tramNorm_eq_slackNorm A hc]
+  exact ⟨fun h ↦ ⟨_, rfl, h⟩, fun ⟨_, rfl, h⟩ ↦ h⟩
+
+/-- Minimizers of the reduced problem lift to minimizers of the joint
+trust-region subproblem, and conversely. -/
+theorem tramSubproblem_iff (mf : (ι → ℝ) → ℝ) (A : Matrix m ι ℝ) {c : m → ℝ}
+    (hc : ∀ i, 0 < c i) (y : m → ℝ) (s : ι → ℝ) (Δ : ℝ) :
+    let S := {t | tramNorm A c t ≤ Δ}
+    let V := {q : (ι → ℝ) × (m → ℝ) |
+      Matrix.diagonal (fun i ↦ Real.sqrt (c i)) *ᵥ q.2 = A *ᵥ q.1 ∧
+      Real.sqrt ((∑ i, q.1 i ^ 2) + ∑ i, q.2 i ^ 2) ≤ Δ}
+    let M := fun q : (ι → ℝ) × (m → ℝ) ↦ mf q.1 + (1 / 2) * ∑ i, y i * (q.2 i) ^ 2
+    (s ∈ S ∧ IsMinOn (tramModel mf A c y) S s) ↔
+      ((s, tramSlackStep A c s) ∈ V ∧ IsMinOn M V (s, tramSlackStep A c s)) := by
+  dsimp only
+  have hfeas (t : ι → ℝ) :
+      (t, tramSlackStep A c t) ∈ {q : (ι → ℝ) × (m → ℝ) |
+        Matrix.diagonal (fun i ↦ Real.sqrt (c i)) *ᵥ q.2 = A *ᵥ q.1 ∧
+        Real.sqrt ((∑ i, q.1 i ^ 2) + ∑ i, q.2 i ^ 2) ≤ Δ} ↔ tramNorm A c t ≤ Δ := by
+    simp [tramSlackStep_unique A hc, tramNorm_eq_slackNorm A hc]
+  constructor
+  · intro ⟨hs, hmin⟩
+    refine ⟨(hfeas s).2 hs, isMinOn_iff.mpr ?_⟩
+    rintro ⟨t, v⟩ ⟨hv, hΔ⟩
+    obtain rfl := (tramSlackStep_unique A hc t v).1 hv
+    have ht := (tramNorm_eq_slackNorm A hc t).trans_le hΔ
+    simpa only [tramModel_eq_slackModel mf A hc] using (isMinOn_iff.mp hmin t ht)
+  · intro ⟨hs, hmin⟩
+    refine ⟨(hfeas s).1 hs, isMinOn_iff.mpr ?_⟩
+    intro t ht
+    simpa only [tramModel_eq_slackModel mf A hc] using
+      (isMinOn_iff.mp hmin (t, tramSlackStep A c t) ((hfeas t).2 ht))
+
+end TRAM
+
 end ConnGouldToint.Chapter13

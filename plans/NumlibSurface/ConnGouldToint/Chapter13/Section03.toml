@@ -22,7 +22,7 @@ source = "Conn–Gould–Toint, Theorem 13.3.1"
 
 [[node]]
 id = "corollary_13_3_2"
-source = "Conn–Gould–Toint, Corollary 13.3.2"
+source = "Conn–Gould–Toint, Corollary 13.3.2, including the clearance factor (13.3.19)"
 
 [[node]]
 id = "IsConstrainedBarrierEigenstep"

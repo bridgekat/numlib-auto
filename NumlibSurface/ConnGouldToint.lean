@@ -292,7 +292,9 @@ second-order stationarity on the active face. For the version-two run,
 forced expansion gives the same conclusion under scaled gradient convergence
 and uniform small-radius agreement for the uncorrected model.
 
-
+The TRAM slack elimination preserves the model value and the trust-region
+bound. The reduced model in (13.12.34) uses the trial displacement throughout,
+and (13.12.35) uses the radius in (13.12.33).
 
 Chapter 14 covers the quadratic penalty and first-order multiplier estimate. In (14.2.3),
 both derivatives in the stationarity condition are evaluated at the feasible point.

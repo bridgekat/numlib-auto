@@ -23,3 +23,11 @@ source = "Conn–Gould–Toint, Lemma 13.10.1"
 [[node]]
 id = "theorem_13_10_2"
 source = "Conn–Gould–Toint, Theorem 13.10.2"
+
+[[node]]
+id = "affineBarrierNormalFactor"
+source = "Conn–Gould–Toint, factor defined in (13.10.15)"
+
+[[node]]
+id = "affineBarrier_normalFactor_mul_sliceDistance_le"
+source = "Conn–Gould–Toint, (13.10.15)"

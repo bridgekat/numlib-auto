@@ -74,7 +74,7 @@ source = "Conn–Gould–Toint, (14.2.30)"
 
 [[node]]
 id = "lemma_14_2_2_iii"
-source = "Conn–Gould–Toint, Lemma 14.2.2(iii), (14.2.16)–(14.2.18)"
+source = "Conn–Gould–Toint, Lemma 14.2.2(iii), (14.2.16)–(14.2.18), including the small-penalty cutoff (14.2.32)"
 
 [[node]]
 id = "lemma_14_2_2_iv"

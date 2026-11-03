@@ -172,3 +172,39 @@ source = "Conn–Gould–Toint, (13.12.25) and Theorem 13.12.6, quantitative sca
 [[node]]
 id = "theorem_13_12_6_version2"
 source = "Conn–Gould–Toint, Theorem 13.12.6 for version-2 acceptance and forced expansion"
+
+[[node]]
+id = "tramSlackStep"
+source = "Conn–Gould–Toint, (13.12.28), (13.12.32)"
+
+[[node]]
+id = "tramCorrection"
+source = "Conn–Gould–Toint, (13.12.34)"
+
+[[node]]
+id = "tramModel"
+source = "Conn–Gould–Toint, corrected (13.12.34)"
+
+[[node]]
+id = "tramMetric"
+source = "Conn–Gould–Toint, (13.12.35)"
+
+[[node]]
+id = "tramNorm"
+source = "Conn–Gould–Toint, corrected (13.12.35)"
+
+[[node]]
+id = "tramSlackStep_unique"
+source = "Conn–Gould–Toint, elimination of the slack step in (13.12.32)"
+
+[[node]]
+id = "tramModel_eq_slackModel"
+source = "Conn–Gould–Toint, reduction from (13.12.31) to (13.12.34)"
+
+[[node]]
+id = "tramNorm_le_iff_exists_slack"
+source = "Conn–Gould–Toint, corrected equivalence of (13.12.33) and (13.12.35)"
+
+[[node]]
+id = "tramSubproblem_iff"
+source = "Conn–Gould–Toint, slack elimination from (13.12.31)–(13.12.33) to (13.12.34)–(13.12.35)"

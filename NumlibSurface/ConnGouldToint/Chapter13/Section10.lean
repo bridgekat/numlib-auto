@@ -54,13 +54,48 @@ noncomputable def affineBarrierAmbientDistance (x : ι → ℝ) : ℝ :=
 private noncomputable def movableBounds (w : ι → ℝ) : Finset ι :=
   open Classical in Finset.univ.filter fun i ↦ 0 < w i
 
+omit [Nonempty ι] in
+private theorem movableBounds_nonempty (w : ι → ℝ) (hw : ∃ i, 0 < w i) :
+    (movableBounds w).Nonempty := by
+  classical
+  obtain ⟨i, hi⟩ := hw
+  exact ⟨i, by simp [movableBounds, hi]⟩
+
 /-- The minimum in (13.10.10), after evaluating each hyperplane distance
 as in (13.10.13). Constant coordinates give no hyperplane in the slice. -/
 noncomputable def affineBarrierSliceDistance (w x : ι → ℝ) (hw : ∃ i, 0 < w i) : ℝ :=
-  (movableBounds w).inf' (by
-    classical
-    obtain ⟨i, hi⟩ := hw
-    exact ⟨i, by simp [movableBounds, hi]⟩) fun i ↦ x i / w i
+  (movableBounds w).inf' (movableBounds_nonempty w hw) fun i ↦ x i / w i
+
+/-- The geometric factor in (13.10.15) is the least positive length of a
+coordinate normal projected onto the equality nullspace. -/
+noncomputable def affineBarrierNormalFactor (w : ι → ℝ) (hw : ∃ i, 0 < w i) : ℝ :=
+  (movableBounds w).inf' (movableBounds_nonempty w hw) w
+
+/-- If a movable bound attains the ambient distance, (13.10.15) gives the
+linear lower comparison with the relative distance. -/
+theorem affineBarrier_normalFactor_mul_sliceDistance_le (w x : ι → ℝ) (hw : ∃ i, 0 < w i)
+    (hx : ∀ i, 0 < x i) (hunit : ∀ i, w i ≤ 1)
+    (hmovable : ∃ i, 0 < w i ∧ affineBarrierAmbientDistance x = x i) :
+    affineBarrierNormalFactor w hw ∈ Ioc (0 : ℝ) 1 ∧
+      affineBarrierNormalFactor w hw * affineBarrierSliceDistance w x hw ≤
+        affineBarrierAmbientDistance x := by
+  classical
+  obtain ⟨i, hi, hdist⟩ := hmovable
+  have him : i ∈ movableBounds w := by simp [movableBounds, hi]
+  have hpos : 0 < affineBarrierNormalFactor w hw := by
+    unfold affineBarrierNormalFactor
+    rw [Finset.lt_inf'_iff]
+    intro j hj
+    exact (Finset.mem_filter.mp (show j ∈ Finset.univ.filter _ from hj)).2
+  have hwle : affineBarrierNormalFactor w hw ≤ w i := Finset.inf'_le _ him
+  have hsle : affineBarrierSliceDistance w x hw ≤ x i / w i := Finset.inf'_le _ him
+  refine ⟨⟨hpos, hwle.trans (hunit i)⟩, ?_⟩
+  calc
+    _ ≤ affineBarrierNormalFactor w hw * (x i / w i) :=
+      mul_le_mul_of_nonneg_left hsle hpos.le
+    _ ≤ w i * (x i / w i) := mul_le_mul_of_nonneg_right hwle (div_nonneg (hx i).le hi.le)
+    _ = x i := mul_div_cancel₀ _ hi.ne'
+    _ = _ := hdist.symm
 
 /-- Lemma 13.10.1 in orthonormal slice coordinates. The weights are the
 projected normal lengths, so they are at most one. The distance comparison
