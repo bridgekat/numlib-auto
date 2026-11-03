@@ -594,6 +594,826 @@ theorem lemma_7_5_5 (H : E →ₗ[ℝ] E) (hH : H.IsSymmetric) (g : E) (k : ℕ)
       (hstrict 0 (Nat.zero_le k) (by simpa only [Nat.cast_zero] using hs)
         (by simpa only [Nat.cast_zero] using ht) hst)
 
+
+private theorem continuous_cgPath (H : E →ₗ[ℝ] E) (g : E) (k : ℕ) :
+    Continuous (cgPath H g k) := by
+  unfold cgPath
+  refine continuous_finsetSum _ fun j _ => ?_
+  apply Continuous.smul _ continuous_const
+  unfold cgPathWeight
+  exact (continuous_const.min (continuous_const.max (continuous_id.sub continuous_const))).mul
+    continuous_const
+
+private theorem cgPath_eq_zero (H : E →ₗ[ℝ] E) (g : E) (k : ℕ) :
+    cgPath H g k 0 = 0 := by
+  have hw (j : ℕ) : cgPathWeight j 0 = 0 := by
+    simp [cgPathWeight]
+  simp [cgPath, hw]
+
+private theorem cgPath_eq_iterate (H : E →ₗ[ℝ] E) (g : E) {k i : ℕ} (hi : i ≤ k + 1) :
+    cgPath H g k (i : ℝ) = (CG.iterate H (-g) 0 i).x := by
+  by_cases hik : i ≤ k
+  · rw [cgPath_eq_segment H g hik (t := (i : ℝ)) (by simp), sub_self, zero_smul, add_zero]
+  · have h : i = k + 1 := by omega
+    subst i
+    push_cast
+    rw [cgPath_eq_segment H g le_rfl (by simp), add_sub_cancel_left, one_smul, add_sub_cancel]
+
+private theorem cgPrefixCurvature (H : E →ₗ[ℝ] E) (g : E) {k : ℕ}
+    (hpos : ∀ i ≤ k, 0 < ⟪H (CG.iterate H (-g) 0 i).p, (CG.iterate H (-g) 0 i).p⟫) :
+    ∀ i ≤ k, 0 < ‖(CG.iterate H (-g) 0 i).r‖ ∧ 0 < CG.alpha H (CG.iterate H (-g) 0 i) := by
+  intro i hi
+  have hr : (CG.iterate H (-g) 0 i).r ≠ 0 := by
+    intro hz
+    have hp := CG.direction_eq_zero_of_residual_eq_zero H (-g) 0 hz
+    simpa [hp] using hpos i hi
+  have hn := norm_pos_iff.mpr hr
+  refine ⟨hn, ?_⟩
+  rw [CG.alpha, real_inner_self_eq_norm_sq]
+  exact div_pos (sq_pos_of_pos hn) (hpos i hi)
+
+private theorem cgPathCoefficient_nonneg (H : E →ₗ[ℝ] E) (g : E) {k : ℕ}
+    (hpos : ∀ i ≤ k, 0 < ⟪H (CG.iterate H (-g) 0 i).p, (CG.iterate H (-g) 0 i).p⟫)
+    (i : ℕ) (t : ℝ) : 0 ≤ cgPathCoefficient H g k i t := by
+  unfold cgPathCoefficient
+  apply div_nonneg _ (norm_nonneg _)
+  apply Finset.sum_nonneg
+  intro j hj
+  exact mul_nonneg (mul_nonneg (le_min zero_le_one (le_max_left _ _))
+    (cgPrefixCurvature H g hpos j (Finset.mem_Icc.mp hj).2).2.le) (sq_nonneg _)
+
+private theorem cgPathCoefficient_eq_positivePart (H : E →ₗ[ℝ] E) (hH : H.IsSymmetric)
+    (g : E) {k : ℕ}
+    (hpos : ∀ i ≤ k, 0 < ⟪H (CG.iterate H (-g) 0 i).p, (CG.iterate H (-g) 0 i).p⟫)
+    {i : ℕ} (hi : i ≤ k) (t : ℝ) :
+    cgPathCoefficient H g k i t =
+      max 0 (-⟪g, cgPath H g k t⟫ - -⟪g, cgPath H g k (i : ℝ)⟫) /
+        ‖(CG.iterate H (-g) 0 i).r‖ := by
+  let a (j : ℕ) (u : ℝ) := (cgPathWeight j u * CG.alpha H (CG.iterate H (-g) 0 j)) *
+    ‖(CG.iterate H (-g) 0 j).r‖ ^ 2
+  let F (u : ℝ) := ∑ j ∈ Finset.range (k + 1), a j u
+  have hg : 0 < ‖g‖ := by
+    simpa [CG.iterate, CG.init] using (cgPrefixCurvature H g hpos 0 (Nat.zero_le _)).1
+  have hF (u : ℝ) : -⟪g, cgPath H g k u⟫ = F u := by
+    rw [((lemma_7_5_5 H hH g k hpos).2.1 u).1, cgPathCoefficient]
+    simp only [← Finset.Ico_add_one_right_eq_Icc, Nat.Ico_zero_eq_range]
+    change ‖g‖ * (F u / ‖(CG.iterate H (-g) 0 0).r‖) = F u
+    have hr : ‖(CG.iterate H (-g) 0 0).r‖ = ‖g‖ := by simp [CG.iterate, CG.init]
+    rw [hr, ← mul_div_assoc, mul_comm ‖g‖, mul_div_cancel_right₀ _ hg.ne']
+  have hz (j : ℕ) {u : ℝ} (h : u ≤ j) : a j u = 0 := by
+    simp [a, cgPathWeight, max_eq_left (sub_nonpos.mpr h)]
+  by_cases ht : t ≤ i
+  · rw [cgPathCoefficient, hF, hF]
+    have hmono : F t ≤ F i := by
+      apply Finset.sum_le_sum
+      intro j hj
+      exact mul_le_mul_of_nonneg_right
+        (mul_le_mul_of_nonneg_right (cgPathWeight_mono j ht)
+          (cgPrefixCurvature H g hpos j (Nat.le_of_lt_succ (Finset.mem_range.mp hj))).2.le)
+        (sq_nonneg _)
+    rw [max_eq_left (sub_nonpos.mpr hmono)]
+    have hs : (∑ j ∈ Finset.Icc i k, a j t) = 0 :=
+      Finset.sum_eq_zero fun j hj => hz j (ht.trans (Nat.cast_le.mpr (Finset.mem_Icc.mp hj).1))
+    change (∑ j ∈ Finset.Icc i k, a j t) / _ = 0 / _
+    rw [hs]
+  · have hti : (i : ℝ) ≤ t := le_of_not_ge ht
+    have hfull (j : ℕ) (hj : j < i) : a j t = a j i := by
+      have hji : (j : ℝ) + 1 ≤ i := by exact_mod_cast Nat.succ_le_of_lt hj
+      have hw {u : ℝ} (hu : (j : ℝ) + 1 ≤ u) : cgPathWeight j u = 1 :=
+        min_eq_left ((by linarith : 1 ≤ u - j).trans (le_max_right _ _))
+      unfold a
+      rw [hw (hji.trans hti), hw hji]
+    have hFi : F i = ∑ j ∈ Finset.range i, a j i := by
+      symm
+      exact Finset.sum_subset (Finset.range_mono (Nat.le_succ_of_le hi)) fun j _ hj =>
+        hz j (Nat.cast_le.mpr (Nat.le_of_not_lt (fun h => hj (Finset.mem_range.mpr h))))
+    have hsplit : (∑ j ∈ Finset.Icc i k, a j t) = F t - F i := by
+      rw [← Finset.Ico_add_one_right_eq_Icc]
+      change (∑ j ∈ Finset.Ico i k.succ, a j t) = F t - F i
+      rw [Finset.sum_Ico_eq_sub (fun j => a j t) (Nat.le_succ_of_le hi), hFi]
+      congr 1
+      exact Finset.sum_congr rfl fun j hj => hfull j (Finset.mem_range.mp hj)
+    rw [hF, hF, cgPathCoefficient]
+    change (∑ j ∈ Finset.Icc i k, a j t) / _ = max 0 (F t - F i) / _
+    have hnn : 0 ≤ ∑ j ∈ Finset.Icc i k, a j t := by
+      apply Finset.sum_nonneg
+      intro j hj
+      exact mul_nonneg (mul_nonneg (le_min zero_le_one (le_max_left _ _))
+        (cgPrefixCurvature H g hpos j (Finset.mem_Icc.mp hj).2).2.le) (sq_nonneg _)
+    rw [← hsplit, max_eq_right hnn]
+
+/-- Lemma 7.5.7 on the two CG prefixes. The linear and residual comparisons
+are the shifted-system estimates (7.5.23) and (7.5.26) at the earlier iterates.
+The proof compares cumulative linear terms at each integer breakpoint. -/
+theorem lemma_7_5_7 (H : E →ₗ[ℝ] E) (hH : H.IsSymmetric) (g : E) (k : ℕ) (μ : ℝ)
+    (hpos : ∀ i ≤ k, 0 < ⟪H (CG.iterate H (-g) 0 i).p, (CG.iterate H (-g) 0 i).p⟫)
+    (hshiftPos : let A := H + μ • (1 : E →ₗ[ℝ] E)
+      ∀ i ≤ k, 0 < ⟪A (CG.iterate A (-g) 0 i).p, (CG.iterate A (-g) 0 i).p⟫)
+    (hlinear : let A := H + μ • (1 : E →ₗ[ℝ] E)
+      ∀ i, 0 < i → i ≤ k + 1 →
+        -⟪g, (CG.iterate A (-g) 0 i).x⟫ < -⟪g, (CG.iterate H (-g) 0 i).x⟫)
+    (hresidual : let A := H + μ • (1 : E →ₗ[ℝ] E)
+      ∀ i, 0 < i → i ≤ k → ‖(CG.iterate A (-g) 0 i).r‖ < ‖(CG.iterate H (-g) 0 i).r‖) :
+    let A := H + μ • (1 : E →ₗ[ℝ] E)
+    ∃ t ∈ Set.Ico 0 ((k : ℝ) + 1), -⟪g, (CG.iterate A (-g) 0 (k + 1)).x⟫ =
+      -⟪g, cgPath H g k t⟫ ∧
+      ∀ i ≤ k, cgPathCoefficient H g k i t ≤ cgPathCoefficient A g k i ((k : ℝ) + 1) ∧
+        (0 < i → cgPathCoefficient H g k i t < cgPathCoefficient A g k i ((k : ℝ) + 1)) := by
+  let A := H + μ • (1 : E →ₗ[ℝ] E)
+  have hA : A.IsSymmetric := hH.add (LinearMap.IsSymmetric.smul (by simp) LinearMap.IsSymmetric.one)
+  let F (t : ℝ) := -⟪g, cgPath H g k t⟫
+  let G (t : ℝ) := -⟪g, cgPath A g k t⟫
+  let K : ℝ := (k : ℝ) + 1
+  have hK : 0 < K := by dsimp [K]; positivity
+  have hf0 : F 0 = 0 := by simp [F, cgPath_eq_zero]
+  have hg0 : G 0 = 0 := by simp [G, cgPath_eq_zero]
+  have hfmono : StrictMonoOn F (Set.Icc 0 K) := (lemma_7_5_5 H hH g k hpos).2.2.1
+  have hgmono : StrictMonoOn G (Set.Icc 0 K) := (lemma_7_5_5 A hA g k hshiftPos).2.2.1
+  have hgpos : G 0 < G K := hgmono ⟨le_rfl, hK.le⟩ ⟨hK.le, le_rfl⟩ hK
+  have hcast (B : E →ₗ[ℝ] E) : cgPath B g k K = (CG.iterate B (-g) 0 (k + 1)).x := by
+    simpa [K] using cgPath_eq_iterate B g (k := k) (i := k + 1) le_rfl
+  have htop : G K < F K := by
+    dsimp only [G, F]
+    rw [hcast A, hcast H]
+    exact hlinear (k + 1) (Nat.succ_pos _) le_rfl
+  have hc : Continuous F := (continuous_const.inner (continuous_cgPath H g k)).neg
+  obtain ⟨t, ht, hmatch⟩ := intermediate_value_Icc hK.le hc.continuousOn
+    (show G K ∈ Set.Icc (F 0) (F K) from ⟨by linarith, htop.le⟩)
+  have htK : t < K := lt_of_le_of_ne ht.2 fun he => htop.ne (by rw [he] at hmatch; exact hmatch.symm)
+  refine ⟨t, ⟨ht.1, htK⟩, ?_, ?_⟩
+  · change -⟪g, (CG.iterate A (-g) 0 (k + 1)).x⟫ = F t
+    rw [hmatch]
+    exact congrArg (fun z : E => -⟪g, z⟫) (hcast A).symm
+  intro i hi
+  rw [cgPathCoefficient_eq_positivePart H hH g hpos hi,
+    cgPathCoefficient_eq_positivePart A hA g hshiftPos hi]
+  change max 0 (F t - F i) / ‖(CG.iterate H (-g) 0 i).r‖ ≤
+    max 0 (G K - G i) / ‖(CG.iterate A (-g) 0 i).r‖ ∧
+    (0 < i → max 0 (F t - F i) / ‖(CG.iterate H (-g) 0 i).r‖ <
+      max 0 (G K - G i) / ‖(CG.iterate A (-g) 0 i).r‖)
+  rw [hmatch]
+  by_cases hi0 : i = 0
+  · subst i
+    simp [hf0, hg0, CG.iterate, CG.init]
+  have hip := Nat.pos_of_ne_zero hi0
+  have hFi : G i < F i := by
+    dsimp only [G, F]
+    rw [cgPath_eq_iterate A g (Nat.le_succ_of_le hi),
+      cgPath_eq_iterate H g (Nat.le_succ_of_le hi)]
+    exact hlinear i hip (Nat.le_succ_of_le hi)
+  have hiK : (i : ℝ) < K := by dsimp [K]; exact_mod_cast Nat.lt_succ_of_le hi
+  have hGi : G i < G K := hgmono ⟨Nat.cast_nonneg _, hiK.le⟩ ⟨hK.le, le_rfl⟩ hiK
+  have hn : 0 < ‖(CG.iterate H (-g) 0 i).r‖ := (cgPrefixCurvature H g hpos i hi).1
+  have ha : 0 < ‖(CG.iterate A (-g) 0 i).r‖ := (cgPrefixCurvature A g hshiftPos i hi).1
+  have hnum : max 0 (G K - F i) < max 0 (G K - G i) := by
+    rw [max_eq_right (sub_nonneg.mpr hGi.le)]
+    exact max_lt (sub_pos.mpr hGi) (sub_lt_sub_left hFi _)
+  have hd := (div_lt_div_of_pos_right hnum hn).trans_le
+    (div_le_div_of_nonneg_left (le_max_left _ _) ha (hresidual i hip hi).le)
+  exact ⟨hd.le, fun _ => hd⟩
+
+
+/-- Lemma 7.5.8 on the two CG prefixes. The endpoint norm comparison is
+(7.5.24). Equal step norm identifies a unique unshifted trial, whose linear
+decrease is at least as large as the shifted iterate's. -/
+theorem lemma_7_5_8 (H : E →ₗ[ℝ] E) (hH : H.IsSymmetric) (g : E) (k : ℕ) (μ : ℝ)
+    (hpos : ∀ i ≤ k, 0 < ⟪H (CG.iterate H (-g) 0 i).p, (CG.iterate H (-g) 0 i).p⟫)
+    (hshiftPos : let A := H + μ • (1 : E →ₗ[ℝ] E)
+      ∀ i ≤ k, 0 < ⟪A (CG.iterate A (-g) 0 i).p, (CG.iterate A (-g) 0 i).p⟫)
+    (hlinear : let A := H + μ • (1 : E →ₗ[ℝ] E)
+      ∀ i, 0 < i → i ≤ k + 1 →
+        -⟪g, (CG.iterate A (-g) 0 i).x⟫ < -⟪g, (CG.iterate H (-g) 0 i).x⟫)
+    (hresidual : let A := H + μ • (1 : E →ₗ[ℝ] E)
+      ∀ i, 0 < i → i ≤ k → ‖(CG.iterate A (-g) 0 i).r‖ < ‖(CG.iterate H (-g) 0 i).r‖)
+    (hnorm : let A := H + μ • (1 : E →ₗ[ℝ] E)
+      ‖(CG.iterate A (-g) 0 (k + 1)).x‖ < ‖(CG.iterate H (-g) 0 (k + 1)).x‖) :
+    let A := H + μ • (1 : E →ₗ[ℝ] E)
+    ∃! t, t ∈ Set.Ico 0 ((k : ℝ) + 1) ∧
+      ‖cgPath H g k t‖ = ‖(CG.iterate A (-g) 0 (k + 1)).x‖ ∧
+      -⟪g, (CG.iterate A (-g) 0 (k + 1)).x⟫ ≤ -⟪g, cgPath H g k t⟫ ∧
+      (0 < k → -⟪g, (CG.iterate A (-g) 0 (k + 1)).x⟫ < -⟪g, cgPath H g k t⟫) := by
+  let A := H + μ • (1 : E →ₗ[ℝ] E)
+  let K : ℝ := (k : ℝ) + 1
+  have hA : A.IsSymmetric :=
+    hH.add (LinearMap.IsSymmetric.smul (by simp) LinearMap.IsSymmetric.one)
+  obtain ⟨t, ht, hlin, hcoef⟩ := lemma_7_5_7 H hH g k μ hpos hshiftPos hlinear hresidual
+  let F (t : ℝ) := ‖cgPath H g k t‖
+  let N := ‖(CG.iterate A (-g) 0 (k + 1)).x‖
+  have hcast (B : E →ₗ[ℝ] E) : cgPath B g k K = (CG.iterate B (-g) 0 (k + 1)).x := by
+    simpa [K] using cgPath_eq_iterate B g (k := k) (i := k + 1) le_rfl
+  have htop : N < F K := by simpa only [F, N, hcast H] using hnorm
+  have hF := lemma_7_5_5 H hH g k hpos
+  have hG := lemma_7_5_5 A hA g k hshiftPos
+  have hsq (i : ℕ) (hi : i ∈ Finset.range (k + 1)) :
+      cgPathCoefficient H g k i t ^ 2 ≤ cgPathCoefficient A g k i K ^ 2 :=
+    pow_le_pow_left₀ (cgPathCoefficient_nonneg H g hpos i t)
+      (hcoef i (Nat.le_of_lt_succ (Finset.mem_range.mp hi))).1 2
+  have hsum : F t ^ 2 ≤ N ^ 2 := by
+    change ‖cgPath H g k t‖ ^ 2 ≤ ‖(CG.iterate A (-g) 0 (k + 1)).x‖ ^ 2
+    rw [← hcast A, (hF.2.1 t).2, (hG.2.1 K).2]
+    exact Finset.sum_le_sum hsq
+  have hlt (hk : 0 < k) : F t < N := by
+    apply (pow_lt_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).mp
+    change ‖cgPath H g k t‖ ^ 2 < ‖(CG.iterate A (-g) 0 (k + 1)).x‖ ^ 2
+    rw [← hcast A, (hF.2.1 t).2, (hG.2.1 K).2]
+    refine Finset.sum_lt_sum hsq ⟨1, Finset.mem_range.mpr (by omega), ?_⟩
+    exact (pow_lt_pow_iff_left₀ (cgPathCoefficient_nonneg H g hpos 1 t)
+      (cgPathCoefficient_nonneg A g hshiftPos 1 K) two_ne_zero).mpr
+      ((hcoef 1 hk).2 (by decide))
+  have hle : F t ≤ N :=
+    (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).mp hsum
+  obtain ⟨u, hu, huN⟩ := intermediate_value_Icc ht.2.le
+    (continuous_cgPath H g k).norm.continuousOn
+    (show N ∈ Set.Icc (F t) (F K) from ⟨hle, htop.le⟩)
+  have huK : u < K := lt_of_le_of_ne hu.2 fun he => htop.ne (by rw [he] at huN; exact huN.symm)
+  have htI : t ∈ Set.Icc 0 K := ⟨ht.1, ht.2.le⟩
+  have huI : u ∈ Set.Icc 0 K := ⟨ht.1.trans hu.1, hu.2⟩
+  have htu (hk : 0 < k) : t < u := lt_of_le_of_ne hu.1 fun he => (hlt hk).ne (he ▸ huN)
+  refine ⟨u, ⟨⟨huI.1, huK⟩, huN, ?_, ?_⟩, ?_⟩
+  · rw [hlin]
+    exact hF.2.2.1.monotoneOn htI huI hu.1
+  · intro hk
+    rw [hlin]
+    exact hF.2.2.1 htI huI (htu hk)
+  · intro v hv
+    exact hF.2.2.2.injOn ⟨hv.1.1, hv.1.2.le⟩ huI (hv.2.1.trans huN.symm)
+
+
+private theorem cgInnerResidualIterate (H : E →ₗ[ℝ] E) (hH : H.IsSymmetric) (g : E)
+    {k : ℕ} (hpos : ∀ i ≤ k, 0 < ⟪H (CG.iterate H (-g) 0 i).p, (CG.iterate H (-g) 0 i).p⟫)
+    {i j : ℕ} (hij : j ≤ i) (hi : i ≤ k + 1) :
+    ⟪(CG.iterate H (-g) 0 i).r, (CG.iterate H (-g) 0 j).x⟫ = 0 := by
+  rw [cg_iterate_eq_direction_sum]
+  rw [inner_sum]
+  apply Finset.sum_eq_zero
+  intro m hm
+  have hmj := Finset.mem_range.mp hm
+  have hmk : m ≤ k := by omega
+  have hcurv (l : ℕ) (hl : l < k + 1) :
+      0 < RCLike.re (inner ℝ (H (CG.iterate H (-g) 0 l).p) (CG.iterate H (-g) 0 l).p) :=
+    hpos l (Nat.le_of_lt_succ hl)
+  rw [cg_direction_eq_residual_sum H g m
+    (norm_pos_iff.mp (cgPrefixCurvature H g hpos m hmk).1)]
+  simp only [real_inner_smul_right, inner_sum]
+  have hsum : (∑ l ∈ Finset.range (m + 1), (‖(CG.iterate H (-g) 0 l).r‖ ^ 2)⁻¹ *
+      ⟪(CG.iterate H (-g) 0 i).r, (CG.iterate H (-g) 0 l).r⟫) = 0 := by
+    apply Finset.sum_eq_zero
+    intro l hl
+    have hlm := Finset.mem_range.mp hl
+    rw [CG.inner_residual_eq_zero_of_pos_prefix (-g) 0 hH hcurv hi (by omega) (by omega),
+      mul_zero]
+  rw [hsum, mul_zero, mul_zero]
+
+private theorem cgInnerResidualDirectionSelf (H : E →ₗ[ℝ] E) (hH : H.IsSymmetric) (g : E)
+    {k : ℕ} (hpos : ∀ i ≤ k, 0 < ⟪H (CG.iterate H (-g) 0 i).p, (CG.iterate H (-g) 0 i).p⟫)
+    {i : ℕ} (hi : i ≤ k) :
+    ⟪(CG.iterate H (-g) 0 i).r, (CG.iterate H (-g) 0 i).p⟫ =
+      ‖(CG.iterate H (-g) 0 i).r‖ ^ 2 := by
+  have hn := (cgPrefixCurvature H g hpos i hi).1
+  have hcurv (l : ℕ) (hl : l < k + 1) :
+      0 < RCLike.re (inner ℝ (H (CG.iterate H (-g) 0 l).p) (CG.iterate H (-g) 0 l).p) :=
+    hpos l (Nat.le_of_lt_succ hl)
+  rw [cg_direction_eq_residual_sum H g i (norm_pos_iff.mp hn),
+    real_inner_smul_right, inner_sum, Finset.sum_range_succ]
+  simp only [real_inner_smul_right]
+  have hsum : (∑ l ∈ Finset.range i, (‖(CG.iterate H (-g) 0 l).r‖ ^ 2)⁻¹ *
+      ⟪(CG.iterate H (-g) 0 i).r, (CG.iterate H (-g) 0 l).r⟫) = 0 := by
+    apply Finset.sum_eq_zero
+    intro l hl
+    have hli := Finset.mem_range.mp hl
+    rw [CG.inner_residual_eq_zero_of_pos_prefix (-g) 0 hH hcurv (by omega) (by omega) (by omega),
+      mul_zero]
+  rw [hsum, zero_add, real_inner_self_eq_norm_sq, inv_mul_cancel₀ (sq_pos_of_pos hn).ne', mul_one]
+
+/-- The radial derivative of the quadratic is nonpositive along the positive
+curvature CG prefix, as used in the proof of (7.5.47). -/
+theorem cgPath_inner_gradient_nonpos (H : E →ₗ[ℝ] E) (hH : H.IsSymmetric) (g : E)
+    {k : ℕ} (hpos : ∀ i ≤ k, 0 < ⟪H (CG.iterate H (-g) 0 i).p, (CG.iterate H (-g) 0 i).p⟫)
+    {t : ℝ} (ht : t ∈ Set.Ico 0 ((k : ℝ) + 1)) :
+    ⟪g + H (cgPath H g k t), cgPath H g k t⟫ ≤ 0 := by
+  let j := ⌊t⌋₊
+  let u := t - (j : ℝ)
+  let x := (CG.iterate H (-g) 0 j).x
+  let y := (CG.iterate H (-g) 0 (j + 1)).x
+  let r := (CG.iterate H (-g) 0 j).r
+  let z := (CG.iterate H (-g) 0 (j + 1)).r
+  have hj : j ≤ k := Nat.lt_succ_iff.mp ((Nat.floor_lt ht.1).mpr (by push_cast; exact ht.2))
+  have htj : t ∈ Set.Icc (j : ℝ) ((j : ℝ) + 1) :=
+    ⟨Nat.floor_le ht.1, (Nat.lt_floor_add_one t).le⟩
+  have hu : 0 ≤ u := sub_nonneg.mpr htj.1
+  have hu₁ : 0 ≤ 1 - u := by dsimp [u]; linarith [htj.2]
+  have hx : cgPath H g k t = (1 - u) • x + u • y := by
+    rw [cgPath_eq_segment H g hj htj]
+    change x + u • (y - x) = (1 - u) • x + u • y
+    rw [smul_sub]
+    have he : (1 - u) • x = x - u • x := by
+      calc
+        (1 - u) • x = (1 : ℝ) • x - u • x := sub_smul _ _ _
+        _ = _ := by rw [one_smul]
+    rw [he]
+    abel
+  have hr : r = -g - H x := CG.residual_eq H (-g) 0 j
+  have hz : z = -g - H y := CG.residual_eq H (-g) 0 (j + 1)
+  have hres : -g - H (cgPath H g k t) = (1 - u) • r + u • z := by
+    rw [hx, map_add, map_smul, map_smul, hr, hz, smul_sub, smul_sub]
+    have hsum : (1 - u) • (-g) + u • (-g) = -g := by rw [← add_smul, sub_add_cancel, one_smul]
+    calc
+      _ = (1 - u) • (-g) + u • (-g) - ((1 - u) • H x + u • H y) := by rw [hsum]
+      _ = _ := by abel
+  have hrx : ⟪r, x⟫ = 0 := cgInnerResidualIterate H hH g hpos le_rfl (by omega)
+  have hzx : ⟪z, x⟫ = 0 := cgInnerResidualIterate H hH g hpos (by omega) (by omega)
+  have hzy : ⟪z, y⟫ = 0 := cgInnerResidualIterate H hH g hpos le_rfl (by omega)
+  have hry : 0 ≤ ⟪r, y⟫ := by
+    change 0 ≤ ⟪r, (CG.iterate H (-g) 0 (j + 1)).x⟫
+    rw [CG.iterate_succ_x, inner_add_right, real_inner_smul_right]
+    change 0 ≤ ⟪r, x⟫ + CG.alpha H (CG.iterate H (-g) 0 j) *
+      ⟪r, (CG.iterate H (-g) 0 j).p⟫
+    rw [hrx, zero_add, cgInnerResidualDirectionSelf H hH g hpos hj]
+    exact mul_nonneg (cgPrefixCurvature H g hpos j hj).2.le (sq_nonneg _)
+  have hinner : 0 ≤ ⟪-g - H (cgPath H g k t), cgPath H g k t⟫ := by
+    calc
+      _ ≤ ((1 - u) * u) * ⟪r, y⟫ := mul_nonneg (mul_nonneg hu₁ hu) hry
+      _ = _ := by
+        nth_rw 1 [hres]
+        rw [hx]
+        simp only [inner_add_left, inner_add_right, real_inner_smul_left,
+          real_inner_smul_right, hrx, hzx, hzy]
+        ring
+  rw [inner_sub_left, inner_neg_left] at hinner
+  rw [inner_add_left]
+  linarith
+
+/-- The boundary case of Theorem 7.5.9 once the positive-curvature prefixes
+supply the comparisons from Lemma 7.5.6. The algorithm returns the unique
+point on that prefix with the exact minimizer's norm. -/
+theorem theorem_7_5_9_boundary (H : E →L[ℝ] E)
+    (hH : (H : E →ₗ[ℝ] E).IsPositive) (g : E) (k : ℕ) (μ : ℝ)
+    (hpos : ∀ i ≤ k, 0 < ⟪H (CG.iterate H.toLinearMap (-g) 0 i).p,
+      (CG.iterate H.toLinearMap (-g) 0 i).p⟫)
+    (hshiftPos : let A := H.toLinearMap + μ • (1 : E →ₗ[ℝ] E)
+      ∀ i ≤ k, 0 < ⟪A (CG.iterate A (-g) 0 i).p, (CG.iterate A (-g) 0 i).p⟫)
+    (hlinear : let A := H.toLinearMap + μ • (1 : E →ₗ[ℝ] E)
+      ∀ i, 0 < i → i ≤ k + 1 →
+        -⟪g, (CG.iterate A (-g) 0 i).x⟫ < -⟪g, (CG.iterate H.toLinearMap (-g) 0 i).x⟫)
+    (hresidual : let A := H.toLinearMap + μ • (1 : E →ₗ[ℝ] E)
+      ∀ i, 0 < i → i ≤ k →
+        ‖(CG.iterate A (-g) 0 i).r‖ < ‖(CG.iterate H.toLinearMap (-g) 0 i).r‖)
+    (hnorm : let A := H.toLinearMap + μ • (1 : E →ₗ[ℝ] E)
+      ‖(CG.iterate A (-g) 0 (k + 1)).x‖ < ‖(CG.iterate H.toLinearMap (-g) 0 (k + 1)).x‖)
+    {t : ℝ} (ht : t ∈ Set.Ico 0 ((k : ℝ) + 1))
+    (htnorm : ‖cgPath H.toLinearMap g k t‖ =
+      ‖(CG.iterate (H.toLinearMap + μ • (1 : E →ₗ[ℝ] E)) (-g) 0 (k + 1)).x‖) :
+    Subproblem.quadModel g H (cgPath H.toLinearMap g k t) ≤ (1 / 2) *
+      Subproblem.quadModel g H
+        (CG.iterate (H.toLinearMap + μ • (1 : E →ₗ[ℝ] E)) (-g) 0 (k + 1)).x := by
+  obtain ⟨u, hu, _⟩ := lemma_7_5_8 H.toLinearMap hH.isSymmetric g k μ hpos hshiftPos
+    hlinear hresidual hnorm
+  have hm := (lemma_7_5_5 H.toLinearMap hH.isSymmetric g k hpos).2.2.2
+  have htu := hm.injOn ⟨ht.1, ht.2.le⟩ ⟨hu.1.1, hu.1.2.le⟩ (htnorm.trans hu.2.1.symm)
+  let x := cgPath H.toLinearMap g k t
+  let y := (CG.iterate (H.toLinearMap + μ • (1 : E →ₗ[ℝ] E)) (-g) 0 (k + 1)).x
+  have hlin : ⟪g, x⟫ ≤ ⟪g, y⟫ := by
+    apply neg_le_neg_iff.mp
+    change -⟪g, y⟫ ≤ -⟪g, cgPath H.toLinearMap g k t⟫
+    rw [htu]
+    exact hu.2.2.1
+  have hrad := cgPath_inner_gradient_nonpos H.toLinearMap hH.isSymmetric g hpos ht
+  change ⟪g + H x, x⟫ ≤ 0 at hrad
+  rw [inner_add_left, real_inner_comm x (H x)] at hrad
+  have hy := hH.inner_nonneg_left y
+  change 0 ≤ ⟪H y, y⟫ at hy
+  rw [real_inner_comm y (H y)] at hy
+  change Subproblem.quadModel g H x ≤ (1 / 2) * Subproblem.quadModel g H y
+  unfold Subproblem.quadModel
+  linarith
+
+/-- The stationary stop in Theorem 7.5.9. Convexity makes the returned
+stationary iterate globally optimal, so its decrease is at least one half
+of the decrease at any trust-region minimizer. -/
+theorem theorem_7_5_9_stationary (H : E →L[ℝ] E)
+    (hH : (H : E →ₗ[ℝ] E).IsPositive) (g x y : E) (hx : H x = -g) :
+    Subproblem.quadModel g H x ≤ (1 / 2) * Subproblem.quadModel g H y := by
+  have hopt (v : E) : Subproblem.quadModel g H x ≤ Subproblem.quadModel g H v := by
+    have h := hH.inner_nonneg_left (v - x)
+    change 0 ≤ ⟪H (v - x), v - x⟫ at h
+    have hsym : ⟪x, H v⟫ = -⟪g, v⟫ := by
+      calc
+        _ = ⟪H x, v⟫ := (hH.isSymmetric x v).symm
+        _ = _ := by rw [hx, inner_neg_left]
+    rw [real_inner_comm (v - x) (H (v - x)), map_sub, inner_sub_left, inner_sub_right,
+      inner_sub_right, hsym] at h
+    rw [hx, inner_neg_right, inner_neg_right, real_inner_comm g v, real_inner_comm g x] at h
+    unfold Subproblem.quadModel
+    rw [hx, inner_neg_right, real_inner_comm g x]
+    linarith
+  have hzero := hopt 0
+  rw [Subproblem.quadModel_zero] at hzero
+  linarith [hopt y]
+
+
+private theorem cgShiftSubspace (H : E →ₗ[ℝ] E) (b : E) (μ : ℝ) (m : ℕ) :
+    Krylov.subspace (H + μ • (1 : E →ₗ[ℝ] E)) b m = Krylov.subspace H b m := by
+  have he : H + μ • (1 : E →ₗ[ℝ] E) = H + algebraMap ℝ (Module.End ℝ E) μ := by
+    ext x
+    simp [Module.algebraMap_end_apply]
+  rw [he, Krylov.subspace_add_algebraMap]
+
+private theorem cgShiftGrade [FiniteDimensional ℝ E] (H : E →ₗ[ℝ] E) (b : E) (μ : ℝ) :
+    Krylov.grade (H + μ • (1 : E →ₗ[ℝ] E)) b = Krylov.grade H b := by
+  have he : H + μ • (1 : E →ₗ[ℝ] E) = H + algebraMap ℝ (Module.End ℝ E) μ := by
+    ext x
+    simp [Module.algebraMap_end_apply]
+  rw [he, Krylov.grade_add_algebraMap]
+
+private theorem cgShiftArnoldiVec (H : E →ₗ[ℝ] E) (b : E) (μ : ℝ) (j : ℕ) :
+    Arnoldi.vec (H + μ • (1 : E →ₗ[ℝ] E)) b j = Arnoldi.vec H b j := by
+  induction j with
+  | zero =>
+    by_cases hb : b = 0
+    · have hz (A : E →ₗ[ℝ] E) : Arnoldi.vec A b 0 = 0 := by
+        rw [Arnoldi.vec_eq_zero_iff_pow_apply_mem, hb]
+        simp
+      rw [hz, hz]
+    · rw [Arnoldi.vec_zero _ _ hb, Arnoldi.vec_zero _ _ hb]
+  | succ j ih =>
+    have hp (y : E) :
+        ((Krylov.subspace (H + μ • (1 : E →ₗ[ℝ] E)) b (j + 1)).starProjection y : E) =
+          (Krylov.subspace H b (j + 1)).starProjection y := by
+      let z : E := (Krylov.subspace H b (j + 1)).starProjection y
+      have he := cgShiftSubspace H b μ (j + 1)
+      apply Submodule.eq_starProjection_of_mem_orthogonal
+      · exact Eq.mpr (congrArg (fun K : Submodule ℝ E => z ∈ K) he)
+          (Submodule.starProjection_apply_mem _ _)
+      · exact Eq.mpr (congrArg (fun K : Submodule ℝ E => y - z ∈ Kᗮ) he)
+          (Submodule.sub_starProjection_mem_orthogonal (K := Krylov.subspace H b (j + 1)) y)
+    have hv : ((Krylov.subspace H b (j + 1)).starProjection (Arnoldi.vec H b j) : E) =
+        Arnoldi.vec H b j :=
+      Submodule.starProjection_mem_subspace_eq_self
+        ⟨_, Arnoldi.vec_mem_subspace H b j⟩
+    have hw : Arnoldi.w (H + μ • (1 : E →ₗ[ℝ] E)) b j = Arnoldi.w H b j := by
+      rw [Arnoldi.w_eq_sub_starProjection, Arnoldi.w_eq_sub_starProjection, hp, ih,
+        LinearMap.add_apply, LinearMap.smul_apply, Module.End.one_apply,
+        map_add, map_smul, hv]
+      abel
+    rw [Arnoldi.vec_succ_eq, Arnoldi.vec_succ_eq, hw]
+
+private theorem cgShiftCoercive (H : E →ₗ[ℝ] E) (hH : H.IsSymmetricCoercive)
+    (μ : ℝ) (hμ : 0 < μ) : (H + μ • (1 : E →ₗ[ℝ] E)).IsSymmetricCoercive := by
+  refine ⟨hH.isSymmetric.add (LinearMap.IsSymmetric.smul (by simp) LinearMap.IsSymmetric.one), ?_⟩
+  obtain ⟨C, hC, hbound⟩ := hH.isCoercive
+  refine ⟨C, hC, fun x => ?_⟩
+  have hx := hbound x
+  simp only [LinearMap.add_apply, LinearMap.smul_apply, Module.End.one_apply, inner_add_left,
+    real_inner_smul_left, RCLike.re_to_real, real_inner_self_eq_norm_sq] at hx ⊢
+  exact hx.trans (le_add_of_nonneg_right (mul_nonneg hμ.le (sq_nonneg _)))
+
+private theorem cgShiftHessenbergSq [FiniteDimensional ℝ E] (H : E →ₗ[ℝ] E)
+    (b : E) (μ : ℝ) {m : ℕ} (hm : m ≤ grade H b) :
+    Arnoldi.hessenbergSq (H + μ • (1 : E →ₗ[ℝ] E)) b m =
+      Arnoldi.hessenbergSq H b m + μ • 1 := by
+  ext i j
+  change Arnoldi.coeff (H + μ • (1 : E →ₗ[ℝ] E)) b i j =
+    Arnoldi.coeff H b i j + μ * (1 : Matrix (Fin m) (Fin m) ℝ) i j
+  unfold Arnoldi.coeff
+  rw [cgShiftArnoldiVec, cgShiftArnoldiVec, LinearMap.add_apply, LinearMap.smul_apply,
+    Module.End.one_apply, inner_add_right, real_inner_smul_right]
+  have he (l : Fin m) : (l : ℕ) < grade H b := l.isLt.trans_le hm
+  by_cases hij : i = j
+  · subst j
+    rw [real_inner_self_eq_norm_sq, Arnoldi.norm_vec_eq_one_of_lt_grade H b (he i)]
+    simp
+  · have hne : (i : ℕ) ≠ (j : ℕ) := fun e => hij (Fin.ext e)
+    rw [Arnoldi.inner_vec_eq_zero H b hne]
+    simp [hij]
+
+private theorem cgShiftSubdiag (H : E →ₗ[ℝ] E) (b : E) (μ : ℝ) (j : ℕ) :
+    Arnoldi.coeff (H + μ • (1 : E →ₗ[ℝ] E)) b (j + 1) j =
+      Arnoldi.coeff H b (j + 1) j := by
+  unfold Arnoldi.coeff
+  rw [cgShiftArnoldiVec, cgShiftArnoldiVec, LinearMap.add_apply, LinearMap.smul_apply,
+    Module.End.one_apply, inner_add_right, real_inner_smul_right,
+    Arnoldi.inner_vec_eq_zero H b (Nat.succ_ne_self j), mul_zero, add_zero]
+
+private theorem cgHessenbergPosDef [FiniteDimensional ℝ E] (H : E →ₗ[ℝ] E)
+    (hH : H.IsSymmetricCoercive) (b : E) {m : ℕ} (hm : m ≤ grade H b) :
+    (Arnoldi.hessenbergSq H b m).PosDef := by
+  have hinner : ∀ x y : EuclideanSpace ℝ (Fin m),
+      ⟪Matrix.toEuclideanLin (Arnoldi.hessenbergSq H b m) x, y⟫ =
+        ⟪H (∑ i : Fin m, x i • Arnoldi.vec H b i), ∑ i : Fin m, y i • Arnoldi.vec H b i⟫ := by
+    intro x y
+    simp only [map_sum, map_smul, sum_inner, inner_sum, real_inner_smul_left,
+      real_inner_smul_right, EuclideanSpace.inner_eq_star_dotProduct]
+    rw [Matrix.toEuclideanLin]
+    change (∑ i : Fin m, y i * ((Arnoldi.hessenbergSq H b m).mulVec x) i) = _
+    apply Finset.sum_congr rfl
+    intro i _
+    rw [Matrix.mulVec, dotProduct, Finset.mul_sum]
+    apply Finset.sum_congr rfl
+    intro j _
+    change y i * (Arnoldi.coeff H b i j * x j) =
+      y i * (x j * ⟪H (Arnoldi.vec H b j), Arnoldi.vec H b i⟫)
+    rw [Arnoldi.coeff, real_inner_comm (H (Arnoldi.vec H b j)) (Arnoldi.vec H b i)]
+    ring
+  rw [Matrix.posDef_iff_isSymmetricCoercive]
+  refine ⟨fun x y => ?_, ?_⟩
+  · calc
+      _ = ⟪H (∑ i : Fin m, x i • Arnoldi.vec H b i), ∑ i : Fin m, y i • Arnoldi.vec H b i⟫ :=
+        hinner x y
+      _ = ⟪H (∑ i : Fin m, y i • Arnoldi.vec H b i), ∑ i : Fin m, x i • Arnoldi.vec H b i⟫ := by
+        rw [hH.isSymmetric, real_inner_comm]
+      _ = _ := (hinner y x).symm.trans (real_inner_comm _ _)
+
+  rw [LinearMap.isCoercive_iff_forall_pos]
+  intro x hx
+  rw [RCLike.re_to_real, hinner]
+  apply (LinearMap.isCoercive_iff_forall_pos H).mp hH.isCoercive
+  intro hz
+  apply hx
+  ext i
+  change x i = 0
+  have horth : Orthonormal ℝ (fun i : Fin m => Arnoldi.vec H b i) :=
+    ⟨fun i => Arnoldi.norm_vec_eq_one_of_lt_grade H b (i.isLt.trans_le hm),
+      fun i j hij => Arnoldi.inner_vec_eq_zero H b (fun he => hij (Fin.ext he))⟩
+  have hi := horth.inner_right_fintype (fun j => x j) i
+  rw [hz, inner_zero_right] at hi
+  exact hi.symm
+
+
+private theorem cgArnoldiCoordinates [FiniteDimensional ℝ E] (H : E →ₗ[ℝ] E)
+    (hH : H.IsSymmetricCoercive) (b : E) {m : ℕ} (hm : m ≤ grade H b) :
+    ∃ y : Fin m → ℝ, (Arnoldi.hessenbergSq H b m).mulVec y = firstVec ‖b‖ m ∧
+      (CG.iterate H b 0 m).x = ∑ j : Fin m, y j • Arnoldi.vec H b j := by
+  have hgrade : m ≤ grade H (b - H 0) := by simpa using hm
+  obtain ⟨y, hy, hx⟩ := (isGalerkinIterate_iff_exists_mulVec_eq hgrade _).mp
+    (CG.isGalerkinIterate b 0 hH m)
+  refine ⟨y, ?_, ?_⟩
+  · simpa only [map_zero, sub_zero, RCLike.ofReal_real_eq_id, id_eq] using hy
+  · simpa only [map_zero, sub_zero, zero_add] using hx
+
+private theorem cgArnoldiCoordinates_dot_norm [FiniteDimensional ℝ E] (H : E →ₗ[ℝ] E)
+    {b : E} {m : ℕ} (y : Fin (m + 1) → ℝ)
+    (hm' : m + 1 ≤ grade H b) :
+    ⟪b, ∑ j : Fin (m + 1), y j • Arnoldi.vec H b j⟫ =
+      firstVec ‖b‖ (m + 1) ⬝ᵥ y ∧
+    ‖∑ j : Fin (m + 1), y j • Arnoldi.vec H b j‖ =
+      ‖(WithLp.toLp 2 y : EuclideanSpace ℝ (Fin (m + 1)))‖ := by
+  let e (i : Fin (m + 1)) := Arnoldi.vec H b i
+  have he : Orthonormal ℝ e :=
+    ⟨fun i => Arnoldi.norm_vec_eq_one_of_lt_grade H b (i.isLt.trans_le hm'),
+      fun i j hij => Arnoldi.inner_vec_eq_zero H b (fun h => hij (Fin.ext h))⟩
+  have hb' : b = ‖b‖ • e 0 := (Arnoldi.smul_vec_zero H b).symm
+  have hdot : firstVec ‖b‖ (m + 1) ⬝ᵥ y = ‖b‖ * y 0 := by
+    unfold dotProduct
+    rw [Finset.sum_eq_single 0]
+    · rfl
+    · intro i _ hi
+      have hne : (i : ℕ) ≠ 0 := fun h => hi (Fin.ext h)
+      simp [firstVec, hne]
+    · intro h
+      exact False.elim (h (Finset.mem_univ _))
+  constructor
+  · rw [hdot]
+    nth_rw 1 [hb']
+    rw [real_inner_smul_left]
+    congr 1
+    exact he.inner_right_fintype y 0
+  · apply (pow_left_inj₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).mp
+    rw [← real_inner_self_eq_norm_sq, EuclideanSpace.real_norm_sq_eq]
+    simpa only [conj_trivial, ← sq] using he.inner_sum y y Finset.univ
+
+/-- The shifted CG comparisons on a positive-definite system. This joins
+the matrix estimates in Lemma 7.5.6 to CG via the common Arnoldi basis. -/
+theorem cg_shift_comparisons_of_coercive [FiniteDimensional ℝ E]
+    (H : E →ₗ[ℝ] E) (hH : H.IsSymmetricCoercive) (g : E) (m : ℕ)
+    {μ : ℝ} (hμ : 0 < μ) (hm : m + 1 ≤ grade H (-g)) :
+    let A := H + μ • (1 : E →ₗ[ℝ] E);
+    -⟪g, (CG.iterate A (-g) 0 (m + 1)).x⟫ < -⟪g, (CG.iterate H (-g) 0 (m + 1)).x⟫ ∧
+      ‖(CG.iterate A (-g) 0 (m + 1)).x‖ < ‖(CG.iterate H (-g) 0 (m + 1)).x‖ ∧
+      (m + 1 < grade H (-g) →
+        ‖(CG.iterate A (-g) 0 (m + 1)).r‖ < ‖(CG.iterate H (-g) 0 (m + 1)).r‖) := by
+  let A := H + μ • (1 : E →ₗ[ℝ] E)
+  let b := -g
+  have hb : b ≠ 0 := by
+    intro hz
+    rw [show -g = b from rfl, hz, grade_zero] at hm
+    omega
+  have hAm : m + 1 ≤ grade A b := by simpa [A, b, cgShiftGrade] using hm
+  obtain ⟨x, hx, hxx⟩ := cgArnoldiCoordinates H hH b hm
+  obtain ⟨y, hy, hyy⟩ := cgArnoldiCoordinates A (cgShiftCoercive H hH μ hμ) b hAm
+  let T := Arnoldi.hessenbergSq H b (m + 1)
+  have hT : T.PosDef := cgHessenbergPosDef H hH b hm
+  have hshift : Arnoldi.hessenbergSq A b (m + 1) = T + μ • 1 :=
+    cgShiftHessenbergSq H b μ hm
+  rw [hshift] at hy
+  have hf : firstVec ‖b‖ (m + 1) = Pi.single 0 ‖b‖ := by
+    funext i
+    by_cases hi : i = 0
+    · subst i
+      simp [firstVec]
+    · have hni : (i : ℕ) ≠ 0 := fun e => hi (Fin.ext e)
+      simp [firstVec, hni, Pi.single_eq_of_ne hi]
+  have hfne : firstVec ‖b‖ (m + 1) ≠ 0 := fun hz =>
+    (norm_ne_zero_iff.mpr hb) (by simpa [firstVec] using congrFun hz 0)
+  obtain ⟨hl, hn⟩ := lemma_7_5_6_step hT hfne hμ hx hy
+  have hxb := cgArnoldiCoordinates_dot_norm H x hm
+  have hyb := cgArnoldiCoordinates_dot_norm H y hm
+  have hyy' : (CG.iterate A b 0 (m + 1)).x = ∑ j : Fin (m + 1), y j • Arnoldi.vec H b j := by
+    simpa only [A, cgShiftArnoldiVec] using hyy
+  change -⟪g, (CG.iterate A b 0 (m + 1)).x⟫ < -⟪g, (CG.iterate H b 0 (m + 1)).x⟫ ∧
+    ‖(CG.iterate A b 0 (m + 1)).x‖ < ‖(CG.iterate H b 0 (m + 1)).x‖ ∧ _
+  refine ⟨?_, ?_, ?_⟩
+  · rw [← inner_neg_left, ← inner_neg_left, hyy', hxx]
+    change ⟪b, _⟫ < ⟪b, _⟫
+    rw [hyb.1, hxb.1]
+    exact hl
+  · rw [hyy', hxx, hyb.2, hxb.2]
+    exact hn
+  intro hlt
+  have hltA : m + 1 < grade A b := by simpa [A, b, cgShiftGrade] using hlt
+  have hres (B : E →ₗ[ℝ] E) (hB : m + 1 < grade B b) (z : Fin (m + 1) → ℝ)
+      (hz : (Arnoldi.hessenbergSq B b (m + 1)).mulVec z = firstVec ‖b‖ (m + 1))
+      (hcoord : (CG.iterate B b 0 (m + 1)).x = ∑ j : Fin (m + 1), z j • Arnoldi.vec B b j) :
+      ‖(CG.iterate B b 0 (m + 1)).r‖ =
+        |Arnoldi.coeff B b (m + 1) m| * |z (Fin.last m)| := by
+    have hr : b - B (0 + ∑ j : Fin (m + 1), z j • Arnoldi.vec B b j) =
+        -(Arnoldi.coeff B b (m + 1) m * z (Fin.last m)) • Arnoldi.vec B b (m + 1) := by
+      simpa only [map_zero, sub_zero, Nat.succ_sub_one, Fin.last] using
+        (residual_galerkin_eq (b := b) (x₀ := 0) (Nat.succ_pos m) z
+          (by simpa only [map_zero, sub_zero, RCLike.ofReal_real_eq_id, id_eq] using hz))
+    rw [CG.residual_eq, hcoord, ← zero_add (∑ j : Fin (m + 1), z j • Arnoldi.vec B b j), hr,
+      norm_smul, Arnoldi.norm_vec_eq_one_of_lt_grade B b hB, mul_one, Real.norm_eq_abs,
+      abs_neg, abs_mul]
+  have hxres := hres H hlt x hx hxx
+  have hyres := hres A hltA y (hshift.symm ▸ hy) hyy
+  rw [show Arnoldi.coeff A b (m + 1) m = Arnoldi.coeff H b (m + 1) m from
+    cgShiftSubdiag H b μ m] at hyres
+  have hdet : T.det ≠ 0 := hT.det_pos.ne'
+  have hshiftT : (T + μ • 1).PosDef :=
+    (cgHessenbergPosDef A (cgShiftCoercive H hH μ hμ) b hAm) |> (hshift ▸ ·)
+  have hdetS : (T + μ • 1).det ≠ 0 := hshiftT.det_pos.ne'
+  have hcoord (M : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ) (hM : M.IsUpperHessenberg)
+      (hd : M.det ≠ 0) (z : Fin (m + 1) → ℝ) (hz : M.mulVec z = firstVec ‖b‖ (m + 1)) :
+      z (Fin.last m) = ((-1 : ℝ) ^ m * ∏ i : Fin m, M i.succ i.castSucc) * ‖b‖ / M.det := by
+    let : Invertible M := Matrix.invertibleOfIsUnitDet M (isUnit_iff_ne_zero.mpr hd)
+    have hz' : z = M⁻¹ *ᵥ Pi.single 0 ‖b‖ := by
+      rw [← hf, ← hz, Matrix.mulVec_mulVec, Matrix.inv_mul_of_invertible, Matrix.one_mulVec]
+    rw [hz', Matrix.mulVec_single]
+    change (M⁻¹) (Fin.last m) 0 * ‖b‖ = _
+    rw [inv_apply_last_zero_of_isUpperHessenberg M hM]
+    ring
+  have hhu : T.IsUpperHessenberg := Arnoldi.hessenbergSq_isUpperHessenberg H b _
+  have hhs : (T + μ • 1).IsUpperHessenberg :=
+    hshift ▸ Arnoldi.hessenbergSq_isUpperHessenberg A b _
+  have hxlast := hcoord T hhu hdet x hx
+  have hylast := hcoord (T + μ • 1) hhs hdetS y hy
+  have hprod : (∏ i : Fin m, (T + μ • 1) i.succ i.castSucc) =
+      ∏ i : Fin m, T i.succ i.castSucc := by
+    apply Finset.prod_congr rfl
+    intro i _
+    have hi : i.succ ≠ i.castSucc := by
+      intro h
+      have he := congrArg Fin.val h
+      simp at he
+    simp [hi]
+  have hrpos : 0 < ‖(CG.iterate H b 0 (m + 1)).r‖ := by
+    apply norm_pos_iff.mpr
+    apply CG.residual_ne_zero_of_lt_grade b 0
+    simpa only [map_zero, sub_zero] using hlt
+  let c := |Arnoldi.coeff H b (m + 1) m| * |((-1 : ℝ) ^ m * ∏ i : Fin m, T i.succ i.castSucc) * ‖b‖|
+  have hx' : ‖(CG.iterate H b 0 (m + 1)).r‖ = c / T.det := by
+    rw [hxres, hxlast, abs_div, abs_of_pos hT.det_pos, mul_div_assoc]
+  have hy' : ‖(CG.iterate A b 0 (m + 1)).r‖ = c / (T + μ • 1).det := by
+    rw [hyres, hylast, hprod, abs_div, abs_of_pos hshiftT.det_pos, mul_div_assoc]
+  have hc : 0 < c := by
+    rw [hx'] at hrpos
+    simpa only [zero_mul] using (lt_div_iff₀ hT.det_pos).mp hrpos
+  change ‖(CG.iterate A b 0 (m + 1)).r‖ < ‖(CG.iterate H b 0 (m + 1)).r‖
+  rw [hx', hy']
+  exact div_lt_div_of_pos_left hc hT.det_pos (det_lt_det_add_smul_one_of_posDef hT hμ)
+
+
+private theorem cg_positive_prefix_of_coercive [FiniteDimensional ℝ E]
+    (H : E →ₗ[ℝ] E) (hH : H.IsSymmetricCoercive) (g : E) {k : ℕ}
+    (hk : k < grade H (-g)) :
+    ∀ i ≤ k, 0 < ⟪H (CG.iterate H (-g) 0 i).p, (CG.iterate H (-g) 0 i).p⟫ := by
+  intro i hi
+  apply CG.re_inner_apply_direction_pos (-g) 0 hH
+  apply CG.residual_ne_zero_of_lt_grade (-g) 0
+  simpa only [map_zero, sub_zero] using hi.trans_lt hk
+
+private theorem cg_prefix_comparisons_of_coercive [FiniteDimensional ℝ E]
+    (H : E →ₗ[ℝ] E) (hH : H.IsSymmetricCoercive) (g : E) {k : ℕ} {μ : ℝ}
+    (hμ : 0 < μ) (hk : k < grade H (-g)) :
+    let A := H + μ • (1 : E →ₗ[ℝ] E)
+    (∀ i ≤ k, 0 < ⟪H (CG.iterate H (-g) 0 i).p, (CG.iterate H (-g) 0 i).p⟫) ∧
+    (∀ i ≤ k, 0 < ⟪A (CG.iterate A (-g) 0 i).p, (CG.iterate A (-g) 0 i).p⟫) ∧
+    (∀ i, 0 < i → i ≤ k + 1 →
+      -⟪g, (CG.iterate A (-g) 0 i).x⟫ < -⟪g, (CG.iterate H (-g) 0 i).x⟫) ∧
+    (∀ i, 0 < i → i ≤ k → ‖(CG.iterate A (-g) 0 i).r‖ < ‖(CG.iterate H (-g) 0 i).r‖) ∧
+    ‖(CG.iterate A (-g) 0 (k + 1)).x‖ < ‖(CG.iterate H (-g) 0 (k + 1)).x‖ := by
+  let A := H + μ • (1 : E →ₗ[ℝ] E)
+  have hkA : k < grade A (-g) := by simpa only [A, cgShiftGrade] using hk
+  refine ⟨cg_positive_prefix_of_coercive H hH g hk,
+    cg_positive_prefix_of_coercive A (cgShiftCoercive H hH μ hμ) g hkA, ?_, ?_, ?_⟩
+  · intro i hi hik
+    obtain ⟨m, rfl⟩ := Nat.exists_eq_succ_of_ne_zero hi.ne'
+    exact (cg_shift_comparisons_of_coercive H hH g m hμ (by omega)).1
+  · intro i hi hik
+    obtain ⟨m, rfl⟩ := Nat.exists_eq_succ_of_ne_zero hi.ne'
+    exact (cg_shift_comparisons_of_coercive H hH g m hμ (by omega)).2.2 (by omega)
+  · exact (cg_shift_comparisons_of_coercive H hH g k hμ (by omega)).2.1
+
+/-- Lemma 7.5.7 for a positive-definite Hessian. The nonzero shifted residual
+is equivalent to the current index being below the common Krylov grade. -/
+theorem lemma_7_5_7_of_coercive [FiniteDimensional ℝ E]
+    (H : E →ₗ[ℝ] E) (hH : H.IsSymmetricCoercive) (g : E) (k : ℕ) {μ : ℝ}
+    (hμ : 0 < μ) (hk : k < grade H (-g)) :
+    let A := H + μ • (1 : E →ₗ[ℝ] E)
+    ∃ t ∈ Set.Ico 0 ((k : ℝ) + 1), -⟪g, (CG.iterate A (-g) 0 (k + 1)).x⟫ =
+      -⟪g, cgPath H g k t⟫ ∧
+      ∀ i ≤ k, cgPathCoefficient H g k i t ≤ cgPathCoefficient A g k i ((k : ℝ) + 1) ∧
+        (0 < i → cgPathCoefficient H g k i t < cgPathCoefficient A g k i ((k : ℝ) + 1)) := by
+  obtain ⟨hp, hsp, hl, hr, _⟩ := cg_prefix_comparisons_of_coercive H hH g hμ hk
+  exact lemma_7_5_7 H hH.isSymmetric g k μ hp hsp hl hr
+
+/-- Lemma 7.5.8 for a positive-definite Hessian. The printed g ≥ 0 is
+the condition on the iteration index k. -/
+theorem lemma_7_5_8_of_coercive [FiniteDimensional ℝ E]
+    (H : E →ₗ[ℝ] E) (hH : H.IsSymmetricCoercive) (g : E) (k : ℕ) {μ : ℝ}
+    (hμ : 0 < μ) (hk : k < grade H (-g)) :
+    let A := H + μ • (1 : E →ₗ[ℝ] E)
+    ∃! t, t ∈ Set.Ico 0 ((k : ℝ) + 1) ∧
+      ‖cgPath H g k t‖ = ‖(CG.iterate A (-g) 0 (k + 1)).x‖ ∧
+      -⟪g, (CG.iterate A (-g) 0 (k + 1)).x⟫ ≤ -⟪g, cgPath H g k t⟫ ∧
+      (0 < k → -⟪g, (CG.iterate A (-g) 0 (k + 1)).x⟫ < -⟪g, cgPath H g k t⟫) := by
+  obtain ⟨hp, hsp, hl, hr, hn⟩ := cg_prefix_comparisons_of_coercive H hH g hμ hk
+  exact lemma_7_5_8 H hH.isSymmetric g k μ hp hsp hl hr hn
+
+
+/-- Theorem 7.5.9 for a positive-definite Hessian. The truncated output is either
+stationary or a boundary point on the interpolated CG path. A zero multiplier
+can put the minimizer exactly at the last CG iterate. -/
+theorem theorem_7_5_9_of_coercive [FiniteDimensional ℝ E] (H : E →L[ℝ] E)
+    (hH : H.toLinearMap.IsSymmetricCoercive) (g : E) {Δ : ℝ} (hΔ : 0 < Δ)
+    {x y : E} (hy : ‖y‖ ≤ Δ)
+    (hmin : IsMinOn (Subproblem.quadModel g H) (Metric.closedBall 0 Δ) y)
+    (hx : H x = -g ∨ ∃ k : ℕ, k + 1 = grade H.toLinearMap (-g) ∧
+      ∃ t ∈ Set.Icc 0 ((k : ℝ) + 1), x = cgPath H.toLinearMap g k t ∧ ‖x‖ = Δ) :
+    Subproblem.quadModel g H x ≤ (1 / 2) * Subproblem.quadModel g H y := by
+  have hHpos : H.toLinearMap.IsPositive := by
+    refine ⟨hH.isSymmetric, ?_⟩
+    intro z
+    obtain ⟨c, hc, hbound⟩ := hH.isCoercive
+    exact (mul_nonneg hc.le (sq_nonneg _)).trans (hbound z)
+  rcases hx with hs | ⟨k, hk, t, ht, rfl, hn⟩
+  · exact theorem_7_5_9_stationary H hHpos g x y hs
+  obtain ⟨μ, hμ⟩ := (Subproblem.isMinOn_closedBall_iff hH.isSymmetric hΔ hy).mp hmin
+  have hklt : k < grade H.toLinearMap (-g) := by omega
+  let A := H.toLinearMap + μ • (1 : E →ₗ[ℝ] E)
+  have hEqShift : A y = -g := hμ.shifted
+  have hend : cgPath H.toLinearMap g k ((k : ℝ) + 1) =
+      (CG.iterate H.toLinearMap (-g) 0 (k + 1)).x := by
+    simpa only [Nat.cast_add, Nat.cast_one] using
+      (cgPath_eq_iterate H.toLinearMap g (k := k) (i := k + 1) le_rfl)
+  by_cases hμ₀ : μ = 0
+  · have hstat : H y = -g := by simpa [A, hμ₀] using hEqShift
+    have hterm : (CG.iterate H.toLinearMap (-g) 0 (k + 1)).r = 0 := by
+      apply CG.residual_eq_zero_of_grade_le (-g) 0 hH
+      simpa only [map_zero, sub_zero] using hk.ge
+    rw [CG.residual_eq, sub_eq_zero] at hterm
+    have hy_eq : (CG.iterate H.toLinearMap (-g) 0 (k + 1)).x = y :=
+      hH.isCoercive.injective (hterm.symm.trans hstat.symm)
+    have hpos := cg_positive_prefix_of_coercive H.toLinearMap hH g hklt
+    have hmono := (lemma_7_5_5 H.toLinearMap hH.isSymmetric g k hpos).2.2.2
+    have hK : 0 ≤ (k : ℝ) + 1 := by positivity
+    have ht_eq : t = (k : ℝ) + 1 := by
+      by_contra hne
+      have hlt := hmono ht ⟨hK, le_rfl⟩ (lt_of_le_of_ne ht.2 hne)
+      change ‖cgPath H.toLinearMap g k t‖ <
+        ‖cgPath H.toLinearMap g k ((k : ℝ) + 1)‖ at hlt
+      rw [hend, hy_eq, hn] at hlt
+      exact hlt.not_ge hy
+    rw [ht_eq, hend, hy_eq]
+    exact theorem_7_5_9_stationary H hHpos g y y hstat
+  · have hμ' : 0 < μ := lt_of_le_of_ne hμ.nonneg (Ne.symm hμ₀)
+    have hA := cgShiftCoercive H.toLinearMap hH μ hμ'
+    have hterm : (CG.iterate A (-g) 0 (k + 1)).r = 0 := by
+      apply CG.residual_eq_zero_of_grade_le (-g) 0 hA
+      simpa only [map_zero, sub_zero, A, cgShiftGrade] using hk.ge
+    rw [CG.residual_eq, sub_eq_zero] at hterm
+    have hy_eq : (CG.iterate A (-g) 0 (k + 1)).x = y :=
+      hA.isCoercive.injective (hterm.symm.trans hEqShift.symm)
+    obtain ⟨hp, hsp, hl, hr, hn'⟩ :=
+      cg_prefix_comparisons_of_coercive H.toLinearMap hH g hμ' hklt
+    have htnorm : ‖cgPath H.toLinearMap g k t‖ = ‖(CG.iterate A (-g) 0 (k + 1)).x‖ := by
+      rw [hy_eq, hn, hμ.norm_eq_of_pos hμ']
+    have ht' : t ∈ Set.Ico 0 ((k : ℝ) + 1) := by
+      refine ⟨ht.1, lt_of_le_of_ne ht.2 fun he => ?_⟩
+      rw [he, hend] at htnorm
+      exact hn'.ne htnorm.symm
+    rw [← hy_eq]
+    exact theorem_7_5_9_boundary H hHpos g k μ hp hsp hl hr hn' ht' htnorm
+
 end TruncatedCG
 
 /-- Theorem 7.5.10. The preconditioned Lanczos relation and the shifted reduced

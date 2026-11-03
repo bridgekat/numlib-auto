@@ -49,6 +49,42 @@ id = "lemma_7_5_6"
 source = "Conn–Gould–Toint, Lemma 7.5.6 and equation (7.5.26), positive Lanczos iteration"
 
 [[node]]
+id = "lemma_7_5_7"
+source = "Conn–Gould–Toint, Lemma 7.5.7 and (7.5.27)–(7.5.28)"
+
+[[node]]
+id = "lemma_7_5_8"
+source = "Conn–Gould–Toint, Lemma 7.5.8 and (7.5.40)–(7.5.41)"
+
+[[node]]
+id = "cgPath_inner_gradient_nonpos"
+source = "Conn–Gould–Toint, radial derivative used in (7.5.47)"
+
+[[node]]
+id = "theorem_7_5_9_boundary"
+source = "Conn–Gould–Toint, Theorem 7.5.9, boundary case with shifted comparisons"
+
+[[node]]
+id = "theorem_7_5_9_stationary"
+source = "Conn–Gould–Toint, Theorem 7.5.9, stationary case"
+
+[[node]]
+id = "cg_shift_comparisons_of_coercive"
+source = "Conn–Gould–Toint, Lemma 7.5.6 in the original CG coordinates"
+
+[[node]]
+id = "lemma_7_5_7_of_coercive"
+source = "Conn–Gould–Toint, Lemma 7.5.7 for positive-definite Hessians"
+
+[[node]]
+id = "lemma_7_5_8_of_coercive"
+source = "Conn–Gould–Toint, Lemma 7.5.8 for positive-definite Hessians"
+
+[[node]]
+id = "theorem_7_5_9_of_coercive"
+source = "Conn–Gould–Toint, Theorem 7.5.9 for positive-definite Hessians"
+
+[[node]]
 id = "theorem_7_5_10"
 source = "Conn–Gould–Toint, Theorem 7.5.10"
 
