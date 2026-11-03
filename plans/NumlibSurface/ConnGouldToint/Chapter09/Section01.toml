@@ -10,3 +10,27 @@ source = "Conn–Gould–Toint, Theorem 9.1.1"
 
 [[node]]
 id = "zero_radius_counterexample"
+
+[[node]]
+id = "selectedTrialRatio"
+source = "Conn–Gould–Toint, (9.1.5)"
+
+[[node]]
+id = "conditionalSuccessful"
+source = "Conn–Gould–Toint, definition preceding (9.1.7)"
+
+[[node]]
+id = "referenceRadiusResets"
+source = "Conn–Gould–Toint, (9.1.7)"
+
+[[node]]
+id = "lemma_9_1_2_i"
+source = "Conn–Gould–Toint, Lemma 9.1.2(i)"
+
+[[node]]
+id = "conditionalSuccessful_subset_referenceRadiusResets"
+source = "Conn–Gould–Toint, Lemma 9.1.2(i)"
+
+[[node]]
+id = "lemma_9_1_2_iii"
+source = "Conn–Gould–Toint, Lemma 9.1.2(iii)"

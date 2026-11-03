@@ -1,7 +1,11 @@
 import Numlib.Analysis.Calculus.Taylor
 import Mathlib.Tactic.Ring
+import Mathlib.Analysis.SpecificLimits.Basic
+import Mathlib.Order.Filter.Extr
 
 /-! # Conditional models -/
+
+open Filter Topology
 
 namespace ConnGouldToint.Chapter09
 
@@ -73,5 +77,84 @@ theorem zero_radius_counterexample :
     intro h
     have := DFunLike.congr_fun h (1 : ℝ)
     norm_num at this
+
+/-- The selected-trial acceptance ratio (9.1.5) uses the model decrease at the original trial. -/
+noncomputable def selectedTrialRatio (f m : E → ℝ) (x trial selected : E) : ℝ :=
+  (f x - f selected) / (m x - m trial)
+
+/-- Successful indices in Algorithm 9.1.1. -/
+def conditionalSuccessful (η₀ : ℝ) (ρhat : ℕ → ℝ) : Set ℕ :=
+  {k | η₀ ≤ ρhat k}
+
+/-- Reference-radius reset indices (9.1.7). -/
+def referenceRadiusResets (η₀ : ℝ) (ρhat : ℕ → ℝ) (valid : ℕ → Prop) : Set ℕ :=
+  {k | η₀ ≤ ρhat k ∨ valid k}
+
+omit [NormedAddCommGroup E] [NormedSpace ℝ E] in
+/-- Lemma 9.1.2(i). Selection of a minimum over the candidate set preserves acceptance
+when that set contains the original trial point. -/
+theorem lemma_9_1_2_i {f m : E → ℝ} {x trial selected : E} {candidates : Set E}
+    {η₀ η₁ : ℝ} (hη : η₀ ≤ η₁) (hdec : 0 < m x - m trial)
+    (hsel : IsMinOn f candidates selected)
+    (htrial : η₁ ≤ selectedTrialRatio f m x trial trial → trial ∈ candidates)
+    (hρ : η₁ ≤ selectedTrialRatio f m x trial trial) :
+    η₀ ≤ selectedTrialRatio f m x trial selected := by
+  exact hη.trans (hρ.trans
+    (div_le_div_of_nonneg_right (sub_le_sub_left ((isMinOn_iff.mp hsel) trial (htrial hρ)) _)
+      hdec.le))
+
+/-- Lemma 9.1.2(i), the inclusion of successful indices in the reset set. -/
+theorem conditionalSuccessful_subset_referenceRadiusResets (η₀ : ℝ)
+    (ρhat : ℕ → ℝ) (valid : ℕ → Prop) :
+    conditionalSuccessful η₀ ρhat ⊆ referenceRadiusResets η₀ ρhat valid :=
+  fun _ hk ↦ Or.inl hk
+
+/-- Lemma 9.1.2(iii). A failed final criticality test forces geometric shrinkage
+of successive model gradients. The proof uses each model's actual validity radius. -/
+theorem lemma_9_1_2_iii {f : E → ℝ} (hf : ContDiff ℝ 2 f) {m : ℕ → E → ℝ}
+    (hm : ∀ k, Differentiable ℝ (m k)) (hDm : ∀ k, Differentiable ℝ (fderiv ℝ (m k)))
+    {x : E} {α μ κ Bf Bm : ℝ} (hα : 0 < α) (hα₁ : α < 1) (hμ : 0 < μ)
+    (hκ : 0 < κ) (hBf : 0 ≤ Bf) (hBm : 0 ≤ Bm)
+    (hF : ∀ z, ‖fderiv ℝ (fderiv ℝ f) z‖ ≤ Bf)
+    (hM : ∀ k z, ‖fderiv ℝ (fderiv ℝ (m k)) z‖ ≤ Bm)
+    (hpos : ∀ k, 0 < ‖fderiv ℝ (m k) x‖)
+    (hvalid : ∀ k, modelValidOnBall f (m (k + 1)) x (α * μ * ‖fderiv ℝ (m k) x‖) κ)
+    (hfailed : ∀ k r, 0 < r → r ≤ μ * ‖fderiv ℝ (m (k + 1)) x‖ →
+      ¬ modelValidOnBall f (m (k + 1)) x r κ) :
+    fderiv ℝ f x = 0 ∧ Tendsto (fun k ↦ ‖fderiv ℝ (m k) x‖) atTop (𝓝 0) := by
+  let g (k : ℕ) := ‖fderiv ℝ (m k) x‖
+  have hstep (k : ℕ) : g (k + 1) ≤ α * g k := by
+    by_contra! h
+    have hle : α * μ * g k ≤ μ * g (k + 1) := by
+      rw [mul_comm α μ, mul_assoc]
+      exact mul_le_mul_of_nonneg_left h.le hμ.le
+    exact hfailed k _ (mul_pos (mul_pos hα hμ) (hpos k)) hle (hvalid k)
+  have hgeom (k : ℕ) : g k ≤ α ^ k * g 0 := by
+    induction k with
+    | zero => simp
+    | succ k ih =>
+      apply (hstep k).trans
+      rw [pow_succ', mul_assoc]
+      exact mul_le_mul_of_nonneg_left ih hα.le
+  have hpow : Tendsto (fun k : ℕ ↦ α ^ k) atTop (𝓝 0) :=
+    tendsto_pow_atTop_nhds_zero_of_lt_one hα.le hα₁
+  have hg : Tendsto g atTop (𝓝 0) := by
+    refine squeeze_zero (fun k ↦ norm_nonneg _) hgeom ?_
+    simpa only [zero_mul] using hpow.mul_const (g 0)
+  refine ⟨norm_le_zero_iff.mp ?_, hg⟩
+  let C := 2 * κ + (Bf + Bm) / 2
+  have hC : 0 ≤ C := by dsimp [C]; positivity
+  have hlim : Tendsto (fun k ↦ (C * (α * μ) + α) * g k) atTop (𝓝 0) := by
+    simpa only [mul_zero] using hg.const_mul (C * (α * μ) + α)
+  apply le_of_tendsto_of_tendsto' tendsto_const_nhds hlim
+  intro k
+  have he := theorem_9_1_1 hf (hm (k + 1)) (hDm (k + 1))
+    (mul_pos (mul_pos hα hμ) (hpos k)) hκ hBf hBm hF (hM (k + 1)) (hvalid k)
+  let a := fderiv ℝ f x
+  let b := fderiv ℝ (m (k + 1)) x
+  calc
+    ‖a‖ ≤ ‖a - b‖ + ‖b‖ := by simpa only [sub_add_cancel] using norm_add_le (a - b) b
+    _ ≤ C * (α * μ * g k) + α * g k := add_le_add he (hstep k)
+    _ = _ := by ring
 
 end ConnGouldToint.Chapter09
