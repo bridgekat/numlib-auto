@@ -84,6 +84,11 @@ a positive radius. Centered Taylor differences give the Hessian estimate even
 when the model and objective values at the center differ. In (9.3.4), the
 model Hessian need only have a lower curvature bound tending to zero.
 Theorem 9.3.3 uses this bound to establish second-order criticality in the limit.
+The Newton interpolation construction in Section 9.4 uses a simplex lattice
+to produce a complete, uniformly bounded graded polynomial basis. In (9.4.5),
+the normalization divides by the signed pivot to produce a unit diagonal. The model
+error estimate uses affine reproduction and uniform bounds on all Newton
+blocks on the ball.
 
 Chapter 10 covers cumulative model decrease for the nonmonotone acceptance rule.
 The reference schedule in (10.1.2) requires strict decrease only when the reference changes.

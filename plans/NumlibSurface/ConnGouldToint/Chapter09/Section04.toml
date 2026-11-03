@@ -1,0 +1,79 @@
+namespace = "ConnGouldToint.Chapter09"
+
+[[node]]
+id = "IsNewtonFundamentalFamily"
+source = "Conn–Gould–Toint, (9.4.4)"
+
+[[node]]
+id = "generalizedFiniteDifference"
+source = "Conn–Gould–Toint, (9.4.8)"
+
+[[node]]
+id = "newtonInterpolationModel"
+source = "Conn–Gould–Toint, (9.4.9)"
+
+[[node]]
+id = "generalizedFiniteDifference_eq_sub_sum"
+source = "Conn–Gould–Toint, (9.4.11)"
+
+[[node]]
+id = "theorem_9_4_1"
+source = "Conn–Gould–Toint, Theorem 9.4.1 and (9.4.12)"
+
+[[node]]
+id = "generalizedFiniteDifference_sub"
+
+[[node]]
+id = "abs_generalizedFiniteDifference_le"
+
+[[node]]
+id = "theorem_9_4_4_of_uniform_newton_bound"
+source = "Conn–Gould–Toint, Theorem 9.4.4 under uniform bounds for all Newton blocks"
+
+[[node]]
+id = "interpolationMatrix"
+source = "Conn–Gould–Toint, (9.4.3)"
+
+[[node]]
+id = "IsPoised"
+source = "Conn–Gould–Toint, determinant condition following (9.4.3)"
+
+[[node]]
+id = "interpolationPivots"
+source = "Conn–Gould–Toint, Algorithm 9.4.1"
+
+[[node]]
+id = "theorem_9_4_2"
+source = "Conn–Gould–Toint, Theorem 9.4.2"
+
+[[node]]
+id = "exists_maxMagnitudePivotSelector"
+source = "Conn–Gould–Toint, Algorithm 9.4.1"
+
+[[node]]
+id = "theorem_9_4_3"
+source = "Conn–Gould–Toint, Theorem 9.4.3 (graded Newton family on a Euclidean ball)"
+
+[[node]]
+id = "theorem_9_4_3_basis"
+source = "Conn–Gould–Toint, Theorem 9.4.3 (complete polynomial basis)"
+
+[[node]]
+id = "signedPivotNormalization_at_pivot"
+source = "Conn–Gould–Toint, corrected (9.4.5)"
+
+[[node]]
+id = "absolutePivotNormalization_counterexample"
+source = "Conn–Gould–Toint, counterexample to (9.4.5)"
+
+[[node]]
+id = "newtonInterpolationCoefficient"
+source = "Conn–Gould–Toint, (9.4.13)"
+
+[[node]]
+id = "newtonElimination_at_pivot"
+source = "Conn–Gould–Toint, (9.4.6)"
+
+[[node]]
+id = "HasPivotThreshold"
+source = "Conn–Gould–Toint, (9.4.7)"
