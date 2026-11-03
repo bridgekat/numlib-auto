@@ -1,0 +1,7 @@
+desc = "Coordinate clipping projects Euclidean vectors onto a nonempty box, with extended real endpoints."
+[[node]]
+id = "euclideanBox"
+[[node]]
+id = "clipCoordinate"
+[[node]]
+id = "bestApprox_euclideanBox_apply"

@@ -1,4 +1,5 @@
-import Numlib.Optimization.ModelBased.ProjectedPath
+import Numlib.Optimization.ModelBased.LinearDecrease
+import Numlib.Analysis.InnerProductSpace.BoxProjection
 import Mathlib.Analysis.Calculus.Gradient.Basic
 import Mathlib.Analysis.SpecificLimits.Basic
 import Mathlib.Topology.MetricSpace.Pseudo.Lemmas
@@ -15,6 +16,16 @@ open Filter Optimization
 open scoped RealInnerProductSpace Topology
 
 namespace ConnGouldToint.Chapter12
+
+/-- The box (12.1.1) with componentwise lower and upper bounds. -/
+abbrev box {ι : Type*} [Fintype ι] (l u : ι → EReal) : Set (EuclideanSpace ℝ ι) :=
+  euclideanBox l u
+
+/-- The coordinate projection formula (12.1.2). The choice at equality is immaterial. -/
+theorem projection_box_apply {ι : Type*} [Fintype ι] {l u : ι → EReal}
+    (hne : (box l u).Nonempty) (x : EuclideanSpace ℝ ι) (i : ι) :
+    bestApprox (box l u) x i = clipCoordinate (l i) (u i) (x i) :=
+  bestApprox_euclideanBox_apply hne x i
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [CompleteSpace E]
 
@@ -118,5 +129,76 @@ theorem theorem_12_1_4 (hx : x ∈ C) {t : ℝ} (ht : 0 ≤ t) :
     change ⟪-g, x + w - p⟫ ≤ 0 at h
     rwa [show x + w - p = w - d by dsimp [d]; abel, inner_neg_left,
       neg_nonpos, inner_sub_right, sub_nonneg] at h
+
+omit hclosed hconv
+
+/-- The criticality measure (12.1.13), expressed as the supremum of the negative
+linear model over the feasible ball. At feasible base points the zero step is
+admissible, so this is the absolute value of the infimum of the linear model. -/
+noncomputable def criticality (C : Set E) (f : E → ℝ) (x : E) (r : ℝ) : ℝ :=
+  linearDecrease C x (-gradient f x) r
+
+/-- In finite dimension, the measure in (12.1.13) is the absolute value of an
+attained minimum. Setting the radius to one gives (12.1.17). -/
+theorem criticality_eq_abs_min [FiniteDimensional ℝ E] (hC : IsClosed C) (hx : x ∈ C)
+    {r : ℝ} (hr : 0 ≤ r) :
+    ∃ d : E, x + d ∈ C ∧ ‖d‖ ≤ r ∧
+      IsMinOn (fun w ↦ ⟪gradient f x, w⟫) {w | x + w ∈ C ∧ ‖w‖ ≤ r} d ∧
+      criticality C f x r = |⟪gradient f x, d⟫| := by
+  let g := gradient f x
+  have hcontinuous : Continuous (fun w : E ↦ ⟪-g, w⟫) :=
+    continuous_const.inner continuous_id
+  obtain ⟨d, hd, he⟩ := exists_decrementMeasure_eq (isClosed_feasibleSteps hC x)
+    (zero_mem_feasibleSteps.mpr hx) hr hcontinuous.continuousOn
+  change ⟪-g, d⟫ = criticality C f x r at he
+  refine ⟨d, hd.2, mem_closedBall_zero_iff.mp hd.1, ?_, ?_⟩
+  · refine isMinOn_iff.mpr fun w hw ↦ ?_
+    have h := inner_le_linearDecrease (v := -g) hw.1 hw.2
+    change ⟪-g, w⟫ ≤ criticality C f x r at h
+    rwa [← he, inner_neg_left, inner_neg_left, neg_le_neg_iff] at h
+  · have h := linearDecrease_nonneg (v := -g) hx hr
+    change 0 ≤ criticality C f x r at h
+    rw [← he, inner_neg_left, neg_nonneg] at h
+    rw [← he, inner_neg_left, abs_of_nonpos h]
+
+/-- Theorem 12.1.5. The radius dependence and the tangent-projection estimates
+for the constrained criticality measure. The signed tangent comparison gives
+the bounds directly, without using a separate absolute-value estimate. -/
+theorem theorem_12_1_5 (hC : Convex ℝ C) (hx : x ∈ C) :
+    (ContinuousOn (criticality C f x) (Set.Ici 0) ∧
+      MonotoneOn (criticality C f x) (Set.Ici 0)) ∧
+    AntitoneOn (fun r ↦ criticality C f x r / r) (Set.Ioi 0) ∧
+    (∀ d, x + d ∈ C → ∀ r, ‖d‖ < r →
+      criticality C f x r ≤ |⟪gradient f x, d⟫| +
+        2 * r * ‖bestApprox (tangentDirections C (x + d)) (-gradient f x)‖) ∧
+    ∀ r, 0 < r → criticality C f x r / r ≤
+      ‖bestApprox (tangentDirections C x) (-gradient f x)‖ := by
+  refine ⟨⟨(linearDecrease_lipschitzOnWith_radius hC hx).continuousOn, ?_⟩,
+    linearDecrease_antitoneOn_ratio hC hx, ?_, ?_⟩
+  · intro s hs t _ hst
+    exact linearDecrease_mono_radius hx hs hst
+  · intro d _ r hr
+    have hr₀ := (norm_nonneg d).trans hr.le
+    have h := linearDecrease_le_tangent (v := -gradient f x) (d := d) hx hr₀
+    exact h.trans (add_le_add (by rw [inner_neg_left]; exact neg_le_abs _)
+      (mul_le_mul_of_nonneg_right (by linarith) (norm_nonneg _)))
+  · intro r hr
+    apply (div_le_iff₀ hr).mpr
+    have h := linearDecrease_le_tangent (v := -gradient f x) (d := (0 : E)) hx hr.le
+    simpa [criticality, mul_comm] using h
+
+/-- Theorem 12.1.6. At radius one the measure is nonnegative, continuous on the
+feasible set, and vanishes exactly at first-order critical points. -/
+theorem theorem_12_1_6 (hC : Convex ℝ C) (hf : ContDiff ℝ 1 f) :
+    ContinuousOn (fun x ↦ criticality C f x 1) C ∧
+    ∀ x ∈ C, 0 ≤ criticality C f x 1 ∧
+      (criticality C f x 1 = 0 ↔ ∀ y ∈ C, 0 ≤ ⟪gradient f x, y - x⟫) := by
+  have hg : Continuous (gradient f) :=
+    (InnerProductSpace.toDual ℝ E).symm.continuous.comp (hf.continuous_fderiv one_ne_zero)
+  refine ⟨continuousOn_linearDecrease_one hC hg.neg.continuousOn, fun x hx ↦
+    ⟨linearDecrease_nonneg hx zero_le_one, ?_⟩⟩
+  change linearDecrease C x (-gradient f x) 1 = 0 ↔ _
+  rw [linearDecrease_eq_zero_iff hC hx, mem_normalDirections]
+  simp only [inner_neg_left, neg_nonpos]
 
 end ConnGouldToint.Chapter12

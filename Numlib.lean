@@ -201,6 +201,7 @@ import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Analysis.InnerProductSpace.CompactSpectral
 import Numlib.Analysis.InnerProductSpace.CompactSpectral.Basis
 import Numlib.Analysis.InnerProductSpace.CompactSpectral.Normal
+import Numlib.Analysis.InnerProductSpace.BoxProjection
 import Numlib.Analysis.InnerProductSpace.ConvexProjection
 import Numlib.Analysis.InnerProductSpace.Dual
 import Numlib.Analysis.InnerProductSpace.Energy
@@ -756,6 +757,7 @@ import Numlib.Optimization.ModelBased.InexactRatio
 import Numlib.Optimization.ModelBased.InexactTaylor
 import Numlib.Optimization.ModelBased.PowRegularizedModel
 import Numlib.Optimization.ModelBased.QuadraticModel
+import Numlib.Optimization.ModelBased.LinearDecrease
 import Numlib.Optimization.ModelBased.ProjectedPath
 import Numlib.Optimization.ModelBased.RatioTest
 import Numlib.Optimization.ModelBased.ReferenceDecrease

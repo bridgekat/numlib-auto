@@ -1,0 +1,14 @@
+namespace = "Optimization"
+desc = "Largest linear decrease on feasible displacements. Use radial rescaling for radius variation and compare translated feasible balls for variation with the base point."
+[[node]]
+id = "linearDecrease"
+[[node]]
+id = "linearDecrease_lipschitzOnWith_radius"
+[[node]]
+id = "linearDecrease_antitoneOn_ratio"
+[[node]]
+id = "linearDecrease_le_tangent"
+[[node]]
+id = "linearDecrease_eq_zero_iff"
+[[node]]
+id = "continuousOn_linearDecrease_one"

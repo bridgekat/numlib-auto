@@ -38,7 +38,7 @@ uses the preconditioner inner-product coordinates.
 Chapter 10 covers cumulative model decrease for the nonmonotone acceptance rule.
 The reference schedule in (10.1.2) requires strict decrease only when the reference changes.
 
-Chapter 12 covers the projected-gradient path. In (12.1.3), the radial projection
+Section 12.1 covers box projection, the projected-gradient path, and the criticality measure. In (12.1.3), the radial projection
 formula applies outside the closed ball, and points inside project to themselves.
 
 Chapter 14 covers the quadratic penalty and first-order multiplier estimate. In (14.2.3),
