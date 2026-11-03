@@ -1102,6 +1102,7 @@ theorem theorem_3_2_7_strict_minimizer_branch
     exact congrArg Prod.fst (((hbranch p hp).2 _ hwW).mp hFzero)
 
 
+omit [FiniteDimensional ℝ V] [CompleteSpace P] in
 /-- Joint smoothness of the objective and constraint functions supplies the smooth
 active residual, its block derivative, and the continuous Jacobian and Hessian
 used in the sensitivity theorem. -/

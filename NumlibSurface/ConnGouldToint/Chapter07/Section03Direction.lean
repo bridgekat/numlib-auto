@@ -29,10 +29,12 @@ open scoped Topology
 noncomputable def linpackSign (b : ℝ) : ℝ :=
   if |1 - b| ≥ |-1 - b| then 1 else -1
 
+/-- The LINPACK choice has unit magnitude. -/
 theorem abs_linpackSign (b : ℝ) : |linpackSign b| = 1 := by
   unfold linpackSign
   split <;> norm_num
 
+/-- The magnitude-maximizing sign gives a residual of magnitude at least one. -/
 theorem one_le_abs_linpackSign_sub (b : ℝ) : 1 ≤ |linpackSign b - b| := by
   have ht := abs_sub_le (1 - b) 0 (-1 - b)
   have htwo : (1 : ℝ) - b - (-1 - b) = 2 := by ring

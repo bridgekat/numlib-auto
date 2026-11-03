@@ -119,3 +119,7 @@ source = "Conn–Gould–Toint, corrected Theorem 12.3.8 for convergent runs wit
 [[node]]
 id = "theorem_12_3_8_of_bounded_trial_times"
 source = "Conn–Gould–Toint, Theorem 12.3.8 for convergent runs with bounded positive projected trial times"
+
+[[node]]
+id = "activeConstraintSet_eq_on_limits_of_vanishing_steps"
+source = "Conn–Gould–Toint, Section 12.3, common active set of all cluster points when iterate displacements vanish"

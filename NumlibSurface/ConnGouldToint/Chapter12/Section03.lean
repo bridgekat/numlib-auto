@@ -543,6 +543,69 @@ theorem lemma_12_3_2 [Fintype ι] {S : Set E}
     intro x hx y hy hxy
     exact (hne ⟨(⟨x, hx⟩, ⟨y, hy⟩), hxy⟩).elim
 
+/-- Compact runs with vanishing successive displacements have a common
+active set at all cluster points. Strict complementarity separates distinct
+active sets even when the limit set has several connected components. -/
+theorem activeConstraintSet_eq_on_limits_of_vanishing_steps [Fintype ι]
+    {S K : Set E} {x : ℕ → E} {c : ι → E → ℝ} {n : ι → E → E} {g : E → E}
+    (hS : IsCompact S) (hK : IsCompact K) (hx : ∀ k, x k ∈ K)
+    (hlim : ∀ z, z ∈ S ↔ ∃ j : ℕ → ℕ, StrictMono j ∧ Tendsto (x ∘ j) atTop (𝓝 z))
+    (hstep : Tendsto (fun k ↦ dist (x (k + 1)) (x k)) atTop (𝓝 0))
+    (hc : ∀ i, Continuous (c i)) (hn : ∀ i, Continuous (n i)) (hg : Continuous g)
+    (hind : ∀ z ∈ S, LinearIndependent ℝ (fun i : activeConstraintSet c z ↦ n i z))
+    (hmul : ∀ z ∈ S, HasStrictActiveMultipliers c n g z) :
+    ∃ A : Set ι, ∀ z ∈ S, activeConstraintSet c z = A := by
+  obtain ⟨z, _, j, hj, hjz⟩ := hK.isSeqCompact hx
+  have hSne : S.Nonempty := ⟨z, (hlim z).mpr ⟨j, hj, hjz⟩⟩
+  obtain ⟨ψ, hψ, hsep⟩ := lemma_12_3_2 hS hc hn hg hind hmul
+  choose y hy hyclose using fun k ↦ hS.exists_infDist_eq_dist hSne (x k)
+  have hdist : Tendsto (fun k ↦ dist (x k) (y k)) atTop (𝓝 0) := by
+    apply Metric.tendsto_nhds.mpr
+    intro ε hε
+    by_contra! hbad
+    obtain ⟨l, hl, hlbad⟩ := extraction_of_frequently_atTop hbad
+    obtain ⟨w, _, i, hi, hiw⟩ := hK.isSeqCompact (fun k ↦ hx (l k))
+    have hwS := (hlim w).mpr ⟨l ∘ i, hl.comp hi, hiw⟩
+    obtain ⟨k, hk⟩ := (hiw.eventually (Metric.ball_mem_nhds w hε)).exists
+    have hbadk := hlbad (i k)
+    rw [Real.dist_eq, sub_zero, abs_of_nonneg dist_nonneg, ← hyclose] at hbadk
+    exact (not_lt_of_ge (hbadk.trans (Metric.infDist_le_dist_of_mem hwS))) hk
+  have hsuc : Tendsto (fun k : ℕ ↦ k + 1) atTop atTop :=
+    tendsto_atTop_mono (fun k ↦ Nat.le_succ k) tendsto_id
+  have hψ₃ : 0 < ψ / 3 := div_pos hψ.1 (by norm_num)
+  have hsmall := hdist.eventually (gt_mem_nhds hψ₃)
+  have hsmallStep := hstep.eventually (gt_mem_nhds hψ₃)
+  have hsame : ∀ᶠ k in atTop,
+      activeConstraintSet c (y (k + 1)) = activeConstraintSet c (y k) := by
+    filter_upwards [hsmall, hsuc.eventually hsmall, hsmallStep] with k hk hk' hs
+    by_contra! hneq
+    have hfar := hsep _ (hy _) _ (hy _) hneq
+    have htri := dist_triangle (y (k + 1)) (x (k + 1)) (y k)
+    have htri' := dist_triangle (x (k + 1)) (x k) (y k)
+    rw [dist_comm (y (k + 1)) (x (k + 1))] at htri
+    linarith only [hfar, htri, htri', hk, hk', hs]
+  obtain ⟨N, hN⟩ := eventually_atTop.mp hsame
+  have htail : ∀ᶠ k in atTop, activeConstraintSet c (y k) = activeConstraintSet c (y N) := by
+    refine eventually_atTop.mpr ⟨N, fun k hk ↦ ?_⟩
+    induction k, hk using Nat.le_induction with
+    | base => rfl
+    | succ k hk ih => exact (hN k hk).trans ih
+  refine ⟨activeConstraintSet c (y N), fun w hw ↦ ?_⟩
+  obtain ⟨l, hl, hlw⟩ := (hlim w).mp hw
+  have hyl : Tendsto (y ∘ l) atTop (𝓝 w) := by
+    apply Metric.tendsto_nhds.mpr
+    intro ε hε
+    filter_upwards [(hdist.comp hl.tendsto_atTop).eventually (gt_mem_nhds (half_pos hε)),
+      hlw.eventually (Metric.ball_mem_nhds w (half_pos hε))] with k hk hkw
+    have ht := dist_triangle (y (l k)) (x (l k)) w
+    rw [dist_comm (y (l k)) (x (l k))] at ht
+    change dist (x (l k)) (y (l k)) < ε / 2 at hk
+    change dist (x (l k)) w < ε / 2 at hkw
+    exact ht.trans_lt (by linarith only [hk, hkw])
+  have hnear := hyl.eventually (eventually_activeConstraintSet_eq hw hc hn hg (hind w hw) hmul)
+  obtain ⟨k, hk₁, hk₂⟩ := (hnear.and (hl.tendsto_atTop.eventually htail)).exists
+  exact (hk₁ (hy (l k))).symm.trans hk₂
+
 /-- Theorem 12.3.3. In a compact run, the iterates eventually lie in a
 fixed-radius neighborhood of a component of the limit set. Throughout
 that neighborhood no constraint inactive on the component becomes active. -/

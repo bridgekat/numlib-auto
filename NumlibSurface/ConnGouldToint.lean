@@ -186,8 +186,11 @@ conditions alone. A uniform tangent-gradient gap gives linear-in-radius
 model decrease and forces very successful misidentified trials. Theorem
 12.3.8 then proves eventual identification of both iterates and Cauchy points
 for convergent runs with vanishing radii. The bounded-positive-trial-time
-version also allows nonvanishing radii. General runs with several limit
-components or uncontrolled trial times remain open.
+version also allows nonvanishing radii. Vanishing successive displacements
+force a common active set across the compact limit set. An interval run
+with alternating radii refutes eventual Cauchy-point identification in the
+printed Theorem 12.3.8. Identification of the iterates in general compact
+runs remains open.
 Section 12.4 makes the identified-face trapping, feasible extension, and
 trial-segment Hessian agreement explicit. The corrected generalized eigenpoint
 test and decrease bound use the sign appropriate to negative curvature.
@@ -199,7 +202,8 @@ uniformly bounded positive paths.
 Theorem 13.4.2 has an inner convergence proof for Algorithm 13.3.1 under a
 uniform clearance, matching smooth objective extension, and uniform model
 estimates. The extension preserves the acceptance ratios and the limits
-give arbitrarily late coordinate stopping indices. For Algorithm 13.2.1 the first- and second-order inner limits are proved
+give arbitrarily late coordinate stopping indices. For Algorithm 13.2.1 the
+first- and second-order inner limits are proved
 directly for the guarded ratio under uniform clearance and local model
 estimates. A global lower bound on the objective, together with the
 objective Hessian bound and AW.2 at a larger parameter, supplies
