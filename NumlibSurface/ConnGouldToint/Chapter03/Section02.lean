@@ -1,8 +1,10 @@
 import Mathlib.Analysis.Calculus.Deriv.Slope
 import Mathlib.Analysis.Calculus.Gradient.Basic
+import Mathlib.Analysis.Calculus.ImplicitContDiff
 import Mathlib.Analysis.Convex.Join
 import Mathlib.Analysis.Convex.SpecificFunctions.Pow
 import Mathlib.Analysis.InnerProductSpace.Adjoint
+import Mathlib.Topology.Maps.Proper.Basic
 import Mathlib.Topology.Semicontinuity.Hemicontinuity
 import Numlib.Analysis.Convex.LinearInequalities
 import Numlib.Analysis.Convex.Subdifferential.Calculus
@@ -188,6 +190,144 @@ theorem continuous_normal_selection_on_active_face [CompleteSpace V] [FiniteDime
   refine ⟨fun i => a (e.symm i), fun i => ha (e.symm i), ?_⟩
   rw [← Equiv.sum_comp e]
   simp [G, e]
+
+private theorem upperHemicontinuous_inter_compact {X Y : Type*} [TopologicalSpace X]
+    [TopologicalSpace Y] {F : X → Set Y} {K : Set Y} (hK : IsCompact K)
+    (hF : IsClosed {p : X × Y | p.2 ∈ F p.1}) :
+    UpperHemicontinuous (fun x ↦ F x ∩ K) := by
+  let : CompactSpace K := isCompact_iff_compactSpace.mp hK
+  apply upperHemicontinuous_iff_forall_isOpen.mpr
+  intro x U hU hx
+  let D : Set (X × K) := {p | (p.2 : Y) ∈ F p.1 ∧ (p.2 : Y) ∈ Uᶜ}
+  have hD : IsClosed D := (hF.preimage
+    (continuous_fst.prodMk (continuous_subtype_val.comp continuous_snd))).inter
+    (hU.isClosed_compl.preimage (continuous_subtype_val.comp continuous_snd))
+  have hclosed := (isClosedMap_fst_of_compactSpace (X := X) (Y := K)) D hD
+  have hx' : x ∈ (Prod.fst '' D)ᶜ := by
+    rintro ⟨⟨y, v⟩, hv, rfl⟩
+    exact hv.2 (hx ⟨hv.1, v.property⟩)
+  filter_upwards [hclosed.isOpen_compl.mem_nhds hx'] with y hy
+  intro v hv
+  by_contra hvU
+  exact hy ⟨(y, ⟨v, hv.2⟩), ⟨hv.1, hvU⟩, rfl⟩
+
+private theorem lowerHemicontinuous_inter_closedBall_of_smul
+    {X : Type*} [TopologicalSpace X] {F : X → Set V}
+    (hF : LowerHemicontinuous F)
+    (hsmul : ∀ x (a : ℝ), 0 ≤ a → ∀ d ∈ F x, a • d ∈ F x)
+    {R : ℝ} (hR : 0 < R) :
+    LowerHemicontinuous (fun x ↦ F x ∩ Metric.closedBall 0 R) := by
+  apply lowerHemicontinuous_iff.mpr
+  intro x
+  apply lowerHemicontinuousAt_iff.mpr
+  intro U hU hhit
+  obtain ⟨d, ⟨hdF, hdB⟩, hdU⟩ := hhit
+  have hlim : Tendsto (fun a : ℝ ↦ a • d) (𝓝[<] (1 : ℝ)) (𝓝 d) := by
+    have ht : Tendsto (fun a : ℝ ↦ a) (𝓝[<] (1 : ℝ)) (𝓝 1) :=
+      tendsto_id.mono_right nhdsWithin_le_nhds
+    simpa using ht.smul (tendsto_const_nhds (x := d))
+  obtain ⟨a, haU, ha⟩ := ((hlim.eventually (hU.mem_nhds hdU)).and
+    (Ioo_mem_nhdsLT (zero_lt_one : (0 : ℝ) < 1))).exists
+  have had : a • d ∈ Metric.ball 0 R := by
+    rw [Metric.mem_ball, dist_zero_right, norm_smul, Real.norm_of_nonneg ha.1.le]
+    have hdR : ‖d‖ ≤ R := by simpa [Metric.mem_closedBall] using hdB
+    exact (mul_le_mul_of_nonneg_left hdR ha.1.le).trans_lt
+      (by simpa using mul_lt_mul_of_pos_right ha.2 hR)
+  have hhit' : (F x ∩ (U ∩ Metric.ball 0 R)).Nonempty :=
+    ⟨a • d, hsmul x a ha.1.le d hdF, haU, had⟩
+  filter_upwards [(lowerHemicontinuousAt_iff.mp (lowerHemicontinuous_iff.mp hF x))
+    (U ∩ Metric.ball 0 R) (hU.inter Metric.isOpen_ball) hhit'] with y hy
+  obtain ⟨z, hz, hzU, hzR⟩ := hy
+  exact ⟨z, ⟨hz, Metric.ball_subset_closedBall hzR⟩, hzU⟩
+
+/-- Theorem 3.2.10, continuity on a fixed active face. Both the outward normal cone
+and the feasible positive tangent cone have continuous bounded sections, expressed
+by upper and lower hemicontinuity after intersection with any positive-radius closed
+ball. The bounded sections give the usual local convergence of closed cones. -/
+theorem theorem_3_2_10_face_continuity [CompleteSpace V] [FiniteDimensional ℝ V]
+    {ι : Type*} [Fintype ι] {C : Set V} {c : ι → V → ℝ} (hC : AC2 C) (hset : AC7 C c)
+    (hc : ∀ i, ContDiff ℝ 1 (c i)) (x₀ : V) {R : ℝ} (hR : 0 < R) :
+    let S := {z : V | (∀ i, 0 ≤ c i z) ∧ (∀ i, c i z = 0 ↔ c i x₀ = 0) ∧
+      ActiveLinearizedConeMatches C c z}
+    let N := fun z : S ↦ normalCone (innerₗ V) C (z : V) ∩ Metric.closedBall 0 R
+    let T := fun z : S ↦ posTangentConeAt C (z : V) ∩ Metric.closedBall 0 R
+    UpperHemicontinuous N ∧ LowerHemicontinuous N ∧ UpperHemicontinuous T ∧ LowerHemicontinuous T := by
+  classical
+  intro S N T
+  let N₀ (z : S) := normalCone (innerₗ V) C (z : V)
+  let T₀ (z : S) := posTangentConeAt C (z : V)
+  have hmemC (z : S) : (z : V) ∈ C := by
+    rw [hset]
+    exact z.property.1
+  have hnclosed : IsClosed {p : S × V | p.2 ∈ N₀ p.1} :=
+    (isClosed_normalCone_graph C).preimage
+      ((continuous_subtype_val.comp continuous_fst).prodMk continuous_snd)
+  have htclosed : IsClosed {p : S × V | p.2 ∈ T₀ p.1} := by
+    have heq : {p : S × V | p.2 ∈ T₀ p.1} =
+        ⋂ i : {i // c i x₀ = 0}, {p : S × V | 0 ≤ fderiv ℝ (c i) (p.1 : V) p.2} := by
+      ext p
+      simp only [Set.mem_ofPred_eq, Set.mem_iInter, T₀]
+      rw [p.1.property.2.2 p.2]
+      constructor
+      · exact fun h i ↦ h i ((p.1.property.2.1 i).mpr i.property)
+      · exact fun h i hi ↦ h ⟨i, (p.1.property.2.1 i).mp hi⟩
+    rw [heq]
+    apply isClosed_iInter
+    intro i
+    exact isClosed_le continuous_const
+      ((((hc i).continuous_fderiv one_ne_zero).comp
+        (continuous_subtype_val.comp continuous_fst)).clm_apply continuous_snd)
+  have hNlow : LowerHemicontinuous N₀ := by
+    apply lowerHemicontinuous_iff.mpr
+    intro x
+    apply lowerHemicontinuousAt_iff.mpr
+    intro U hU hmeet
+    obtain ⟨g, hg, hgU⟩ := hmeet
+    obtain ⟨G, hG, hGx, hGN⟩ :=
+      continuous_normal_selection_on_active_face hC hset hc x.property.1 x.property.2.2 hg
+    have hcont : Continuous (fun z : S ↦ G (z : V)) := hG.comp continuous_subtype_val
+    have hGmem : ∀ z : S, G z ∈ N₀ z := fun z ↦
+      hGN z z.property.1 (fun i ↦ (z.property.2.1 i).trans (x.property.2.1 i).symm)
+        z.property.2.2
+    have hu : (G (x : V)) ∈ U := hGx.symm ▸ hgU
+    filter_upwards [(hcont.tendsto x).eventually (hU.mem_nhds hu)] with z hz
+    exact ⟨G z, hGmem z, hz⟩
+  have hTlow : LowerHemicontinuous T₀ := by
+    apply lowerHemicontinuous_iff.mpr
+    intro x
+    apply lowerHemicontinuousAt_iff.mpr
+    intro U hU hmeet
+    obtain ⟨d, hd, hdU⟩ := hmeet
+    obtain ⟨α, l, hl, a, w, hw₀, hwC, hlim⟩ := exists_fun_of_mem_tangentConeAt hd
+    let : l.NeBot := hl
+    obtain ⟨j, hjC, hjU⟩ := (hwC.and (hlim.eventually (hU.mem_nhds hdU))).exists
+    let y : V := (x : V) + w j
+    let G (z : S) : V := (a j : ℝ) • (y - (z : V))
+    have hG : Continuous G := (continuous_const.sub continuous_subtype_val).const_smul _
+    have hGx : G x ∈ U := by
+      simpa [G, y, NNReal.smul_def] using hjU
+    have hGmem (z : S) : G z ∈ T₀ z := by
+      have htan := sub_mem_posTangentConeAt_of_segment_subset
+        (hC.2.2.segment_subset (hmemC z) hjC)
+      apply (z.property.2.2 _).mpr
+      intro i hi
+      rw [show G z = (a j : ℝ) • (y - (z : V)) from rfl, map_smul, smul_eq_mul]
+      exact mul_nonneg (a j).coe_nonneg ((z.property.2.2 _).mp htan i hi)
+    filter_upwards [(hG.tendsto x).eventually (hU.mem_nhds hGx)] with z hz
+    exact ⟨G z, hGmem z, hz⟩
+  let : ProperSpace V := FiniteDimensional.proper_real V
+  refine ⟨upperHemicontinuous_inter_compact (isCompact_closedBall _ _) hnclosed,
+    lowerHemicontinuous_inter_closedBall_of_smul hNlow ?_ hR,
+    upperHemicontinuous_inter_compact (isCompact_closedBall _ _) htclosed,
+    lowerHemicontinuous_inter_closedBall_of_smul hTlow ?_ hR⟩
+  · intro z a ha d hd y hy
+    rw [map_smul, smul_eq_mul]
+    exact mul_nonpos_of_nonneg_of_nonpos ha (hd y hy)
+  · intro z a ha d hd
+    apply (z.property.2.2 _).mpr
+    intro i hi
+    rw [map_smul, smul_eq_mul]
+    exact mul_nonneg ha ((z.property.2.2 _).mp hd i hi)
 
 /-- **Theorem 3.2.12.** At a locally Lipschitz local minimizer, zero is a Clarke
 subgradient and every Clarke directional derivative is nonnegative. The derivative
@@ -445,6 +585,160 @@ theorem theorem_3_2_6 {f : E → ℝ} {h : ι → E → ℝ} {g : κ → E → �
     (fun j ↦ ((hg j).differentiableAt (by norm_num)).hasFDerivAt) hpos
 
 end SmoothSecondOrder
+
+section ActiveKKTSensitivity
+
+variable {V Y P : Type*}
+  [NormedAddCommGroup V] [InnerProductSpace ℝ V] [CompleteSpace V] [FiniteDimensional ℝ V]
+  [NormedAddCommGroup Y] [InnerProductSpace ℝ Y] [CompleteSpace Y] [FiniteDimensional ℝ Y]
+  [NormedAddCommGroup P] [NormedSpace ℝ P] [CompleteSpace P]
+
+open ContinuousLinearMap
+
+omit [FiniteDimensional ℝ V] [FiniteDimensional ℝ Y] in
+/-- Linearization of the active KKT equations with the positive multiplier sign
+in the Lagrangian. A multiplier sign change yields the textbook convention. -/
+noncomputable def activeKKTLinearization (A : V →L[ℝ] Y) (H : V →L[ℝ] V) :
+    (V × Y) →L[ℝ] (V × Y) :=
+  (H.comp (fst ℝ V Y) + A.adjoint.comp (snd ℝ V Y)).prod (A.comp (fst ℝ V Y))
+
+omit [FiniteDimensional ℝ V] [FiniteDimensional ℝ Y] in
+@[simp] theorem activeKKTLinearization_apply (A : V →L[ℝ] Y) (H : V →L[ℝ] V)
+    (z : V × Y) : activeKKTLinearization A H z = (H z.1 + A.adjoint z.2, A z.1) := rfl
+
+/-- The active KKT block is invertible under the rank and reduced-Hessian
+conditions of Theorem 3.2.7. -/
+theorem theorem_3_2_7_activeKKT_invertible {A : V →L[ℝ] Y} {H : V →L[ℝ] V}
+    (hA : Function.Surjective A) (hH : ∀ d : V, A d = 0 → d ≠ 0 → 0 < ⟪H d, d⟫) :
+    (activeKKTLinearization A H).IsInvertible := by
+  let B := activeKKTLinearization A H
+  have hinj : Function.Injective B := (injective_iff_map_eq_zero B).mpr fun z hz ↦ by
+    have h₁ : H z.1 + A.adjoint z.2 = 0 := congrArg Prod.fst hz
+    have h₂ : A z.1 = 0 := congrArg Prod.snd hz
+    have hv : z.1 = 0 := by
+      by_contra hne
+      have heq := congrArg (fun v : V ↦ ⟪v, z.1⟫) h₁
+      simp only [inner_add_left, ContinuousLinearMap.adjoint_inner_left, h₂, inner_zero_right,
+        add_zero, inner_zero_left] at heq
+      exact (hH z.1 h₂ hne).ne' heq
+    have hμ : A.adjoint z.2 = 0 := by simpa [hv] using h₁
+    obtain ⟨v, hv'⟩ := hA z.2
+    have hμ' : ⟪z.2, z.2⟫ = 0 := by
+      calc
+        _ = ⟪A.adjoint z.2, v⟫ := by rw [ContinuousLinearMap.adjoint_inner_left, hv']
+        _ = 0 := by rw [hμ, inner_zero_left]
+    exact Prod.ext hv (inner_self_eq_zero.mp hμ')
+  have hsurj : Function.Surjective B := LinearMap.surjective_of_injective
+    (f := B.toLinearMap) hinj
+  exact ⟨ContinuousLinearEquiv.ofBijective B (LinearMap.ker_eq_bot.mpr hinj)
+    (LinearMap.range_eq_top.mpr hsurj), ContinuousLinearEquiv.coe_ofBijective ..⟩
+
+/-- The rank and reduced-Hessian conditions in Theorem 3.2.7 are open in the
+active Jacobian and Hessian. Compactness of the unit sphere handles the varying
+kernel of the active Jacobian. -/
+theorem theorem_3_2_7_activeKKT_conditions_open :
+    IsOpen {p : (V →L[ℝ] Y) × (V →L[ℝ] V) | Function.Surjective p.1 ∧
+      ∀ d : V, p.1 d = 0 → d ≠ 0 → 0 < ⟪p.2 d, d⟫} := by
+  let X := (V →L[ℝ] Y) × (V →L[ℝ] V)
+  let K := Metric.sphere (0 : V) 1
+  let : CompactSpace K := isCompact_iff_compactSpace.mp (isCompact_sphere _ _)
+  let D : Set (X × K) := {q | q.1.1 (q.2 : V) = 0 ∧ ⟪q.1.2 (q.2 : V), (q.2 : V)⟫ ≤ 0}
+  have hval : Continuous (fun q : X × K ↦ (q.2 : V)) :=
+    continuous_subtype_val.comp continuous_snd
+  have hAz : Continuous (fun q : X × K ↦ q.1.1 (q.2 : V)) :=
+    (continuous_fst.comp continuous_fst).clm_apply hval
+  have hHz : Continuous (fun q : X × K ↦ ⟪q.1.2 (q.2 : V), (q.2 : V)⟫) :=
+    ((continuous_snd.comp continuous_fst).clm_apply hval).inner hval
+  have hD : IsClosed D := (isClosed_eq hAz (continuous_const (y := (0 : Y)))).inter
+    (isClosed_le hHz (continuous_const (y := (0 : ℝ))))
+  have hbad := (isClosedMap_fst_of_compactSpace (X := X) (Y := K)) D hD
+  have hB : Continuous (fun p : X ↦ activeKKTLinearization p.1 p.2) := by
+    let i : V →L[ℝ] V × Y := inl ℝ V Y
+    let j : Y →L[ℝ] V × Y := inr ℝ V Y
+    let u : V × Y →L[ℝ] V := fst ℝ V Y
+    let v : V × Y →L[ℝ] Y := snd ℝ V Y
+    have heq : (fun p : X ↦ activeKKTLinearization p.1 p.2) =
+        fun p ↦ i.comp (p.2.comp u) + i.comp (p.1.adjoint.comp v) + j.comp (p.1.comp u) := by
+      funext p
+      ext w <;> simp [i, j, u, v]
+    rw [heq]
+    exact ((continuous_const.clm_comp (continuous_snd.clm_comp continuous_const)).add
+      (continuous_const.clm_comp
+        ((ContinuousLinearMap.adjoint.continuous.comp continuous_fst).clm_comp continuous_const))).add
+      (continuous_const.clm_comp (continuous_fst.clm_comp continuous_const))
+  rw [isOpen_iff_mem_nhds]
+  intro p hp
+  have hp' : p ∈ (Prod.fst '' D)ᶜ := by
+    rintro ⟨⟨q, d⟩, hd, rfl⟩
+    have hnorm : ‖(d : V)‖ = 1 := mem_sphere_zero_iff_norm.mp d.property
+    have hdne : (d : V) ≠ 0 := by intro hz; simp [hz] at hnorm
+    exact (not_le_of_gt (hp.2 d hd.1 hdne)) hd.2
+  have hinv := theorem_3_2_7_activeKKT_invertible hp.1 hp.2
+  filter_upwards [hbad.isOpen_compl.mem_nhds hp',
+    (hB.tendsto p).eventually hinv.eventually_nhds] with q hq hqB
+  refine ⟨?_, ?_⟩
+  · intro b
+    obtain ⟨e, he⟩ := hqB
+    obtain ⟨z, hz⟩ := e.surjective (0, b)
+    refine ⟨z.1, ?_⟩
+    have hb := congrArg Prod.snd hz
+    change ((e : (V × Y) →L[ℝ] V × Y) z).2 = b at hb
+    rwa [he, activeKKTLinearization_apply] at hb
+  · intro d hd hdne
+    by_contra! hnon
+    let a := ‖d‖⁻¹
+    have ha : 0 < a := inv_pos.mpr (norm_pos_iff.mpr hdne)
+    let v : K := ⟨a • d, mem_sphere_zero_iff_norm.mpr (by
+      rw [norm_smul, Real.norm_of_nonneg ha.le]
+      exact inv_mul_cancel₀ (norm_ne_zero_iff.mpr hdne))⟩
+    apply hq
+    refine ⟨(q, v), ⟨?_, ?_⟩, rfl⟩
+    · change q.1 (a • d) = 0
+      rw [map_smul, hd, smul_zero]
+    · change ⟪q.2 (a • d), a • d⟫ ≤ 0
+      rw [map_smul, real_inner_smul_left, real_inner_smul_right]
+      exact mul_nonpos_of_nonneg_of_nonpos ha.le (mul_nonpos_of_nonneg_of_nonpos ha.le hnon)
+
+/-- The local fixed-active-set continuation in Theorem 3.2.7. If the residual
+of the active KKT equations is jointly `C¹` and its partial derivative in the
+primal-dual variables is the regular KKT block, the nearby zeros form a unique
+differentiable branch. The result concerns zeros of the fixed-active-set equations. -/
+theorem theorem_3_2_7_implicit_branch {F : P × (V × Y) → V × Y}
+    {p₀ : P} {z₀ : V × Y} {A : V →L[ℝ] Y} {H : V →L[ℝ] V}
+    (hF : ContDiffAt ℝ 1 F (p₀, z₀)) (hzero : F (p₀, z₀) = 0)
+    (hB : (fderiv ℝ F (p₀, z₀)).comp (inr ℝ P (V × Y)) = activeKKTLinearization A H)
+    (hA : Function.Surjective A) (hH : ∀ d : V, A d = 0 → d ≠ 0 → 0 < ⟪H d, d⟫) :
+    ∃ z : P → V × Y, ContDiffAt ℝ 1 z p₀ ∧ z p₀ = z₀ ∧
+      ∃ U : Set P, IsOpen U ∧ p₀ ∈ U ∧ ContinuousOn z U ∧
+        ∃ W : Set (V × Y), IsOpen W ∧ z₀ ∈ W ∧
+          ∀ p ∈ U, z p ∈ W ∧ ∀ w ∈ W, F (p, w) = 0 ↔ w = z p := by
+  have hi : ((fderiv ℝ F (p₀, z₀)).comp (inr ℝ P (V × Y))).IsInvertible :=
+    hB ▸ theorem_3_2_7_activeKKT_invertible hA hH
+  let z := hF.implicitFunction one_ne_zero hi
+  have hz : z p₀ = z₀ := hF.implicitFunction_apply_self one_ne_zero hi
+  have hzd : ContDiffAt ℝ 1 z p₀ := hF.contDiffAt_implicitFunction one_ne_zero hi
+  have hu : {v | F v = 0 ↔ z v.1 = v.2} ∈ 𝓝 p₀ ×ˢ 𝓝 z₀ := by
+    rw [← nhds_prod_eq]
+    change ∀ᶠ v in 𝓝 (p₀, z₀), F v = 0 ↔ z v.1 = v.2
+    simpa [z, hzero] using hF.eventually_apply_eq_iff_implicitFunction one_ne_zero hi
+  obtain ⟨U₀, hU₀, W₀, hW₀, hsub⟩ := Filter.mem_prod_iff.mp hu
+  obtain ⟨U, hUU, hU, hp⟩ := mem_nhds_iff.mp hU₀
+  obtain ⟨W, hWW, hW, hw⟩ := mem_nhds_iff.mp hW₀
+  have hzW : z ⁻¹' W ∈ 𝓝 p₀ := hzd.continuousAt (hW.mem_nhds (hz.symm ▸ hw))
+  obtain ⟨U', hU'W, hU', hp'⟩ := mem_nhds_iff.mp hzW
+  have hreg : {p | ContDiffAt ℝ 1 z p} ∈ 𝓝 p₀ := hzd.eventually (by norm_num)
+  obtain ⟨U'', hU''reg, hU'', hp''⟩ := mem_nhds_iff.mp hreg
+  refine ⟨z, hzd, hz, U ∩ (U' ∩ U''), hU.inter (hU'.inter hU''),
+    ⟨hp, hp', hp''⟩, ?_, W, hW, hw, ?_⟩
+  · intro p hpU
+    have hpreg : ContDiffAt ℝ 1 z p := hU''reg hpU.2.2
+    exact hpreg.continuousAt.continuousWithinAt
+  · intro p hpU
+    refine ⟨hU'W hpU.2.1, fun w hwW ↦ ?_⟩
+    have he := hsub (show (p, w) ∈ U₀ ×ˢ W₀ from ⟨hUU hpU.1, hWW hwW⟩)
+    exact he.trans eq_comm
+
+end ActiveKKTSensitivity
 
 section ParametricMinimum
 

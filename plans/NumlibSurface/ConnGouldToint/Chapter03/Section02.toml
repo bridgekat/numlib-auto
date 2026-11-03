@@ -99,3 +99,27 @@ source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.15"
 [[node]]
 id = "theorem_3_2_15_clarke"
 source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.15"
+
+[[node]]
+id = "theorem_3_2_10_face_continuity"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.10"
+
+[[node]]
+id = "activeKKTLinearization"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.7"
+
+[[node]]
+id = "theorem_3_2_7_activeKKT_invertible"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.7"
+
+[[node]]
+id = "theorem_3_2_7_implicit_branch"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.7"
+
+[[node]]
+id = "theorem_3_2_7_activeKKT_conditions_open"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.7"
+
+[[node]]
+id = "activeKKTLinearization_apply"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.7"

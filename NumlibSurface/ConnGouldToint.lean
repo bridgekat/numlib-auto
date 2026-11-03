@@ -35,6 +35,10 @@ The Clarke composite rule in Corollary 3.2.13 uses the outer support bound.
 Theorem 3.2.8 uses nonempty compact feasible fibers and gives continuity of
 the minimum value and upper hemicontinuity of the optimizer correspondence.
 Separate examples show why the printed continuity claims need these changes.
+The normal and positive tangent cones in Theorem 3.2.10 are continuous on
+fixed active faces in the bounded-section sense. Theorem 3.2.7 has the
+locally unique fixed-active KKT branch, with strict-local-minimizer
+continuation and mixed active-set persistence still open.
 Theorem 3.2.15 uses local Lipschitz outer functions and a strict Clarke
 descent direction for an active constraint. A boundary example shows why
 the printed outer-domain conditions are insufficient.
@@ -144,6 +148,10 @@ A critical starting point can be returned before computing the initial trial
 parameter. The generalized Cauchy decrease includes the tangent stopping test.
 Lemma 12.3.1 uses local constancy to cover connected sets. Lemma 12.3.6
 approximates the negative gradient by normal directions at nearby points.
+Section 12.4 makes the identified-face trapping, feasible extension, and
+trial-segment Hessian agreement explicit. The corrected generalized eigenpoint
+test and decrease bound use the sign appropriate to negative curvature.
+A cubic model shows that the printed test can accept a strict increase.
 
 Chapter 13 covers the logarithmic barrier. Theorem 13.2.1 uses a lower objective
 bound to bound the barrier along the run. For log barriers, AC.8 holds on
