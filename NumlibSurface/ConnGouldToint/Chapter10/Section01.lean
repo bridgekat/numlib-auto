@@ -37,6 +37,100 @@ noncomputable def nonmonotoneRatio (S : Set ℕ) (f trial d : ℕ → ℝ) (r k 
   max ((f r - trial k) / ((∑ i ∈ Finset.Ico r k, acceptedDecrease S d i) + d k))
     ((f k - trial k) / d k)
 
+/-- The values and counters retained between iterations of Algorithm 10.1.2. -/
+structure ReferenceBuffer where
+  bestValue : ℝ
+  referenceValue : ℝ
+  candidateValue : ℝ
+  referenceDecrease : ℝ
+  candidateDecrease : ℝ
+  sinceBest : ℕ
+
+/-- Algorithm 10.1.2 starts all three values at the objective of the initial point. -/
+def ReferenceBuffer.initial (value : ℝ) : ReferenceBuffer where
+  bestValue := value
+  referenceValue := value
+  candidateValue := value
+  referenceDecrease := 0
+  candidateDecrease := 0
+  sinceBest := 0
+
+/-- Algorithm 10.1.2, Step 3a. The historical ratio uses the running sum. -/
+noncomputable def ReferenceBuffer.ratio (b : ReferenceBuffer) (value trial decrease : ℝ) : ℝ :=
+  max ((b.referenceValue - trial) / (b.referenceDecrease + decrease))
+    ((value - trial) / decrease)
+
+/-- Algorithm 10.1.2, Steps 3a–3d. A rejected trial leaves the iterate and buffer unchanged.
+The counter is reset only on a new best value. Step 3d uses the boxed equality test with
+the window, while the preceding prose says the counter exceeds the window. -/
+noncomputable def ReferenceBuffer.step {E : Type*} (b : ReferenceBuffer)
+    (η : ℝ) (window : ℕ) (f : E → ℝ) (current trial : E) (decrease : ℝ) :
+    E × ReferenceBuffer :=
+  let trialValue := f trial
+  if b.ratio (f current) trialValue decrease < η then
+    (current, b)
+  else
+    let accumulated := { b with
+      referenceDecrease := b.referenceDecrease + decrease
+      candidateDecrease := b.candidateDecrease + decrease }
+    if trialValue < b.bestValue then
+      (trial, { accumulated with
+        bestValue := trialValue
+        candidateValue := trialValue
+        candidateDecrease := 0
+        sinceBest := 0 })
+    else
+      let counted := { accumulated with sinceBest := b.sinceBest + 1 }
+      let candidate :=
+        if b.candidateValue < trialValue then
+          { counted with candidateValue := trialValue, candidateDecrease := 0 }
+        else counted
+      if candidate.sinceBest = window then
+        (trial, { candidate with
+          referenceValue := candidate.candidateValue
+          referenceDecrease := candidate.candidateDecrease })
+      else (trial, candidate)
+
+/-- With the recorded reference value and cumulative accepted decrease, the buffered ratio
+is the ratio of Algorithm 10.1.1. -/
+theorem ReferenceBuffer.ratio_eq_nonmonotoneRatio (b : ReferenceBuffer) (S : Set ℕ)
+    (f trial d : ℕ → ℝ) (r k : ℕ) (hvalue : b.referenceValue = f r)
+    (hsum : b.referenceDecrease = ∑ i ∈ Finset.Ico r k, acceptedDecrease S d i) :
+    b.ratio (f k) (trial k) (d k) = nonmonotoneRatio S f trial d r k := by
+  rw [ReferenceBuffer.ratio, nonmonotoneRatio, hvalue, hsum]
+
+/-- The new iterate remains below or equal to the reference and candidate. The accumulated
+decreases stay nonnegative, and the best value is the minimum of the old best and the new iterate value. -/
+theorem ReferenceBuffer.step_preserves_bounds {E : Type*} (b : ReferenceBuffer)
+    {η : ℝ} (window : ℕ) (f : E → ℝ) (current trial : E) {decrease : ℝ}
+    (hη : 0 < η) (hd : 0 < decrease) (hr : f current ≤ b.referenceValue)
+    (hc : f current ≤ b.candidateValue) (hb : b.bestValue ≤ f current) (hsr : 0 ≤ b.referenceDecrease)
+    (hsc : 0 ≤ b.candidateDecrease) :
+    let next := b.step η window f current trial decrease
+    f next.1 ≤ next.2.referenceValue ∧ f next.1 ≤ next.2.candidateValue ∧
+      0 ≤ next.2.referenceDecrease ∧ 0 ≤ next.2.candidateDecrease ∧
+      next.2.bestValue = min b.bestValue (f next.1) := by
+  by_cases hreject : b.ratio (f current) (f trial) decrease < η
+  · simp only [ReferenceBuffer.step, hreject, ite_true]
+    exact ⟨hr, hc, hsr, hsc, (min_eq_left hb).symm⟩
+  have htrial : f trial < b.referenceValue := by
+    have hpositive := hη.trans_le (le_of_not_gt hreject)
+    rw [ReferenceBuffer.ratio, lt_max_iff] at hpositive
+    rcases hpositive with h | h
+    · exact sub_pos.mp ((div_pos_iff_of_pos_right (add_pos_of_nonneg_of_pos hsr hd)).mp h)
+    · exact (sub_pos.mp ((div_pos_iff_of_pos_right hd).mp h)).trans_le hr
+  have hsr' := add_nonneg hsr hd.le
+  have hsc' := add_nonneg hsc hd.le
+  by_cases hbest : f trial < b.bestValue
+  · simp [ReferenceBuffer.step, hreject, hbest, htrial.le, hsr', min_eq_right hbest.le]
+  · have hmin := min_eq_left (le_of_not_gt hbest)
+    by_cases hcandidate : b.candidateValue < f trial
+    · by_cases hreset : b.sinceBest + 1 = window <;>
+        simp [ReferenceBuffer.step, hreject, hbest, hcandidate, hreset, htrial.le, hsr', hmin]
+    · by_cases hreset : b.sinceBest + 1 = window <;>
+        simp [ReferenceBuffer.step, hreject, hbest, hcandidate, hreset,
+          le_of_not_gt hcandidate, htrial.le, hsr', hsc', hmin]
+
 /-- The nonmonotone acceptance rule accounts for every accepted model
 decrease along the historical reference intervals. -/
 theorem accepted_predicted_sum_le (S : Set ℕ) (f trial d : ℕ → ℝ) (r : ℕ → ℕ)

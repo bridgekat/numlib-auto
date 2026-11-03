@@ -69,3 +69,27 @@ source = "Conn–Gould–Toint, Theorem 10.1.4"
 [[node]]
 id = "accepted_predicted_sum_le"
 source = "Conn–Gould–Toint, Lemma 10.1.1 and (11.3.1)"
+
+[[node]]
+id = "ReferenceBuffer"
+source = "Conn–Gould–Toint, Algorithm 10.1.2"
+
+[[node]]
+id = "ReferenceBuffer.initial"
+source = "Conn–Gould–Toint, Algorithm 10.1.2 initialization"
+
+[[node]]
+id = "ReferenceBuffer.ratio"
+source = "Conn–Gould–Toint, Algorithm 10.1.2 Step 3a"
+
+[[node]]
+id = "ReferenceBuffer.step"
+source = "Conn–Gould–Toint, Algorithm 10.1.2 Steps 3a–3d"
+
+[[node]]
+id = "ReferenceBuffer.ratio_eq_nonmonotoneRatio"
+source = "Conn–Gould–Toint, Algorithm 10.1.2 and (10.1.3)"
+
+[[node]]
+id = "ReferenceBuffer.step_preserves_bounds"
+source = "Conn–Gould–Toint, Algorithm 10.1.2 Steps 3a–3d"
