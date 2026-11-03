@@ -129,7 +129,9 @@ Opposite gradients can make every positive trial fail the upper decrease test.
 A critical starting point can be returned before computing the initial trial
 parameter. The generalized Cauchy decrease includes the tangent stopping test.
 
-Chapter 13 covers the logarithmic barrier. AC.8 holds for uniformly bounded positive paths.
+Chapter 13 covers the logarithmic barrier. Theorem 13.2.1 uses a lower objective
+bound to bound the barrier along the run. For log barriers, AC.8 holds on
+uniformly bounded positive paths.
 The curvature limit superior in Theorem 13.4.2 supplies arbitrarily late
 qualifying indices. The full inner-algorithm justification remains open.
 The strong-criticality counterexample in Section 13.4 uses a smooth cutoff

@@ -1,0 +1,69 @@
+namespace = "ConnGouldToint.Chapter13"
+
+[[node]]
+id = "BarrierDivergesAtBoundary"
+source = "Conn–Gould–Toint, AC.8"
+
+[[node]]
+id = "barrierBoundary_dist_le_add"
+source = "Conn–Gould–Toint, (13.1.5)"
+
+[[node]]
+id = "BarrierAdmissibleTrial"
+source = "Conn–Gould–Toint, (13.2.1)"
+
+[[node]]
+id = "primalBarrierRatio"
+source = "Conn–Gould–Toint, Algorithm 13.2.1, Step 3"
+
+[[node]]
+id = "PrimalBarrierInnerRun"
+source = "Conn–Gould–Toint, Algorithm 13.2.1"
+
+[[node]]
+id = "PrimalBarrierInnerRun.interior_iterate"
+source = "Conn–Gould–Toint, Algorithm 13.2.1, interior feasibility"
+
+[[node]]
+id = "PrimalBarrierInnerRun.objective_antitone"
+source = "Conn–Gould–Toint, Algorithm 13.2.1, descent"
+
+[[node]]
+id = "barrier_boundary_separation"
+source = "Conn–Gould–Toint, boundary separation in Theorem 13.2.1"
+
+[[node]]
+id = "barrierBoundary_clearance"
+source = "Conn–Gould–Toint, (13.2.2)–(13.2.3), clearance"
+
+[[node]]
+id = "theorem_13_2_1"
+source = "Conn–Gould–Toint, corrected Theorem 13.2.1"
+
+[[node]]
+id = "primalBarrierHessianConstant"
+source = "Conn–Gould–Toint, κ_ubh in Theorem 13.2.2"
+
+[[node]]
+id = "theorem_13_2_2"
+source = "Conn–Gould–Toint, Theorem 13.2.2"
+
+[[node]]
+id = "theorem_13_2_3"
+source = "Conn–Gould–Toint, Theorem 13.2.3"
+
+[[node]]
+id = "logBarrier_bounded_level_separation"
+source = "Conn–Gould–Toint, bounded log-barrier specialization of Theorem 13.2.1"
+
+[[node]]
+id = "logBarrier_unbounded_level_counterexample"
+source = "Counterexample to unqualified log-barrier level separation in Theorem 13.2.1"
+
+[[node]]
+id = "theorem_13_2_3_of_models"
+source = "Conn–Gould–Toint, Theorem 13.2.3 from the Taylor-model assumptions"
+
+[[node]]
+id = "PrimalBarrierInnerRun.boundary_separation"
+source = "Conn–Gould–Toint, AC.8 implication in Theorem 13.2.1"
