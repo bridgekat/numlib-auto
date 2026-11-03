@@ -1,0 +1,20 @@
+namespace = "ConnGouldToint.Chapter15"
+
+[[node]]
+id = "nonlinearFeasibleSet"
+source = "Conn–Gould–Toint, (15.1.1)"
+
+[[node]]
+id = "IsMixedNonlinearSolution"
+source = "Conn–Gould–Toint, (15.1.1)"
+
+[[node]]
+id = "IsEqualityNonlinearSolution"
+source = "Conn–Gould–Toint, (15.1.2)"
+
+[[node]]
+id = "isMixedNonlinearSolution_iff_isEqualityNonlinearSolution"
+source = "Conn–Gould–Toint, (15.1.1)–(15.1.2)"
+
+[[node]]
+id = "isClosed_nonlinearFeasibleSet"
