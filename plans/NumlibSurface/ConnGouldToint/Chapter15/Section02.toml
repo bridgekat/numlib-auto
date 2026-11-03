@@ -39,3 +39,23 @@ source = "Conn, Gould and Toint, Trust-Region Methods, (15.2.5)"
 [[node]]
 id = "hasFDerivAt_sqpResidual"
 source = "Conn, Gould and Toint, Trust-Region Methods, (15.2.1)–(15.2.3)"
+
+[[node]]
+id = "mixedSQPFeasible"
+source = "Conn–Gould–Toint, (15.2.16b)"
+
+[[node]]
+id = "mixedSQP_strict_minimizer_of_active_correction"
+source = "Conn–Gould–Toint, Theorem 15.2.2"
+
+[[node]]
+id = "theorem_15_2_2_iii"
+source = "Conn–Gould–Toint, Theorem 15.2.2(iii)"
+
+[[node]]
+id = "theorem_15_2_2_ii"
+source = "Conn–Gould–Toint, Theorem 15.2.2(ii)–(iii)"
+
+[[node]]
+id = "theorem_15_2_2_i"
+source = "Conn–Gould–Toint, Theorem 15.2.2(i) and (iii)"
