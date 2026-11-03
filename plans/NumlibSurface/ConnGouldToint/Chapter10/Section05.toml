@@ -1,0 +1,101 @@
+namespace = "ConnGouldToint.Chapter10"
+
+[[node]]
+id = "InternalDoublingParams"
+source = "Conn–Gould–Toint, Algorithm 10.5.1, Step 0"
+
+[[node]]
+id = "InternalDoublingTrace"
+source = "Conn–Gould–Toint, Algorithm 10.5.1, Steps 2–3"
+
+[[node]]
+id = "InternalDoublingTrace.storedIndex"
+source = "Conn–Gould–Toint, Algorithm 10.5.1, Step 3c"
+
+[[node]]
+id = "InternalDoublingTrace.storedRadius"
+source = "Conn–Gould–Toint, Algorithm 10.5.1, Step 3c"
+
+[[node]]
+id = "InternalDoublingTrace.storedStep"
+source = "Conn–Gould–Toint, Algorithm 10.5.1, Step 3c"
+
+[[node]]
+id = "InternalDoublingTrace.storedRatio"
+source = "Conn–Gould–Toint, Algorithm 10.5.1, Step 3c"
+
+[[node]]
+id = "InternalDoublingTrace.storedRadius_ge_initial"
+source = "Conn–Gould–Toint, Algorithm 10.5.1, Steps 3a and 3c"
+
+[[node]]
+id = "InternalDoublingTrace.storedRadius_eq_initial_of_previous_not_very_successful"
+source = "Conn–Gould–Toint, Algorithm 10.5.1, Step 3"
+
+[[node]]
+id = "InternalDoublingTrace.storedIndex_is_latest_acceptable"
+source = "Conn–Gould–Toint, Algorithm 10.5.1, Step 3c"
+
+[[node]]
+id = "InternalDoublingTrace.no_termination_of_always_continue"
+source = "Conn–Gould–Toint, Algorithm 10.5.1, Step 3c"
+
+[[node]]
+id = "InternalDoublingRun"
+source = "Conn–Gould–Toint, Algorithm 10.5.1"
+
+[[node]]
+id = "InternalDoublingRun.toBTRRun"
+source = "Conn–Gould–Toint, Section 10.5.1, reduction to Algorithm BTR"
+
+[[node]]
+id = "StepLengthRejection"
+source = "Conn–Gould–Toint, (10.5.2)"
+
+[[node]]
+id = "rejected_trial_not_feasible_after_step_contraction"
+source = "Conn–Gould–Toint, (10.5.2)–(10.5.3)"
+
+[[node]]
+id = "rejected_trial_reusable"
+source = "Conn–Gould–Toint, (10.5.4)"
+
+[[node]]
+id = "exists_last_feasible_rejection"
+source = "Conn–Gould–Toint, (10.5.4)"
+
+[[node]]
+id = "step_length_rejection_simulated"
+source = "Conn–Gould–Toint, (10.5.1), (10.5.2), and (10.5.5)"
+
+[[node]]
+id = "step_length_rejection_compatible"
+source = "Conn–Gould–Toint, (10.5.5)"
+
+[[node]]
+id = "StepLengthRadiusUpdate"
+source = "Conn–Gould–Toint, (10.5.6)"
+
+[[node]]
+id = "CauchyStepLengthSafeguard"
+source = "Conn–Gould–Toint, (10.5.7)"
+
+[[node]]
+id = "CauchyBoundarySafeguard"
+source = "Conn–Gould–Toint, (10.5.8)"
+
+[[node]]
+id = "CauchyStepLengthSafeguard.boundary"
+source = "Conn–Gould–Toint, (10.5.7)–(10.5.8)"
+
+[[node]]
+id = "StepLengthRadiusUpdate.noncontract_of_cauchy_boundary"
+source = "Conn–Gould–Toint, (10.5.6)–(10.5.8)"
+
+[[node]]
+id = "internalDoubling_unbounded_inner_counterexample"
+source = "Conn–Gould–Toint, nontermination of the uncapped Algorithm 10.5.1"
+
+[[node]]
+id = "stepLengthRadiusUpdate_counterexample"
+source = "Conn–Gould–Toint, quadratic counterexample following (10.5.6)"
