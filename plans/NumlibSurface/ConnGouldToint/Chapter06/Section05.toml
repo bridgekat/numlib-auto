@@ -1,5 +1,4 @@
 namespace = "ConnGouldToint.Chapter06"
-desc = "Uniform model curvature bounds steps. Uniform Hessian variation on moving step segments repairs the ratio and eventual radius arguments."
 
 [[node]]
 id = "lemma_6_5_1"
