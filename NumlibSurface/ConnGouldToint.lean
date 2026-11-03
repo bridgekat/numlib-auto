@@ -5,6 +5,7 @@ import NumlibSurface.ConnGouldToint.Chapter07
 import NumlibSurface.ConnGouldToint.Chapter08
 import NumlibSurface.ConnGouldToint.Chapter10
 import NumlibSurface.ConnGouldToint.Chapter12
+import NumlibSurface.ConnGouldToint.Chapter14
 import NumlibSurface.ConnGouldToint.Chapter16
 
 /-!
@@ -39,6 +40,9 @@ The reference schedule in (10.1.2) requires strict decrease only when the refere
 
 Chapter 12 covers the projected-gradient path. In (12.1.3), the radial projection
 formula applies outside the closed ball, and points inside project to themselves.
+
+Chapter 14 covers the quadratic penalty and first-order multiplier estimate. In (14.2.3),
+both derivatives in the stationarity condition are evaluated at the feasible point.
 
 Chapter 16 covers the uniform least-squares Hessian bound, exact minimization of the scalar
 epigraph merit function, and the Fischer–Burmeister residual formulation of complementarity.

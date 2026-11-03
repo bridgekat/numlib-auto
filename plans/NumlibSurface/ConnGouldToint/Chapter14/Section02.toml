@@ -1,0 +1,29 @@
+namespace = "ConnGouldToint.Chapter14"
+
+[[node]]
+id = "quadraticPenalty"
+source = "Conn–Gould–Toint, (14.2.1)"
+
+[[node]]
+id = "augmentedLagrangian"
+source = "Conn–Gould–Toint, (14.2.2)"
+
+[[node]]
+id = "firstOrderMultiplier"
+source = "Conn–Gould–Toint, (14.2.5)"
+
+[[node]]
+id = "constraint_eq_multiplier_difference"
+source = "Conn–Gould–Toint, (14.2.6)"
+
+[[node]]
+id = "fderiv_augmentedLagrangian_eq"
+source = "Conn–Gould–Toint, (14.2.7)"
+
+[[node]]
+id = "IsEqualityKKT"
+source = "Conn–Gould–Toint, corrected (14.2.3)"
+
+[[node]]
+id = "fderiv_lagrangian_eq_zero_of_augmentedLagrangian_min"
+source = "Conn–Gould–Toint, (14.2.4)"

@@ -1,0 +1,9 @@
+namespace = "ConnGouldToint.Chapter14"
+
+[[node]]
+id = "AW1"
+source = "Conn–Gould–Toint, AW.1"
+
+[[node]]
+id = "lagrangian"
+source = "Conn–Gould–Toint, (14.1.4)"
