@@ -190,6 +190,10 @@ the initial tail radius in the floor. Theorem 15.4.11 makes the required
 uniform control of accepted-step variation explicit. The two cases in (15.4.140)
 give a common lower bound using the smaller coefficient. In (15.4.142),
 the second entry of the minimum uses the reciprocal of the rank constant.
+Theorem 15.4.12 separates original-trial agreement from corrected accepted
+decrease. The local rate result uses eventual accepted-step conditions and
+multiplier convergence. Theorem 15.4.16 uses the maximum cluster curvature
+and requires the cluster set to control the tail, as relative compactness ensures.
 
 Chapter 16 covers the uniform least-squares Hessian bound, exact minimization of the scalar
 epigraph merit function, and the Fischer–Burmeister residual formulation of complementarity.

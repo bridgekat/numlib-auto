@@ -1,0 +1,21 @@
+namespace = "ConnGouldToint.Chapter15"
+
+[[node]]
+id = "lemma_15_4_13"
+source = "Conn–Gould–Toint, Lemma 15.4.13, full-correction error from joint error"
+
+[[node]]
+id = "lemma_15_4_14"
+source = "Conn–Gould–Toint, Lemma 15.4.14, partial-correction error from multiplier agreement"
+
+[[node]]
+id = "theorem_15_4_15"
+source = "Conn–Gould–Toint, Theorem 15.4.15, with explicit trapping and standard-step controls"
+
+[[node]]
+id = "sqp_curvature_tail_of_compact"
+source = "Conn–Gould–Toint, compact-tail repair in the proof of Theorem 15.4.16"
+
+[[node]]
+id = "sqp_partialCorrection_eventually_small_error"
+source = "Conn–Gould–Toint, asymptotic form of Lemma 15.4.14"

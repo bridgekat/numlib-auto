@@ -123,3 +123,19 @@ source = "Conn–Gould–Toint, Corollary 15.4.20"
 [[node]]
 id = "lemma_15_4_21"
 source = "Conn–Gould–Toint, Lemma 15.4.21 with corrected singular-value factor"
+
+[[node]]
+id = "theorem_15_4_12"
+source = "Conn–Gould–Toint, Theorem 15.4.12, corrected composite-step convergence"
+
+[[node]]
+id = "theorem_15_4_16"
+source = "Conn–Gould–Toint, Theorem 15.4.16, with compact-tail coverage and uniform decrease"
+
+[[node]]
+id = "sqp_secondOrder_correction_progress"
+source = "Conn–Gould–Toint, (15.4.105)–(15.4.111), uniform two-case decrease"
+
+[[node]]
+id = "sqp_normal_correction_progress"
+source = "Conn–Gould–Toint, small-radius original-trial guarantee in Theorem 15.4.12"
