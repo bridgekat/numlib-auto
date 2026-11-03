@@ -86,6 +86,8 @@ Chapter 13 covers the logarithmic barrier. AC.8 holds for uniformly bounded posi
 On an unbounded approach to the boundary, a growing coordinate can cancel a vanishing one.
 The log-barrier Hessian is diagonal and uniformly bounded away from the boundary.
 The quadratic model uses the exact second-order Taylor data.
+Section 13.12 covers first-order and weak second-order stationarity under affine scaling.
+
 
 
 Chapter 14 covers the quadratic penalty and first-order multiplier estimate. In (14.2.3),

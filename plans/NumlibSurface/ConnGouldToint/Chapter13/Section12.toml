@@ -1,0 +1,62 @@
+namespace = "ConnGouldToint.Chapter13"
+
+[[node]]
+id = "scalingVector"
+source = "Conn–Gould–Toint, (13.12.1)"
+
+[[node]]
+id = "scalingMatrix"
+source = "Conn–Gould–Toint, (13.12.2)"
+
+[[node]]
+id = "theorem_13_12_1"
+source = "Conn–Gould–Toint, Theorem 13.12.1"
+
+[[node]]
+id = "scaledModel"
+source = "Conn–Gould–Toint, (13.12.7)"
+
+[[node]]
+id = "theorem_13_12_2"
+source = "Conn–Gould–Toint, Theorem 13.12.2"
+
+[[node]]
+id = "affineQuadraticModel"
+source = "Conn–Gould–Toint, (13.12.5)"
+
+[[node]]
+id = "IsScaledNewtonStep"
+source = "Conn–Gould–Toint, (13.12.6)"
+
+[[node]]
+id = "unscaledCorrection"
+
+[[node]]
+id = "unscaledModel"
+source = "Conn–Gould–Toint, (13.12.8)"
+
+[[node]]
+id = "scaledModel_eq_unscaledModel"
+
+[[node]]
+id = "orthantFirstOrder_iff_variational"
+
+[[node]]
+id = "scaledResidual_apply"
+source = "Conn–Gould–Toint, (13.12.4)"
+
+[[node]]
+id = "continuous_scaledResidual"
+
+[[node]]
+id = "scaledRay_coordinate_lower_bound"
+source = "Conn–Gould–Toint, feasibility argument of Theorem 13.12.3"
+
+[[node]]
+id = "OrthantFirstOrder"
+
+[[node]]
+id = "OrthantWeakSecondOrder"
+
+[[node]]
+id = "scaling_unscaledCorrection"
