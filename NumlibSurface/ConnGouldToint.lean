@@ -89,6 +89,10 @@ to produce a complete, uniformly bounded graded polynomial basis. In (9.4.5),
 the normalization divides by the signed pivot to produce a unit diagonal. The model
 error estimate uses affine reproduction and uniform bounds on all Newton
 blocks on the ball.
+In Section 9.5 the memory estimate uses the bound on past models at the
+last accepted center. The quadratic error proof controls the product of
+recent weights using the adjacent radius lower factor, allowing radii to
+vary during a rejected block.
 
 Chapter 10 covers cumulative model decrease for the nonmonotone acceptance rule.
 The reference schedule in (10.1.2) requires strict decrease only when the reference changes.

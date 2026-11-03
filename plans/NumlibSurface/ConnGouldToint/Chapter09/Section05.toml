@@ -1,0 +1,37 @@
+namespace = "ConnGouldToint.Chapter09"
+
+[[node]]
+id = "memoryModel"
+source = "Conn–Gould–Toint, (9.5.1)"
+
+[[node]]
+id = "memoryModel_eq_sum"
+source = "Conn–Gould–Toint, (9.5.2)"
+
+[[node]]
+id = "memoryModel_sub_local_eq_prod"
+source = "Conn–Gould–Toint, memory error identity underlying (9.5.3)"
+
+[[node]]
+id = "theorem_9_5_1"
+source = "Conn–Gould–Toint, Theorem 9.5.1"
+
+[[node]]
+id = "memoryProduct_le_radius_sq"
+source = "Conn–Gould–Toint, corrected memory factor bound in Theorem 9.5.2"
+
+[[node]]
+id = "theorem_9_5_2"
+source = "Conn–Gould–Toint, corrected Theorem 9.5.2"
+
+[[node]]
+id = "ConditionalRadiusRun.radius_next_ge_factor"
+source = "Conn–Gould–Toint, adjacent radius factor used in (9.5.16)"
+
+[[node]]
+id = "memoryWeight_le_radius_rpow"
+source = "Conn–Gould–Toint, (9.5.16)"
+
+[[node]]
+id = "theorem_9_5_2_of_conditional_run"
+source = "Conn–Gould–Toint, Theorem 9.5.2 under AM.10, AM.11, and AN.1"
