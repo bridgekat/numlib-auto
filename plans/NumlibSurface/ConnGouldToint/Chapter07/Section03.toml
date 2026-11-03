@@ -171,3 +171,7 @@ source = "Conn–Gould–Toint, Algorithm 7.3.4 (multiplier orbit before applyin
 [[node]]
 id = "moreSorensen_boundary_correction_tie"
 source = "Conn–Gould–Toint, Algorithm 7.3.4 Step 3b(iii) (the two boundary roots can tie)"
+
+[[node]]
+id = "moreSorensenSafeguardedStepBy"
+source = "Conn–Gould–Toint, Algorithm 7.3.4 (multiplier update with a factorization test)"

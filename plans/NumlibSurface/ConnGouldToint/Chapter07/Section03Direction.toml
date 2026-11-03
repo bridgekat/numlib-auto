@@ -51,3 +51,23 @@ source = "Conn–Gould–Toint, (7.3.17) (counterexample to the full-matrix iden
 [[node]]
 id = "linpackCurvature_tendsto_zero_of_eventually"
 source = "Conn–Gould–Toint, (7.3.16) (curvature limit along successful factorizations)"
+
+[[node]]
+id = "linpackForwardSubst"
+source = "Conn–Gould–Toint, §7.3.7 (greedy forward substitution)"
+
+[[node]]
+id = "linpackForwardSubst_apply"
+source = "Conn–Gould–Toint, §7.3.7 (greedy row recurrence)"
+
+[[node]]
+id = "linpack_triangular_solves"
+source = "Conn–Gould–Toint, §7.3.7 (computed greedy right-hand side and triangular solves)"
+
+[[node]]
+id = "failedCholeskyBackSubst"
+source = "Conn–Gould–Toint, §7.3.7 (failed-pivot back solve)"
+
+[[node]]
+id = "failedCholeskyBackSubst_spec"
+source = "Conn–Gould–Toint, (7.3.17) (computed principal-block kernel witness)"

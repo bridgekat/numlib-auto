@@ -412,17 +412,12 @@ theorem acceptable_of_hard_stopping_rule {μ Δ κ κopt κtr : ℝ} (hμ : 0 �
 /-- The safeguarded geometric trial multiplier in (7.3.14). -/
 noncomputable abbrev moreSorensenTrial (θ lo hi : ℝ) : ℝ := bracketEstimate 1 θ lo hi
 
-/-- The multiplier update in Algorithm 7.3.4.
-With a zero gradient and a successful factorization, the raw step is zero.
-This is the upper-bracket branch for positive radius, and it skips Newton's
-formula because both triangular solves would give zero.
-Here `b` is the lower-bound estimate from the Cholesky direction or partial
-factorization. The test against the pole represents the positive definite
-factorization test. The return value contains the new lower and upper
-endpoints and the next trial. Termination and the step correction are separate. -/
-noncomputable def moreSorensenSafeguardedStep (g : E) (H : E →L[ℝ] E)
-    (pole Δ θ lo hi x b : ℝ) : ℝ × ℝ × ℝ :=
-  if pole < x then
+/-- The multiplier update with a positive-definite factorization test.
+The estimate `b` is supplied by the successful or partial factorization.
+A zero gradient skips Newton's formula because the two solves give zero. -/
+noncomputable def moreSorensenSafeguardedStepBy (g : E) (H : E →L[ℝ] E)
+    (positive : ℝ → Prop) [DecidablePred positive] (Δ θ lo hi x b : ℝ) : ℝ × ℝ × ℝ :=
+  if positive x then
     if ‖g‖ = 0 then
       let lo' := max lo b
       (lo', x, moreSorensenTrial θ lo' x)
@@ -430,7 +425,7 @@ noncomputable def moreSorensenSafeguardedStep (g : E) (H : E →L[ℝ] E)
       let x' := moreSorensenNewtonStep g H Δ x
       if 0 < phi g H Δ x then
         let lo' := max lo b
-        if pole < x' then (lo', x, x')
+        if positive x' then (lo', x, x')
         else
           let lo'' := max lo' x'
           (lo'', x, moreSorensenTrial θ lo'' x)
@@ -438,6 +433,11 @@ noncomputable def moreSorensenSafeguardedStep (g : E) (H : E →L[ℝ] E)
   else
     let lo' := max (max lo x) b
     (lo', hi, moreSorensenTrial θ lo' hi)
+
+/-- The multiplier update with the factorization test expressed using the pole. -/
+noncomputable def moreSorensenSafeguardedStep (g : E) (H : E →L[ℝ] E)
+    (pole Δ θ lo hi x b : ℝ) : ℝ × ℝ × ℝ :=
+  moreSorensenSafeguardedStepBy g H (pole < ·) Δ θ lo hi x b
 
 /-- Iterate the multiplier update with an estimate supplied from each
 state. The state is the lower endpoint, upper endpoint and trial
@@ -466,10 +466,10 @@ theorem moreSorensenSafeguardedStep_of_positive_phi (hg : g ≠ 0)
   have hN := lemma_7_3_3 hg hΔ hsM hmul hx hpos
   dsimp only at hN ⊢
   rcases hN.2.2 with hgood | hbad
-  · simp only [moreSorensenSafeguardedStep, ite_eq_left hx,
+  · simp only [moreSorensenSafeguardedStep, moreSorensenSafeguardedStepBy, ite_eq_left hx,
       ite_eq_right (norm_ne_zero_iff.mpr hg), ite_eq_left hpos, ite_eq_left hgood.1]
     exact ⟨max_le hlr hb, trivial, Or.inl ⟨trivial, hgood.1, hgood.2, hN.2.1⟩⟩
-  · simp only [moreSorensenSafeguardedStep, ite_eq_left hx,
+  · simp only [moreSorensenSafeguardedStep, moreSorensenSafeguardedStepBy, ite_eq_left hx,
       ite_eq_right (norm_ne_zero_iff.mpr hg), ite_eq_left hpos, ite_eq_right (not_lt.mpr hbad)]
     have hnew := max_le (max_le hlr hb) hN.2.1
     exact ⟨hnew, trivial, Or.inr ⟨hbad, le_max_right _ _,
@@ -483,7 +483,7 @@ theorem moreSorensenSafeguardedStep_zero_gradient {pole Δ θ lo hi x b : ℝ}
     (hx : pole < x) :
     moreSorensenSafeguardedStep (0 : E) H pole Δ θ lo hi x b =
       (max lo b, x, moreSorensenTrial θ (max lo b) x) := by
-  simp [moreSorensenSafeguardedStep, hx]
+  simp [moreSorensenSafeguardedStep, moreSorensenSafeguardedStepBy, hx]
 
 private theorem isBracketRun_of_safeguarded_updates {pole r θ : ℝ}
     {lo hi x b e : ℕ → ℝ}
@@ -544,7 +544,7 @@ theorem moreSorensen_zero_gradient_run {pole Δ θ : ℝ} {lo hi x b : ℕ → �
   have hleft (k : ℕ) (hx : x k ≤ pole) :
       lo (k + 1) = max (max (lo k) (x k)) (b k) ∧ hi (k + 1) = hi k ∧
       x (k + 1) = moreSorensenTrial θ (max (max (lo k) (x k)) (b k)) (hi k) := by
-    simpa only [moreSorensenSafeguardedStep, ite_eq_right (not_lt.mpr hx),
+    simpa only [moreSorensenSafeguardedStep, moreSorensenSafeguardedStepBy, ite_eq_right (not_lt.mpr hx),
       Prod.mk.injEq] using hrec k
   have hright (k : ℕ) (hx : pole < x k) :
       lo (k + 1) = max (lo k) (b k) ∧ hi (k + 1) = x k ∧
@@ -574,7 +574,7 @@ theorem moreSorensen_nonzero_bracket_run (hg : g ≠ 0)
   have hleft (k : ℕ) (hx : x k ≤ -leftmost hH) :
       lo (k + 1) = max (max (lo k) (x k)) (b k) ∧ hi (k + 1) = hi k ∧
       x (k + 1) = moreSorensenTrial θ (max (max (lo k) (x k)) (b k)) (hi k) := by
-    simpa only [moreSorensenSafeguardedStep, ite_eq_right (not_lt.mpr hx),
+    simpa only [moreSorensenSafeguardedStep, moreSorensenSafeguardedStepBy, ite_eq_right (not_lt.mpr hx),
       Prod.mk.injEq] using hrec k
   let N := moreSorensenNewtonStep g H Δ
   have hfail (k : ℕ) (hx : r < x k) : N (x k) ≤ -leftmost hH := by
@@ -583,13 +583,13 @@ theorem moreSorensen_nonzero_bracket_run (hg : g ≠ 0)
     have hc := (lemma_7_3_3 hg hΔ hsM hmul hx' (hpos _ hx)).2.1
     have hn : x (k + 1) = N (x k) := by
       have he := congrArg (fun t : ℝ × ℝ × ℝ => t.2.2) (hrec k)
-      simpa only [N, moreSorensenSafeguardedStep, ite_eq_left hx',
+      simpa only [N, moreSorensenSafeguardedStep, moreSorensenSafeguardedStepBy, ite_eq_left hx',
         ite_eq_right (norm_ne_zero_iff.mpr hg), ite_eq_left (hpos _ hx), ite_eq_left hsuccess] using he
     exact hnever (k + 1) ⟨hn ▸ hsuccess, hn ▸ hc⟩
   have hright (k : ℕ) (hx : r < x k) :
       lo (k + 1) = max (lo k) (max (b k) (N (x k))) ∧ hi (k + 1) = x k ∧
       x (k + 1) = moreSorensenTrial θ (max (lo k) (max (b k) (N (x k)))) (x k) := by
-    simpa only [N, moreSorensenSafeguardedStep, ite_eq_left (hpr.trans_lt hx),
+    simpa only [N, moreSorensenSafeguardedStep, moreSorensenSafeguardedStepBy, ite_eq_left (hpr.trans_lt hx),
       ite_eq_right (norm_ne_zero_iff.mpr hg), ite_eq_left (hpos _ hx),
       ite_eq_right (not_lt.mpr (hfail k hx)), Prod.mk.injEq, max_assoc] using hrec k
   exact ⟨isBracketRun_of_safeguarded_updates hθ hlo hlr hrh hx0 hpr hb
@@ -732,7 +732,7 @@ theorem moreSorensen_easy_safeguarded_run (hg : g ≠ 0)
       have hs := congrArg (fun t : ℝ × ℝ × ℝ => t.2.2) (hrec (j + k))
       rw [ih] at hs
       have hup : x (j + k + 1) = N (y j) := by
-        simpa only [N, moreSorensenSafeguardedStep, ite_eq_left (hy.1 j).1,
+        simpa only [N, moreSorensenSafeguardedStep, moreSorensenSafeguardedStepBy, ite_eq_left (hy.1 j).1,
           ite_eq_right (norm_ne_zero_iff.mpr hg), ite_eq_right (not_lt.mpr (hy.1 j).2)] using hs
       rw [show j + 1 + k = j + k + 1 by omega, hup]
       exact (Function.iterate_succ_apply' N j (x k)).symm

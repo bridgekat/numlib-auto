@@ -1,0 +1,61 @@
+namespace = "ConnGouldToint.Chapter07"
+
+[[node]]
+id = "firstFailedCholeskyPivot"
+source = "Conn–Gould–Toint, Algorithm 7.3.4 Step 1 (first nonpositive computed pivot)"
+
+[[node]]
+id = "firstFailedCholeskyPivot_spec"
+source = "Conn–Gould–Toint, Algorithm 7.3.4 Step 1 (full factor or first failed pivot)"
+
+[[node]]
+id = "choleskyFailedPivot_certificate"
+source = "Conn–Gould–Toint, (7.3.17), Algorithm 7.3.4 Steps 3c–d (computed leading-block correction)"
+
+[[node]]
+id = "firstFailedCholeskyPivot_eq_none_iff"
+source = "Conn–Gould–Toint, Algorithm 7.3.4 Step 1 (positive definite factorization test)"
+
+[[node]]
+id = "cholesky_linpack_certificate"
+source = "Conn–Gould–Toint, Algorithm 7.3.4 Steps 1 and 3b (computed successful-factorization certificate)"
+
+[[node]]
+id = "choleskyFailedPivot_lower_bound"
+source = "Conn–Gould–Toint, Algorithm 7.3.4 Step 3d (computed lower bound in the full matrix)"
+
+[[node]]
+id = "shiftedCholesky_succeeds_iff"
+source = "Conn–Gould–Toint, Algorithm 7.3.4 Step 1 (computed pivot test and the spectral pole)"
+
+[[node]]
+id = "moreSorensenMatrixLowerEstimate"
+source = "Conn–Gould–Toint, Algorithm 7.3.4 Steps 3b–d (computed lower estimate on either factorization outcome)"
+
+[[node]]
+id = "moreSorensenMatrixLowerEstimate_spec"
+source = "Conn–Gould–Toint, Algorithm 7.3.4 Steps 3b–d (validity of the computed lower estimate)"
+
+[[node]]
+id = "moreSorensenMatrixIterates"
+source = "Conn–Gould–Toint, Algorithm 7.3.4 (computed matrix multiplier orbit)"
+
+[[node]]
+id = "shiftedStep_eq_cholesky_subst"
+source = "Conn–Gould–Toint, Algorithm 7.3.4 Step 1a (raw step by triangular solves)"
+
+[[node]]
+id = "moreSorensen_computed_hard_matrix_run"
+source = "Conn–Gould–Toint, Theorem 7.3.4 (hard case with computed Cholesky and LINPACK data)"
+
+[[node]]
+id = "moreSorensenBestBoundaryCoefficient"
+source = "Conn–Gould–Toint, Algorithm 7.3.4 Step 3b(iii) (computed model-minimizing boundary root)"
+
+[[node]]
+id = "moreSorensenBestBoundaryCoefficient_spec"
+source = "Conn–Gould–Toint, Algorithm 7.3.4 Step 3b(iii) (boundary and minimum model value)"
+
+[[node]]
+id = "moreSorensenMatrixIterates_succ"
+source = "Conn–Gould–Toint, Algorithm 7.3.4 (computed matrix recurrence agrees with the spectral specification)"

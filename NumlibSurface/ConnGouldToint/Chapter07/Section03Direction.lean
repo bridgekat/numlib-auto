@@ -1,3 +1,4 @@
+import Numlib.Direct.Substitution
 import Mathlib.Algebra.Order.Star.Real
 import Mathlib.LinearAlgebra.Matrix.PosDef
 import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
@@ -42,6 +43,42 @@ theorem one_le_abs_linpackSign_sub (b : ℝ) : 1 ≤ |linpackSign b - b| := by
     zero_sub, abs_neg] at ht
   unfold linpackSign
   split <;> linarith
+
+/-- Execute the greedy forward solve, selecting the sign after computing
+the contribution from the earlier rows. -/
+noncomputable def linpackForwardSubst {n : ℕ} (L : Matrix (Fin n) (Fin n) ℝ) : Fin n → ℝ
+  | i =>
+    let b := ∑ j ∈ (Finset.univ.filter (· < i)).attach, L i j * linpackForwardSubst L j
+    (linpackSign b - b) / L i i
+termination_by i => i.val
+decreasing_by exact (Finset.mem_filter.mp j.property).2
+
+theorem linpackForwardSubst_apply {n : ℕ} (L : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) :
+    let b := ∑ j ∈ Finset.univ.filter (· < i), L i j * linpackForwardSubst L j
+    linpackForwardSubst L i = (linpackSign b - b) / L i i := by
+  rw [linpackForwardSubst, Finset.sum_attach (Finset.univ.filter (· < i))
+    (fun j => L i j * linpackForwardSubst L j)]
+
+/-- The row recurrence and a backward substitution produce all three vectors
+in the LINPACK direction certificate. -/
+theorem linpack_triangular_solves {n : ℕ} {L : Matrix (Fin n) (Fin n) ℝ}
+    (hL : L.IsLowerTriangular) (hd : ∀ i, L i i ≠ 0) :
+    let w := linpackForwardSubst L
+    let v := fun i => linpackSign (∑ j ∈ Finset.univ.filter (· < i), L i j * w j)
+    let y := Lᵀ.backSubst w
+    L *ᵥ w = v ∧ Lᵀ *ᵥ y = w ∧
+      ∀ i, v i = linpackSign (v i - L i i * w i) := by
+  dsimp only
+  have hrow (i : Fin n) :
+      L i i * linpackForwardSubst L i =
+        linpackSign (∑ j ∈ Finset.univ.filter (· < i), L i j * linpackForwardSubst L j) -
+          ∑ j ∈ Finset.univ.filter (· < i), L i j * linpackForwardSubst L j := by
+    rw [linpackForwardSubst_apply L i, mul_div_cancel₀ _ (hd i)]
+  refine ⟨?_, Matrix.mulVec_backSubst _ (fun _ _ hij => hL hij) hd, ?_⟩
+  · ext i
+    rw [Matrix.mulVec_apply_of_isLowerTriangular hL, hrow, add_sub_cancel]
+  · intro i
+    rw [hrow, sub_sub_cancel]
 
 /-- Rayleigh quotient of the back-solve vector for the shifted Hessian. -/
 noncomputable def linpackCurvature {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ)
@@ -230,25 +267,28 @@ theorem linpackDirection_limit {n : ℕ} (hn : 0 < n)
   exact (hε'.and (Eventually.of_forall fun k => hjε (l k))).exists.elim
     (fun _ hk => (not_lt_of_ge hk.2) hk.1)
 
+/-- Execute the backward solve at a failed pivot and set its pivot entry to one. -/
+noncomputable def failedCholeskyBackSubst {ι : Type*} [Fintype ι] [LinearOrder ι]
+    (L : Matrix ι ι ℝ) (C : Matrix Unit ι ℝ) : ι ⊕ Unit → ℝ :=
+  Sum.elim (Lᵀ.backSubst (-(Cᵀ *ᵥ (fun _ => 1)))) (fun _ => 1)
+
 /-- The back solve at a failed Cholesky pivot gives a kernel vector of the
 rank-one corrected leading principal block. If the pivot occurs before the
 last row, the zero extension can have nonzero residual in later rows, so the
 kernel equation in (7.3.17) is stated on the leading principal block. -/
-theorem failedCholeskyPivotDirection {n : ℕ} {L : Matrix (Fin n) (Fin n) ℝ}
+theorem failedCholeskyBackSubst_spec {ι : Type*} [Fintype ι] [LinearOrder ι]
+    {L : Matrix ι ι ℝ}
     (hL : L.IsLowerTriangular) (hd : ∀ i, 0 < L i i)
-    (C : Matrix Unit (Fin n) ℝ) (δ : ℝ)
-    (B : Matrix (Fin n ⊕ Unit) (Fin n ⊕ Unit) ℝ)
-    (e : Fin n ⊕ Unit → ℝ) (he : e = Sum.elim (0 : Fin n → ℝ) (fun _ : Unit => 1))
+    (C : Matrix Unit ι ℝ) (δ : ℝ)
+    (B : Matrix (ι ⊕ Unit) (ι ⊕ Unit) ℝ)
+    (e : ι ⊕ Unit → ℝ) (he : e = Sum.elim (0 : ι → ℝ) (fun _ : Unit => 1))
     (hB : B + δ • vecMulVec e e = fromRows L C * (fromRows L C)ᵀ) :
-    ∃ v : Fin n ⊕ Unit → ℝ, v (Sum.inr ()) = 1 ∧
-      (B + δ • vecMulVec e e) *ᵥ v = 0 ∧ v ⬝ᵥ B *ᵥ v = -δ := by
-  have hdet : Lᵀ.det ≠ 0 := by
-    rw [Matrix.det_transpose, Matrix.det_of_isLowerTriangular L hL]
-    exact Finset.prod_ne_zero_iff.mpr fun i _ => (hd i).ne'
-  have hunit : IsUnit Lᵀ := (Matrix.isUnit_iff_isUnit_det Lᵀ).mpr (isUnit_iff_ne_zero.mpr hdet)
-  obtain ⟨y, hy⟩ := Matrix.mulVec_surjective_iff_isUnit.mpr hunit
-    (-(Cᵀ *ᵥ (fun _ => 1)))
-  let v : Fin n ⊕ Unit → ℝ := Sum.elim y (fun _ => 1)
+    let v := failedCholeskyBackSubst L C
+    v (Sum.inr ()) = 1 ∧ (B + δ • vecMulVec e e) *ᵥ v = 0 ∧ v ⬝ᵥ B *ᵥ v = -δ := by
+  let y := Lᵀ.backSubst (-(Cᵀ *ᵥ (fun _ => 1)))
+  have hy : Lᵀ *ᵥ y = -(Cᵀ *ᵥ (fun _ => 1)) :=
+    Matrix.mulVec_backSubst _ (fun _ _ hij => hL hij) (fun i => (hd i).ne')
+  let v := failedCholeskyBackSubst L C
   have hzero : (fromRows L C)ᵀ *ᵥ v = 0 := by
     rw [Matrix.transpose_fromRows]
     change fromCols Lᵀ Cᵀ *ᵥ Sum.elim y (fun _ => 1) = 0
@@ -266,7 +306,18 @@ theorem failedCholeskyPivotDirection {n : ℕ} {L : Matrix (Fin n) (Fin n) ℝ}
   have hquadratic := congrArg (fun z => v ⬝ᵥ z) hker
   simp only [Matrix.add_mulVec, Matrix.smul_mulVec, houter, dotProduct_add,
     dotProduct_smul, hve, smul_eq_mul, mul_one, dotProduct_zero] at hquadratic
-  exact ⟨v, rfl, hker, by linarith⟩
+  exact ⟨rfl, hker, by linarith⟩
+
+/-- In particular a corrected leading block has a failed-pivot direction. -/
+theorem failedCholeskyPivotDirection {n : ℕ} {L : Matrix (Fin n) (Fin n) ℝ}
+    (hL : L.IsLowerTriangular) (hd : ∀ i, 0 < L i i)
+    (C : Matrix Unit (Fin n) ℝ) (δ : ℝ)
+    (B : Matrix (Fin n ⊕ Unit) (Fin n ⊕ Unit) ℝ)
+    (e : Fin n ⊕ Unit → ℝ) (he : e = Sum.elim (0 : Fin n → ℝ) (fun _ : Unit => 1))
+    (hB : B + δ • vecMulVec e e = fromRows L C * (fromRows L C)ᵀ) :
+    ∃ v : Fin n ⊕ Unit → ℝ, v (Sum.inr ()) = 1 ∧
+      (B + δ • vecMulVec e e) *ᵥ v = 0 ∧ v ⬝ᵥ B *ᵥ v = -δ :=
+  ⟨failedCholeskyBackSubst L C, failedCholeskyBackSubst_spec hL hd C δ B e he hB⟩
 
 /-- The computed pivot correction is the deficit between the accumulated
 row square and the uncorrected pivot entry. -/
