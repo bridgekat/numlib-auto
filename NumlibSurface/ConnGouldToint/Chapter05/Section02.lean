@@ -79,4 +79,122 @@ theorem algorithm_5_2_1 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace �
       q (j + 1) - ‖Arnoldi.w H r₀ j‖ • q j
     simpa only [q, hd, Lanczos.beta, RCLike.ofReal_real_eq_id, id_eq] using Lanczos.w_succ_eq r₀ hH j
 
+
+/-- Algorithms 5.2.3 and 5.2.4 are the same Lanczos iteration transported
+through the factor of the preconditioner. The second recurrence uses the
+dual vectors obtained by applying the preconditioner to the first. -/
+theorem algorithms_5_2_3_5_2_4
+    {E F : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [CompleteSpace E]
+    [NormedAddCommGroup F] [InnerProductSpace ℝ F] [CompleteSpace F]
+    (R : E ≃L[ℝ] F) {H : E →ₗ[ℝ] E} (hH : H.IsSymmetric) {r₀ : E} (hr₀ : r₀ ≠ 0)
+    (k : ℕ) :
+    let S := R.symm.toContinuousLinearMap
+    let L := R.toContinuousLinearMap
+    let M := L.adjoint.comp L
+    let Minv := S.comp S.adjoint
+    let Hbar := S.adjoint.toLinearMap ∘ₗ H ∘ₗ S.toLinearMap
+    let rbar := S.adjoint r₀
+    let qbar := Arnoldi.vec Hbar rbar
+    let ybar : ℕ → F := fun | 0 => rbar | j + 1 => Arnoldi.w Hbar rbar j
+    let q (j : ℕ) := S (qbar j)
+    let y (j : ℕ) := S (ybar j)
+    let w (j : ℕ) := M (q j)
+    let t (j : ℕ) := M (y j)
+    let prev : ℕ → E := fun | 0 => 0 | j + 1 => q j
+    let prevW : ℕ → E := fun | 0 => 0 | j + 1 => w j
+    let γ := ‖ybar k‖
+    let δ := ⟪q k, H (q k)⟫
+    y 0 = Minv r₀ ∧ t 0 = r₀ ∧
+      γ = Real.sqrt ⟪y k, M (y k)⟫ ∧ q k = γ⁻¹ • y k ∧
+      y (k + 1) = Minv (H (q k)) - δ • q k - γ • prev k ∧
+      y k = Minv (t k) ∧ γ = Real.sqrt ⟪t k, y k⟫ ∧ w k = γ⁻¹ • t k ∧
+      t (k + 1) = H (q k) - δ • w k - γ • prevW k := by
+  intro S L M Minv Hbar rbar qbar ybar q y w t prev prevW γ δ
+  have hLS (z : F) : L (S z) = z := R.apply_symm_apply z
+  have hSL (z : E) : S (L z) = z := R.symm_apply_apply z
+  have hSadL (z : F) : S.adjoint (L.adjoint z) = z := by
+    have he : L.comp S = ContinuousLinearMap.id ℝ F := ContinuousLinearMap.ext hLS
+    have he' := congrArg ContinuousLinearMap.adjoint he
+    rw [ContinuousLinearMap.adjoint_comp, ContinuousLinearMap.adjoint_id] at he'
+    exact congrArg (fun B : F →L[ℝ] F ↦ B z) he'
+  have hLadS (z : E) : L.adjoint (S.adjoint z) = z := by
+    have he : S.comp L = ContinuousLinearMap.id ℝ E := ContinuousLinearMap.ext hSL
+    have he' := congrArg ContinuousLinearMap.adjoint he
+    rw [ContinuousLinearMap.adjoint_comp, ContinuousLinearMap.adjoint_id] at he'
+    exact congrArg (fun B : E →L[ℝ] E ↦ B z) he'
+  have hMS (z : F) : M (S z) = L.adjoint z := by
+    change L.adjoint (L (S z)) = _
+    rw [hLS]
+  have hMinv (z : E) : Minv (M z) = z := by
+    change S (S.adjoint (L.adjoint (L z))) = z
+    rw [hSadL, hSL]
+  have hMMinv (z : E) : M (Minv z) = z := by
+    change M (S (S.adjoint z)) = z
+    rw [hMS, hLadS]
+  have hsym : Hbar.IsSymmetric := by
+    intro u v
+    change ⟪S.adjoint (H (S u)), v⟫ = ⟪u, S.adjoint (H (S v))⟫
+    rw [S.adjoint_inner_left, S.adjoint_inner_right, hH]
+  have hrbar : rbar ≠ 0 := by
+    intro h
+    have he := hLadS r₀
+    change L.adjoint rbar = r₀ at he
+    rw [h, map_zero] at he
+    exact hr₀ he.symm
+  obtain ⟨hqbar, hybar⟩ := algorithm_5_2_1 hsym hrbar k
+  let prevBar : ℕ → F := fun | 0 => 0 | j + 1 => qbar j
+  change qbar k = γ⁻¹ • ybar k at hqbar
+  change ybar (k + 1) = Hbar (qbar k) - ⟪qbar k, Hbar (qbar k)⟫ • qbar k -
+    γ • prevBar k at hybar
+  have hδ : ⟪qbar k, Hbar (qbar k)⟫ = δ := S.adjoint_inner_right _ _
+  have hprev (j : ℕ) : S (prevBar j) = prev j := by
+    cases j <;> simp [prevBar, prev, q]
+  have hprevW (j : ℕ) : M (prev j) = prevW j := by
+    cases j <;> simp [prevW, prev, w]
+  have hy (j : ℕ) : Minv (t j) = y j := hMinv _
+  have hq : q k = γ⁻¹ • y k := by
+    change S (qbar k) = _
+    rw [hqbar, map_smul]
+  have hyrec : y (k + 1) = Minv (H (q k)) - δ • q k - γ • prev k := by
+    change S (ybar (k + 1)) = _
+    rw [hybar, map_sub, map_sub, map_smul, map_smul, hδ, hprev]
+    rfl
+  have hnorm : γ = Real.sqrt ⟪y k, M (y k)⟫ := by
+    change ‖ybar k‖ = Real.sqrt ⟪S (ybar k), M (S (ybar k))⟫
+    rw [hMS, L.adjoint_inner_right, hLS, real_inner_self_eq_norm_sq, Real.sqrt_sq (norm_nonneg _)]
+  refine ⟨rfl, hMMinv r₀, hnorm, hq, hyrec, (hy k).symm, ?_, ?_, ?_⟩
+  · simpa only [t, real_inner_comm (M (y k))] using hnorm
+  · change M (q k) = _
+    rw [hq, map_smul]
+  · change M (y (k + 1)) = _
+    rw [hyrec, map_sub, map_sub, map_smul, map_smul, hMMinv, hprevW]
+
+
+/-- The transported nonzero Lanczos vectors are orthonormal in the
+preconditioner inner product, as in (5.2.51). -/
+theorem preconditioned_lanczos_orthonormal_5_2_51
+    {E F : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [CompleteSpace E]
+    [NormedAddCommGroup F] [InnerProductSpace ℝ F] [CompleteSpace F]
+    (R : E ≃L[ℝ] F) (H : E →ₗ[ℝ] E) (r₀ : E) (i j : ℕ) :
+    let S := R.symm.toContinuousLinearMap
+    let L := R.toContinuousLinearMap
+    let M := L.adjoint.comp L
+    let Hbar := S.adjoint.toLinearMap ∘ₗ H ∘ₗ S.toLinearMap
+    let qbar := Arnoldi.vec Hbar (S.adjoint r₀)
+    let q (k : ℕ) := S (qbar k)
+    (i ≠ j → ⟪q i, M (q j)⟫ = 0) ∧ (qbar i ≠ 0 → ⟪q i, M (q i)⟫ = 1) := by
+  intro S L M Hbar qbar q
+  have hinner (a b : F) : ⟪S a, M (S b)⟫ = ⟪a, b⟫ := by
+    change ⟪S a, L.adjoint (L (S b))⟫ = _
+    rw [L.adjoint_inner_right]
+    change ⟪R (R.symm a), R (R.symm b)⟫ = _
+    rw [R.apply_symm_apply, R.apply_symm_apply]
+  refine ⟨fun hij ↦ ?_, fun hi ↦ ?_⟩
+  · change ⟪S (qbar i), M (S (qbar j))⟫ = 0
+    rw [hinner]
+    exact Arnoldi.inner_vec_eq_zero Hbar (S.adjoint r₀) hij
+  · change ⟪S (qbar i), M (S (qbar i))⟫ = 1
+    rw [hinner, real_inner_self_eq_norm_sq, Arnoldi.norm_vec_eq_one_of_ne_zero Hbar
+      (S.adjoint r₀) hi, one_pow]
+
 end ConnGouldToint.Chapter05

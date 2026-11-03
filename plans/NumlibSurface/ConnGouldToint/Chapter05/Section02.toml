@@ -7,3 +7,11 @@ source = "Conn–Gould–Toint, Lemma 5.2.1"
 [[node]]
 id = "algorithm_5_2_1"
 source = "Conn, Gould and Toint, Trust-Region Methods, Algorithms 5.2.1–5.2.2"
+
+[[node]]
+id = "algorithms_5_2_3_5_2_4"
+source = "Conn, Gould and Toint, Trust-Region Methods, Algorithms 5.2.3–5.2.4 and (5.2.45)–(5.2.50)"
+
+[[node]]
+id = "preconditioned_lanczos_orthonormal_5_2_51"
+source = "Conn, Gould and Toint, Trust-Region Methods, (5.2.51)"
