@@ -9,5 +9,37 @@ id = "gaussNewtonResidual"
 source = "Conn–Gould–Toint, (16.1.6)"
 
 [[node]]
+id = "newtonLeastSquaresModel"
+source = "Conn–Gould–Toint, (16.1.7)"
+
+[[node]]
+id = "quadraticResidual"
+source = "Conn–Gould–Toint, (16.1.8)"
+
+[[node]]
 id = "theorem_16_1_1"
 source = "Conn–Gould–Toint, Theorem 16.1.1"
+
+[[node]]
+id = "leastSquares_hessian_apply"
+source = "Conn–Gould–Toint, (16.1.5)"
+
+[[node]]
+id = "leastSquares_hessian_sub"
+source = "Conn–Gould–Toint, (16.1.5)"
+
+[[node]]
+id = "theorem_16_1_2"
+source = "Conn–Gould–Toint, Theorem 16.1.2"
+
+[[node]]
+id = "theorem_16_1_3"
+source = "Conn–Gould–Toint, Theorem 16.1.3"
+
+[[node]]
+id = "theorem_16_1_3_of_tendsto_root"
+source = "Conn–Gould–Toint, (16.1.9)"
+
+[[node]]
+id = "theorem_16_1_2_unbounded_radii_counterexample"
+source = "Conn–Gould–Toint, Theorem 16.1.2"
