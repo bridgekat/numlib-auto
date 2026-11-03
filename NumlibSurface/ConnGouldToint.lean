@@ -50,6 +50,11 @@ expresses the exclusion of the hard case through eigenvector nonorthogonality. T
 uses the preconditioner inner-product coordinates.
 The Moré–Sorensen iteration allows exact arrival at the root. The sufficient objective
 acceptance coefficient in the stopping rules is an upper bound on the chosen coefficient.
+For Theorem 7.3.4, the convergence phases are formalized separately. A fixed leftmost
+eigenvector and a continuous boundary correction give vector convergence in the hard case.
+The original direction-selection guarantee and the complete safeguarded algorithm remain open.
+Weighted subproblems use the M-inner product or the explicit coordinate transformation.
+
 
 Theorem 9.1.1 requires a positive ball radius. A radius-zero counterexample shows that
 validity at the center alone gives no gradient bound.

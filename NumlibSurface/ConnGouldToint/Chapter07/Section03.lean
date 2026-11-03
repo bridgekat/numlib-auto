@@ -1,4 +1,5 @@
 import Numlib.Nonlinear.ScalarNewton
+import Numlib.Optimization.Subproblem.Bracketing
 import Numlib.Optimization.Subproblem.SecularIteration
 import Numlib.Optimization.Subproblem.Multiplier
 
@@ -407,5 +408,273 @@ theorem acceptable_of_hard_stopping_rule {μ Δ κ κopt κtr : ℝ} (hμ : 0 �
   have h : IsAcceptableModelStep g H Δ (1 - κ) 1 (shiftedStep g H μ + v) sM :=
     ⟨lemma_7_3_6 hμ hlam hκ hsM hboundary hdir, by simp [hboundary]⟩
   exact h.weaken hΔ (quadModel_nonpos_of_isMinOn hΔ hmin) hopt htr
+
+/-- The safeguarded geometric trial multiplier in (7.3.14). -/
+noncomputable abbrev moreSorensenTrial (θ lo hi : ℝ) : ℝ := bracketEstimate 1 θ lo hi
+
+/-- The spectral bounds (7.3.18) on the multiplier of a boundary solution. -/
+theorem multiplier_bounds_of_boundary {μ Δ : ℝ} {s : E} (hΔ : 0 < Δ)
+    (hμ : -leftmost hH ≤ μ)
+    (hs : (H + μ • (1 : E →L[ℝ] E)) s = -g) (hn : ‖s‖ = Δ) :
+    ‖g‖ / Δ - rightmost hH ≤ μ ∧ μ ≤ ‖g‖ / Δ - leftmost hH := by
+  obtain ⟨hl, hu⟩ := norm_add_smul_apply_bounds (hH := hH) hμ s
+  rw [hs, norm_neg, hn] at hl hu
+  exact ⟨sub_le_iff_le_add.mpr ((div_le_iff₀ hΔ).2 hu),
+    le_sub_iff_add_le.mpr ((le_div_iff₀ hΔ).2 hl)⟩
+
+/-- The finite-entry part of Theorem 7.3.4 for the safeguarded bracketing phase.
+With a nonempty Newton interval and a strictly lower initial bracket end, a trial
+multiplier reaches that interval. -/
+theorem moreSorensen_bracketing_enters_newton {r θ : ℝ} {lo hi lam : ℕ → ℝ}
+    (hrun : IsBracketRun (shiftThreshold hH) r θ θ lo hi lam)
+    (hr : shiftThreshold hH < r) (hlo : lo 0 < r) (hθ : θ ∈ Ioo 0 1) :
+    ∃ k, lam k ∈ Ioc (shiftThreshold hH) r := by
+  obtain ⟨k, -, hk⟩ := hrun.exists_mem hr hlo hθ.1 hθ.2
+  exact ⟨k, hk⟩
+
+/-- The multiplier part of Theorem 7.3.4 when safeguarding continues indefinitely.
+Every trial lies outside the Newton interval, so the contracting brackets give convergence
+to the optimal multiplier. -/
+theorem moreSorensen_bracketing_tendsto {r θ : ℝ} {lo hi lam : ℕ → ℝ}
+    (hrun : IsBracketRun (shiftThreshold hH) r θ θ lo hi lam)
+    (hr : shiftThreshold hH ≤ r) (hθ : θ ∈ Ioo 0 1)
+    (hnever : ∀ k, lam k ∉ Ioc (shiftThreshold hH) r) :
+    Tendsto lam atTop (𝓝 r) :=
+  (hrun.tendsto_bracket_of_never_mem hr hθ.1 hθ.2 hnever).2.2
+
+/-- The easy Newton phase in Theorem 7.3.4. Once a trial has negative secular value above
+the pole, the Newton iterates converge quadratically to the root and the shifted steps
+converge to the corresponding trust-region solution. -/
+theorem moreSorensen_easy_newton_convergence (hg : g ≠ 0) {Δ r x₀ : ℝ}
+    (hΔ : 0 < Δ) (hr : -leftmost hH < r) (hr₀ : 0 ≤ r)
+    (hroot : secular g H r = Δ ^ 2) (hx₀ : -leftmost hH < x₀) (hbelow : phi g H Δ x₀ < 0) :
+    let x := fun k : ℕ => (moreSorensenNewtonStep g H Δ)^[k] x₀
+    let sM := shiftedStep g H r
+    ConvergesWithOrder x r 2 ∧ Tendsto (fun k => shiftedStep g H (x k)) atTop (𝓝 sM) ∧
+      ‖sM‖ ≤ Δ ∧ IsMinOn (quadModel g H) (Metric.closedBall 0 Δ) sM := by
+  have hconv := (lemma_7_3_2 hg hΔ hr hroot hx₀ hbelow).2.2.2.2
+  have hfun : stepDeriv g H 0 = shiftedStep g H := funext stepDeriv_zero
+  have hcont : ContinuousAt (shiftedStep g H) r := by
+    rw [← hfun]
+    exact (hasDerivAt_stepDeriv (g := g) hr 0).continuousAt
+  have hnorm : ‖shiftedStep g H r‖ = Δ := by
+    change ‖shiftedStep g H r‖ ^ 2 = Δ ^ 2 at hroot
+    nlinarith [norm_nonneg (shiftedStep g H r)]
+  have hmul : IsTrustRegionMultiplier g H Δ (shiftedStep g H r) r :=
+    ⟨hr₀, (step_spec hr).1, isPositive_add_smul_of_le hr.le, by simp [hnorm]⟩
+  exact ⟨hconv, hcont.tendsto.comp hconv.tendsto, hnorm.le, hmul.isMinOn hH⟩
+
+/-- With an interior secular root, safeguarding either finds the root exactly
+or supplies a starting value from which the Newton phase converges quadratically. -/
+theorem moreSorensen_easy_bracket_then_newton (hg : g ≠ 0) {Δ r θ : ℝ}
+    {lo hi lam : ℕ → ℝ} (hΔ : 0 < Δ) (hr : shiftThreshold hH < r)
+    (hroot : secular g H r = Δ ^ 2) (hlo : lo 0 < r) (hθ : θ ∈ Ioo 0 1)
+    (hrun : IsBracketRun (shiftThreshold hH) r θ θ lo hi lam) :
+    ∃ k, lam k = r ∨
+      let x := fun j : ℕ => (moreSorensenNewtonStep g H Δ)^[j] (lam k)
+      ConvergesWithOrder x r 2 ∧
+        Tendsto (fun j => shiftedStep g H (x j)) atTop (𝓝 (shiftedStep g H r)) := by
+  obtain ⟨k, hk⟩ := moreSorensen_bracketing_enters_newton hrun hr hlo hθ
+  have ha : -leftmost hH < r := neg_leftmost_le_shiftThreshold.trans_lt hr
+  refine ⟨k, ?_⟩
+  rcases hk.2.lt_or_eq with hkr | hkr
+  · have hx : -leftmost hH < lam k := neg_leftmost_le_shiftThreshold.trans_lt hk.1
+    have hm := (trSecular_shape (hH := hH) hg Δ (β := -1 / 2) (by norm_num)).2.1
+    have hbelow : phi g H Δ (lam k) < 0 := phi_root hΔ hroot ▸ hm hx ha hkr
+    have h := moreSorensen_easy_newton_convergence hg hΔ ha
+      (shiftThreshold_nonneg.trans hr.le) hroot hx hbelow
+    exact Or.inr ⟨h.1, h.2.1⟩
+  · exact Or.inl hkr
+
+/-- The finite interior branch of Theorem 7.3.4: a feasible unshifted solve
+with a positive definite Hessian is already a model minimizer. -/
+theorem moreSorensen_interior_solution {Δ : ℝ} (hHpos : -leftmost hH < 0)
+    (hs : ‖shiftedStep g H 0‖ ≤ Δ) :
+    shiftedStep g H 0 ∈ Metric.closedBall 0 Δ ∧
+      IsMinOn (quadModel g H) (Metric.closedBall 0 Δ) (shiftedStep g H 0) := by
+  have hmul : IsTrustRegionMultiplier g H Δ (shiftedStep g H 0) 0 :=
+    ⟨le_rfl, (step_spec hHpos).1, isPositive_add_smul_of_le hHpos.le, zero_mul _⟩
+  exact hmul.isMinOn_of_norm_le hH hs
+
+/-- An exact unit leftmost eigenvector provides a direction with the vanishing
+shifted curvature required in (7.3.16). This gives an eigensolver-based alternative
+to requiring that property of the LINPACK heuristic. -/
+theorem moreSorensen_exact_leftmost_curvature_tendsto {u : E} (hu : ‖u‖ = 1)
+    (heig : H u = leftmost hH • u) {lam : ℕ → ℝ}
+    (hlam : Tendsto lam atTop (𝓝 (-leftmost hH))) :
+    Tendsto (fun k => ⟪u, (H + lam k • (1 : E →L[ℝ] E)) u⟫) atTop (𝓝 0) := by
+  have heq (k : ℕ) : ⟪u, (H + lam k • (1 : E →L[ℝ] E)) u⟫ = lam k + leftmost hH := by
+    simp only [add_apply, smul_apply, one_apply_eq_self, heig, inner_add_right,
+      real_inner_smul_right, real_inner_self_eq_norm_sq, hu, one_pow, mul_one]
+    exact add_comm _ _
+  simpa only [heq, neg_add_cancel] using hlam.add_const (leftmost hH)
+
+/-- A hard-case boundary correction preserves the vanishing shifted curvature in
+(7.3.16). Its scalar coefficient is bounded by twice the radius, since both the
+raw and the corrected steps lie in the ball. -/
+theorem moreSorensen_hard_correction_curvature_tendsto {Δ : ℝ}
+    (lam α : ℕ → ℝ) (u : ℕ → E) (hlam : ∀ k, -leftmost hH < lam k)
+    (hraw : ∀ k, ‖shiftedStep g H (lam k)‖ ≤ Δ) (hunit : ∀ k, ‖u k‖ = 1)
+    (hboundary : ∀ k, ‖shiftedStep g H (lam k) + α k • u k‖ = Δ)
+    (hcurv : Tendsto (fun k => ⟪u k, (H + lam k • (1 : E →L[ℝ] E)) (u k)⟫) atTop (𝓝 0)) :
+    Tendsto (fun k => ⟪α k • u k, (H + lam k • (1 : E →L[ℝ] E)) (α k • u k)⟫)
+      atTop (𝓝 0) := by
+  let A := fun k => H + lam k • (1 : E →L[ℝ] E)
+  have hpos (k : ℕ) (w : E) : 0 ≤ ⟪w, A k w⟫ :=
+    ContinuousLinearMap.inner_apply_nonneg_of_isPositive
+      (isPositive_add_smul_of_le (hlam k).le) w
+  have halpha (k : ℕ) : |α k| ≤ 2 * Δ := calc
+    _ = ‖α k • u k‖ := by rw [norm_smul, hunit, mul_one, Real.norm_eq_abs]
+    _ = ‖(shiftedStep g H (lam k) + α k • u k) - shiftedStep g H (lam k)‖ := by
+      rw [add_sub_cancel_left]
+    _ ≤ _ := by
+      have hn := norm_sub_le (shiftedStep g H (lam k) + α k • u k)
+        (shiftedStep g H (lam k))
+      rw [hboundary] at hn
+      linarith [hraw k]
+  have hbound (k : ℕ) : ⟪α k • u k, A k (α k • u k)⟫ ≤ (2 * Δ) ^ 2 * ⟪u k, A k (u k)⟫ := by
+    rw [map_smul, real_inner_smul_left, real_inner_smul_right, ← mul_assoc, ← sq]
+    apply mul_le_mul_of_nonneg_right _ (hpos k _)
+    simpa only [sq_abs] using pow_le_pow_left₀ (abs_nonneg _) (halpha k) 2
+  exact squeeze_zero (fun k => hpos k _) hbound
+    (by simpa only [mul_zero] using hcurv.const_mul ((2 * Δ) ^ 2))
+
+/-- The hard-case conclusion of Theorem 7.3.4 for boundary corrections whose shifted
+curvature tends to zero. Model values converge to the minimum, and every subsequential
+limit is a minimizer. In the hard case a single vector limit requires additional control
+of the correction directions or uniqueness of the minimizer. -/
+theorem moreSorensen_hard_model_convergence {Δ : ℝ} {sM : E} (hsM : ‖sM‖ ≤ Δ)
+    (hmin : IsMinOn (quadModel g H) (Metric.closedBall 0 Δ) sM)
+    (lam : ℕ → ℝ) (v : ℕ → E) (hlam₀ : ∀ k, 0 ≤ lam k)
+    (hlam : ∀ k, -leftmost hH < lam k)
+    (hboundary : ∀ k, ‖shiftedStep g H (lam k) + v k‖ = Δ)
+    (hcurv : Tendsto (fun k => ⟪v k, (H + lam k • (1 : E →L[ℝ] E)) (v k)⟫) atTop (𝓝 0)) :
+    let s := fun k => shiftedStep g H (lam k) + v k
+    Tendsto (fun k => quadModel g H (s k)) atTop (𝓝 (quadModel g H sM)) ∧
+      (∀ (j : ℕ → ℕ) (u : E), Tendsto j atTop atTop →
+        Tendsto (s ∘ j) atTop (𝓝 u) →
+        u ∈ Metric.closedBall 0 Δ ∧ IsMinOn (quadModel g H) (Metric.closedBall 0 Δ) u) ∧
+      ((∀ u ∈ Metric.closedBall 0 Δ,
+        IsMinOn (quadModel g H) (Metric.closedBall 0 Δ) u → u = sM) →
+        Tendsto s atTop (𝓝 sM)) := by
+  let s := fun k => shiftedStep g H (lam k) + v k
+  have hfeas (k : ℕ) : s k ∈ Metric.closedBall 0 Δ :=
+    mem_closedBall_zero_iff.mpr (hboundary k).le
+  have hgap (k : ℕ) : quadModel g H (s k) - quadModel g H sM ≤
+      (1 / 2) * ⟪v k, (H + lam k • (1 : E →L[ℝ] E)) (v k)⟫ := by
+    have hs := (step_spec (g := g) (hlam k)).1
+    have hlow := quadModel_lower_bound_of_shifted (hH := hH) (hlam₀ k) (hlam k) hs hsM
+    have heq := quadModel_eq_of_shifted_comparison hH hs (s k)
+    have hdiff : s k - shiftedStep g H (lam k) = v k := by dsimp [s]; abel
+    rw [show step g H (lam k) = shiftedStep g H (lam k) from rfl, hdiff, hboundary k] at heq
+    linarith only [hlow, heq]
+  have ht : Tendsto (fun k => quadModel g H (s k) - quadModel g H sM) atTop (𝓝 0) :=
+    squeeze_zero (fun k => sub_nonneg.mpr ((isMinOn_iff.mp hmin) _ (hfeas k))) hgap
+      (by simpa only [mul_zero] using hcurv.const_mul (1 / 2))
+  have hval : Tendsto (fun k => quadModel g H (s k)) atTop (𝓝 (quadModel g H sM)) := by
+    simpa only [sub_add_cancel, zero_add] using ht.add_const (quadModel g H sM)
+  have hcluster (j : ℕ → ℕ) (u : E) (hj : Tendsto j atTop atTop)
+      (hu : Tendsto (s ∘ j) atTop (𝓝 u)) :
+      u ∈ Metric.closedBall 0 Δ ∧ IsMinOn (quadModel g H) (Metric.closedBall 0 Δ) u := by
+    refine ⟨Metric.isClosed_closedBall.mem_of_tendsto hu (Eventually.of_forall fun k => hfeas (j k)), ?_⟩
+    have hq : quadModel g H u = quadModel g H sM :=
+      tendsto_nhds_unique ((continuous_quadModel g H).continuousAt.tendsto.comp hu) (hval.comp hj)
+    rw [isMinOn_iff]
+    intro x hx
+    rw [hq]
+    exact (isMinOn_iff.mp hmin) x hx
+  refine ⟨hval, hcluster, fun hunique => ?_⟩
+  apply Metric.tendsto_nhds.mpr
+  intro ε hε
+  by_contra hbad
+  have hfreq : ∃ᶠ k in atTop, ¬ dist (s k) sM < ε := by
+    simpa only [Filter.Frequently, not_not] using hbad
+  have hin : ∃ᶠ k in atTop, s k ∈ Metric.closedBall 0 Δ ∩ (Metric.ball sM ε)ᶜ :=
+    hfreq.mono fun k hk => ⟨hfeas k, hk⟩
+  obtain ⟨u, hu, j, hj, hju⟩ :=
+    ((isCompact_closedBall (0 : E) Δ).inter_right Metric.isOpen_ball.isClosed_compl).tendsto_subseq' hin
+  obtain ⟨huf, hum⟩ := hcluster j u hj.tendsto_atTop hju
+  have heq : u = sM := hunique u huf hum
+  exact hu.2 (by simpa [heq, Metric.mem_ball] using hε)
+
+/-- In the hard bracketing phase, a strictly feasible upper endpoint guarantees
+arbitrarily late positive-definite trials. -/
+theorem moreSorensen_hard_bracketing_subsequence {θ : ℝ} {lo hi lam : ℕ → ℝ}
+    (hθ : θ ∈ Ioo 0 1) (hrun : IsBracketRun (-leftmost hH) (-leftmost hH) θ θ lo hi lam)
+    (hhi : -leftmost hH < hi 0) :
+    ∃ j : ℕ → ℕ, Tendsto j atTop atTop ∧ ∀ k, -leftmost hH < lam (j k) :=
+  exists_seq_forall_of_frequently (hrun.frequently_gt_of_eq rfl hhi hθ.1 hθ.2)
+
+/-- A fixed root of the boundary equation in Step 3b(iii) of Algorithm 7.3.4
+for a unit correction direction. Fixing the root makes the correction continuous. -/
+noncomputable def moreSorensenBoundaryCoefficient (Δ : ℝ) (s u : E) : ℝ :=
+  √(Δ ^ 2 - ‖s‖ ^ 2 + ⟪s, u⟫ ^ 2) - ⟪s, u⟫
+
+omit [FiniteDimensional ℝ E] in
+/-- The selected correction reaches the boundary from any step in the ball. -/
+theorem norm_add_boundaryCorrection {Δ : ℝ} {s u : E} (hs : ‖s‖ ≤ Δ) (hu : ‖u‖ = 1) :
+    ‖s + moreSorensenBoundaryCoefficient Δ s u • u‖ = Δ := by
+  let c := ⟪s, u⟫
+  let d := √(Δ ^ 2 - ‖s‖ ^ 2 + c ^ 2)
+  have hsq := pow_le_pow_left₀ (norm_nonneg s) hs 2
+  have hd : d ^ 2 = Δ ^ 2 - ‖s‖ ^ 2 + c ^ 2 :=
+    Real.sq_sqrt (add_nonneg (sub_nonneg.mpr hsq) (sq_nonneg _))
+  change ‖s + (d - c) • u‖ = Δ
+  have heq : ‖s + (d - c) • u‖ ^ 2 = Δ ^ 2 := by
+    rw [norm_add_sq_real, real_inner_smul_right, norm_smul, hu, mul_one, Real.norm_eq_abs, sq_abs]
+    change ‖s‖ ^ 2 + 2 * ((d - c) * c) + (d - c) ^ 2 = Δ ^ 2
+    nlinarith only [hd]
+  have hΔ := (norm_nonneg s).trans hs
+  simpa only [abs_of_nonneg (norm_nonneg _), abs_of_nonneg hΔ] using
+    (sq_eq_sq_iff_abs_eq_abs _ _).mp heq
+
+/-- A corrected hard-phase version of Theorem 7.3.4. Safeguarding converges to the
+pole. On the positive-definite subsequence, using a fixed unit leftmost eigenvector
+and a fixed root formula for the boundary correction gives a vector limit that
+minimizes the model. The correction uses exact spectral data in place of the
+LINPACK direction heuristic. -/
+theorem moreSorensen_hard_bracket_then_exact_correction (hg : g ≠ 0)
+    {Δ θ : ℝ} {sM : E} {lo hi lam : ℕ → ℝ} (hθ : θ ∈ Ioo 0 1)
+    (hrun : IsBracketRun (-leftmost hH) (-leftmost hH) θ θ lo hi lam)
+    (hsM : ‖sM‖ ≤ Δ) (hmul : IsTrustRegionMultiplier g H Δ sM (-leftmost hH))
+    (hhi : -leftmost hH < hi 0) {u : E} (hu : ‖u‖ = 1) (heig : H u = leftmost hH • u) :
+    Tendsto lam atTop (𝓝 (-leftmost hH)) ∧
+    ∃ j : ℕ → ℕ, Tendsto j atTop atTop ∧
+      (∀ k, -leftmost hH < lam (j k)) ∧
+      let α := fun k => moreSorensenBoundaryCoefficient Δ (shiftedStep g H (lam (j k))) u
+      let s := fun k => shiftedStep g H (lam (j k)) + α k • u
+      (∀ k, ‖s k‖ = Δ) ∧
+      Tendsto (fun k => quadModel g H (s k)) atTop (𝓝 (quadModel g H sM)) ∧
+      ∃ w : E, Tendsto s atTop (𝓝 w) ∧ w ∈ Metric.closedBall 0 Δ ∧
+        IsMinOn (quadModel g H) (Metric.closedBall 0 Δ) w := by
+  have hlim := (hrun.tendsto_bracket_of_never_mem le_rfl hθ.1 hθ.2 (fun k => by simp)).2.2
+  obtain ⟨j, hj, hpos⟩ := moreSorensen_hard_bracketing_subsequence hθ hrun hhi
+  have hraw (k : ℕ) : ‖shiftedStep g H (lam (j k))‖ ≤ Δ := by
+    have hs := (secular_lt_norm_sq_of_shifted (hH := hH) hg le_rfl hmul.shifted (hpos k)).le
+    have hΔ : 0 ≤ Δ := (norm_nonneg sM).trans hsM
+    exact (pow_le_pow_iff_left₀ (norm_nonneg _) hΔ two_ne_zero).mp
+      (hs.trans (pow_le_pow_left₀ (norm_nonneg sM) hsM 2))
+  let α := fun k => moreSorensenBoundaryCoefficient Δ (shiftedStep g H (lam (j k))) u
+  have hboundary (k : ℕ) : ‖shiftedStep g H (lam (j k)) + α k • u‖ = Δ :=
+    norm_add_boundaryCorrection (hraw k) hu
+  have hcurv := moreSorensen_exact_leftmost_curvature_tendsto hu heig (hlim.comp hj)
+  have hvc := moreSorensen_hard_correction_curvature_tendsto
+    (lam ∘ j) α (fun _ => u) hpos hraw (fun _ => hu) hboundary hcurv
+  have h := moreSorensen_hard_model_convergence (hH := hH) hsM (hmul.isMinOn hH)
+    (lam ∘ j) (fun k => α k • u) (fun k => hmul.nonneg.trans (hpos k).le) hpos hboundary hvc
+  let p := particular hH g (-leftmost hH)
+  have hgorth := (particular_add_of_shifted (hH := hH) hmul.shifted).1
+  have hright : Tendsto (lam ∘ j) atTop (𝓝[>] (-leftmost hH)) :=
+    tendsto_nhdsWithin_iff.mpr ⟨hlim.comp hj, Eventually.of_forall hpos⟩
+  have hp : Tendsto (fun k => shiftedStep g H (lam (j k))) atTop (𝓝 p) :=
+    ((tendsto_step_threshold (hH := hH)).1 hgorth).1.comp hright
+  have hcont : Continuous (fun s : E => moreSorensenBoundaryCoefficient Δ s u) := by
+    unfold moreSorensenBoundaryCoefficient
+    fun_prop
+  let w := p + moreSorensenBoundaryCoefficient Δ p u • u
+  have hw : Tendsto (fun k => shiftedStep g H (lam (j k)) + α k • u) atTop (𝓝 w) :=
+    hp.add ((hcont.continuousAt.tendsto.comp hp).smul tendsto_const_nhds)
+  refine ⟨hlim, j, hj, hpos, hboundary, h.1, w, hw, ?_⟩
+  exact h.2.1 id w tendsto_id hw
 
 end ConnGouldToint.Chapter07

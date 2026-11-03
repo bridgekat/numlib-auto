@@ -1,0 +1,25 @@
+namespace = "ConnGouldToint.Chapter07"
+
+[[node]]
+id = "mNorm"
+source = "Conn–Gould–Toint, Section 7.4 and (7.4.1)"
+
+[[node]]
+id = "matrixQuadModel"
+source = "Conn–Gould–Toint, (7.4.1)"
+
+[[node]]
+id = "weightedTrustRegion"
+source = "Conn–Gould–Toint, (7.4.1)"
+
+[[node]]
+id = "isMinOn_weightedTrustRegion_iff_scaled"
+source = "Conn–Gould–Toint, (7.4.1)–(7.4.4)"
+
+[[node]]
+id = "isMinOn_weightedTrustRegion_iff_congruence"
+source = "Conn–Gould–Toint, (7.4.2)–(7.4.4)"
+
+[[node]]
+id = "theorem_7_4_1"
+source = "Conn–Gould–Toint, Theorem 7.4.1"

@@ -37,7 +37,8 @@ lower end below `b`: if `λᴸ = λ*` initially, a run need not stop (while the 
 `λ*`, every trial value exceeds `λ*`), even when `𝓛` is nonempty.
 -/
 
-open Set
+open Set Filter
+open scoped Topology
 
 namespace Subproblem
 
@@ -366,6 +367,66 @@ theorem exists_mem (hab : a < b) (hlo : lo 0 < b) (hθL : 0 < θL) (hθU : θU <
     rw [pow_succ, mul_comm (ρ ^ N) ρ, mul_assoc]
     exact mul_le_mul_of_nonneg_left ((le_div_iff₀ hWpos).1 hpowN) hρpos.le
   nlinarith
+
+/-- If a safeguarded run never reaches the Newton interval, both bracket endpoints
+and the trial multipliers converge to the target. The widths decay geometrically. -/
+theorem tendsto_bracket_of_never_mem (hab : a ≤ b) (hθL : 0 < θL) (hθU : θU < 1)
+    (hnever : ∀ k, c k ∉ Ioc a b) :
+    Tendsto lo atTop (𝓝 b) ∧ Tendsto hi atTop (𝓝 b) ∧ Tendsto c atTop (𝓝 b) := by
+  let ρ := max (1 - θL) (max θU (1 / 2))
+  have hρ0 : 0 ≤ ρ := by
+    exact (by norm_num : (0 : ℝ) ≤ 1 / 2).trans ((le_max_right _ _).trans (le_max_right _ _))
+  have hρ1 : ρ < 1 := max_lt (by linarith) (max_lt hθU (by norm_num))
+  have hdecay (n : ℕ) : hi (n + 1) - lo (n + 1) ≤ ρ ^ n * (hi 1 - lo 1) := by
+    induction n with
+    | zero => simp
+    | succ n ih =>
+      calc
+        _ ≤ ρ * (hi (n + 1) - lo (n + 1)) :=
+          h.width_le hab (Nat.le_add_left 1 n) (hnever (n + 1))
+        _ ≤ ρ * (ρ ^ n * (hi 1 - lo 1)) := mul_le_mul_of_nonneg_left ih hρ0
+        _ = _ := by rw [pow_succ']; ring
+  have htend (f : ℕ → ℝ)
+      (hf : ∀ n, f (n + 1) ∈ Icc (lo (n + 1)) (hi (n + 1))) : Tendsto f atTop (𝓝 b) := by
+    have hnorm (n : ℕ) : ‖f (n + 1) - b‖ ≤ hi (n + 1) - lo (n + 1) := by
+      obtain ⟨hl, hu⟩ := hf n
+      rw [Real.norm_eq_abs, abs_le]
+      constructor <;> linarith [h.lo_le hab (n + 1), h.le_hi (n + 1)]
+    apply (tendsto_add_atTop_iff_nat 1).mp
+    apply tendsto_iff_norm_sub_tendsto_zero.mpr
+    refine squeeze_zero (fun n => norm_nonneg _) (fun n => (hnorm n).trans (hdecay n)) ?_
+    simpa using (tendsto_pow_atTop_nhds_zero_of_lt_one hρ0 hρ1).mul_const (hi 1 - lo 1)
+  have hlu (n : ℕ) : lo n ≤ hi n := (h.lo_le hab n).trans (h.le_hi n)
+  exact ⟨htend lo fun n => ⟨le_rfl, hlu _⟩, htend hi fun n => ⟨hlu _, le_rfl⟩,
+    htend c fun n => (h.invariant hab hθL.le hθU.le).2.2.2.2 n (hnever (n + 1))⟩
+
+/-- When the Newton interval is empty and the initial upper endpoint exceeds the
+target, trials above the target occur arbitrarily late. -/
+theorem frequently_gt_of_eq (hab : a = b) (hhi : b < hi 0)
+    (hθL : 0 < θL) (hθU : θU < 1) : ∃ᶠ k in atTop, b < c k := by
+  subst b
+  have hhi' (n : ℕ) : a < hi n := by
+    induction n with
+    | zero => exact hhi
+    | succ n ih =>
+      rcases le_or_gt (c n) a with hn | hn
+      · rwa [(h.left n hn).1]
+      · rw [(h.right n hn).1]
+        exact lt_min ih hn
+  by_contra hnot
+  have he : ∀ᶠ k in atTop, c k ≤ a := by simpa only [Filter.Frequently, not_not, not_lt] using hnot
+  obtain ⟨N, hN⟩ := eventually_atTop.mp he
+  have hconst (n : ℕ) : hi (n + N) = hi N := by
+    induction n with
+    | zero => simp
+    | succ n ih =>
+      rw [show n + 1 + N = (n + N) + 1 by omega,
+        (h.left (n + N) (hN _ (Nat.le_add_left _ _))).1, ih]
+  have ht := (h.tendsto_bracket_of_never_mem le_rfl hθL hθU (fun n => by simp)).2.1
+  have ht' := (tendsto_add_atTop_iff_nat N).mpr ht
+  have htconst : Tendsto (fun n => hi (n + N)) atTop (𝓝 (hi N)) :=
+    tendsto_const_nhds.congr fun n => (hconst n).symm
+  exact (hhi' N).ne' (tendsto_nhds_unique htconst ht')
 
 end IsBracketRun
 

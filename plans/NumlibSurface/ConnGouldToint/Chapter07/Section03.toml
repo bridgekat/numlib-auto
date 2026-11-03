@@ -63,3 +63,59 @@ source = "Conn–Gould–Toint, Algorithm 7.3.5, Step 1"
 [[node]]
 id = "acceptable_of_hard_stopping_rule"
 source = "Conn–Gould–Toint, Algorithm 7.3.5, hard-case test"
+
+[[node]]
+id = "moreSorensenTrial"
+source = "Conn–Gould–Toint, (7.3.14)"
+
+[[node]]
+id = "multiplier_bounds_of_boundary"
+source = "Conn–Gould–Toint, (7.3.18)"
+
+[[node]]
+id = "moreSorensen_bracketing_enters_newton"
+source = "Conn–Gould–Toint, Theorem 7.3.4, finite entry into the Newton interval"
+
+[[node]]
+id = "moreSorensen_bracketing_tendsto"
+source = "Conn–Gould–Toint, Theorem 7.3.4, multiplier convergence without entry into the Newton interval"
+
+[[node]]
+id = "moreSorensen_easy_newton_convergence"
+source = "Conn–Gould–Toint, Theorem 7.3.4, easy-case Newton phase"
+
+[[node]]
+id = "moreSorensen_easy_bracket_then_newton"
+source = "Conn–Gould–Toint, Theorem 7.3.4, safeguarded easy phase"
+
+[[node]]
+id = "moreSorensen_interior_solution"
+source = "Conn–Gould–Toint, Theorem 7.3.4, finite interior convergence"
+
+[[node]]
+id = "moreSorensen_exact_leftmost_curvature_tendsto"
+source = "Conn–Gould–Toint, (7.3.16), exact leftmost direction"
+
+[[node]]
+id = "moreSorensen_hard_correction_curvature_tendsto"
+source = "Conn–Gould–Toint, (7.3.16) and Theorem 7.3.4, boundary correction estimate"
+
+[[node]]
+id = "moreSorensen_hard_model_convergence"
+source = "Conn–Gould–Toint, Theorem 7.3.4, hard-case model values and cluster points"
+
+[[node]]
+id = "moreSorensen_hard_bracketing_subsequence"
+source = "Conn–Gould–Toint, Theorem 7.3.4, positive-definite subsequence"
+
+[[node]]
+id = "moreSorensenBoundaryCoefficient"
+source = "Conn–Gould–Toint, Algorithm 7.3.4, boundary equation in Step 3b(iii)"
+
+[[node]]
+id = "norm_add_boundaryCorrection"
+source = "Conn–Gould–Toint, Algorithm 7.3.4, boundary equation in Step 3b(iii)"
+
+[[node]]
+id = "moreSorensen_hard_bracket_then_exact_correction"
+source = "Conn–Gould–Toint, Theorem 7.3.4, corrected hard phase using an exact leftmost eigenvector"

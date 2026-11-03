@@ -21,3 +21,11 @@ source = "Cartis–Gould–Toint, §9.2 (finite termination of Algorithm 9.2.1)"
 [[node]]
 id = "IsLowerUpdate.mono"
 source = "Cartis–Gould–Toint, Algorithm 9.2.1"
+
+[[node]]
+id = "IsBracketRun.tendsto_bracket_of_never_mem"
+source = "Conn–Gould–Toint, Theorem 7.3.4, bracketing phase"
+
+[[node]]
+id = "IsBracketRun.frequently_gt_of_eq"
+source = "Conn–Gould–Toint, Theorem 7.3.4, infinitely many trials above the pole"
