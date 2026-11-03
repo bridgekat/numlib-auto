@@ -1594,30 +1594,28 @@ variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
 open Constrained
 open scoped Pointwise
 
-/-- Theorem 3.2.11. The constraint qualification requires linearized feasible
-displacements to lie in the feasible tangent cone and the normal cone sum rule
-to be exact for the base set and the linearized constraints. Inequalities are
-written as `g ≤ 0`. -/
-theorem theorem_3_2_11 {ι κ : Type*} [Fintype ι] [Fintype κ]
+/-- Theorem 3.2.11 with a normal-cone sum qualification at the minimizer.
+The normal to the intersection of the base set and the linearized constraints
+must decompose into a normal to each set. Inequalities use the `g ≤ 0` convention. -/
+theorem theorem_3_2_11_of_normalCone_sum {ι κ : Type*} [Fintype ι] [Fintype κ]
     {C : Set V} {f : V → ℝ} {h : ι → V → ℝ} {g : κ → V → ℝ} {x : V}
-    (hxC : x ∈ C) (hx : x ∈ feasible h g) (hf : DifferentiableAt ℝ f x)
+    (hx : x ∈ feasible h g) (hf : DifferentiableAt ℝ f x)
     (hmin : IsLocalMinOn f (C ∩ feasible h g) x) :
     let Q := {z : V | (∀ i, fderiv ℝ (h i) x (z - x) = 0) ∧
       ∀ j ∈ activeSet g x, fderiv ℝ (g j) x (z - x) ≤ 0}
     (∀ z ∈ C ∩ Q, z - x ∈ posTangentConeAt (C ∩ feasible h g) x) →
-    IsExactSum (innerₗ V) (indicatorFn C) (indicatorFn Q) →
+    normalCone (innerₗ V) (C ∩ Q) x = normalCone (innerₗ V) C x + normalCone (innerₗ V) Q x →
     ∃ (l : ι → ℝ) (μ : κ → ℝ), (∀ i, h i x = 0) ∧
       (∀ j, g j x ≤ 0 ∧ 0 ≤ μ j ∧ μ j * g j x = 0) ∧
       -gradient f x - (∑ i, l i • gradient (h i) x) - (∑ j, μ j • gradient (g j) x) ∈
         normalCone (innerₗ V) C x := by
   classical
   intro Q hQ hsum
-  have hxQ : x ∈ Q := by simp [Q]
   have hn : -gradient f x ∈ normalCone (innerₗ V) (C ∩ Q) x := by
     intro z hz
     have hp := hmin.hasFDerivWithinAt_nonneg hf.hasFDerivAt.hasFDerivWithinAt (hQ z hz)
     simpa [innerₗ_apply_apply] using hp
-  rw [hsum.normalCone_inter hxC hxQ] at hn
+  rw [hsum] at hn
   obtain ⟨n, hn, w, hw, hnw⟩ := hn
   let A : (ι ⊕ ι) ⊕ activeSet g x → V :=
     Sum.elim (Sum.elim (fun i ↦ gradient (h i) x) (fun i ↦ -gradient (h i) x))
@@ -1659,7 +1657,141 @@ theorem theorem_3_2_11 {ι κ : Type*} [Fintype ι] [Fintype κ]
       exact add_sub_cancel_right n w
     simpa only [heq] using hn
 
+/-- Theorem 3.2.11 when the indicators of the base set and the linearized
+constraints satisfy the exact sum rule. -/
+theorem theorem_3_2_11 {ι κ : Type*} [Fintype ι] [Fintype κ]
+    {C : Set V} {f : V → ℝ} {h : ι → V → ℝ} {g : κ → V → ℝ} {x : V}
+    (hxC : x ∈ C) (hx : x ∈ feasible h g) (hf : DifferentiableAt ℝ f x)
+    (hmin : IsLocalMinOn f (C ∩ feasible h g) x) :
+    let Q := {z : V | (∀ i, fderiv ℝ (h i) x (z - x) = 0) ∧
+      ∀ j ∈ activeSet g x, fderiv ℝ (g j) x (z - x) ≤ 0}
+    (∀ z ∈ C ∩ Q, z - x ∈ posTangentConeAt (C ∩ feasible h g) x) →
+    IsExactSum (innerₗ V) (indicatorFn C) (indicatorFn Q) →
+    ∃ (l : ι → ℝ) (μ : κ → ℝ), (∀ i, h i x = 0) ∧
+      (∀ j, g j x ≤ 0 ∧ 0 ≤ μ j ∧ μ j * g j x = 0) ∧
+      -gradient f x - (∑ i, l i • gradient (h i) x) - (∑ j, μ j • gradient (g j) x) ∈
+        normalCone (innerₗ V) C x := by
+  intro Q hQ hsum
+  exact theorem_3_2_11_of_normalCone_sum hx hf hmin hQ
+    (hsum.normalCone_inter hxC (by simp [Q]))
+
 end SmoothNormalMultipliers
+
+/-- A closed convex cone with one linear equality can satisfy even exact
+linearization of the feasible tangent cone while admitting no multipliers.
+The objective is the first coordinate, the equality sets the second to zero,
+and the feasible set is the nonnegative third coordinate axis. -/
+theorem theorem_3_2_11_tangent_counterexample :
+    let W := EuclideanSpace ℝ (Fin 3)
+    let C : Set W := {w | 0 ≤ w 2 ∧ ∀ t : ℝ, 0 ≤ w 1 + 2 * t * w 0 + t ^ 2 * w 2}
+    let Q : Set W := {w | w 1 = 0}
+    let f : W → ℝ := fun w ↦ w 0
+    let h : W → ℝ := fun w ↦ w 1
+    IsClosed C ∧ Convex ℝ C ∧ (0 : W) ∈ C ∧
+      ContDiff ℝ 1 f ∧ ContDiff ℝ 1 h ∧ h 0 = 0 ∧ IsMinOn f (C ∩ Q) 0 ∧
+      Q = {d | fderiv ℝ h 0 d = 0} ∧
+      posTangentConeAt (C ∩ Q) (0 : W) = posTangentConeAt C 0 ∩ Q ∧
+      ¬ ∃ l : ℝ, -gradient f 0 - l • gradient h 0 ∈ normalCone (innerₗ W) C 0 := by
+  intro W C Q f h
+  let b (i : Fin 3) : W →L[ℝ] ℝ := PiLp.proj 2 (fun _ : Fin 3 ↦ ℝ) i
+  let L (t : ℝ) := b 1 + (2 * t) • b 0 + t ^ 2 • b 2
+  have hCeq : C = {w : W | 0 ≤ b 2 w} ∩ ⋂ t : ℝ, {w : W | 0 ≤ L t w} := by
+    ext w
+    simp [C, L, smul_eq_mul]
+    rfl
+  have hclosed : IsClosed C := by
+    rw [hCeq]
+    exact (isClosed_le continuous_const (b 2).continuous).inter
+      (isClosed_iInter fun t ↦ isClosed_le continuous_const (L t).continuous)
+  have hconv : Convex ℝ C := by
+    rw [hCeq]
+    exact (convex_halfSpace_ge (b 2).toLinearMap.isLinear 0).inter
+      (convex_iInter fun t ↦ convex_halfSpace_ge (L t).toLinearMap.isLinear 0)
+  have h₀ : (0 : W) ∈ C := by simp [C, PiLp.zero_apply]
+  have hscale (a : ℝ) (ha : 0 ≤ a) {w : W} (hw : w ∈ C) : a • w ∈ C := by
+    rw [hCeq] at hw ⊢
+    refine ⟨?_, ?_⟩
+    · simpa using mul_nonneg ha hw.1
+    · apply Set.mem_iInter.mpr
+      intro t
+      have ht : 0 ≤ L t w := (Set.mem_iInter.mp hw.2) t
+      simpa using mul_nonneg ha ht
+  have htan : posTangentConeAt C (0 : W) = C := by
+    ext d
+    constructor
+    · intro hd
+      obtain ⟨I, F, hF, a, w, _, hw, hlim⟩ := exists_fun_of_mem_tangentConeAt hd
+      let : F.NeBot := hF
+      apply hclosed.mem_of_tendsto hlim
+      filter_upwards [hw] with n hn
+      exact hscale (a n : ℝ) (a n).coe_nonneg (by simpa using hn)
+    · intro hd
+      simpa using sub_mem_posTangentConeAt_of_segment_subset (hconv.segment_subset h₀ hd)
+  have hQ0 : (0 : W) ∈ Q := by simp [Q, PiLp.zero_apply]
+  have hQconv : Convex ℝ Q :=
+    convex_hyperplane (b 1).toLinearMap.isLinear 0
+  have heq : posTangentConeAt (C ∩ Q) (0 : W) = posTangentConeAt C 0 ∩ Q := by
+    rw [htan]
+    ext d
+    constructor
+    · intro hd
+      refine ⟨htan ▸ tangentConeAt_mono inter_subset_left hd, ?_⟩
+      have hzero : IsLocalMinOn h (C ∩ Q) (0 : W) :=
+        (show IsMinOn h (C ∩ Q) (0 : W) from fun z hz ↦ by
+          change (0 : W) 1 ≤ z 1
+          rw [PiLp.zero_apply, show z 1 = 0 from hz.2]).isLocalMinOn
+      have hnonneg := hzero.hasFDerivWithinAt_nonneg (b 1).hasFDerivAt.hasFDerivWithinAt hd
+      have hmax : IsLocalMaxOn h (C ∩ Q) (0 : W) :=
+        (show IsMaxOn h (C ∩ Q) (0 : W) from fun z hz ↦ by
+          change z 1 ≤ (0 : W) 1
+          rw [PiLp.zero_apply, show z 1 = 0 from hz.2]).isLocalMaxOn
+      exact le_antisymm (hmax.hasFDerivWithinAt_nonpos
+        (b 1).hasFDerivAt.hasFDerivWithinAt hd) hnonneg
+    · intro hd
+      simpa using sub_mem_posTangentConeAt_of_segment_subset
+        ((hconv.inter hQconv).segment_subset ⟨h₀, hQ0⟩ hd)
+  have hx0 (w : W) (hw : w ∈ C ∩ Q) : w 0 = 0 := by
+    have hm : IsLocalMin (fun t : ℝ ↦ 2 * t * w 0 + t ^ 2 * w 2) 0 := by
+      apply IsMinOn.isLocalMin (s := Set.univ) ?_ univ_mem
+      intro t _
+      have ht := hw.1.2 t
+      rw [show w 1 = 0 from hw.2, zero_add] at ht
+      simpa using ht
+    have hd : HasDerivAt (fun t : ℝ ↦ 2 * t * w 0 + t ^ 2 * w 2) (2 * w 0) 0 := by
+      convert (((hasDerivAt_id (0 : ℝ)).const_mul 2).mul_const (w 0)).add
+        (((hasDerivAt_id (0 : ℝ)).pow 2).mul_const (w 2)) using 1
+      · rfl
+      · norm_num [id]
+    linarith [hm.hasDerivAt_eq_zero hd]
+  refine ⟨hclosed, hconv, h₀, (b 0).contDiff, (b 1).contDiff, hQ0,
+    fun w hw ↦ by simp [f, PiLp.zero_apply, hx0 w hw], ?_, heq, ?_⟩
+  · rw [show fderiv ℝ h 0 = b 1 from (b 1).hasFDerivAt.fderiv]
+    rfl
+  · rintro ⟨l, hl⟩
+    let w (t : ℝ) : W := WithLp.toLp 2 ![t, t ^ 2, 1]
+    have hw (t : ℝ) : w t ∈ C := by
+      refine ⟨by simp [w], fun a ↦ ?_⟩
+      change 0 ≤ t ^ 2 + 2 * a * t + a ^ 2 * 1
+      nlinarith [sq_nonneg (t + a)]
+    have hp (t : ℝ) : -t - l * t ^ 2 ≤ 0 := by
+      have ht := hl (w t) (hw t)
+      simp only [innerₗ_apply_apply, sub_zero, inner_sub_right, inner_neg_right,
+        real_inner_smul_right, inner_gradient_right, conj_trivial] at ht
+      rw [show fderiv ℝ f 0 = b 0 from (b 0).hasFDerivAt.fderiv,
+        show fderiv ℝ h 0 = b 1 from (b 1).hasFDerivAt.fderiv] at ht
+      exact ht
+    have hm : IsLocalMax (fun t : ℝ ↦ -t - l * t ^ 2) 0 := by
+      apply IsMaxOn.isLocalMax (s := Set.univ) ?_ univ_mem
+      intro t _
+      simpa using hp t
+    have hd : HasDerivAt (fun t : ℝ ↦ -t - l * t ^ 2) (-1) 0 := by
+      convert (hasDerivAt_id (0 : ℝ)).neg.sub (((hasDerivAt_id (0 : ℝ)).pow 2).const_mul l) using 1
+      · rfl
+      · norm_num [id]
+    have hc := hm.hasDerivAt_eq_zero hd
+    norm_num at hc
+
+
 
 /-- On the fixed feasible set `ℝ`, the minimum value of `(p * x - 1)^2`
 is discontinuous at `p = 0`. This gives a separate failure of Theorem 3.2.8

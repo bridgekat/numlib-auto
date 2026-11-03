@@ -167,3 +167,11 @@ source = "Conn, Gould and Toint, Trust-Region Methods, Assumption AO.2"
 [[node]]
 id = "ao1_ao2_of_isRegularPointIneq"
 source = "Conn, Gould and Toint, Trust-Region Methods, §3.2.2"
+
+[[node]]
+id = "theorem_3_2_11_of_normalCone_sum"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.11 (local normal sum correction)"
+
+[[node]]
+id = "theorem_3_2_11_tangent_counterexample"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.11 (tangent qualification counterexample)"
