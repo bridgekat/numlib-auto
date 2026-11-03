@@ -467,7 +467,8 @@ private theorem example_sufficient_decrease (k : ℕ) (β : ℝ) (hβ : 1 ≤ β
     _ ≤ _ := sub_le_sub_left (model_dominates_cauchy k) _
 
 /-- Theorem 12.3.8 as printed can fail at the iterates as well as at the
-Cauchy points. A smooth representation of the orthant has two independent
+Cauchy points. The same run refutes the subsequence claim of Lemma 12.3.7.
+A smooth representation of the orthant has two independent
 active gradients at the limit, but only one active constraint at the remote
 Cauchy point. Every trial is very successful and satisfies AA.5. -/
 theorem theorem_12_3_8_iterate_identification_counterexample :

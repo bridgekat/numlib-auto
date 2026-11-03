@@ -335,6 +335,58 @@ theorem theorem_12_4_5 {P : Chapter06.BTRParams} {f : E → ℝ}
       Chapter06.btrRatio] using le_reductionRatio_of_abs_sub_le (run.predicted_pos k) he
   exact ⟨hv, run.exists_delta_lower_bound_of_eventually_verySuccessful hv⟩
 
+section FaceBoundary
+
+open scoped ENNReal
+
+/-- The locus where all constraints active at the center vanish. -/
+def activeEqualityLocus (c : ι → E → ℝ) (x : E) : Set E :=
+  {z | ∀ i ∈ activeConstraintSet c x, c i z = 0}
+
+/-- The distance in (12.4.16) uses the frontier relative to the active
+equality locus. An empty frontier gives infinite distance. -/
+noncomputable def activeFaceBoundaryDistance (C : Set E) (c : ι → E → ℝ) (x : E) :
+    ℝ≥0∞ :=
+  Metric.infEDist (⟨x, fun _ hi ↦ hi⟩ : activeEqualityLocus c x)
+    (frontier ((↑) ⁻¹' C : Set (activeEqualityLocus c x)))
+
+omit [InnerProductSpace ℝ E] [CompleteSpace E] in
+/-- Strict slack in every inactive inequality makes the center interior
+relative to the active equality locus, giving positive face clearance. -/
+theorem activeFaceBoundaryDistance_pos {C : Set E} {c : ι → E → ℝ} {x : E}
+    (hC : Chapter03.AC7 C c) (hc : ∀ i, Continuous (c i)) (hx : x ∈ C) :
+    0 < activeFaceBoundaryDistance C c x := by
+  classical
+  let L := activeEqualityLocus c x
+  let z : L := ⟨x, fun _ hi ↦ hi⟩
+  let F : Set L := (↑) ⁻¹' C
+  let U : Set L := ⋂ i : {i // i ∉ activeConstraintSet c x}, {y | 0 < c i y}
+  have hU : IsOpen U := isOpen_iInter_of_finite fun i ↦
+    isOpen_lt continuous_const ((hc i).comp continuous_subtype_val)
+  have hzx : z ∈ U := by
+    apply mem_iInter.mpr
+    intro i
+    have hge : 0 ≤ c i x := by
+      have hx' := hx
+      rw [hC] at hx'
+      exact hx' i
+    exact lt_of_le_of_ne hge (Ne.symm i.property)
+  have hUF : U ⊆ F := by
+    intro y hy
+    change (y : E) ∈ C
+    rw [hC]
+    intro i
+    by_cases hi : i ∈ activeConstraintSet c x
+    · exact (y.property i hi).ge
+    · exact (mem_iInter.mp hy ⟨i, hi⟩ : 0 < c i y).le
+  have hzF : z ∈ interior F :=
+    mem_interior_iff_mem_nhds.mpr (mem_of_superset (hU.mem_nhds hzx) hUF)
+  change 0 < Metric.infEDist z (frontier F)
+  rw [Metric.infEDist_pos_iff_notMem_closure, isClosed_frontier.closure_eq]
+  exact fun h ↦ h.2 hzF
+
+end FaceBoundary
+
 omit [Fintype ι] [CompleteSpace E] in
 /-- The generalized eigenpoint test (12.4.14), with the sign corrected
 so that a negative eigenvalue requires a decrease, and with the active-face

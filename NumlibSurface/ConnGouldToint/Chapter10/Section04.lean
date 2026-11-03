@@ -8,6 +8,8 @@ open ConnGouldToint.Chapter06
 
 namespace ConnGouldToint.Chapter10
 
+section MagicalSteps
+
 variable {E : Type*} [NormedAddCommGroup E]
 
 /-- The predicted decrease augmented by the exact improvement from the correction. -/
@@ -220,5 +222,60 @@ theorem theorem_10_4_3 {P : BTRParams} {f : E → ℝ} (run : MagicalStepRun P f
       -(run.s k + run.correction k) := by abel
   rw [run.iterate_update, ite_eq_left hratio, he, norm_neg, add_mul]
   exact (norm_add_le _ _).trans (add_le_add (hs k) (hc k))
+
+end MagicalSteps
+
+section ModifiedModel
+
+open scoped RealInnerProductSpace
+
+variable {E : Type*} [NormedAddCommGroup E]
+
+/-- The reduction error (10.4.17) computed with the base model. -/
+def quadraticAugmentedError (f m : E → ℝ) (x s : E) : ℝ :=
+  f x - f (x + s) - m x + m (x + s)
+
+/-- Center agreement turns the reduction error into the model value
+error at the trial point. -/
+theorem quadraticAugmentedError_eq_trial_error {f m : E → ℝ} {x s : E}
+    (hval : f x = m x) : quadraticAugmentedError f m x s = m (x + s) - f (x + s) := by
+  unfold quadraticAugmentedError
+  rw [hval]
+  ring
+
+variable [InnerProductSpace ℝ E]
+
+/-- The quadratic augmentation (10.4.12). The quadratic term uses the
+argument's displacement from the center, as in (10.4.15). -/
+noncomputable def quadraticAugmentedModel (m : E → ℝ) (x : E) (M : E →ₗ[ℝ] E) (y : E) : ℝ :=
+  m y + (1 / 2) * ⟪y - x, M (y - x)⟫
+
+/-- The compensated ratio (10.4.15) uses the same quadratic term in
+the actual and predicted reductions. -/
+noncomputable def quadraticAugmentedRatio (f m : E → ℝ) (x s : E)
+    (M : E →ₗ[ℝ] E) : ℝ :=
+  (f x - f (x + s) - (1 / 2) * ⟪s, M s⟫) /
+    (quadraticAugmentedModel m x M x - quadraticAugmentedModel m x M (x + s))
+
+/-- The quadratic term cancels from the numerator of the ratio error
+in (10.4.16). The denominator is the augmented model decrease. -/
+theorem quadraticAugmentedRatio_sub_one {f m : E → ℝ} {x s : E} {M : E →ₗ[ℝ] E}
+    (hpred : 0 < quadraticAugmentedModel m x M x - quadraticAugmentedModel m x M (x + s)) :
+    |quadraticAugmentedRatio f m x s M - 1| =
+      |quadraticAugmentedError f m x s| /
+        (quadraticAugmentedModel m x M x - quadraticAugmentedModel m x M (x + s)) := by
+  let d := quadraticAugmentedModel m x M x - quadraticAugmentedModel m x M (x + s)
+  have hcancel : f x - f (x + s) - (1 / 2) * ⟪s, M s⟫ - d =
+      quadraticAugmentedError f m x s := by
+    simp only [d, quadraticAugmentedModel, sub_self, inner_zero_left, mul_zero, add_zero,
+      add_sub_cancel_left, quadraticAugmentedError]
+    ring
+  change |(f x - f (x + s) - (1 / 2) * ⟪s, M s⟫) / d - 1| = _
+  have he : (f x - f (x + s) - (1 / 2) * ⟪s, M s⟫) / d - 1 =
+      (f x - f (x + s) - (1 / 2) * ⟪s, M s⟫ - d) / d := by
+    field_simp [show d ≠ 0 from hpred.ne']
+  rw [he, hcancel, abs_div, abs_of_pos hpred]
+
+end ModifiedModel
 
 end ConnGouldToint.Chapter10

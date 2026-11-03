@@ -27,3 +27,23 @@ source = "Conn–Gould–Toint, Theorem 10.4.2"
 [[node]]
 id = "theorem_10_4_3"
 source = "Conn–Gould–Toint, Theorem 10.4.3"
+
+[[node]]
+id = "quadraticAugmentedModel"
+source = "Conn–Gould–Toint, (10.4.12) with the free trial displacement"
+
+[[node]]
+id = "quadraticAugmentedRatio"
+source = "Conn–Gould–Toint, (10.4.15)"
+
+[[node]]
+id = "quadraticAugmentedError"
+source = "Conn–Gould–Toint, (10.4.17)"
+
+[[node]]
+id = "quadraticAugmentedError_eq_trial_error"
+source = "Conn–Gould–Toint, (10.4.17) under center agreement AM.2"
+
+[[node]]
+id = "quadraticAugmentedRatio_sub_one"
+source = "Conn–Gould–Toint, (10.4.16)"

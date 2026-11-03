@@ -55,3 +55,15 @@ source = "Conn–Gould–Toint, projection correction estimates (12.4.19)–(12.
 [[node]]
 id = "theorem_12_4_3_of_lagrangian"
 source = "Conn–Gould–Toint, Theorem 12.4.3 via the step bound in Lemma 12.4.2"
+
+[[node]]
+id = "activeEqualityLocus"
+source = "Conn–Gould–Toint, active equalities for the face in Section 12.4"
+
+[[node]]
+id = "activeFaceBoundaryDistance"
+source = "Conn–Gould–Toint, (12.4.16) with the relative frontier and extended distance"
+
+[[node]]
+id = "activeFaceBoundaryDistance_pos"
+source = "Conn–Gould–Toint, positivity in (12.4.16)"

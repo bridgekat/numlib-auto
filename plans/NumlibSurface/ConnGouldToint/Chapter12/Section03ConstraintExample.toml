@@ -1,5 +1,4 @@
 namespace = "ConnGouldToint.Chapter12.ConstraintExample"
-desc = "Smooth inequality representation of an orthant with a degenerate remote active set for the counterexample to Theorem 12.3.8."
 
 [[node]]
 id = "Space"

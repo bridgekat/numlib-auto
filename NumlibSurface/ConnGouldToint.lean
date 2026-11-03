@@ -160,6 +160,8 @@ model and verifies the gradient-angle and positive-curvature CG estimates.
 Theorem 10.3.4 requires Euclidean ball geometry. A diamond gives a
 counterexample under norm comparison alone.
 Section 10.4 uses augmented predicted decrease for the corrected step ratio.
+The quadratic augmentation in (10.4.12) uses the trial argument, so the
+quadratic term cancels from the compensated ratio error in (10.4.16).
 Section 10.6 uses a vanishing tolerance schedule and an eventual curvature
 margin for the second-order dynamic accuracy test.
 
@@ -215,11 +217,14 @@ nonvanishing radii for convergent runs. Vanishing successive displacements
 force a common active set across the compact limit set. An interval run
 with alternating radii refutes eventual Cauchy-point identification in the
 printed Theorem 12.3.8. A three-dimensional run with constant radii and
-only very successful steps refutes iterate identification as well. Its
+only very successful steps refutes both eventual iterate identification
+and the subsequence claim in Lemma 12.3.7. Its
 remote Cauchy point has a degenerate active constraint even though the
 active gradients at the limit are independent.
 Section 12.4 makes the identified-face trapping, feasible extension, and
-trial-segment Hessian agreement explicit. The corrected generalized eigenpoint
+trial-segment Hessian agreement explicit. The face clearance is positive in
+the relative topology, with infinite clearance when the frontier is empty.
+The corrected generalized eigenpoint
 test and decrease bound use the sign appropriate to negative curvature.
 A cubic model shows that the printed test can accept a strict increase.
 
