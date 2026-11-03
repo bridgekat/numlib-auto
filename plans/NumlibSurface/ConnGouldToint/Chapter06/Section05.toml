@@ -27,3 +27,7 @@ source = "Conn–Gould–Toint, Theorem 6.5.2"
 [[node]]
 id = "theorem_6_5_5"
 source = "Conn–Gould–Toint, corrected Theorem 6.5.5"
+
+[[node]]
+id = "lemma_6_5_3_4_counterexample"
+source = "Counterexample to Conn–Gould–Toint, Lemmas 6.5.3–4"

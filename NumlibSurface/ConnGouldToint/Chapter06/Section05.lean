@@ -444,4 +444,127 @@ theorem theorem_6_5_5 {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ 
   exact ⟨hconv, lemma_6_5_4 run (mul_pos (mul_pos hκ ha) hb) hf hm hDm hval hgrad hcrit
     hagree (hessianVariationVanishes_of_tendsto hf hconv hs) (hMvar hs) hq⟩
 
+private noncomputable def shrinkingRadius (k : ℕ) : ℝ := (1 / 2 : ℝ) ^ k
+
+private theorem shrinkingRadius_pos (k : ℕ) : 0 < shrinkingRadius k :=
+  pow_pos (by norm_num) k
+
+private noncomputable def shrinkingQuartic (k : ℕ) (y : ℝ) : ℝ :=
+  -(shrinkingRadius k ^ 2)⁻¹ * y ^ 4
+
+private theorem shrinkingQuartic_drop (k : ℕ) :
+    shrinkingQuartic k 0 - shrinkingQuartic k (shrinkingRadius k) = shrinkingRadius k ^ 2 := by
+  have h := (shrinkingRadius_pos k).ne'
+  simp only [shrinkingQuartic, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow,
+    mul_zero, zero_sub]
+  field_simp
+
+private theorem contDiff_shrinkingQuartic (k : ℕ) : ContDiff ℝ 2 (shrinkingQuartic k) :=
+  contDiff_const.mul (contDiff_id.pow 4)
+
+open ContinuousLinearMap in
+private theorem shrinkingQuartic_fderiv (k : ℕ) (y : ℝ) :
+    fderiv ℝ (shrinkingQuartic k) y =
+      toSpanSingleton ℝ (-(shrinkingRadius k ^ 2)⁻¹ * (4 * y ^ 3)) := by
+  unfold shrinkingQuartic
+  convert (((hasDerivAt_id y).fun_pow 4).const_mul
+    (-(shrinkingRadius k ^ 2)⁻¹)).hasFDerivAt.fderiv using 1 <;> norm_num
+
+open ContinuousLinearMap in
+private theorem shrinkingQuartic_hessian_norm (k : ℕ) (y : ℝ) :
+    ‖fderiv ℝ (fderiv ℝ (shrinkingQuartic k)) y‖ =
+      |-(shrinkingRadius k ^ 2)⁻¹ * (12 * y ^ 2)| := by
+  let L := toSpanSingletonLIE ℝ ℝ
+  have h : HasDerivAt (fun z : ℝ ↦ -(shrinkingRadius k ^ 2)⁻¹ * (4 * z ^ 3))
+      (-(shrinkingRadius k ^ 2)⁻¹ * (12 * y ^ 2)) y := by
+    convert (((hasDerivAt_id y).fun_pow 3).const_mul 4).const_mul
+      (-(shrinkingRadius k ^ 2)⁻¹) using 1 <;> norm_num
+    ring_nf
+    simp
+  have hL := L.toContinuousLinearEquiv.toContinuousLinearMap.hasFDerivAt.comp y h.hasFDerivAt
+  rw [show fderiv ℝ (shrinkingQuartic k) = fun z ↦ L (-(shrinkingRadius k ^ 2)⁻¹ * (4 * z ^ 3))
+    from funext (shrinkingQuartic_fderiv k)]
+  change ‖fderiv ℝ (⇑L.toContinuousLinearEquiv.toContinuousLinearMap ∘ _) y‖ = _
+  rw [← norm_deriv_eq_norm_fderiv, ← fderiv_apply_one_eq_deriv, hL.fderiv]
+  change ‖L ((toSpanSingleton ℝ (-(shrinkingRadius k ^ 2)⁻¹ * (12 * y ^ 2))) 1)‖ = _
+  simp [L, Real.norm_eq_abs]
+
+private noncomputable def shrinkingQuarticRun :
+    BTRRun (fun _ : ℝ ↦ 0) defaultBTRParams
+      (fun _ m x s ↦ HasSufficientModelDecrease m x s 0 13 s (1 / 2)) where
+  x := fun _ ↦ 0
+  s := shrinkingRadius
+  Δ := shrinkingRadius
+  p := fun _ ↦ normSeminorm ℝ ℝ
+  norm_separates := by simp
+  model := shrinkingQuartic
+  delta_initial_pos := shrinkingRadius_pos 0
+  feasible k := by simp [Real.norm_eq_abs, abs_of_pos (shrinkingRadius_pos k)]
+  sufficient_decrease k := by
+    refine ⟨by norm_num, ?_⟩
+    simpa [shrinkingQuartic_drop] using (sq_nonneg (shrinkingRadius k))
+  predicted_pos k := by rw [zero_add, shrinkingQuartic_drop]; positivity [shrinkingRadius_pos k]
+  iterate_update k := by
+    rw [Optimization.acceptStep_of_lt]
+    norm_num [Optimization.reductionRatio, defaultBTRParams]
+  radius_update k := by
+    have hρ : btrRatio (fun _ : ℝ ↦ 0) (shrinkingQuartic k) 0 (shrinkingRadius k) = 0 := by
+      simp [btrRatio, Optimization.reductionRatio]
+    rw [hρ]
+    refine ⟨fun h ↦ ?_, fun h _ ↦ ?_, fun _ ↦ ?_⟩
+    · norm_num [defaultBTRParams] at h
+    · norm_num [defaultBTRParams] at h
+    · simp [defaultBTRParams, shrinkingRadius, pow_succ, mul_comm]
+
+/-- The literal Lemmas 6.5.3 and 6.5.4 fail for smooth models with exact center
+value, gradient, and Hessian. The decrease equals the square of the vanishing
+step length, but the objective is constant, every trial is rejected, and the
+radius tends to zero. The model Hessians are uniformly bounded on their
+trust regions, even though their variation on the trial segments persists. -/
+theorem lemma_6_5_3_4_counterexample :
+    ∃ run : BTRRun (fun _ : ℝ ↦ 0) defaultBTRParams
+      (fun _ m x s ↦ HasSufficientModelDecrease m x s 0 13 s (1 / 2)),
+      (∀ k, run.p k = normSeminorm ℝ ℝ) ∧
+      (∀ k, ContDiff ℝ 2 (run.model k)) ∧
+      (∀ k, run.model k (run.x k) = 0 ∧ fderiv ℝ (run.model k) (run.x k) = 0 ∧
+        fderiv ℝ (fderiv ℝ (run.model k)) (run.x k) = 0) ∧
+      (∀ k y, y ∈ trustRegion (run.p k) (run.x k) (run.Δ k) →
+        ‖fderiv ℝ (fderiv ℝ (run.model k)) y‖ ≤ 12) ∧
+      (∀ k, run.model k (run.x k) - run.model k (run.x k + run.s k) = ‖run.s k‖ ^ 2) ∧
+      (∀ k, ‖fderiv ℝ (fderiv ℝ (run.model k)) (run.x k + run.s k)‖ = 12) ∧
+      Tendsto (fun k ↦ ‖run.s k‖) atTop (𝓝 0) ∧ Tendsto run.Δ atTop (𝓝 0) ∧
+      (∀ k, btrRatio (fun _ : ℝ ↦ 0) (run.model k) (run.x k) (run.s k) = 0) := by
+  refine ⟨shrinkingQuarticRun, fun _ ↦ rfl, contDiff_shrinkingQuartic, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · intro k
+    change shrinkingQuartic k 0 = 0 ∧ fderiv ℝ (shrinkingQuartic k) 0 = 0 ∧
+      fderiv ℝ (fderiv ℝ (shrinkingQuartic k)) 0 = 0
+    refine ⟨by simp [shrinkingQuartic], by rw [shrinkingQuartic_fderiv]; simp,
+      norm_eq_zero.mp (by rw [shrinkingQuartic_hessian_norm]; simp)⟩
+  · intro k y hy
+    have h : |y| ≤ shrinkingRadius k := by
+      simpa [shrinkingQuarticRun, trustRegion, Real.norm_eq_abs] using hy
+    change ‖fderiv ℝ (fderiv ℝ (shrinkingQuartic k)) y‖ ≤ 12
+    rw [shrinkingQuartic_hessian_norm, abs_mul, abs_neg,
+      abs_of_nonneg (inv_nonneg.mpr (sq_nonneg _)), abs_of_nonneg (by positivity)]
+    rw [inv_mul_eq_div]
+    apply (div_le_iff₀ (sq_pos_of_pos (shrinkingRadius_pos k))).mpr
+    have hs := pow_le_pow_left₀ (abs_nonneg y) h 2
+    rw [sq_abs] at hs
+    exact mul_le_mul_of_nonneg_left hs (by norm_num)
+  · intro k
+    change shrinkingQuartic k 0 - shrinkingQuartic k (0 + shrinkingRadius k) =
+      ‖shrinkingRadius k‖ ^ 2
+    rw [zero_add, shrinkingQuartic_drop, Real.norm_of_nonneg (shrinkingRadius_pos k).le]
+  · intro k
+    change ‖fderiv ℝ (fderiv ℝ (shrinkingQuartic k)) (0 + shrinkingRadius k)‖ = 12
+    rw [zero_add, shrinkingQuartic_hessian_norm, abs_mul, abs_neg,
+      abs_of_nonneg (inv_nonneg.mpr (sq_nonneg _)), abs_of_nonneg (by positivity)]
+    field_simp [(shrinkingRadius_pos k).ne']
+  · have h : Tendsto shrinkingRadius atTop (𝓝 0) :=
+      tendsto_pow_atTop_nhds_zero_of_lt_one (by norm_num) (by norm_num)
+    simpa [shrinkingQuarticRun] using h.norm
+  · exact tendsto_pow_atTop_nhds_zero_of_lt_one (by norm_num) (by norm_num)
+  · intro k
+    simp [btrRatio, Optimization.reductionRatio]
+
 end ConnGouldToint.Chapter06
