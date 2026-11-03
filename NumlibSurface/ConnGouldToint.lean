@@ -1,5 +1,6 @@
 import NumlibSurface.ConnGouldToint.Chapter02
 import NumlibSurface.ConnGouldToint.Chapter03
+import NumlibSurface.ConnGouldToint.Chapter04
 import NumlibSurface.ConnGouldToint.Chapter05
 import NumlibSurface.ConnGouldToint.Chapter06
 import NumlibSurface.ConnGouldToint.Chapter07
@@ -27,6 +28,11 @@ Chapter 3 covers Taylor estimates, unconstrained optimality, and convergence rat
 definitions use the successor error to the limit, correcting the printed successive difference.
 Theorem 3.3.2 includes the Kantorovich ball condition. A small correction can otherwise
 take the first step outside the domain.
+
+Chapter 4 covers structured systems and projections. The Woodbury formula requires the
+middle inverse. The Cholesky conversion uses L D^(1/2), the row space is the range of Aᵀ,
+and uniqueness in the reduced quadratic problem requires positive-definite curvature.
+For (4.4.8), an augmented-system solution yields the weighted projection.
 
 Chapter 5 covers CG and PCG estimates, Krylov growth, and normal-equation residuals.
 The CG bounds are expressed in product form to include exact initial iterates.

@@ -1,0 +1,33 @@
+namespace = "ConnGouldToint.Chapter04"
+
+[[node]]
+id = "cholesky_4_3_5"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.3.5)"
+
+[[node]]
+id = "indefinite_factorization_4_3_9"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.3.9)"
+
+[[node]]
+id = "cholesky_of_ldl"
+source = "Conn, Gould and Toint, Trust-Region Methods, after (4.3.5), factor order correction"
+
+[[node]]
+id = "cholesky_first_column_4_3_7"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.3.6)–(4.3.7)"
+
+[[node]]
+id = "cholesky_next_row_4_3_8"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.3.8)"
+
+[[node]]
+id = "neumann_bound_4_3_3"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.3.2)–(4.3.3)"
+
+[[node]]
+id = "perturbed_solution_4_3_1"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.3.1)"
+
+[[node]]
+id = "relative_solution_error_4_3_4"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.3.4)"

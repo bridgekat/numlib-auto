@@ -1,0 +1,69 @@
+namespace = "ConnGouldToint.Chapter04"
+
+[[node]]
+id = "IsLeastSquaresMultiplier"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.4.1)"
+
+[[node]]
+id = "least_squares_square_4_4_2"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.4.2)"
+
+[[node]]
+id = "normal_equations_4_4_3"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.4.3)"
+
+[[node]]
+id = "augmented_least_squares_4_4_4"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.4.4)"
+
+[[node]]
+id = "leastSquaresMatrix"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.4.5)"
+
+[[node]]
+id = "isUnit_leastSquaresMatrix"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.4.5)"
+
+[[node]]
+id = "IsWeightedProjection"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.4.7)"
+
+[[node]]
+id = "projection_system_4_4_8"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.4.8)–(4.4.9)"
+
+[[node]]
+id = "range_null_decomposition_4_4_10"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.4.10), row space clarification"
+
+[[node]]
+id = "feasible_null_decomposition_4_4_11"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.4.11)"
+
+[[node]]
+id = "reduced_system_4_4_12"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.4.12)"
+
+[[node]]
+id = "IsEqualityQuadraticMin"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.4.14)"
+
+[[node]]
+id = "quadratic_minimum_4_4_14"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.4.14), sufficiency and uniqueness correction"
+
+[[node]]
+id = "complete_orthogonal_4_4_6"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.4.6)"
+
+[[node]]
+id = "null_basis_4_4_13"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.4.13)"
+
+[[node]]
+id = "semidefinite_reduced_quadratic_not_unique"
+source = "Conn, Gould and Toint, Trust-Region Methods, following (4.4.14), uniqueness counterexample"
+
+[[node]]
+id = "weighted_projection_of_system_4_4_8"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.4.7)–(4.4.8)"

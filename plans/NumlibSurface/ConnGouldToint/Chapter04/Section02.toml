@@ -1,0 +1,13 @@
+namespace = "ConnGouldToint.Chapter04"
+
+[[node]]
+id = "IsOrthonormalMatrix"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.2.1)"
+
+[[node]]
+id = "isOrthonormalMatrix_iff_mem_unitaryGroup"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.2.1)"
+
+[[node]]
+id = "orthonormal_solution_4_2_1"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.2.1)"

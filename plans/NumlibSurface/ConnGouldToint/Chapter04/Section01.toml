@@ -1,0 +1,17 @@
+namespace = "ConnGouldToint.Chapter04"
+
+[[node]]
+id = "optimizationMatrix"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.1.1)"
+
+[[node]]
+id = "woodbury_solution_4_1_2"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.1.2)"
+
+[[node]]
+id = "augmented_system_4_1_3"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.1.3)"
+
+[[node]]
+id = "woodbury_middle_inverse_counterexample"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.1.2), omitted invertibility hypothesis"
