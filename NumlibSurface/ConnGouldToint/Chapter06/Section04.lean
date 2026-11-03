@@ -73,32 +73,32 @@ theorem theorem_6_4_1 {f m : E → ℝ} {x s : E} (p : Seminorm ℝ E)
       _ = _ := by unfold uniformHessianConstant; ring
 
 omit [NormedSpace ℝ E] in
-/-- The acceptance-ratio estimate (6.4.12) before applying the radius update. -/
-theorem btrRatio_ge_eta₂_of_small_radius {P : BTRParams} {f m : E → ℝ} {x s g : E}
-    {β Δ κ C : ℝ} (hβ : 0 < β) (hβC : β ≤ C) (hΔ : 0 < Δ) (hg : g ≠ 0)
-    (hval : f x = m x) (hdec : HasSufficientModelDecrease m x s g β Δ κ)
+/-- A small radius ensures very successful acceptance when the decrease bound
+uses a positive scalar criticality measure. -/
+theorem btrRatio_ge_eta₂_of_small_radius_of_decrease {P : BTRParams}
+    {f m : E → ℝ} {x s : E} {β Δ κ C a : ℝ}
+    (hβ : 0 < β) (hβC : β ≤ C) (hΔ : 0 < Δ) (ha : 0 < a)
+    (hκ : 0 < κ) (hκ' : κ < 1) (hval : f x = m x)
+    (hdec : κ * a * min (a / β) Δ ≤ m x - m (x + s))
     (herr : |f (x + s) - m (x + s)| ≤ C * Δ ^ 2)
-    (hsmall : Δ ≤ κ * ‖g‖ * (1 - P.η₂) / C) :
+    (hsmall : Δ ≤ κ * a * (1 - P.η₂) / C) :
     P.η₂ ≤ btrRatio f m x s := by
   have hC : 0 < C := hβ.trans_le hβC
   have hη : 0 < P.η₂ := P.eta₁_pos.trans_le P.eta₁_le_eta₂
   have hη' : 0 ≤ 1 - P.η₂ := sub_nonneg.mpr P.eta₂_lt_one.le
-  have hκ : 0 < κ := hdec.1.1
-  have hκ' : κ < 1 := hdec.1.2
-  have hgn : 0 < ‖g‖ := norm_pos_iff.mpr hg
   have hsmall' := (le_div_iff₀ hC).mp hsmall
   have hfactor : κ * (1 - P.η₂) ≤ 1 :=
     (mul_le_of_le_one_right hκ.le (by linarith)).trans hκ'.le
-  have hΔβ : Δ ≤ ‖g‖ / β := by
+  have hΔβ : Δ ≤ a / β := by
     apply (le_div_iff₀ hβ).mpr
     calc
       Δ * β ≤ Δ * C := mul_le_mul_of_nonneg_left hβC hΔ.le
-      _ ≤ κ * ‖g‖ * (1 - P.η₂) := hsmall'
-      _ = (κ * (1 - P.η₂)) * ‖g‖ := by ring
-      _ ≤ ‖g‖ := mul_le_of_le_one_left hgn.le hfactor
-  have hlower := hdec.2
+      _ ≤ κ * a * (1 - P.η₂) := hsmall'
+      _ = (κ * (1 - P.η₂)) * a := by ring
+      _ ≤ a := mul_le_of_le_one_left ha.le hfactor
+  have hlower := hdec
   rw [min_eq_right hΔβ] at hlower
-  have hpred : 0 < m x - m (x + s) := (mul_pos (mul_pos hκ hgn) hΔ).trans_le hlower
+  have hpred : 0 < m x - m (x + s) := (mul_pos (mul_pos hκ ha) hΔ).trans_le hlower
   have hprod := mul_le_mul_of_nonneg_right hsmall' hΔ.le
   have hbound := mul_le_mul_of_nonneg_left hlower hη'
   have herr' : |f (x + s) - (f x - (m x - m (x + s)))| ≤
@@ -106,6 +106,17 @@ theorem btrRatio_ge_eta₂_of_small_radius {P : BTRParams} {f m : E → ℝ} {x 
     rw [hval, sub_sub_cancel]
     exact herr.trans (by nlinarith only [hprod, hbound])
   simpa [btrRatio] using Optimization.le_reductionRatio_of_abs_sub_le hpred herr'
+
+omit [NormedSpace ℝ E] in
+/-- The acceptance-ratio estimate (6.4.12) before applying the radius update. -/
+theorem btrRatio_ge_eta₂_of_small_radius {P : BTRParams} {f m : E → ℝ} {x s g : E}
+    {β Δ κ C : ℝ} (hβ : 0 < β) (hβC : β ≤ C) (hΔ : 0 < Δ) (hg : g ≠ 0)
+    (hval : f x = m x) (hdec : HasSufficientModelDecrease m x s g β Δ κ)
+    (herr : |f (x + s) - m (x + s)| ≤ C * Δ ^ 2)
+    (hsmall : Δ ≤ κ * ‖g‖ * (1 - P.η₂) / C) :
+    P.η₂ ≤ btrRatio f m x s := by
+  exact btrRatio_ge_eta₂_of_small_radius_of_decrease hβ hβC hΔ
+    (norm_pos_iff.mpr hg) hdec.1.1 hdec.1.2 hval hdec.2 herr hsmall
 
 omit [NormedSpace ℝ E] in
 /-- Theorem 6.4.2. Under the quadratic error bound (6.4.3), a small enough radius

@@ -128,6 +128,8 @@ The corrected Theorem 12.2.1 uses model-gradient agreement at the base point.
 Opposite gradients can make every positive trial fail the upper decrease test.
 A critical starting point can be returned before computing the initial trial
 parameter. The generalized Cauchy decrease includes the tangent stopping test.
+Lemma 12.3.1 uses local constancy to cover connected sets. Lemma 12.3.6
+approximates the negative gradient by normal directions at nearby points.
 
 Chapter 13 covers the logarithmic barrier. Theorem 13.2.1 uses a lower objective
 bound to bound the barrier along the run. For log barriers, AC.8 holds on

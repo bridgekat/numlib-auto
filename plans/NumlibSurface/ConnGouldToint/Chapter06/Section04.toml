@@ -35,3 +35,7 @@ source = "Conn–Gould–Toint, Theorem 6.4.6"
 [[node]]
 id = "btrRatio_ge_eta₂_of_small_radius"
 source = "Conn–Gould–Toint, (6.4.12)"
+
+[[node]]
+id = "btrRatio_ge_eta₂_of_small_radius_of_decrease"
+source = "Conn–Gould–Toint, common acceptance argument in Theorem 6.4.2 and Lemma 12.3.5"

@@ -1,0 +1,33 @@
+namespace = "ConnGouldToint.Chapter12"
+
+[[node]]
+id = "activeConstraintSet"
+source = "Conn–Gould–Toint, active-set notation in Section 12.3"
+
+[[node]]
+id = "HasStrictActiveMultipliers"
+source = "Conn–Gould–Toint, strict multiplier consequence of AO.1c and AO.4b"
+
+[[node]]
+id = "eventually_activeConstraintSet_eq"
+source = "Conn–Gould–Toint, local active-set constancy in Lemma 12.3.1"
+
+[[node]]
+id = "lemma_12_3_1"
+source = "Conn–Gould–Toint, Lemma 12.3.1"
+
+[[node]]
+id = "lemma_12_3_2"
+source = "Conn–Gould–Toint, Lemma 12.3.2"
+
+[[node]]
+id = "theorem_12_3_3"
+source = "Conn–Gould–Toint, Theorem 12.3.3 and (12.3.9)–(12.3.10)"
+
+[[node]]
+id = "lemma_12_3_5"
+source = "Conn–Gould–Toint, Lemma 12.3.5"
+
+[[node]]
+id = "lemma_12_3_6"
+source = "Conn–Gould–Toint, Lemma 12.3.6"
