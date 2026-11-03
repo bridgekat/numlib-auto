@@ -27,3 +27,59 @@ source = "Conn–Gould–Toint, corrected (14.2.3)"
 [[node]]
 id = "fderiv_lagrangian_eq_zero_of_augmentedLagrangian_min"
 source = "Conn–Gould–Toint, (14.2.4)"
+
+[[node]]
+id = "multiplierGram"
+source = "Conn–Gould–Toint, normal-equation operator in (14.2.8)–(14.2.10)"
+
+[[node]]
+id = "leastSquaresMultiplier"
+source = "Conn–Gould–Toint, (14.2.8), on the full-row-rank locus"
+
+[[node]]
+id = "multiplierGram_isUnit_of_surjective"
+source = "Conn–Gould–Toint, AO.1c and the nonsingularity condition of Lemma 14.2.1"
+
+[[node]]
+id = "leastSquaresMultiplier_normal"
+source = "Conn–Gould–Toint, (14.2.10)"
+
+[[node]]
+id = "leastSquaresMultiplier_isMinOn"
+source = "Conn–Gould–Toint, least-squares minimization preceding (14.2.8)"
+
+[[node]]
+id = "lemma_14_2_1"
+source = "Conn–Gould–Toint, Lemma 14.2.1 and (14.2.9)"
+
+[[node]]
+id = "leastSquaresMultiplier_sub_eq"
+source = "Conn–Gould–Toint, identity used in (14.2.21)"
+
+[[node]]
+id = "lemma_14_2_2_i"
+source = "Conn–Gould–Toint, Lemma 14.2.2(i), (14.2.12)–(14.2.14), and corrected (14.2.26)"
+
+[[node]]
+id = "lemma_14_2_2_ii"
+source = "Conn–Gould–Toint, Lemma 14.2.2(ii)"
+
+[[node]]
+id = "penaltyKKTJacobian"
+source = "Conn–Gould–Toint, signed form of the operator in (14.2.28)"
+
+[[node]]
+id = "penaltyKKT_error_bound"
+source = "Conn–Gould–Toint, (14.2.30)"
+
+[[node]]
+id = "lemma_14_2_2_iii"
+source = "Conn–Gould–Toint, Lemma 14.2.2(iii), (14.2.16)–(14.2.18)"
+
+[[node]]
+id = "lemma_14_2_2_iv"
+source = "Conn–Gould–Toint, quantitative form of Lemma 14.2.2(iv)"
+
+[[node]]
+id = "gradient_lagrangian_eq"
+source = "Conn–Gould–Toint, fixed-multiplier Lagrangian gradient"

@@ -148,6 +148,12 @@ covering every coordinate that decreases along the chosen ray.
 Chapter 14 covers the quadratic penalty and first-order multiplier estimate. In (14.2.3),
 both derivatives in the stationarity condition are evaluated at the feasible point.
 
+The multiplier difference in (14.2.26) has the sign from (14.2.6).
+In (14.3.15), the scaling factor is μ/ν − 1. At an infeasible point,
+the Lagrangian Hessian term in Lemma 14.3.2 can grow as the penalty
+parameter tends to zero. The corrected extreme-eigenvalue estimates
+bound that term explicitly.
+
 Chapter 15 covers local SQP convergence. Theorem 15.2.1(i) needs supplied multipliers
 to stay near the root multiplier from the first iteration. A convergent multiplier
 sequence can otherwise make the first stationary subproblem inconsistent.

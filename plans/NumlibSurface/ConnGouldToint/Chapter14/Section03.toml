@@ -1,0 +1,29 @@
+namespace = "ConnGouldToint.Chapter14"
+
+[[node]]
+id = "theorem_14_3_1"
+source = "Conn–Gould–Toint, Theorem 14.3.1(i)–(ii), (14.3.3)–(14.3.4)"
+
+[[node]]
+id = "theorem_14_3_1_iii"
+source = "Conn–Gould–Toint, Theorem 14.3.1(iii), (14.3.5)–(14.3.6)"
+
+[[node]]
+id = "fderiv_gradient_augmentedLagrangian_eq"
+source = "Conn–Gould–Toint, (14.3.9)"
+
+[[node]]
+id = "lemma_14_3_2_infeasible_counterexample"
+source = "Conn–Gould–Toint, counterexample to Lemma 14.3.2(ii)–(iii) at an infeasible point"
+
+[[node]]
+id = "penalty_system_iff"
+source = "Conn–Gould–Toint, equivalence of (14.3.13) and (14.3.14)"
+
+[[node]]
+id = "gradient_augmentedLagrangian_change_parameter"
+source = "Conn–Gould–Toint, corrected (14.3.15)"
+
+[[node]]
+id = "lemma_14_3_2_scaled_extremes"
+source = "Conn–Gould–Toint, corrected Lemma 14.3.2(ii)–(iii)"
