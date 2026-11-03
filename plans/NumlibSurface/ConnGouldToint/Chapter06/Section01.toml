@@ -34,3 +34,12 @@ source = "Conn–Gould–Toint, Theorem 6.4.3 (radius update argument)"
 
 [[node]]
 id = "BTRRun.tail"
+
+[[node]]
+id = "BTRRun.objective_drop_of_successful"
+
+[[node]]
+id = "BTRRun.iterate_eq_of_unsuccessful"
+
+[[node]]
+id = "BTRRun.objective_antitone"

@@ -137,6 +137,32 @@ theorem delta_lower_bound (run : BTRRun f P sufficient) {θ : ℝ}
         · exact (h.unsuccessful (lt_of_not_ge h₁)).1
       exact (min_le_right _ _).trans (hmul.trans hstep)
 
+/-- A successful iteration gives objective decrease at least `η₁` times the model decrease. -/
+theorem objective_drop_of_successful (run : BTRRun f P sufficient) {k : ℕ}
+    (hk : k ∈ run.successful) :
+    P.η₁ * (run.model k (run.x k) - run.model k (run.x k + run.s k)) ≤
+      f (run.x k) - f (run.x (k + 1)) := by
+  have hr : P.η₁ ≤ Optimization.reductionRatio f (run.x k) (run.s k)
+      (run.model k (run.x k) - run.model k (run.x k + run.s k)) := hk
+  rw [run.iterate_update, Optimization.acceptStep_of_le hr]
+  exact (Optimization.le_reductionRatio_iff (run.predicted_pos k)).mp hr
+
+/-- A rejected step leaves the iterate fixed. -/
+theorem iterate_eq_of_unsuccessful (run : BTRRun f P sufficient) {k : ℕ}
+    (hk : k ∉ run.successful) : run.x (k + 1) = run.x k := by
+  have hr : Optimization.reductionRatio f (run.x k) (run.s k)
+      (run.model k (run.x k) - run.model k (run.x k + run.s k)) < P.η₁ := lt_of_not_ge hk
+  rw [run.iterate_update, Optimization.acceptStep_of_lt hr]
+
+/-- Objective values are nonincreasing along a basic trust-region run. -/
+theorem objective_antitone (run : BTRRun f P sufficient) : Antitone (fun k ↦ f (run.x k)) := by
+  apply antitone_nat_of_succ_le
+  intro k
+  by_cases hk : k ∈ run.successful
+  · exact sub_nonneg.mp ((mul_pos P.eta₁_pos (run.predicted_pos k)).le.trans
+      (run.objective_drop_of_successful hk))
+  · rw [run.iterate_eq_of_unsuccessful hk]
+
 /-- Restart the indexing at iteration `n`, retaining the original iterates, models, and steps. -/
 def tail (run : BTRRun f P sufficient) (n : ℕ) :
     BTRRun f P (fun k ↦ sufficient (n + k)) where
