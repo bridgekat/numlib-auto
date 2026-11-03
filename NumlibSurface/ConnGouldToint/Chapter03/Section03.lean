@@ -84,6 +84,28 @@ variable {F : Type*} [NormedSpace ℝ E] [CompleteSpace E]
   [NormedAddCommGroup F] [NormedSpace ℝ F]
 
 omit [CompleteSpace E] in
+/-- Algorithm 3.3.1. Where the derivative is invertible, the Newton
+iterate uses the unique solution of (3.3.1). -/
+theorem algorithm_3_3_1 (f : E → F) (x₀ : E) (k : ℕ)
+    (e : E ≃L[ℝ] F)
+    (he : HasFDerivAt f (e : E →L[ℝ] F) (Newton.iterate f (fderiv ℝ f) x₀ k)) :
+    let x := Newton.iterate f (fderiv ℝ f) x₀ k
+    ∃! s, fderiv ℝ f x s = -f x ∧ Newton.iterate f (fderiv ℝ f) x₀ (k + 1) = x + s := by
+  let x := Newton.iterate f (fderiv ℝ f) x₀ k
+  refine ⟨e.symm (-f x), ⟨?_, ?_⟩, ?_⟩
+  · rw [he.fderiv]
+    exact e.apply_symm_apply _
+  · rw [Newton.iterate_succ]
+    change Newton.step f (fderiv ℝ f) x = x + e.symm (-f x)
+    rw [Newton.step, he.fderiv, ContinuousLinearMap.inverse_equiv, map_neg, sub_eq_add_neg]
+    rfl
+  · intro s hs
+    apply e.injective
+    rw [e.apply_symm_apply]
+    rw [he.fderiv] at hs
+    exact hs.1
+
+omit [CompleteSpace E] in
 /-- Near a regular root, the norm of the residual and the distance to the root
 bound one another up to constant factors. -/
 private theorem eventually_residual_comparable {f : E → F} {x : E} (hroot : f x = 0)

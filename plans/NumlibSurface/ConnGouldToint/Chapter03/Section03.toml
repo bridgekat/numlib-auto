@@ -31,3 +31,7 @@ source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.3.2, domain con
 [[node]]
 id = "newton_correction_small_without_domain_ball"
 source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.3.2, domain condition example"
+
+[[node]]
+id = "algorithm_3_3_1"
+source = "Conn–Gould–Toint, Algorithm 3.3.1 and (3.3.1)"

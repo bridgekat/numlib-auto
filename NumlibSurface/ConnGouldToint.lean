@@ -113,6 +113,10 @@ from an ordered pivot scan. The hard-case boundary correction selects a
 model-minimizing root with deterministic tie handling. With a starting
 upper bracket strictly above the pole, the corrected steps along successful
 factorizations converge to one minimizer even when the minimizer is nonunique.
+The corrected Algorithm 7.3.6 tests the exact threshold. A finite probe
+can report the hard case when the limiting threshold test would not.
+Algorithm 7.5.2 switches from interior PCG to exact reduced Lanczos solves
+and checks the physical residual before stopping.
 Weighted subproblems use the M-inner product or the explicit coordinate transformation.
 The nonnegative index in Lemma 7.5.8 is k. Theorem 7.5.9 covers stationary
 stops and both positive- and zero-curvature boundary stops for convex
@@ -133,6 +137,8 @@ a positive radius. Centered Taylor differences give the Hessian estimate even
 when the model and objective values at the center differ. In (9.3.4), the
 model Hessian need only have a lower curvature bound tending to zero.
 Theorem 9.3.3 uses this bound to establish second-order criticality in the limit.
+Algorithm 9.3.1 keeps refining at a positive radius when the model criticality
+is zero, so the derivative estimates remain applicable.
 The Newton interpolation construction in Section 9.4 uses a simplex lattice
 to produce a complete, uniformly bounded graded polynomial basis. In (9.4.5),
 the normalization divides by the signed pivot to produce a unit diagonal. The model
@@ -159,7 +165,10 @@ norm comparison from AN.1.
 Section 10.3 embeds integer-indexed line search in the exact trust-region
 model and verifies the gradient-angle and positive-curvature CG estimates.
 Theorem 10.3.4 requires Euclidean ball geometry. A diamond gives a
-counterexample under norm comparison alone.
+counterexample under norm comparison alone. Algorithm 10.3.2 uses the
+same exponent in both sides of the Armijo test. The rejected direction
+is reused only if it is a descent direction, and the accepted probe must
+have positive predicted decrease.
 Section 10.4 uses augmented predicted decrease for the corrected step ratio.
 The quadratic augmentation in (10.4.12) uses the trial argument, so the
 quadratic term cancels from the compensated ratio error in (10.4.16).

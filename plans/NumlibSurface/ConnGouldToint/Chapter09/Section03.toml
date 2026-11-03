@@ -22,3 +22,27 @@ source = "Conn–Gould–Toint, Corollary 9.3.2"
 [[node]]
 id = "theorem_9_3_3"
 source = "Conn–Gould–Toint, Theorem 9.3.3 and corrected (9.3.4)"
+
+[[node]]
+id = "secondOrderModelCriticality"
+source = "Conn–Gould–Toint, Algorithm 9.3.1 criticality measure"
+
+[[node]]
+id = "secondOrderModelPasses"
+source = "Conn–Gould–Toint, Algorithm 9.3.1 second-order validity test"
+
+[[node]]
+id = "secondOrderRefinementRadius"
+source = "Conn–Gould–Toint, Algorithm 9.3.1 with positive-radius refinement at zero model criticality"
+
+[[node]]
+id = "SecondOrderModelRefinement"
+source = "Conn–Gould–Toint, Algorithm 9.3.1 infinite refinement trace"
+
+[[node]]
+id = "SecondOrderModelRefinement.tendsto_radius"
+source = "Conn–Gould–Toint, geometric radius decay in Algorithm 9.3.1"
+
+[[node]]
+id = "theorem_9_3_3_of_refinement"
+source = "Conn–Gould–Toint, Theorem 9.3.3 from the corrected Algorithm 9.3.1 loop"

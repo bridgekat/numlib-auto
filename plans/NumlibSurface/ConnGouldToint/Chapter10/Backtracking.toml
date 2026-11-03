@@ -1,0 +1,33 @@
+namespace = "ConnGouldToint.Chapter10"
+
+[[node]]
+id = "backtrackingTRDirection"
+source = "Conn–Gould–Toint, Algorithm 10.3.2 Step 1b with a descent fallback"
+
+[[node]]
+id = "backtrackingTRDirection_spec"
+source = "Conn–Gould–Toint, corrected direction normalization in Algorithm 10.3.2"
+
+[[node]]
+id = "backtrackingTRArmijo"
+source = "Conn–Gould–Toint, (10.3.5) with the same trial exponent throughout"
+
+[[node]]
+id = "exists_backtrackingTRArmijo"
+source = "Conn–Gould–Toint, finite Armijo search in Algorithm 10.3.2"
+
+[[node]]
+id = "BacktrackingTRRun"
+source = "Conn–Gould–Toint, corrected Algorithm 10.3.2"
+
+[[node]]
+id = "backtrackingTR_ascent_reuse_counterexample"
+source = "Conn–Gould–Toint, counterexample to unconditional reuse in Algorithm 10.3.2"
+
+[[node]]
+id = "backtrackingTRTrial"
+source = "Conn–Gould–Toint, corrected Algorithm 10.3.2 trial with a positive ratio denominator"
+
+[[node]]
+id = "exists_backtrackingTRTrial"
+source = "Conn–Gould–Toint, termination of the corrected Step 1b with model-gradient agreement"

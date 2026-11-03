@@ -270,4 +270,102 @@ theorem second_order_zero_radius_counterexample :
       ← fderiv_apply_one_eq_deriv, h] at hsecond
     simp at hsecond
 
+/-- The norm and negative-curvature measure in Algorithm 9.3.1. -/
+noncomputable def secondOrderModelCriticality (m : E → ℝ) (x : E) (curvature : ℝ) : ℝ :=
+  max ‖fderiv ℝ m x‖ (-curvature)
+
+/-- The validity test in Algorithm 9.3.1 uses a positive certificate radius. -/
+def secondOrderModelPasses (f m : E → ℝ) (x : E) (κ₁ κ₂ μ curvature : ℝ) : Prop :=
+  ∃ δ > 0, δ ≤ μ * secondOrderModelCriticality m x curvature ∧
+    modelSecondOrderValidOnBall f m x δ κ₁ κ₂
+
+/-- At zero model criticality the printed target radius is zero. Shrink
+the current positive certificate instead, so further estimates still apply. -/
+noncomputable def secondOrderRefinementRadius (α μ δ τ : ℝ) : ℝ :=
+  α * (if 0 < τ then μ * τ else δ)
+
+/-- An infinite inner trace, starting at a positive-radius validity
+certificate. Each model is tested again after the refinement. -/
+structure SecondOrderModelRefinement (f : E → ℝ) (x : E) (κ₁ κ₂ μ α ε : ℝ) where
+  model : ℕ → E → ℝ
+  radius : ℕ → ℝ
+  leastCurvature : ℕ → ℝ
+  radius_pos : ∀ k, 0 < radius k
+  valid : ∀ k, modelSecondOrderValidOnBall f (model k) x (radius k) κ₁ κ₂
+  small_gradient : ∀ k, ‖fderiv ℝ (model k) x‖ ≤ ε
+  curvature_bound : ∀ k v, leastCurvature k * ‖v‖ ^ 2 ≤ fderiv ℝ (fderiv ℝ (model k)) x v v
+  test_fails : ∀ k, ¬ secondOrderModelPasses f (model k) x κ₁ κ₂ μ (leastCurvature k)
+  refine_radius : ∀ k, radius (k + 1) = secondOrderRefinementRadius α μ (radius k)
+    (secondOrderModelCriticality (model k) x (leastCurvature k))
+
+namespace SecondOrderModelRefinement
+
+variable {f : E → ℝ} {x : E} {κ₁ κ₂ μ α ε : ℝ}
+
+/-- A failed test bounds the model criticality by the current radius. -/
+private theorem criticality_lt (run : SecondOrderModelRefinement f x κ₁ κ₂ μ α ε) (k : ℕ) :
+    μ * secondOrderModelCriticality (run.model k) x (run.leastCurvature k) < run.radius k :=
+  lt_of_not_ge fun h ↦ run.test_fails k ⟨run.radius k, run.radius_pos k, h, run.valid k⟩
+
+/-- Every refinement reduces the certificate radius by at least the
+fixed factor. This also holds in the zero-criticality branch. -/
+theorem tendsto_radius (run : SecondOrderModelRefinement f x κ₁ κ₂ μ α ε)
+    (hα : 0 ≤ α) (hα₁ : α < 1) : Tendsto run.radius atTop (𝓝 0) := by
+  have hstep (k : ℕ) : run.radius (k + 1) ≤ α * run.radius k := by
+    rw [run.refine_radius k, secondOrderRefinementRadius]
+    apply mul_le_mul_of_nonneg_left _ hα
+    split
+    · exact (run.criticality_lt k).le
+    · rfl
+  have hbound (k : ℕ) : run.radius k ≤ run.radius 0 * α ^ k := by
+    induction k with
+    | zero => simp
+    | succ k ih =>
+      calc
+        _ ≤ α * run.radius k := hstep k
+        _ ≤ α * (run.radius 0 * α ^ k) := mul_le_mul_of_nonneg_left ih hα
+        _ = _ := by rw [pow_succ]; ring
+  refine squeeze_zero (fun k ↦ (run.radius_pos k).le) hbound ?_
+  simpa only [mul_zero] using
+    (tendsto_pow_atTop_nhds_zero_of_lt_one hα hα₁).const_mul (run.radius 0)
+
+end SecondOrderModelRefinement
+
+/-- The corrected loop directly supplies the convergence hypotheses of
+Theorem 9.3.3. The certificate radius divided by `μ` is an upper bound
+on both the model gradient norm and the magnitude of negative curvature. -/
+theorem theorem_9_3_3_of_refinement {f : E → ℝ} {x : E} {κ₁ κ₂ μ α ε Bf Bm Lf Lm : ℝ}
+    (run : SecondOrderModelRefinement f x κ₁ κ₂ μ α ε)
+    (hμ : 0 < μ) (hα : 0 ≤ α) (hα₁ : α < 1) (hf : ContDiff ℝ 3 f)
+    (hm : ∀ k, Differentiable ℝ (run.model k))
+    (hDm₁ : ∀ k, Differentiable ℝ (fderiv ℝ (run.model k)))
+    (hDm₂ : ∀ k, Differentiable ℝ (fderiv ℝ (fderiv ℝ (run.model k))))
+    (hκ₁ : 0 < κ₁) (hκ₂ : 0 ≤ κ₂) (hBf : 0 ≤ Bf) (hBm : 0 ≤ Bm)
+    (hLf : 0 ≤ Lf) (hLm : 0 ≤ Lm)
+    (hF₂ : ∀ z, ‖fderiv ℝ (fderiv ℝ f) z‖ ≤ Bf)
+    (hM₂ : ∀ k z, ‖fderiv ℝ (fderiv ℝ (run.model k)) z‖ ≤ Bm)
+    (hF₃ : ∀ z, ‖fderiv ℝ (fderiv ℝ (fderiv ℝ f)) z‖ ≤ Lf)
+    (hM₃ : ∀ k z, ‖fderiv ℝ (fderiv ℝ (fderiv ℝ (run.model k))) z‖ ≤ Lm) :
+    fderiv ℝ f x = 0 ∧ ∀ v, 0 ≤ fderiv ℝ (fderiv ℝ f) x v v := by
+  let τ (k : ℕ) := run.radius k / μ
+  have hτ : Tendsto τ atTop (𝓝 0) := by
+    simpa only [zero_div] using (run.tendsto_radius hα hα₁).div_const μ
+  have hcrit (k : ℕ) :
+      secondOrderModelCriticality (run.model k) x (run.leastCurvature k) ≤ τ k := by
+    apply (le_div_iff₀ hμ).mpr
+    rw [mul_comm]
+    exact (run.criticality_lt k).le
+  apply theorem_9_3_3 (δ := run.radius) (τ := τ) (μ := μ) hf hm hDm₁ hDm₂ hκ₁ hκ₂
+    hBf hBm hLf hLm hF₂ hM₂ hF₃ hM₃ _ _ _ hτ
+  · exact Eventually.of_forall fun k ↦
+      ⟨run.radius_pos k, by dsimp [τ]; rw [← mul_div_assoc, mul_div_cancel_left₀ _ hμ.ne'],
+        run.valid k⟩
+  · exact Eventually.of_forall fun k ↦ (le_max_left _ _).trans (hcrit k)
+  · intro v
+    apply Eventually.of_forall
+    intro k
+    have hl := (le_max_right _ _).trans (hcrit k)
+    exact (mul_le_mul_of_nonneg_right (by linarith) (sq_nonneg ‖v‖)).trans
+      (run.curvature_bound k v)
+
 end ConnGouldToint.Chapter09
