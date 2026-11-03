@@ -1,0 +1,14 @@
+namespace = "ConnGouldToint.Chapter07"
+desc = "Quadratic subproblem on the Euclidean sphere and ball. The positive-radius assumption restores the constraint qualification needed for the shifted system."
+
+[[node]]
+id = "q"
+source = "Conn–Gould–Toint, (7.2.1)"
+
+[[node]]
+id = "theorem_7_2_1"
+source = "Conn–Gould–Toint, Theorem 7.2.1"
+
+[[node]]
+id = "corollary_7_2_2"
+source = "Conn–Gould–Toint, Corollary 7.2.2"

@@ -36,3 +36,7 @@ source = "Cartis–Gould–Toint, (9.4.7)"
 
 [[node]]
 id = "IsTrustRegionMultiplier.eq_of_same_step"
+
+[[node]]
+id = "exists_shift_of_isMinOn_sphere"
+source = "Conn–Gould–Toint, Theorem 7.2.1"

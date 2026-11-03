@@ -363,6 +363,74 @@ theorem eq_of_isMinOn_closedBall_of_posDef (hH : (H : E →ₗ[ℝ] E).IsSymmetr
   have : ‖u - s‖ ^ 2 ≤ 0 := by nlinarith
   exact sub_eq_zero.mp (norm_eq_zero.mp (by nlinarith [norm_nonneg (u - s)]))
 
+/-- At a positive-radius spherical minimizer, a scalar shift gives the stationary
+system and a positive semidefinite Hessian. Positive definiteness of this shift implies
+uniqueness on the sphere. -/
+theorem exists_shift_of_isMinOn_sphere (hH : (H : E →ₗ[ℝ] E).IsSymmetric)
+    (hΔ : 0 < Δ) (hs : ‖s‖ = Δ) (hmin : IsMinOn (quadModel g H) (sphere 0 Δ) s) :
+    ∃ μ : ℝ, (H + μ • (1 : E →L[ℝ] E)) s = -g ∧
+      ((H + μ • (1 : E →L[ℝ] E) : E →L[ℝ] E) : E →ₗ[ℝ] E).IsPositive ∧
+      (((H + μ • (1 : E →L[ℝ] E) : E →L[ℝ] E) : E →ₗ[ℝ] E).IsCoercive →
+        ∀ u : E, ‖u‖ = Δ → IsMinOn (quadModel g H) (sphere 0 Δ) u → u = s) := by
+  -- Subtracting a multiple of the squared norm preserves the ordering on the
+  -- sphere. Choose the multiple so that the new model is concave on diameters.
+  let K := H + (-‖H‖) • (1 : E →L[ℝ] E)
+  have hK := ContinuousLinearMap.isSymmetric_add_smul_one hH (-‖H‖)
+  have hshift (v : E) : ⟪v, K v⟫ = ⟪v, H v⟫ - ‖H‖ * ‖v‖ ^ 2 := by
+    simp [K, inner_add_right, inner_smul_right, sub_eq_add_neg]
+  have hmodel (v : E) : quadModel g K v = quadModel g H v - ‖H‖ / 2 * ‖v‖ ^ 2 := by
+    rw [quadModel_def, hshift, quadModel_def]
+    ring
+  have hcurv (v : E) : ⟪v, K v⟫ ≤ 0 := by
+    have h := (real_inner_le_norm v (H v)).trans
+      (mul_le_mul_of_nonneg_left (H.le_opNorm v) (norm_nonneg v))
+    rw [hshift]
+    nlinarith
+  have hsphere : IsMinOn (quadModel g K) (sphere 0 Δ) s := by
+    intro v hv
+    have hv' : ‖v‖ = Δ := by simpa [mem_sphere, dist_zero_right] using hv
+    have h := hmin hv
+    simpa [hmodel, hs, hv', mem_ofPred_eq] using h
+  have hdiameter (v : E) (hv : ‖v‖ = Δ) (t : ℝ) (ht₀ : 0 ≤ t) (ht₁ : t ≤ 1) :
+      quadModel g K s ≤ quadModel g K (t • v) := by
+    have h₁ := hsphere (show v ∈ sphere (0 : E) Δ by simpa [mem_sphere, dist_zero_right] using hv)
+    have h₂ := hsphere (show -v ∈ sphere (0 : E) Δ by simpa [mem_sphere, dist_zero_right] using hv)
+    simp only [mem_ofPred_eq] at h₁ h₂
+    have hcombine := add_le_add (mul_le_mul_of_nonneg_left h₁ (show 0 ≤ (1 + t) / 2 by linarith))
+      (mul_le_mul_of_nonneg_left h₂ (show 0 ≤ (1 - t) / 2 by linarith))
+    simp only [quadModel_def, map_neg, inner_neg_left, inner_neg_right, neg_neg] at hcombine
+    simp only [quadModel_def, map_smul, inner_smul_left, inner_smul_right, conj_trivial]
+    have hdiff := mul_nonneg (mul_nonneg (show 0 ≤ 1 - t by linarith)
+      (show 0 ≤ 1 + t by linarith)) (neg_nonneg.mpr (hcurv v))
+    nlinarith only [hcombine, hdiff]
+  have hball : IsMinOn (quadModel g K) (closedBall 0 Δ) s := by
+    intro u hu
+    change quadModel g K s ≤ quadModel g K u
+    have hu' := mem_closedBall_zero_iff.mp hu
+    by_cases huz : u = 0
+    · simpa [huz] using hdiameter s hs 0 le_rfl zero_le_one
+    · have hn : 0 < ‖u‖ := norm_pos_iff.mpr huz
+      have hv : ‖(Δ / ‖u‖) • u‖ = Δ := by
+        rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg (by positivity), div_mul_cancel₀ _ hn.ne']
+      have h := hdiameter _ hv (‖u‖ / Δ) (by positivity) ((div_le_one hΔ).mpr hu')
+      rwa [smul_smul, show ‖u‖ / Δ * (Δ / ‖u‖) = 1 by field_simp, one_smul] at h
+  obtain ⟨ν, hν⟩ := (isMinOn_closedBall_iff hK hΔ hs.le).mp hball
+  have hoperator : H + (ν - ‖H‖) • (1 : E →L[ℝ] E) = K + ν • 1 := by
+    dsimp [K]
+    rw [show ν - ‖H‖ = -‖H‖ + ν by ring, add_smul, add_assoc]
+  refine ⟨ν - ‖H‖, ?_⟩
+  rw [hoperator]
+  refine ⟨hν.shifted, hν.isPositive, fun hc u hu hmu => ?_⟩
+  have hmu' : IsMinOn (quadModel g K) (closedBall 0 Δ) u := by
+    intro v hv
+    have h₁ := hball hv
+    have h₂ := hmu (show s ∈ sphere (0 : E) Δ by simpa [mem_sphere, dist_zero_right] using hs)
+    have h₃ : quadModel g K u ≤ quadModel g K s := by
+      simp only [mem_ofPred_eq] at h₂
+      simpa [hmodel, hu, hs] using h₂
+    exact h₃.trans h₁
+  exact eq_of_isMinOn_closedBall_of_posDef hK hν hs.le hc hu.le hmu'
+
 end Optimality
 
 section Value

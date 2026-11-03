@@ -1,0 +1,30 @@
+namespace = "ConnGouldToint.Chapter05"
+desc = "Express the linear CG and PCG rates using the library recurrences. Use spectral bounds and the product form of the energy norm estimate so that it covers an exact initial solution."
+
+[[node]]
+id = "quadraticObjective"
+source = "Conn–Gould–Toint, (5.1.1)"
+
+[[node]]
+id = "algorithm_5_1_2"
+source = "Conn–Gould–Toint, Algorithm 5.1.2"
+
+[[node]]
+id = "algorithm_5_1_4"
+source = "Conn–Gould–Toint, Algorithm 5.1.4"
+
+[[node]]
+id = "theorem_5_1_6"
+source = "Conn–Gould–Toint, Theorem 5.1.6"
+
+[[node]]
+id = "theorem_5_1_7"
+source = "Conn–Gould–Toint, Theorem 5.1.7"
+
+[[node]]
+id = "corollary_5_1_8"
+source = "Conn–Gould–Toint, Corollary 5.1.8"
+
+[[node]]
+id = "corollary_5_1_9"
+source = "Conn–Gould–Toint, Corollary 5.1.9"

@@ -105,3 +105,7 @@ source = 'Golub–Van Loan, Matrix Computations, Theorem 11.3.1'
 
 [[node]]
 id = "fullSubspace_add_algebraMap"
+
+[[node]]
+id = "subspace_succ_eq_sup_map"
+source = "Conn–Gould–Toint, Lemma 5.2.1"
