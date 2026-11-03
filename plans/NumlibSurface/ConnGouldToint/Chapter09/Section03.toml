@@ -1,0 +1,16 @@
+namespace = "ConnGouldToint.Chapter09"
+
+[[node]]
+id = "modelSecondOrderValidOnBall"
+source = "Conn–Gould–Toint, (9.3.1)"
+
+[[node]]
+id = "theorem_9_3_1_of_hessian_lipschitz"
+source = "Conn–Gould–Toint, Theorem 9.3.1"
+
+[[node]]
+id = "theorem_9_3_1"
+source = "Conn–Gould–Toint, Theorem 9.3.1 and (9.3.2)"
+
+[[node]]
+id = "second_order_zero_radius_counterexample"
