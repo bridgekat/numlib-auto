@@ -94,3 +94,50 @@ source = "Conn–Gould–Toint, Theorem 10.2.3 and (10.2.18)"
 [[node]]
 id = "lemma_10_2_4"
 source = "Conn–Gould–Toint, Lemma 10.2.4 and (10.2.19)–(10.2.22)"
+
+[[node]]
+id = "StructuredTRRun.predictedDrop"
+
+[[node]]
+id = "StructuredTRRun.actualDrop"
+
+[[node]]
+id = "StructuredTRRun.modelGradient"
+
+[[node]]
+id = "StructuredTRRun.objectiveGradient"
+
+[[node]]
+id = "StructuredTRRun.successful"
+
+[[node]]
+id = "structuredRadiusFloor"
+source = "Conn–Gould–Toint, corrected sufficient radius floor in (10.2.24)"
+
+[[node]]
+id = "structuredRadiusFloor_pos_and_le"
+source = "Conn–Gould–Toint, Theorem 10.2.5 on a tail"
+
+[[node]]
+id = "theorem_10_2_5_of_error_bound"
+source = "Conn–Gould–Toint, Theorem 10.2.5 and corrected (10.2.24)"
+
+[[node]]
+id = "theorem_10_2_6_of_error_bound"
+source = "Conn–Gould–Toint, Theorem 10.2.6"
+
+[[node]]
+id = "StructuredTRRun.aggregateCurvature"
+source = "Conn–Gould–Toint, aggregate form of (6.3.1)"
+
+[[node]]
+id = "StructuredTRRun.aggregateCurvature_le"
+source = "Conn–Gould–Toint, (6.3.2) with the aggregate bound under AM.4s"
+
+[[node]]
+id = "theorem_10_2_5"
+source = "Conn–Gould–Toint, Theorem 10.2.5"
+
+[[node]]
+id = "theorem_10_2_6"
+source = "Conn–Gould–Toint, Theorem 10.2.6"

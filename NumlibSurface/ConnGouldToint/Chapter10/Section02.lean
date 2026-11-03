@@ -8,7 +8,7 @@ Element objectives and models are invariant along their corresponding null subsp
 Their trust regions constrain only the projected components of the trial step.
 -/
 
-open scoped BigOperators
+open scoped BigOperators Topology
 open Set
 
 namespace ConnGouldToint.Chapter10
@@ -550,5 +550,419 @@ theorem lemma_10_2_4 (run : StructuredTRRun P elements N β κ)
     _ = _ := by ring
 
 end Accuracy
+
+section Convergence
+
+variable {E ι : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [CompleteSpace E]
+  [Fintype ι] [Nonempty ι] {P : StructuredTRParams} {elements : ι → E → ℝ}
+  {N : ι → Submodule ℝ E} {β : ℕ → ℝ} {κ : ℝ}
+
+/-- The predicted change of each element in the structured run. -/
+noncomputable def StructuredTRRun.predictedDrop (run : StructuredTRRun P elements N β κ)
+    (k : ℕ) (i : ι) : ℝ :=
+  run.model k i (run.x k) - run.model k i (run.x k + run.s k)
+
+/-- The achieved change of each element in the structured run. -/
+noncomputable def StructuredTRRun.actualDrop (run : StructuredTRRun P elements N β κ)
+    (k : ℕ) (i : ι) : ℝ :=
+  elements i (run.x k) - elements i (run.x k + run.s k)
+
+/-- The gradient of the total model at the current iterate. -/
+noncomputable def StructuredTRRun.modelGradient (run : StructuredTRRun P elements N β κ)
+    (k : ℕ) : E :=
+  gradient (fun x ↦ ∑ i, run.model k i x) (run.x k)
+
+/-- The gradient of the total objective at the current iterate. -/
+noncomputable def StructuredTRRun.objectiveGradient (run : StructuredTRRun P elements N β κ)
+    (k : ℕ) : E :=
+  gradient (fun x ↦ ∑ i, elements i x) (run.x k)
+
+/-- The successful iterations of the structured run. -/
+def StructuredTRRun.successful (run : StructuredTRRun P elements N β κ) : Set ℕ :=
+  {k | structuredSuccessful P.η₁ (run.predictedDrop k) (run.actualDrop k)}
+
+private theorem minimumRadius_le (Δ : ι → ℝ) (i : ι) : minimumRadius Δ ≤ Δ i :=
+  Finset.inf'_le _ (Finset.mem_univ i)
+
+private theorem le_minimumRadius {Δ : ι → ℝ} {b : ℝ} (h : ∀ i, b ≤ Δ i) :
+    b ≤ minimumRadius Δ :=
+  Finset.le_inf' _ _ fun i _ ↦ h i
+
+private theorem exists_eq_minimumRadius (Δ : ι → ℝ) : ∃ i, Δ i = minimumRadius Δ := by
+  obtain ⟨i, _, hi⟩ := Finset.exists_mem_eq_inf' Finset.univ_nonempty Δ
+  exact ⟨i, hi.symm⟩
+
+private theorem minimumRadius_pos (Δ : ι → ℝ) (h : ∀ i, 0 < Δ i) :
+    0 < minimumRadius Δ := by
+  obtain ⟨i, hi⟩ := exists_eq_minimumRadius Δ
+  simpa only [← hi] using h i
+
+omit [Nonempty ι] in
+private theorem StructuredRadiusUpdate.noncontract_of_scaled_error
+    {d a Δ Δ' : ι → ℝ} (hu : StructuredRadiusUpdate P d a Δ Δ') (i : ι)
+    (hgood : |a i - d i| ≤ (1 - P.η₃) / Fintype.card ι * ∑ j, d j)
+    (hsmall : |a i - d i| ≤ (P.μ₂ - P.μ₁) / Fintype.card ι * ∑ j, d j) :
+    Δ i ≤ Δ' i := by
+  by_cases hn : i ∈ negligibleElements P.μ₁ d
+  · have hN : negligibleFit P.μ₂ d a i := by
+      have hd := mem_negligibleElements.mp hn
+      have hsum : |a i| ≤ |a i - d i| + |d i| := by
+        simpa only [sub_add_cancel] using abs_add_le (a i - d i) (d i)
+      unfold negligibleFit
+      calc
+        _ ≤ |a i - d i| + |d i| := hsum
+        _ ≤ (P.μ₂ - P.μ₁) / Fintype.card ι * (∑ j, d j) +
+            P.μ₁ / Fintype.card ι * ∑ j, d j := add_le_add hsmall hd
+        _ = _ := by rw [← add_mul, ← add_div, sub_add_cancel]
+    by_cases hs : structuredSuccessful P.η₁ d a
+    · exact hu.negligible_expand i hn hN hs
+    · rw [hu.negligible_hold i hn hN hs]
+  · have hm := mem_meaningfulElements.mpr hn
+    have hM : elementFit P.η₃ d a i := by
+      unfold elementFit
+      linarith only [(abs_le.mp hgood).1]
+    by_cases hs : structuredSuccessful P.η₁ d a
+    · exact hu.meaningful_expand i hm hM hs
+    · rw [hu.meaningful_hold i hm hM hs]
+
+private theorem StructuredTRRun.predicted_total_ge (run : StructuredTRRun P elements N β κ)
+    {B ε : ℝ} {k : ℕ} (hβ : β k ≤ B) (hε : 0 < ε)
+    (hg : ε ≤ ‖run.modelGradient k‖) :
+    κ * ε * min (ε / B) (minimumRadius (run.Δ k)) ≤ ∑ i, run.predictedDrop k i := by
+  have hB : 0 < B := (run.β_pos k).trans_le hβ
+  have hmin : 0 < minimumRadius (run.Δ k) := minimumRadius_pos _ (run.delta_pos k)
+  have hs := run.sufficient k
+  unfold structuredSufficientDecrease at hs
+  change κ * ‖run.modelGradient k‖ *
+      min (‖run.modelGradient k‖ / β k) (max (minimumRadius (run.Δ k)) (run.p k (run.s k))) ≤
+      (∑ i, run.model k i (run.x k)) - (∑ i, run.model k i (run.x k + run.s k)) at hs
+  rw [← Finset.sum_sub_distrib] at hs
+  refine le_trans (mul_le_mul (mul_le_mul_of_nonneg_left hg run.κ_pos.le) ?_
+    (le_min (div_nonneg hε.le hB.le) hmin.le) (mul_nonneg run.κ_pos.le (norm_nonneg _))) hs
+  exact min_le_min (div_le_div₀ (norm_nonneg _) hg (run.β_pos k) hβ) (le_max_left _ _)
+
+/-- A radius floor for a tail with gradient norm at least `ε`. The two error
+terms come from the meaningful and negligible element tests. This replaces
+the sufficient threshold printed in (10.2.24). -/
+noncomputable def structuredRadiusFloor (P : StructuredTRParams) (p : ℕ)
+    (κ ε B C initial : ℝ) : ℝ :=
+  let e := P.γ₁ * (κ * ε)
+  min initial (P.γ₁ * min (ε / B)
+    (min (((1 - P.η₃) / p) * e / C) (((P.μ₂ - P.μ₁) / p) * e / C)))
+
+/-- The quantitative radius floor remains valid for every tail on which the
+gradient norm has a positive lower bound. -/
+theorem structuredRadiusFloor_pos_and_le (run : StructuredTRRun P elements N β κ)
+    {B C ε : ℝ} (hβ : ∀ k, β k ≤ B) (hC : 0 < C) (hε : 0 < ε) (n : ℕ)
+    (hg : ∀ k ≥ n, ε ≤ ‖run.modelGradient k‖)
+    (herr : ∀ k i, |run.actualDrop k i - run.predictedDrop k i| ≤ C * (run.Δ k i) ^ 2) :
+    0 < structuredRadiusFloor P (Fintype.card ι) κ ε B C (minimumRadius (run.Δ n)) ∧
+      ∀ k ≥ n, structuredRadiusFloor P (Fintype.card ι) κ ε B C (minimumRadius (run.Δ n)) ≤
+        minimumRadius (run.Δ k) := by
+  have hB : 0 < B := (run.β_pos 0).trans_le (hβ 0)
+  have hp : 0 < (Fintype.card ι : ℝ) := by exact_mod_cast Fintype.card_pos
+  let e := P.γ₁ * (κ * ε)
+  have he : 0 < e := mul_pos P.gamma₁_pos (mul_pos run.κ_pos hε)
+  let a := (1 - P.η₃) / (Fintype.card ι : ℝ)
+  let b := (P.μ₂ - P.μ₁) / (Fintype.card ι : ℝ)
+  have ha : 0 < a := div_pos (sub_pos.mpr P.eta₃_lt_one) hp
+  have hb : 0 < b := div_pos (sub_pos.mpr P.mu₁_lt_mu₂) hp
+  let θ := min (ε / B) (min (a * e / C) (b * e / C))
+  have hθ : 0 < θ := lt_min (div_pos hε hB)
+    (lt_min (div_pos (mul_pos ha he) hC) (div_pos (mul_pos hb he) hC))
+  let δ := min (minimumRadius (run.Δ n)) (P.γ₁ * θ)
+  have hδ : 0 < δ := lt_min (minimumRadius_pos _ (run.delta_pos n))
+    (mul_pos P.gamma₁_pos hθ)
+  change 0 < δ ∧ ∀ k ≥ n, δ ≤ minimumRadius (run.Δ k)
+  refine ⟨hδ, fun k hk ↦ ?_⟩
+  induction k, hk using Nat.le_induction with
+  | base => exact min_le_left _ _
+  | succ k hk ih =>
+    apply le_minimumRadius
+    intro i
+    by_contra! hnext
+    have hr := lemma_10_2_1_ii (run.radius_update k) (fun j ↦ (run.delta_pos k j).le) i
+    have hiθ : run.Δ k i ≤ θ := by
+      have h := hr.trans (hnext.le.trans (min_le_right _ _))
+      exact le_of_mul_le_mul_left h P.gamma₁_pos
+    have hminθ := (minimumRadius_le (run.Δ k) i).trans hiθ
+    have hm := run.predicted_total_ge (hβ k) hε (hg k hk)
+    rw [min_eq_right (hminθ.trans (min_le_left _ _))] at hm
+    have hnextmin : run.Δ (k + 1) i ≤ minimumRadius (run.Δ k) := hnext.le.trans ih
+    have hpred : e * run.Δ k i ≤ ∑ j, run.predictedDrop k j := by
+      calc
+        e * run.Δ k i = (κ * ε) * (P.γ₁ * run.Δ k i) := by dsimp [e]; ring
+        _ ≤ (κ * ε) * minimumRadius (run.Δ k) :=
+          mul_le_mul_of_nonneg_left (hr.trans hnextmin) (mul_nonneg run.κ_pos.le hε.le)
+        _ ≤ _ := hm
+    have hscale {c : ℝ} (hc : 0 ≤ c) (hic : run.Δ k i ≤ c * e / C) :
+        |run.actualDrop k i - run.predictedDrop k i| ≤ c * ∑ j, run.predictedDrop k j := by
+      have hmul : C * run.Δ k i ≤ c * e := by
+        simpa only [mul_comm C] using (le_div_iff₀ hC).mp hic
+      calc
+        _ ≤ C * (run.Δ k i) ^ 2 := herr k i
+        _ = (C * run.Δ k i) * run.Δ k i := by ring
+        _ ≤ (c * e) * run.Δ k i :=
+          mul_le_mul_of_nonneg_right hmul (run.delta_pos k i).le
+        _ = c * (e * run.Δ k i) := by ring
+        _ ≤ _ := mul_le_mul_of_nonneg_left hpred hc
+    have haup : run.Δ k i ≤ a * e / C :=
+      (hiθ.trans (min_le_right _ _)).trans (min_le_left _ _)
+    have hbup : run.Δ k i ≤ b * e / C :=
+      (hiθ.trans (min_le_right _ _)).trans (min_le_right _ _)
+    have hu : StructuredRadiusUpdate P (run.predictedDrop k) (run.actualDrop k)
+        (run.Δ k) (run.Δ (k + 1)) := run.radius_update k
+    have hkeep := hu.noncontract_of_scaled_error i (hscale ha.le haup) (hscale hb.le hbup)
+    exact hnext.not_ge ((ih.trans (minimumRadius_le (run.Δ k) i)).trans hkeep)
+
+/-- Theorem 10.2.5 in terms of the quantitative model accuracy and aggregate
+curvature bounds. A uniformly positive model gradient prevents any element
+radius from approaching zero. The proof compares absolute model error
+directly with the two fit tolerances and uses no bound on element gradients. -/
+theorem theorem_10_2_5_of_error_bound (run : StructuredTRRun P elements N β κ)
+    {B C ε : ℝ} (hβ : ∀ k, β k ≤ B) (hC : 0 < C) (hε : 0 < ε)
+    (hg : ∀ k, ε ≤ ‖run.modelGradient k‖)
+    (herr : ∀ k i, |run.actualDrop k i - run.predictedDrop k i| ≤ C * (run.Δ k i) ^ 2) :
+    ∃ δ > 0, ∀ k, δ ≤ minimumRadius (run.Δ k) := by
+  obtain ⟨hδ, hr⟩ := structuredRadiusFloor_pos_and_le run hβ hC hε 0 (fun k _ ↦ hg k) herr
+  exact ⟨_, hδ, fun k ↦ hr k (Nat.zero_le k)⟩
+
+omit [Nonempty ι] in
+private theorem StructuredRadiusUpdate.le_of_unsuccessful
+    {d a Δ Δ' : ι → ℝ} (hu : StructuredRadiusUpdate P d a Δ Δ') (i : ι)
+    (hΔ : 0 ≤ Δ i) (hs : ¬ structuredSuccessful P.η₁ d a) :
+    Δ' i ≤ Δ i := by
+  have hγ : P.γ₂ * Δ i ≤ Δ i := mul_le_of_le_one_left hΔ P.gamma₂_lt_one.le
+  by_cases hn : i ∈ negligibleElements P.μ₁ d
+  · by_cases hfit : negligibleFit P.μ₂ d a i
+    · rw [hu.negligible_hold i hn hfit hs]
+    · exact (hu.negligible_contract i hn hfit).2.trans hγ
+  · have hm := mem_meaningfulElements.mpr hn
+    by_cases hfit : elementFit P.η₃ d a i
+    · rw [hu.meaningful_hold i hm hfit hs]
+    · by_cases hfit₂ : elementFit P.η₂ d a i
+      · exact (hu.meaningful_moderate i hm hfit hfit₂).2
+      · exact (hu.meaningful_contract i hm hfit₂).2.trans hγ
+
+private theorem StructuredRadiusUpdate.exists_contraction_of_unsuccessful
+    {d a Δ Δ' : ι → ℝ} (hu : StructuredRadiusUpdate P d a Δ Δ')
+    (hd : 0 < ∑ i, d i) (hs : ¬ structuredSuccessful P.η₁ d a) :
+    ∃ i, Δ' i ≤ P.γ₂ * Δ i := by
+  by_contra! hn
+  apply hs
+  exact (lemma_10_2_2 P hd
+    (fun i hi ↦ by
+      by_contra h
+      exact (hn i).not_ge (hu.meaningful_contract i hi h).2)
+    (fun i hi ↦ by
+      by_contra h
+      exact (hn i).not_ge (hu.negligible_contract i hi h).2)).2.2
+
+/-- Theorem 10.2.6 in terms of the quadratic error and aggregate curvature
+bounds. After the last accepted step the iterate is constant. On every
+unsuccessful iteration at least one element radius contracts and none grows.
+A nonzero gradient would force a uniform radius floor, contradicting the
+resulting uniform decrease in the sum of the radii. -/
+theorem theorem_10_2_6_of_error_bound (run : StructuredTRRun P elements N β κ)
+    {B C : ℝ} (hβ : ∀ k, β k ≤ B) (hC : 0 < C)
+    (herr : ∀ k i, |run.actualDrop k i - run.predictedDrop k i| ≤ C * (run.Δ k i) ^ 2)
+    (hgrad : ∀ k, run.modelGradient k = run.objectiveGradient k)
+    (hfinite : run.successful.Finite) :
+    ∃ x, (∀ᶠ k in Filter.atTop, run.x k = x) ∧ gradient (fun z ↦ ∑ i, elements i z) x = 0 := by
+  obtain ⟨J, hJ⟩ := hfinite.bddAbove
+  let n := J + 1
+  have hfail (k : ℕ) (hk : n ≤ k) : k ∉ run.successful := by
+    intro h
+    have hle := hJ h
+    change J + 1 ≤ k at hk
+    omega
+  have hx (k : ℕ) (hk : n ≤ k) : run.x k = run.x n := by
+    induction k, hk using Nat.le_induction with
+    | base => rfl
+    | succ k hk ih =>
+      have hs : ¬ structuredSuccessful P.η₁
+          (fun i ↦ run.model k i (run.x k) - run.model k i (run.x k + run.s k))
+          (fun i ↦ elements i (run.x k) - elements i (run.x k + run.s k)) := hfail k hk
+      rw [run.iterate_update, ite_eq_right hs, ih]
+  refine ⟨run.x n, Filter.eventually_atTop.mpr ⟨n, hx⟩, ?_⟩
+  change run.objectiveGradient n = 0
+  by_contra hn
+  let ε := ‖run.objectiveGradient n‖
+  have hε : 0 < ε := norm_pos_iff.mpr hn
+  have hg (k : ℕ) (hk : n ≤ k) : ε ≤ ‖run.modelGradient k‖ := by
+    rw [hgrad k]
+    unfold StructuredTRRun.objectiveGradient
+    rw [hx k hk]
+    exact le_rfl
+  let δ := structuredRadiusFloor P (Fintype.card ι) κ ε B C (minimumRadius (run.Δ n))
+  obtain ⟨hδ, hfloor⟩ := structuredRadiusFloor_pos_and_le run hβ hC hε n hg herr
+  let c := (1 - P.γ₂) * δ
+  have hc : 0 < c := mul_pos (sub_pos.mpr P.gamma₂_lt_one) hδ
+  let total (k : ℕ) := ∑ i, run.Δ k i
+  have htotal (k : ℕ) : 0 ≤ total k := Finset.sum_nonneg (fun i _ ↦ (run.delta_pos k i).le)
+  have hdrop (k : ℕ) (hk : n ≤ k) : c ≤ total k - total (k + 1) := by
+    have hu : StructuredRadiusUpdate P (run.predictedDrop k) (run.actualDrop k)
+        (run.Δ k) (run.Δ (k + 1)) := run.radius_update k
+    have hfailed : ¬ structuredSuccessful P.η₁ (run.predictedDrop k) (run.actualDrop k) :=
+      hfail k hk
+    obtain ⟨i, hi⟩ := hu.exists_contraction_of_unsuccessful (run.predicted_pos k) hfailed
+    have hδi := (hfloor k hk).trans (minimumRadius_le (run.Δ k) i)
+    have hstep : c ≤ run.Δ k i - run.Δ (k + 1) i := calc
+      _ ≤ (1 - P.γ₂) * run.Δ k i :=
+        mul_le_mul_of_nonneg_left hδi (sub_nonneg.mpr P.gamma₂_lt_one.le)
+      _ = run.Δ k i - P.γ₂ * run.Δ k i := by ring
+      _ ≤ _ := sub_le_sub_left hi _
+    have hsum : run.Δ k i - run.Δ (k + 1) i ≤ ∑ j, (run.Δ k j - run.Δ (k + 1) j) :=
+      Finset.single_le_sum
+        (fun j _ ↦ sub_nonneg.mpr (hu.le_of_unsuccessful j (run.delta_pos k j).le hfailed))
+        (Finset.mem_univ i)
+    rw [Finset.sum_sub_distrib] at hsum
+    exact hstep.trans hsum
+  have hdec (j : ℕ) : total (n + j) + (j : ℝ) * c ≤ total n := by
+    induction j with
+    | zero => simp
+    | succ j ih =>
+      have h := hdrop (n + j) (Nat.le_add_right _ _)
+      push_cast
+      rw [← Nat.add_assoc]
+      linarith only [h, ih]
+  obtain ⟨j, hj⟩ := exists_nat_gt (total n / c)
+  exact (not_lt_of_ge (by linarith [hdec j, htotal (n + j)] : (j : ℝ) * c ≤ total n))
+    ((div_lt_iff₀ hc).mp hj)
+
+variable [∀ i, (N i).HasOrthogonalProjection]
+
+/-- The curvature quantity (6.3.1) for the aggregate model on the structured
+trust region, using the supremum of the Hessian norms. -/
+noncomputable def StructuredTRRun.aggregateCurvature (run : StructuredTRRun P elements N β κ)
+    (k : ℕ) : ℝ :=
+  1 + sSup ((fun z ↦ ‖fderiv ℝ (fderiv ℝ (fun x ↦ ∑ i, run.model k i x)) z‖) ''
+    structuredTrustRegion (run.p k) N (run.x k) (run.Δ k))
+
+/-- An elementwise Hessian bound gives a uniform bound on the aggregate
+curvature. The factor counting elements allows their Hessians to overlap. -/
+theorem StructuredTRRun.aggregateCurvature_le (run : StructuredTRRun P elements N β κ)
+    {κm : ℝ}
+    (hmodel : ∀ k i z, z ∈ structuredTrustRegion (run.p k) N (run.x k) (run.Δ k) →
+      ContDiffAt ℝ 2 (run.model k i) z)
+    (hM : ∀ k i z, z ∈ structuredTrustRegion (run.p k) N (run.x k) (run.Δ k) →
+      ‖fderiv ℝ (fderiv ℝ (run.model k i)) z‖ ≤ κm - 1)
+    (k : ℕ) : run.aggregateCurvature k ≤ 1 + Fintype.card ι * (κm - 1) := by
+  have hx : run.x k ∈ structuredTrustRegion (run.p k) N (run.x k) (run.Δ k) := by
+    simpa only [zero_smul, add_zero] using run.segment_mem k (show (0 : ℝ) ∈ Icc 0 1 by simp)
+  unfold StructuredTRRun.aggregateCurvature
+  apply add_le_add le_rfl
+  apply csSup_le (Set.Nonempty.image _ ⟨run.x k, hx⟩)
+  rintro _ ⟨z, hz, rfl⟩
+  dsimp only
+  have hloc : ∀ᶠ y in 𝓝 z, ∀ i, DifferentiableAt ℝ (run.model k i) y :=
+    Filter.eventually_all.mpr fun i ↦ ((hmodel k i z hz).eventually (by norm_num)).mono
+      (fun _ h ↦ h.differentiableAt (by norm_num))
+  have hsum :
+      fderiv ℝ (fun x ↦ ∑ i, run.model k i x) =ᶠ[𝓝 z]
+        (fun y ↦ ∑ i, fderiv ℝ (run.model k i) y) :=
+    hloc.mono fun _ hy ↦ fderiv_fun_sum (fun i _ ↦ hy i)
+  have hsecond :
+      fderiv ℝ (fun y ↦ ∑ i, fderiv ℝ (run.model k i) y) z =
+        ∑ i, fderiv ℝ (fderiv ℝ (run.model k i)) z :=
+    fderiv_fun_sum (fun i _ ↦
+      ((hmodel k i z hz).fderiv_right (m := 1) (by norm_num)).differentiableAt (by norm_num))
+  rw [hsum.fderiv_eq (𝕜 := ℝ), hsecond]
+  let H : ι → E →L[ℝ] E →L[ℝ] ℝ := fun i ↦ fderiv ℝ (fderiv ℝ (run.model k i)) z
+  have hnorm : ‖∑ i, H i‖ ≤ ∑ i, ‖H i‖ := norm_sum_le Finset.univ H
+  have hsumBound : (∑ i, ‖H i‖) ≤ ∑ _i : ι, (κm - 1) :=
+    Finset.sum_le_sum (fun i _ ↦ hM k i z hz)
+  have hconst : (∑ _i : ι, (κm - 1)) = Fintype.card ι * (κm - 1) := by
+    rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
+  change ‖∑ i, H i‖ ≤ Fintype.card ι * (κm - 1)
+  exact hnorm.trans (hsumBound.trans_eq hconst)
+
+private theorem StructuredTRRun.gradients_agree (run : StructuredTRRun P elements N β κ)
+    (hf : ∀ i, ContDiff ℝ 2 (elements i))
+    (hmodel : ∀ k i z, z ∈ structuredTrustRegion (run.p k) N (run.x k) (run.Δ k) →
+      ContDiffAt ℝ 2 (run.model k i) z)
+    (hgrad : ∀ k i, fderiv ℝ (run.model k i) (run.x k) = fderiv ℝ (elements i) (run.x k))
+    (k : ℕ) : run.modelGradient k = run.objectiveGradient k := by
+  have hx : run.x k ∈ structuredTrustRegion (run.p k) N (run.x k) (run.Δ k) := by
+    simpa only [zero_smul, add_zero] using run.segment_mem k (show (0 : ℝ) ∈ Icc 0 1 by simp)
+  unfold StructuredTRRun.modelGradient StructuredTRRun.objectiveGradient gradient
+  rw [fderiv_fun_sum (fun i _ ↦ (hmodel k i _ hx).differentiableAt (by norm_num)),
+    fderiv_fun_sum (fun i _ ↦ (hf i).differentiable (by norm_num) _)]
+  simp only [hgrad]
+
+private theorem StructuredTRRun.drop_error (run : StructuredTRRun P elements N β κ)
+    {K κf κm : ℝ} (hK : 1 ≤ K) (hκf : 1 ≤ κf) (hκm : 1 ≤ κm)
+    (hnorm : ∀ k v, ‖v‖ ≤ K * run.p k v)
+    (hf : ∀ i, ContDiff ℝ 2 (elements i))
+    (hF : ∀ i z, z ∈ (N i)ᗮ → ‖fderiv ℝ (fderiv ℝ (elements i)) z‖ ≤ κf)
+    (hmodel : ∀ k i z, z ∈ structuredTrustRegion (run.p k) N (run.x k) (run.Δ k) →
+      ContDiffAt ℝ 2 (run.model k i) z)
+    (hM : ∀ k i z, z ∈ structuredTrustRegion (run.p k) N (run.x k) (run.Δ k) →
+      ‖fderiv ℝ (fderiv ℝ (run.model k i)) z‖ ≤ κm - 1)
+    (hval : ∀ k i, run.model k i (run.x k) = elements i (run.x k))
+    (hgrad : ∀ k i, fderiv ℝ (run.model k i) (run.x k) = fderiv ℝ (elements i) (run.x k))
+    (k : ℕ) (i : ι) :
+    |run.actualDrop k i - run.predictedDrop k i| ≤ uniformHessianConstant K κf κm * (run.Δ k i) ^ 2 := by
+  have heq : run.actualDrop k i - run.predictedDrop k i =
+      -(elements i (run.x k + run.s k) - run.model k i (run.x k + run.s k)) := by
+    unfold StructuredTRRun.actualDrop StructuredTRRun.predictedDrop
+    rw [hval k i]
+    ring
+  rw [heq, abs_neg]
+  exact (theorem_10_2_3 run hK hκf hκm hnorm hf hF
+    (fun j l z hz ↦ (hmodel j l z hz).differentiableAt (by norm_num))
+    (fun j l z hz ↦ ((hmodel j l z hz).fderiv_right (m := 1) (by norm_num)).differentiableAt
+      (by norm_num)) hM hval hgrad k i).2
+
+private theorem uniformHessianConstant_pos {K κf κm : ℝ} (hK : 1 ≤ K) (hκf : 1 ≤ κf) :
+    0 < uniformHessianConstant K κf κm :=
+  mul_pos (pow_pos (zero_lt_one.trans_le hK) 2) ((zero_lt_one.trans_le hκf).trans_le (le_max_left _ _))
+
+/-- Theorem 10.2.5. With the usual aggregate curvature choice and quadratic
+element accuracy from the smoothness assumptions, a uniform positive gradient
+floor forces a uniform positive floor on the minimum radius. -/
+theorem theorem_10_2_5 (run : StructuredTRRun P elements N β κ)
+    {K κf κm ε : ℝ} (hK : 1 ≤ K) (hκf : 1 ≤ κf) (hκm : 1 ≤ κm)
+    (hnorm : ∀ k v, ‖v‖ ≤ K * run.p k v)
+    (hf : ∀ i, ContDiff ℝ 2 (elements i))
+    (hF : ∀ i z, z ∈ (N i)ᗮ → ‖fderiv ℝ (fderiv ℝ (elements i)) z‖ ≤ κf)
+    (hmodel : ∀ k i z, z ∈ structuredTrustRegion (run.p k) N (run.x k) (run.Δ k) →
+      ContDiffAt ℝ 2 (run.model k i) z)
+    (hM : ∀ k i z, z ∈ structuredTrustRegion (run.p k) N (run.x k) (run.Δ k) →
+      ‖fderiv ℝ (fderiv ℝ (run.model k i)) z‖ ≤ κm - 1)
+    (hval : ∀ k i, run.model k i (run.x k) = elements i (run.x k))
+    (hgrad : ∀ k i, fderiv ℝ (run.model k i) (run.x k) = fderiv ℝ (elements i) (run.x k))
+    (hβ : ∀ k, β k = run.aggregateCurvature k)
+    (hε : 0 < ε) (hg : ∀ k, ε ≤ ‖run.modelGradient k‖) :
+    ∃ δ > 0, ∀ k, δ ≤ minimumRadius (run.Δ k) :=
+  theorem_10_2_5_of_error_bound run
+    (fun k ↦ (hβ k).le.trans (run.aggregateCurvature_le hmodel hM k))
+    (uniformHessianConstant_pos hK hκf) hε hg
+    (run.drop_error hK hκf hκm hnorm hf hF hmodel hM hval hgrad)
+
+/-- Theorem 10.2.6. A structured run with only finitely many successful
+iterations is eventually constant at a first-order critical point. The
+quantitative proof uses the lower norm comparison of AN.1 and does not
+require the separate element gradient bound AF.5s. -/
+theorem theorem_10_2_6 (run : StructuredTRRun P elements N β κ)
+    {K κf κm : ℝ} (hK : 1 ≤ K) (hκf : 1 ≤ κf) (hκm : 1 ≤ κm)
+    (hnorm : ∀ k v, ‖v‖ ≤ K * run.p k v)
+    (hf : ∀ i, ContDiff ℝ 2 (elements i))
+    (hF : ∀ i z, z ∈ (N i)ᗮ → ‖fderiv ℝ (fderiv ℝ (elements i)) z‖ ≤ κf)
+    (hmodel : ∀ k i z, z ∈ structuredTrustRegion (run.p k) N (run.x k) (run.Δ k) →
+      ContDiffAt ℝ 2 (run.model k i) z)
+    (hM : ∀ k i z, z ∈ structuredTrustRegion (run.p k) N (run.x k) (run.Δ k) →
+      ‖fderiv ℝ (fderiv ℝ (run.model k i)) z‖ ≤ κm - 1)
+    (hval : ∀ k i, run.model k i (run.x k) = elements i (run.x k))
+    (hgrad : ∀ k i, fderiv ℝ (run.model k i) (run.x k) = fderiv ℝ (elements i) (run.x k))
+    (hβ : ∀ k, β k = run.aggregateCurvature k) (hfinite : run.successful.Finite) :
+    ∃ x, (∀ᶠ k in Filter.atTop, run.x k = x) ∧ gradient (fun z ↦ ∑ i, elements i z) x = 0 :=
+  theorem_10_2_6_of_error_bound run
+    (fun k ↦ (hβ k).le.trans (run.aggregateCurvature_le hmodel hM k))
+    (uniformHessianConstant_pos hK hκf)
+    (run.drop_error hK hκf hκm hnorm hf hF hmodel hM hval hgrad)
+    (run.gradients_agree hf hmodel hgrad) hfinite
+
+end Convergence
 
 end ConnGouldToint.Chapter10

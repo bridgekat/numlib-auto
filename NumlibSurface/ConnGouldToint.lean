@@ -93,6 +93,9 @@ from the bounded objective Hessian.
 In Section 10.2, the ratio and element-fit tests in (10.2.6)–(10.2.7) are
 equivalent when the individual predicted decrease is strictly positive.
 At zero predicted decrease the two tests can give different answers.
+The radius lower bound compares the fit tolerances directly and uses the
+sum of the element curvature bounds. Theorem 10.2.6 requires the uniform
+norm comparison from AN.1.
 
 Chapter 11 covers Clarke steepest descent using the support identity proved in (3.1.4).
 The nonsmooth radius update caps the expansion lower bound in (11.1.16) at the
