@@ -1,0 +1,93 @@
+namespace = "ConnGouldToint.Chapter13"
+
+[[node]]
+id = "primalDualBarrierModel"
+source = "Conn–Gould–Toint, (13.6.3), corrected positive quadratic term"
+
+[[node]]
+id = "primalDualBarrierModel_eq_primal"
+source = "Conn–Gould–Toint, Algorithm 13.6.1 with exact dual values"
+
+[[node]]
+id = "primalDualBarrierModel_printed_sign_counterexample"
+source = "Conn–Gould–Toint, counterexample to the printed sign in (13.6.3)"
+
+[[node]]
+id = "primalDualBarrierDiagonal"
+source = "Conn–Gould–Toint, diagonal Hessian in Lemma 13.6.1"
+
+[[node]]
+id = "primalDualBarrierDiagonal_apply"
+source = "Conn–Gould–Toint, diagonal Hessian in Lemma 13.6.1"
+
+[[node]]
+id = "primalDualBarrierModel_center"
+source = "Conn–Gould–Toint, Lemma 13.6.1, AM.1–AM.3"
+
+[[node]]
+id = "primalDualBarrierModel_hessian"
+source = "Conn–Gould–Toint, Lemma 13.6.1, AC.6b"
+
+[[node]]
+id = "primalDualBarrierModel_hessian_bounded"
+source = "Conn–Gould–Toint, Lemma 13.6.1, AM.4h under AA.7"
+
+[[node]]
+id = "primalDualBarrierModel_hessian_consistent"
+source = "Conn–Gould–Toint, Lemma 13.6.1, AM.5c under AA.8"
+
+[[node]]
+id = "PrimalDualBarrierStop"
+source = "Conn–Gould–Toint, (13.6.5)–(13.6.8)"
+
+[[node]]
+id = "primalDual_distance_test_infeasible_counterexample"
+source = "Conn–Gould–Toint, missing feasibility condition in Algorithm 13.6.1, Step 2"
+
+[[node]]
+id = "PrimalDualBarrierInnerRun"
+source = "Conn–Gould–Toint, Algorithm 13.6.1, corrected quadratic sign and primal feasibility test"
+
+[[node]]
+id = "PrimalDualBarrierOuterRun"
+source = "Conn–Gould–Toint, Algorithm 13.6.2"
+
+[[node]]
+id = "theorem_13_6_2_of_inner_limits"
+source = "Conn–Gould–Toint, finite stopping implication of Theorem 13.6.2, corrected bounded-primal hypothesis"
+
+[[node]]
+id = "primalDual_complementarity_unbounded_counterexample"
+source = "Conn–Gould–Toint, counterexample to the unbounded-primal complementarity inference in Theorem 13.6.2"
+
+[[node]]
+id = "theorem_13_6_3"
+source = "Conn–Gould–Toint, Theorem 13.6.3"
+
+[[node]]
+id = "theorem_13_6_3_consistentlyActive"
+source = "Conn–Gould–Toint, (13.6.12)–(13.6.13)"
+
+[[node]]
+id = "PrimalDualBarrierOuterRun.convergence"
+source = "Conn–Gould–Toint, Theorem 13.6.3 applied to Algorithm 13.6.2"
+
+[[node]]
+id = "primalDualPredictedMultiplier"
+source = "Conn–Gould–Toint, (13.6.16)"
+
+[[node]]
+id = "primalDualSafeguard"
+source = "Conn–Gould–Toint, (13.6.17)–(13.6.19)"
+
+[[node]]
+id = "theorem_13_6_4"
+source = "Conn–Gould–Toint, positivity and AA.7 in Theorem 13.6.4"
+
+[[node]]
+id = "theorem_13_6_4_aa8_of_frequently_successful"
+source = "Conn–Gould–Toint, AA.8 in Theorem 13.6.4, corrected late-success hypothesis"
+
+[[node]]
+id = "primalDual_safeguard_stalled_counterexample"
+source = "Conn–Gould–Toint, counterexample to transferring the accepted-iteration limit without late successes"

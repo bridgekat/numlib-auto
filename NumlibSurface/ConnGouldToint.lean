@@ -169,6 +169,17 @@ to meet the lower-boundedness requirement that the printed quadratic fails.
 On an unbounded approach to the boundary, a growing coordinate can cancel a vanishing one.
 The log-barrier Hessian is diagonal and uniformly bounded away from the boundary.
 The quadratic model uses the exact second-order Taylor data.
+Section 13.3 proves the constrained Cauchy and eigenpoint decrease bounds
+in the common Euclidean norm. Corollary 13.3.2 uses the corrected boundary
+separation hypothesis of Theorem 13.2.1.
+In Algorithm 13.6.1 the quadratic barrier model term has a positive sign
+and the trial point must be feasible. Explicit scalar examples show why
+the printed sign and unsigned distance test need these corrections.
+Theorem 13.6.2 derives finite stopping from the inner limits with bounded
+primal coordinates. The full inner-algorithm limit argument remains open.
+The safeguard analysis in Theorem 13.6.4 uses arbitrarily late successful
+iterations to derive AA.8 from vanishing steps. Its proof bounds the
+projection error directly without requiring the projection to become inactive.
 Section 13.12 covers first-order and weak second-order stationarity under affine scaling.
 The corrected Cauchy decrease in Theorem 13.12.3 includes a fraction-to-boundary cap.
 A one-dimensional example violates the printed bound for every positive criticality cap.

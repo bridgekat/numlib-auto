@@ -53,7 +53,8 @@ theorem logBarrierModel_eq_taylor {x : ι → ℝ} (hx : ∀ i, 0 < x i) (s : ι
   ring
 
 
-private theorem barrierQuadratic_hasFDerivAt {a : ℝ}
+/-- A quadratic model with symmetric bilinear term has affine derivative. -/
+theorem barrierQuadratic_hasFDerivAt {a : ℝ}
     {g : (ι → ℝ) →L[ℝ] ℝ} {H : (ι → ℝ) →L[ℝ] (ι → ℝ) →L[ℝ] ℝ}
     (hs : ∀ d e, H d e = H e d) (s : ι → ℝ) :
     HasFDerivAt (fun d ↦ a + g d + (1 / 2 : ℝ) * H d d) (g + H s) s := by
