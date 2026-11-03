@@ -46,8 +46,8 @@ theorem lemma_7_5_3 {k : ℕ}
     let β := T (Fin.last (k + 1)) (Fin.last k).castSucc
     r = Pi.single (Fin.last (k + 1))
         ((-1 : ℝ) ^ (k + 1) * γ * (∏ i : Fin (k + 1), T i.succ i.castSucc) / A.det) ∧
-      ‖(WithLp.toLp 2 r : EuclideanSpace ℝ (Fin (k + 2)))‖ ^ 2 = γ ^ 2 * (∏ i : Fin (k + 1), T i.succ i.castSucc ^ 2) /
-        A.det ^ 2 ∧
+      ‖(WithLp.toLp 2 r : EuclideanSpace ℝ (Fin (k + 2)))‖ ^ 2 =
+        γ ^ 2 * (∏ i : Fin (k + 1), T i.succ i.castSucc ^ 2) / A.det ^ 2 ∧
       (r = 0 ↔ β = 0) := by
   classical
   dsimp only

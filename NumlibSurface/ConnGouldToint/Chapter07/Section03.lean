@@ -576,7 +576,8 @@ theorem moreSorensen_hard_model_convergence {Δ : ℝ} {sM : E} (hsM : ‖sM‖ 
   have hcluster (j : ℕ → ℕ) (u : E) (hj : Tendsto j atTop atTop)
       (hu : Tendsto (s ∘ j) atTop (𝓝 u)) :
       u ∈ Metric.closedBall 0 Δ ∧ IsMinOn (quadModel g H) (Metric.closedBall 0 Δ) u := by
-    refine ⟨Metric.isClosed_closedBall.mem_of_tendsto hu (Eventually.of_forall fun k => hfeas (j k)), ?_⟩
+    refine ⟨Metric.isClosed_closedBall.mem_of_tendsto hu
+      (Eventually.of_forall fun k => hfeas (j k)), ?_⟩
     have hq : quadModel g H u = quadModel g H sM :=
       tendsto_nhds_unique ((continuous_quadModel g H).continuousAt.tendsto.comp hu) (hval.comp hj)
     rw [isMinOn_iff]
@@ -592,7 +593,8 @@ theorem moreSorensen_hard_model_convergence {Δ : ℝ} {sM : E} (hsM : ‖sM‖ 
   have hin : ∃ᶠ k in atTop, s k ∈ Metric.closedBall 0 Δ ∩ (Metric.ball sM ε)ᶜ :=
     hfreq.mono fun k hk => ⟨hfeas k, hk⟩
   obtain ⟨u, hu, j, hj, hju⟩ :=
-    ((isCompact_closedBall (0 : E) Δ).inter_right Metric.isOpen_ball.isClosed_compl).tendsto_subseq' hin
+    ((isCompact_closedBall (0 : E) Δ).inter_right
+      Metric.isOpen_ball.isClosed_compl).tendsto_subseq' hin
   obtain ⟨huf, hum⟩ := hcluster j u hj.tendsto_atTop hju
   have heq : u = sM := hunique u huf hum
   exact hu.2 (by simpa [heq, Metric.mem_ball] using hε)

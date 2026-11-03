@@ -125,7 +125,8 @@ theorem cholesky_of_ldl (L : Matrix (Fin n) (Fin n) ℝ) (d : Fin n → ℝ)
 gives the pivot, column entries, and trailing Schur complement. -/
 theorem cholesky_first_column_4_3_7 (a₁₁ l₁₁ : ℝ) (a l : Fin n → ℝ)
     (A L : Matrix (Fin n) (Fin n) ℝ) (hl : 0 < l₁₁)
-    (h : Matrix.fromBlocks (Matrix.of fun _ _ : Unit => a₁₁) (Matrix.of fun _ j => a j) (Matrix.of fun i _ => a i) A =
+    (h : Matrix.fromBlocks (Matrix.of fun _ _ : Unit => a₁₁)
+      (Matrix.of fun _ j => a j) (Matrix.of fun i _ => a i) A =
       Matrix.fromBlocks (Matrix.of fun _ _ : Unit => l₁₁) 0 (Matrix.of fun i _ => l i) L *
         (Matrix.fromBlocks (Matrix.of fun _ _ : Unit => l₁₁) 0 (Matrix.of fun i _ => l i) L)ᵀ) :
     l₁₁ = √a₁₁ ∧ (∀ i, l i = a i / l₁₁) ∧ L * Lᵀ = A - Matrix.vecMulVec l l := by
@@ -146,7 +147,8 @@ theorem cholesky_first_column_4_3_7 (a₁₁ l₁₁ : ℝ) (a l : Fin n → ℝ
 row and the square root formula for its diagonal entry. -/
 theorem cholesky_next_row_4_3_8 (L A : Matrix (Fin n) (Fin n) ℝ)
     (a l : Fin n → ℝ) (α ℓ : ℝ) (hℓ : 0 ≤ ℓ)
-    (h : Matrix.fromBlocks A (Matrix.of fun i _ => a i) (Matrix.of fun _ j => a j) (Matrix.of fun _ _ : Unit => α) =
+    (h : Matrix.fromBlocks A (Matrix.of fun i _ => a i)
+      (Matrix.of fun _ j => a j) (Matrix.of fun _ _ : Unit => α) =
       Matrix.fromBlocks L 0 (Matrix.of fun _ j => l j) (Matrix.of fun _ _ : Unit => ℓ) *
         (Matrix.fromBlocks L 0 (Matrix.of fun _ j => l j) (Matrix.of fun _ _ : Unit => ℓ))ᵀ) :
     L *ᵥ l = a ∧ ℓ = √(α - l ⬝ᵥ l) := by

@@ -70,7 +70,8 @@ theorem augmented_least_squares_4_4_4 (A : Matrix (Fin m) (Fin n) ℝ)
   have hblock (r : Fin n → ℝ) :
       leastSquaresMatrix A *ᵥ Sum.elim r (WithLp.ofLp y) = Sum.elim (WithLp.ofLp g) 0 ↔
         r + Aᵀ *ᵥ WithLp.ofLp y = WithLp.ofLp g ∧ A *ᵥ r = 0 := by
-    rw [leastSquaresMatrix, Matrix.fromBlocks_mulVec, Sum.elim_comp_inl, Sum.elim_comp_inr, Sum.elim_eq_iff]
+    rw [leastSquaresMatrix, Matrix.fromBlocks_mulVec, Sum.elim_comp_inl, Sum.elim_comp_inr,
+      Sum.elim_eq_iff]
     simp
   constructor
   · intro h
@@ -217,7 +218,8 @@ theorem quadratic_minimum_4_4_14 {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsSymm
       conv_lhs => rw [← hH.eq]
       exact Matrix.dotProduct_transpose_mulVec H x d
     have hzstat : d ⬝ᵥ (H *ᵥ x) = d ⬝ᵥ g := by
-      rw [hstat, dotProduct_add, Matrix.dotProduct_transpose_mulVec, hd z hz, dotProduct_zero, add_zero]
+      rw [hstat, dotProduct_add, Matrix.dotProduct_transpose_mulVec, hd z hz,
+        dotProduct_zero, add_zero]
     change f z - f x = (1 / 2 : ℝ) * (d ⬝ᵥ (H *ᵥ d))
     conv_lhs => rw [hsplit]
     simp only [f, mulVec_add, dotProduct_add, add_dotProduct, hsym, hzstat]
