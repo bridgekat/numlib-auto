@@ -59,3 +59,7 @@ source = "Conn–Gould–Toint, Theorem 15.2.2(ii)–(iii)"
 [[node]]
 id = "theorem_15_2_2_i"
 source = "Conn–Gould–Toint, Theorem 15.2.2(i) and (iii)"
+
+[[node]]
+id = "theorem_15_2_2_closest"
+source = "Conn–Gould–Toint, Theorem 15.2.2"

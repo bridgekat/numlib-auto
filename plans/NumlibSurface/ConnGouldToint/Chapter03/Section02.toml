@@ -131,3 +131,15 @@ source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.7"
 [[node]]
 id = "ActiveDual"
 source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.7"
+
+[[node]]
+id = "active_kkt_stationary_iff"
+source = "Conn–Gould–Toint, Theorems 3.2.7 and 15.2.2"
+
+[[node]]
+id = "continuous_active_multiplier_recovery"
+source = "Conn–Gould–Toint, Theorems 3.2.7 and 15.2.2"
+
+[[node]]
+id = "active_surjective_licq"
+source = "Conn–Gould–Toint, Theorems 3.2.7 and 15.2.2"

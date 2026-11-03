@@ -755,7 +755,8 @@ abbrev ActiveDual (ι κ : Type*) [Fintype ι] [Fintype κ] :=
   EuclideanSpace ℝ (ι ⊕ κ)
 
 omit [FiniteDimensional ℝ V] in
-private theorem active_kkt_stationary_iff {f : V → ℝ} {h : ι → V → ℝ}
+/-- Active-system stationarity in vector and scalar-coordinate form. -/
+theorem active_kkt_stationary_iff {f : V → ℝ} {h : ι → V → ℝ}
     {g : κ ⊕ ν → V → ℝ} {x : V}
     {A : V →L[ℝ] ActiveDual ι κ} {mult : ActiveDual ι κ}
     (hA : ∀ d i, A d i = Sum.elim (fun i ↦ fderiv ℝ (h i) x d)
@@ -781,7 +782,8 @@ private theorem active_kkt_stationary_iff {f : V → ℝ} {h : ι → V → ℝ}
     rw [he, show L = 0 from hs, zero_apply, inner_zero_left]
 
 omit [FiniteDimensional ℝ V] in
-private theorem continuous_active_multiplier_recovery
+/-- Recover stationary active multipliers continuously where the active Jacobian is onto. -/
+theorem continuous_active_multiplier_recovery
     {Q : Type*} [TopologicalSpace Q] {q₀ : Q}
     {A : Q → V →L[ℝ] ActiveDual ι κ} {G : Q → V} {m₀ : ActiveDual ι κ}
     (hA : ContinuousAt A q₀) (hG : ContinuousAt G q₀) (honto : Function.Surjective (A q₀))
@@ -831,7 +833,8 @@ private theorem continuous_active_multiplier_recovery
   exact ⟨(A q).adjoint v, by simpa [B] using heval.symm.trans hv⟩
 
 omit [CompleteSpace V] [FiniteDimensional ℝ V] [Fintype ν] in
-private theorem active_surjective_licq {h : ι → V → ℝ} {g : κ ⊕ ν → V → ℝ}
+/-- An onto full active Jacobian gives LICQ for any subset of its active rows. -/
+theorem active_surjective_licq {h : ι → V → ℝ} {g : κ ⊕ ν → V → ℝ}
     {x : V} {A : V →L[ℝ] ActiveDual ι κ}
     (hA : ∀ d i, A d i = Sum.elim (fun i ↦ fderiv ℝ (h i) x d)
       (fun j ↦ fderiv ℝ (g (.inl j)) x d) i)

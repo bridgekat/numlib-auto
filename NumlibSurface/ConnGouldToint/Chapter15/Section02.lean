@@ -556,9 +556,187 @@ theorem theorem_15_2_2_iii
   have hfeas : c (z k).1 + A (z k).1 (s k) = 0 := by rw [hk.2, add_neg_cancel]
   exact (mixedSQP_strict_minimizer_of_active_correction hks hkr.2 hstat hfeas hkm hkb).2
 
+set_option maxHeartbeats 1000000 in
+/-- The closest-to-origin selection in Theorem 15.2.2. For convergent active
+corrections, every feasible mixed-QP local minimizer whose norm is at most that
+of the correction equals the correction, for all sufficiently large indices. -/
+theorem theorem_15_2_2_closest
+    {g : V → V} {c : V → ActiveDual ι κ} {H : V × ActiveDual ι κ → V →L[ℝ] V}
+    {A : V → V →L[ℝ] ActiveDual ι κ} {b : ν → V → ℝ} {B : ν → V → V →L[ℝ] ℝ}
+    {xStar : V} {yStar : ActiveDual ι κ}
+    (hG : ContinuousAt g xStar) (hA : ContinuousAt A xStar) (hH : ContinuousAt H (xStar, yStar))
+    (hb : ∀ j, ContinuousAt (b j) xStar) (hB : ∀ j, ContinuousAt (B j) xStar)
+    (honto : Function.Surjective (A xStar))
+    (hpos : ∀ d, A xStar d = 0 → d ≠ 0 → 0 < ⟪H (xStar, yStar) d, d⟫)
+    (hstar : g xStar - (A xStar).adjoint yStar = 0)
+    (hmult : ∀ j : κ, 0 < yStar (.inr j)) (hslack : ∀ j : ν, 0 < b j xStar)
+    {z : ℕ → V × ActiveDual ι κ} {s : ℕ → V} {y : ℕ → ActiveDual ι κ}
+    (hz : Tendsto z atTop (𝓝 (xStar, yStar))) (hs : Tendsto s atTop (𝓝 0))
+    (hy : Tendsto y atTop (𝓝 yStar))
+    (hcor : ∀ᶠ k in atTop, IsSQPCorrection g c H A (fun x ↦ (A x).adjoint) (z k) (s k) (y k))
+    (hsym : ∀ᶠ k in atTop, (H (z k) : V →ₗ[ℝ] V).IsSymmetric) :
+    ∀ᶠ k in atTop,
+      let C := mixedSQPFeasible (c (z k).1) (A (z k).1) (fun j ↦ b j (z k).1) (fun j ↦ B j (z k).1)
+      let f := Subproblem.quadModel (g (z k).1) (H (z k))
+      s k ∈ C ∧ Optimization.IsStrictLocalMinOn f C (s k) ∧
+        ∀ t ∈ C, IsLocalMinOn f C t → ‖t‖ ≤ ‖s k‖ → t = s k := by
+  let Q := (V × ActiveDual ι κ) × V
+  let q₀ : Q := ((xStar, yStar), 0)
+  let G (q : Q) := g q.1.1 + H q.1 q.2
+  let J (q : Q) := -A q.1.1
+  have hx : ContinuousAt (fun q : Q ↦ q.1.1) q₀ :=
+    continuous_fst.continuousAt.comp continuous_fst.continuousAt
+  have hZc : ContinuousAt (fun q : Q ↦ q.1) q₀ := continuous_fst.continuousAt
+  have hTc : ContinuousAt (fun q : Q ↦ q.2) q₀ := continuous_snd.continuousAt
+  have hHc : ContinuousAt (fun q : Q ↦ H q.1) q₀ := by
+    have ht : Tendsto (fun q : Q ↦ q.1) (𝓝 q₀) (𝓝 (xStar, yStar)) := hZc.tendsto
+    exact hH.tendsto.comp ht
+  have hGc : ContinuousAt G q₀ := (hG.comp hx).add (hHc.clm_apply hTc)
+  have hJc : ContinuousAt J q₀ := (hA.comp hx).neg
+  have hJonto : Function.Surjective (J q₀) := by
+    intro a
+    obtain ⟨d, hd⟩ := honto (-a)
+    exact ⟨d, by change -(A xStar d) = a; rw [hd, neg_neg]⟩
+  have hbase : G q₀ + (J q₀).adjoint yStar = 0 := by
+    simpa [G, J, q₀, sub_eq_add_neg] using hstar
+  obtain ⟨m, hm, hm₀, hrec⟩ :=
+    continuous_active_multiplier_recovery hJc hGc hJonto hbase
+  have hstrict : ∀ᶠ q in 𝓝 q₀, ∀ j : κ, 0 < m q (.inr j) := by
+    apply eventually_all.mpr
+    intro j
+    let proj : ActiveDual ι κ →L[ℝ] ℝ := PiLp.proj _ _ (.inr j)
+    have ht := (proj.continuous.continuousAt.comp hm).tendsto
+    exact ht.eventually (Ioi_mem_nhds (show 0 < proj (m q₀) by rw [hm₀]; exact hmult j))
+  have hinactive : ∀ᶠ q : Q in 𝓝 q₀, ∀ j : ν, 0 < b j q.1.1 + B j q.1.1 q.2 := by
+    apply eventually_all.mpr
+    intro j
+    have ht := ((hb j).comp hx).add (((hB j).comp hx).clm_apply hTc)
+    exact ht.tendsto.eventually (Ioi_mem_nhds (show 0 < b j xStar + B j xStar 0 by simpa using hslack j))
+  have hn := hstrict.and (hinactive.and hrec)
+  change ∀ᶠ q in 𝓝 ((xStar, yStar), (0 : V)), _ at hn
+  rw [nhds_prod_eq] at hn
+  obtain ⟨U, hU, W, hW, hrect⟩ := Filter.mem_prod_iff.mp hn
+  obtain ⟨ε, hε, hεW⟩ := Metric.mem_nhds_iff.mp hW
+  have hs' := hs.eventually (ball_mem_nhds (0 : V) hε)
+  have hreg := (((hA.tendsto.comp (continuous_fst.continuousAt.tendsto.comp hz))).prodMk_nhds
+    (hH.tendsto.comp hz)).eventually
+      (theorem_3_2_7_activeKKT_conditions_open.mem_nhds ⟨honto, hpos⟩)
+  have hident := theorem_15_2_2_iii hA hH hb hB honto hpos hmult hslack hz hs hy hcor hsym
+  filter_upwards [hz.eventually hU, hs', hreg, hident, hcor, hsym] with k hk hks hkr hki hkc hsymk
+  let a := A (z k).1
+  let ce (i : ι) (t : V) := -mixedSQPEquality (c (z k).1) a i t
+  let ci := mixedSQPInequality (c (z k).1) a (fun j ↦ b j (z k).1) (fun j ↦ B j (z k).1)
+  have hC : mixedSQPFeasible (c (z k).1) a (fun j ↦ b j (z k).1) (fun j ↦ B j (z k).1) =
+      feasible ce ci := by
+    ext t
+    simp [mixedSQPFeasible, feasible, ce, ci]
+  have hcoord (i : ι ⊕ κ) : c (z k).1 i + a (s k) i = 0 := by
+    have he : c (z k).1 + a (s k) = 0 := by rw [show a (s k) = -c (z k).1 from hkc.2, add_neg_cancel]
+    exact congrArg (fun v : ActiveDual ι κ ↦ v i) he
+  refine ⟨?_, hki.1, ?_⟩
+  · rw [hC]
+    refine ⟨fun i ↦ neg_eq_zero.mpr (hcoord (.inl i)), ?_⟩
+    intro j
+    cases j with
+    | inl j => exact neg_nonpos.mpr (hcoord (.inr j)).ge
+    | inr j => exact neg_nonpos.mpr (hki.2.2 j).le
+  · intro t ht htmin hnorm
+    have htB : t ∈ ball (0 : V) ε := by
+      rw [dist_zero_right] at hks
+      simpa [mem_ball, dist_zero_right] using hnorm.trans_lt hks
+    obtain ⟨hmp, hneg, hsurj, hrecover⟩ := hrect
+      (show (z k, t) ∈ U ×ˢ W from ⟨hk, hεW htB⟩)
+    rw [hC] at ht htmin
+    let row (i : ι ⊕ κ) : V →L[ℝ] ℝ := (PiLp.proj _ _ i).comp a
+    have he (i : ι) : HasStrictFDerivAt (ce i) (-row (.inl i)) t :=
+      (((row (.inl i)).hasStrictFDerivAt.const_add (c (z k).1 (.inl i))).neg)
+    have hi (j : κ ⊕ ν) : HasStrictFDerivAt (ci j)
+        (Sum.elim (fun i ↦ -row (.inr i)) (fun i ↦ -B i (z k).1) j) t := by
+      cases j with
+      | inl i => exact (((row (.inr i)).hasStrictFDerivAt.const_add (c (z k).1 (.inr i))).neg)
+      | inr i => exact (((B i (z k).1).hasStrictFDerivAt.const_add (b i (z k).1)).neg)
+    have hjac (d : V) (i : ι ⊕ κ) :
+        J (z k, t) d i = Sum.elim (fun i ↦ fderiv ℝ (ce i) t d)
+          (fun j ↦ fderiv ℝ (ci (.inl j)) t d) i := by
+      cases i with
+      | inl i => rw [Sum.elim_inl, (he i).hasFDerivAt.fderiv]; rfl
+      | inr j => rw [Sum.elim_inr, (hi (.inl j)).hasFDerivAt.fderiv]; rfl
+    have hnneg (j : ν) : ci (.inr j) t < 0 := neg_lt_zero.mpr (hneg j)
+    have hlicq := active_surjective_licq (h := ce) (g := ci) hjac hsurj hnneg ht
+    have hfd := Subproblem.hasFDerivAt_quadModel (g := g (z k).1) hsymk t
+    obtain ⟨l, μ, hKKT⟩ := exists_kkt_of_isLocalMinOn hlicq htmin hfd.differentiableAt.hasFDerivAt
+      (fun i ↦ by rw [(he i).hasFDerivAt.fderiv]; exact he i)
+      (fun j ↦ by rw [(hi j).hasFDerivAt.fderiv]; exact hi j)
+    let mult : ActiveDual ι κ := WithLp.toLp 2 (Sum.elim l (fun j ↦ μ (.inl j)))
+    have hμ : Sum.elim (fun j ↦ mult (.inr j)) (fun _ ↦ 0) = μ := by
+      funext j
+      cases j with
+      | inl j => rfl
+      | inr j => exact ((mul_eq_zero.mp (hKKT.complementary (.inr j))).resolve_right (hnneg j).ne).symm
+    have hstat : G (z k, t) + (J (z k, t)).adjoint mult = 0 := by
+      have h := (active_kkt_stationary_iff (f := Subproblem.quadModel (g (z k).1) (H (z k)))
+        (h := ce) (g := ci) (mult := mult) hjac).mpr
+      rw [hμ] at h
+      have h' := h hKKT.stationary
+      rw [(Subproblem.hasGradientAt_quadModel (g := g (z k).1) hsymk t).gradient] at h'
+      exact h'
+    have heq := hrecover mult hstat
+    have hact (j : κ) : ci (.inl j) t = 0 := by
+      have hp : 0 < μ (.inl j) := by
+        change 0 < mult (.inr j)
+        rw [heq]
+        exact hmp j
+      exact (mul_eq_zero.mp (hKKT.complementary (.inl j))).resolve_left hp.ne'
+    have hkern : a (t - s k) = 0 := by
+      ext i
+      simp only [map_sub, PiLp.sub_apply, PiLp.zero_apply]
+      cases i with
+      | inl i =>
+        have he := neg_eq_zero.mp (hKKT.feasible_eq i)
+        change c (z k).1 (.inl i) + a t (.inl i) = 0 at he
+        linarith [hcoord (.inl i)]
+      | inr j =>
+        have he := neg_eq_zero.mp (hact j)
+        change c (z k).1 (.inr j) + a t (.inr j) = 0 at he
+        linarith [hcoord (.inr j)]
+    have horth : ⟪H (z k) (t - s k), t - s k⟫ = 0 := by
+      have hst : g (z k).1 + H (z k) t - a.adjoint mult = 0 := by
+        simpa [G, J, a, sub_eq_add_neg] using hstat
+      have hdiff : H (z k) (t - s k) = a.adjoint (mult - y k) := by
+        have h' : H (z k) (s k) - a.adjoint (y k) = -g (z k).1 := hkc.1
+        simp only [map_sub]
+        rw [show H (z k) t = a.adjoint mult - g (z k).1 from by
+          apply eq_sub_of_add_eq
+          have hh := sub_eq_zero.mp hst
+          rwa [add_comm] at hh]
+        rw [show H (z k) (s k) = a.adjoint (y k) - g (z k).1 from by
+          rw [sub_eq_iff_eq_add] at h'
+          rw [h', sub_eq_add_neg, add_comm]]
+        abel
+      rw [hdiff, adjoint_inner_left, hkern, inner_zero_right]
+    by_contra hne
+    exact (hkr.2 (t - s k) hkern (sub_ne_zero.mpr hne)).ne' horth
+
+omit [FiniteDimensional ℝ V] in
+private theorem sqpGradient_continuousAt {g : V → V} {c : V → ActiveDual ι κ}
+    {A : V → V →L[ℝ] ActiveDual ι κ} {x : V} {y : ActiveDual ι κ}
+    (hA : ContinuousAt A x)
+    (hR : ContinuousAt (sqpResidual g c (fun v ↦ (A v).adjoint)) (x, y)) :
+    ContinuousAt g x := by
+  have hp : ContinuousAt (fun v : V ↦ (v, y)) x := continuousAt_id.prodMk continuousAt_const
+  have ht : Tendsto (fun v : V ↦ (v, y)) (𝓝 x) (𝓝 (x, y)) := hp.tendsto
+  have h₁ : ContinuousAt (fun v ↦ (sqpResidual g c (fun w ↦ (A w).adjoint) (v, y)).1) x :=
+    continuous_fst.continuousAt.tendsto.comp (hR.tendsto.comp ht)
+  have h₂ : ContinuousAt (fun v ↦ (A v).adjoint y) x :=
+    (ContinuousLinearMap.adjoint.continuous.continuousAt.comp hA).clm_apply continuousAt_const
+  convert h₁.add h₂ using 1
+  funext v
+  change g v = g v - (A v).adjoint y + (A v).adjoint y
+  abel
+
 /-- Theorem 15.2.2(ii), with the active equations made explicit. The Newton
 iterates for the active KKT system converge Q-quadratically. Their corrections
-eventually solve the original mixed QPs locally and identify the active set. -/
+eventually are the unique closest mixed-QP local minimizers and identify the active set. -/
 theorem theorem_15_2_2_ii
     (g : V → V) (c : V → ActiveDual ι κ) (H : V × ActiveDual ι κ → V →L[ℝ] V)
     (A : V → V →L[ℝ] ActiveDual ι κ) (b : ν → V → ℝ) (B : ν → V → V →L[ℝ] ℝ)
@@ -587,7 +765,11 @@ theorem theorem_15_2_2_ii
             (mixedSQPFeasible (c (u k).1) (A (u k).1) (fun j ↦ b j (u k).1) (fun j ↦ B j (u k).1))
             (s k) ∧
           (∀ j : κ, c (u k).1 (.inr j) + A (u k).1 (s k) (.inr j) = 0) ∧
-          ∀ j : ν, 0 < b j (u k).1 + B j (u k).1 (s k) := by
+          (∀ j : ν, 0 < b j (u k).1 + B j (u k).1 (s k)) ∧
+          ∀ t ∈ mixedSQPFeasible (c (u k).1) (A (u k).1) (fun j ↦ b j (u k).1) (fun j ↦ B j (u k).1),
+            IsLocalMinOn (Subproblem.quadModel (g (u k).1) (H (u k)))
+              (mixedSQPFeasible (c (u k).1) (A (u k).1) (fun j ↦ b j (u k).1) (fun j ↦ B j (u k).1))
+              t → ‖t‖ ≤ ‖s k‖ → t = s k := by
   obtain ⟨e, he⟩ := mixed_sqp_kkt_invertible (H := H) (A := A) (z := (xStar, yStar)) honto hpos
   obtain ⟨δ, hδ, hlocal⟩ := theorem_15_2_1_ii g c H A (fun x ↦ (A x).adjoint)
     hstar e he hr hL hF hLip
@@ -603,13 +785,21 @@ theorem theorem_15_2_2_ii
       (continuous_fst.continuousAt.tendsto.comp hu)
   have hy : Tendsto (fun k ↦ (u (k + 1)).2) atTop (𝓝 yStar) :=
     continuous_snd.continuousAt.tendsto.comp hnext
-  refine ⟨hquad, theorem_15_2_2_iii hA hH hb hB honto hpos hmult hslack hu hs hy
-    (Eventually.of_forall hcor) ?_⟩
-  exact (hu.eventually (ball_mem_nhds _ hr)).mono fun _ hk ↦ hsym _ hk
+  have hsym' := (hu.eventually (ball_mem_nhds _ hr)).mono fun _ hk ↦ hsym _ hk
+  have hG := sqpGradient_continuousAt hA ((hF _ (mem_ball_self hr)).continuousAt)
+  have hst : g xStar - (A xStar).adjoint yStar = 0 := congrArg Prod.fst hstar
+  have hident := theorem_15_2_2_iii hA hH hb hB honto hpos hmult hslack hu hs hy
+    (Eventually.of_forall hcor) hsym'
+  have hclose := theorem_15_2_2_closest hG hA hH hb hB honto hpos hst hmult hslack hu hs hy
+    (Eventually.of_forall hcor) hsym'
+  refine ⟨hquad, ?_⟩
+  filter_upwards [hident, hclose] with k hk hkc
+  exact ⟨hk.1, hk.2.1, hk.2.2, hkc.2.2⟩
 
 /-- Theorem 15.2.2(i), with the external multiplier sequence confined to the
 local neighborhood from the first step. Active-equation steps have the
-stated convergence rates and eventually identify the mixed-QP active set. -/
+stated convergence rates and eventually give the unique closest mixed-QP local minimizers
+with the prescribed active set. -/
 theorem theorem_15_2_2_i
     (g : V → V) (c : V → ActiveDual ι κ) (H : V × ActiveDual ι κ → V →L[ℝ] V)
     (A : V → V →L[ℝ] ActiveDual ι κ) (b : ν → V → ℝ) (B : ν → V → V →L[ℝ] ℝ)
@@ -639,7 +829,11 @@ theorem theorem_15_2_2_i
         Optimization.IsStrictLocalMinOn (Subproblem.quadModel (g (x k)) (H (x k, y k)))
           (mixedSQPFeasible (c (x k)) (A (x k)) (fun j ↦ b j (x k)) (fun j ↦ B j (x k))) s ∧
         (∀ j : κ, c (x k) (.inr j) + A (x k) s (.inr j) = 0) ∧
-        ∀ j : ν, 0 < b j (x k) + B j (x k) s := by
+        (∀ j : ν, 0 < b j (x k) + B j (x k) s) ∧
+        ∀ t ∈ mixedSQPFeasible (c (x k)) (A (x k)) (fun j ↦ b j (x k)) (fun j ↦ B j (x k)),
+          IsLocalMinOn (Subproblem.quadModel (g (x k)) (H (x k, y k)))
+            (mixedSQPFeasible (c (x k)) (A (x k)) (fun j ↦ b j (x k)) (fun j ↦ B j (x k)))
+            t → ‖t‖ ≤ ‖s‖ → t = s := by
   obtain ⟨e, he⟩ := mixed_sqp_kkt_invertible (H := H) (A := A) (z := (xStar, yStar)) honto hpos
   let AT (v : V) := (A v).adjoint
   let K := sqpKKT H A AT
@@ -703,8 +897,15 @@ theorem theorem_15_2_2_i
     change IsSQPCorrection g c H A AT (x k, y k) (-(d k).1) (yStar - (d k).2)
     rw [hEq]
     exact sqpCorrection_of_inverse g c H A AT (x k) (y k) yStar Ek hEk
-  exact ⟨hsuper, hquad, theorem_15_2_2_iii hA hH hb hB honto hpos hmult hslack hz hs
-    hmult' hcor ((hz.eventually (ball_mem_nhds _ hr)).mono fun _ hk ↦ hsym _ hk)⟩
+  have hsym' := (hz.eventually (ball_mem_nhds _ hr)).mono fun _ hk ↦ hsym _ hk
+  have hG := sqpGradient_continuousAt hA hRC
+  have hst : g xStar - (A xStar).adjoint yStar = 0 := congrArg Prod.fst hstar
+  have hident := theorem_15_2_2_iii hA hH hb hB honto hpos hmult hslack hz hs hmult' hcor hsym'
+  have hclose := theorem_15_2_2_closest hG hA hH hb hB honto hpos hst hmult hslack hz hs
+    hmult' hcor hsym'
+  refine ⟨hsuper, hquad, ?_⟩
+  filter_upwards [hident, hclose] with k hk hkc
+  exact ⟨hk.1, hk.2.1, hk.2.2, hkc.2.2⟩
 
 end MixedSQP
 
