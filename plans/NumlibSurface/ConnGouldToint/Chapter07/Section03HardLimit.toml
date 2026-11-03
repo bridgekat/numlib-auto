@@ -1,0 +1,29 @@
+namespace = "ConnGouldToint.Chapter07"
+
+[[node]]
+id = "linpackShiftedSigns"
+source = "Conn–Gould–Toint, §7.3.7 (deterministic sign sequence of the corrected forward solve)"
+
+[[node]]
+id = "linpackShiftedSigns_eventually_constant"
+source = "Conn–Gould–Toint, Theorem 7.3.4 (right-sided stabilization of the greedy signs)"
+
+[[node]]
+id = "linpackDirection_eventually_tendsto"
+source = "Conn–Gould–Toint, Theorem 7.3.4 (one-sided limit of the deterministic normalized back solve)"
+
+[[node]]
+id = "moreSorensenBestBoundaryCoefficient_eq_ite_inner"
+source = "Conn–Gould–Toint, Algorithm 7.3.4 Step 3b(iii) (deterministic root selection by the inner-product sign)"
+
+[[node]]
+id = "moreSorensen_computed_hard_step_tendsto"
+source = "Conn–Gould–Toint, Theorem 7.3.4 (one-sided limit of the computed hard correction)"
+
+[[node]]
+id = "moreSorensenComputedHardStep"
+source = "Conn–Gould–Toint, Algorithm 7.3.4 Step 3b(iii) (actual deterministic corrected step)"
+
+[[node]]
+id = "moreSorensen_computed_hard_matrix_run_vector_limit"
+source = "Conn–Gould–Toint, Theorem 7.3.4 (vector convergence with deterministic tie handling)"
