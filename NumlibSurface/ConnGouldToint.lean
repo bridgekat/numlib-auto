@@ -372,6 +372,10 @@ Chapter 17 covers parameter and initial-radius choices. In (17.1.3), the factor
 1 − η₂ multiplies the common value and slope only. In (17.2.2), the radius is
 the ray parameter multiplied by the gradient norm. Both discrepancies are in print.
 The initial probe safeguards use a fallback strictly below one when shrinking.
+Algorithm 17.2.1 preserves its restart counter and tests at most one more
+radius than the trial index limit in each pass. Algorithm 17.3.1 returns
+at the terminal constant interval and continues past a zero slope when
+the outgoing curvature is negative.
 In (17.4.9), the projected trial point subtracts the Lagrangian gradient. The printed
 sign of the equality multiplier contribution would instead subtract it twice relative
 to stationarity, as the identity-projection counterexample shows.

@@ -151,4 +151,150 @@ noncomputable def recommendedProbeParams : ProbeRadiusParams where
 /-- The recommended trial and restart limits in (17.2.14). -/
 def recommendedProbeLimits : ℕ × ℕ := (4, 1)
 
+/-- The point, cached value, radius, and additional objective evaluations
+returned by Algorithm 17.2.1. -/
+structure InitialRadiusResult (E : Type*) where
+  point : E
+  value : ℝ
+  radius : ℝ
+  evaluations : ℕ
+
+private structure RadiusProbePass (E : Type*) where
+  bestPoint : E
+  bestValue : ℝ
+  adequate : ℝ
+  radius : ℝ
+
+private noncomputable def radiusProbePass (P : ProbeRadiusParams) (f m : E → ℝ)
+    (x g : E) (fx : ℝ) : ℕ → RadiusProbePass E → RadiusProbePass E
+  | i, state =>
+    let d := initialProbeDisplacement g state.radius
+    let trial := x - d
+    let fTrial := f trial
+    let mTrial := m trial
+    let pred := fx - mTrial
+    let ρ := (fx - fTrial) / pred
+    let next : RadiusProbePass E := {
+      bestPoint := if fTrial < state.bestValue then trial else state.bestPoint
+      bestValue := min fTrial state.bestValue
+      adequate := if pred ≠ 0 ∧ |ρ - 1| ≤ P.μ₁ then max state.adequate state.radius else state.adequate
+      radius := state.radius }
+    match i with
+    | 0 => next
+    | i + 1 =>
+      let candidates := probeInterpolationFactors P fx (-⟪g, d⟫) fTrial mTrial
+      let radius := if pred = 0 then P.γ₂ * state.radius
+        else probeRadiusUpdate P ρ candidates.1 candidates.2 state.radius
+      radiusProbePass P f m x g fx i { next with radius := radius }
+
+private noncomputable def radiusProbeRestarts (P : ProbeRadiusParams) (f : E → ℝ)
+    (m : E → E → ℝ) (g : E → E) (seed : E → ℝ) (iMax : ℕ) :
+    ℕ → E → ℝ → ℝ → InitialRadiusResult E
+  | j, x, fx, adequate =>
+    let Δ := seed x
+    if ‖g x‖ = 0 then ⟨x, fx, max Δ adequate, 0⟩
+    else
+      let pass := radiusProbePass P f (m x) x (g x) fx iMax ⟨x, fx, adequate, Δ⟩
+      let result : InitialRadiusResult E := ⟨x, fx, max pass.radius pass.adequate, iMax + 1⟩
+      match j with
+      | 0 => result
+      | j + 1 =>
+        if pass.bestValue < fx then
+          let later := radiusProbeRestarts P f m g seed iMax j
+            pass.bestPoint pass.bestValue pass.adequate
+          { later with evaluations := iMax + 1 + later.evaluations }
+        else result
+
+/-- Corrected Algorithm 17.2.1. The model, gradient and seed radius are
+supplied for each base point. A restart carries forward the best adequate
+radius and the cached objective value while consuming one restart.
+Each pass probes at most `iMax + 1` radii. A zero gradient stops before
+probing. If predicted decrease is zero, the trial cannot qualify as
+adequate and a further probe uses the strict shrink fallback. -/
+noncomputable def chooseInitialRadius (P : ProbeRadiusParams) (f : E → ℝ)
+    (m : E → E → ℝ) (g : E → E) (seed : E → ℝ) (iMax jMax : ℕ) (x : E) :
+    InitialRadiusResult E :=
+  radiusProbeRestarts P f m g seed iMax jMax x (f x) 0
+
+private theorem radiusProbeRestarts_evaluations_le (P : ProbeRadiusParams) (f : E → ℝ)
+    (m : E → E → ℝ) (g : E → E) (seed : E → ℝ) (iMax j : ℕ) (x : E) (fx adequate : ℝ) :
+    (radiusProbeRestarts P f m g seed iMax j x fx adequate).evaluations ≤ (iMax + 1) * (j + 1) := by
+  induction j generalizing x fx adequate with
+  | zero =>
+    rw [radiusProbeRestarts]
+    split <;> simp
+  | succ j ih =>
+    rw [radiusProbeRestarts]
+    dsimp only
+    split
+    · exact Nat.zero_le _
+    · split
+      · rw [Nat.mul_succ, Nat.add_comm ((iMax + 1) * (j + 1))]
+        exact Nat.add_le_add_left (ih _ _ _) _
+      · exact Nat.le_mul_of_pos_right _ (Nat.succ_pos _)
+
+/-- The corrected restart and trial bounds give the stated maximum number
+of extra objective evaluations. The initial base evaluation is excluded. -/
+theorem chooseInitialRadius_evaluations_le (P : ProbeRadiusParams) (f : E → ℝ)
+    (m : E → E → ℝ) (g : E → E) (seed : E → ℝ) (iMax jMax : ℕ) (x : E) :
+    (chooseInitialRadius P f m g seed iMax jMax x).evaluations ≤ (iMax + 1) * (jMax + 1) :=
+  radiusProbeRestarts_evaluations_le P f m g seed iMax jMax x (f x) 0
+
+private theorem radiusProbePass_bestValue (P : ProbeRadiusParams) (f m : E → ℝ)
+    (x g : E) (fx : ℝ) (i : ℕ) (state : RadiusProbePass E)
+    (hstate : state.bestValue = f state.bestPoint) :
+    let result := radiusProbePass P f m x g fx i state
+    result.bestValue = f result.bestPoint := by
+  induction i generalizing state with
+  | zero =>
+    rw [radiusProbePass]
+    dsimp only
+    split
+    · rename_i h
+      exact min_eq_left h.le
+    · rename_i h
+      exact (min_eq_right (le_of_not_gt h)).trans hstate
+  | succ i ih =>
+    rw [radiusProbePass]
+    dsimp only
+    apply ih
+    dsimp only
+    split
+    · rename_i h
+      exact min_eq_left h.le
+    · rename_i h
+      exact (min_eq_right (le_of_not_gt h)).trans hstate
+
+private theorem radiusProbeRestarts_value_spec (P : ProbeRadiusParams) (f : E → ℝ)
+    (m : E → E → ℝ) (g : E → E) (seed : E → ℝ) (iMax j : ℕ)
+    (x : E) (fx adequate : ℝ) (hfx : fx = f x) :
+    let result := radiusProbeRestarts P f m g seed iMax j x fx adequate
+    result.value = f result.point ∧ result.value ≤ fx := by
+  induction j generalizing x fx adequate with
+  | zero =>
+    rw [radiusProbeRestarts]
+    dsimp only
+    split <;> exact ⟨hfx, le_rfl⟩
+  | succ j ih =>
+    rw [radiusProbeRestarts]
+    dsimp only
+    split
+    · exact ⟨hfx, le_rfl⟩
+    · split
+      · rename_i hbetter
+        have hb := radiusProbePass_bestValue P f (m x) x (g x) fx iMax
+          ⟨x, fx, adequate, seed x⟩ hfx
+        let pass := radiusProbePass P f (m x) x (g x) fx iMax ⟨x, fx, adequate, seed x⟩
+        have h := ih pass.bestPoint pass.bestValue pass.adequate hb
+        exact ⟨h.1, h.2.trans hbetter.le⟩
+      · exact ⟨hfx, le_rfl⟩
+
+/-- The returned value belongs to the returned point, and restarts can
+only improve the initial objective value. -/
+theorem chooseInitialRadius_value_spec (P : ProbeRadiusParams) (f : E → ℝ)
+    (m : E → E → ℝ) (g : E → E) (seed : E → ℝ) (iMax jMax : ℕ) (x : E) :
+    let result := chooseInitialRadius P f m g seed iMax jMax x
+    result.value = f result.point ∧ result.value ≤ f x :=
+  radiusProbeRestarts_value_spec P f m g seed iMax jMax x (f x) 0 rfl
+
 end ConnGouldToint.Chapter17

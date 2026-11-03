@@ -65,3 +65,19 @@ source = "Conn–Gould–Toint, (17.2.14)"
 [[node]]
 id = "recommendedProbeLimits"
 source = "Conn–Gould–Toint, (17.2.14)"
+
+[[node]]
+id = "InitialRadiusResult"
+source = "Conn–Gould–Toint, output of Algorithm 17.2.1"
+
+[[node]]
+id = "chooseInitialRadius"
+source = "Conn–Gould–Toint, corrected Algorithm 17.2.1 with bounded restarts"
+
+[[node]]
+id = "chooseInitialRadius_evaluations_le"
+source = "Conn–Gould–Toint, evaluation bound following Algorithm 17.2.1"
+
+[[node]]
+id = "chooseInitialRadius_value_spec"
+source = "Conn–Gould–Toint, strict objective improvement on restarts in Algorithm 17.2.1"

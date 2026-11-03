@@ -15,3 +15,23 @@ source = "Conn–Gould–Toint, (17.3.3)"
 [[node]]
 id = "cauchyQuadratic_on_segment"
 source = "Conn–Gould–Toint, (17.3.4)–(17.3.5)"
+
+[[node]]
+id = "boxedCauchyBreakpoint"
+source = "Conn–Gould–Toint, breakpoints in Algorithm 17.3.1"
+
+[[node]]
+id = "generalizedCauchyPoint"
+source = "Conn–Gould–Toint, corrected Algorithm 17.3.1"
+
+[[node]]
+id = "cauchyQuadratic_lt_on_negative_stationary_segment"
+source = "Conn–Gould–Toint, correction to the zero-slope stop in Algorithm 17.3.1"
+
+[[node]]
+id = "generalizedCauchyPoint_eq_zero_of_no_positive_breakpoint"
+source = "Conn–Gould–Toint, terminal interval in corrected Algorithm 17.3.1"
+
+[[node]]
+id = "generalizedCauchyPoint_zero_radius"
+source = "Conn–Gould–Toint, degenerate trust box in corrected Algorithm 17.3.1"
