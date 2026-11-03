@@ -81,6 +81,9 @@ Theorem 9.3.3 uses this bound to establish second-order criticality in the limit
 
 Chapter 10 covers cumulative model decrease for the nonmonotone acceptance rule.
 The reference schedule in (10.1.2) requires strict decrease only when the reference changes.
+The accepted count in (10.1.11) includes iteration zero. The convergence proofs
+exclude an eventual positive gradient floor and use uniform gradient continuity
+from the bounded objective Hessian.
 
 Chapter 11 covers Clarke steepest descent using the support identity proved in (3.1.4).
 Pointwise smooth model matching does not give the uniform decrease in Lemma 11.1.3
