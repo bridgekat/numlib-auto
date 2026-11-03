@@ -115,3 +115,43 @@ source = "Conn–Gould–Toint, tangential criticality at the normal-step base, 
 [[node]]
 id = "sqpFilterCriticality_zero_iff"
 source = "Conn–Gould–Toint, first-order characterization of the tangential criticality measure"
+
+[[node]]
+id = "filterModelRadius"
+source = "Conn–Gould–Toint, (15.5.19)"
+
+[[node]]
+id = "filterModelRadius_bounds"
+source = "Conn–Gould–Toint, (15.5.19) and the small-radius bounds in Lemma 15.5.4"
+
+[[node]]
+id = "filterRatioRadius"
+source = "Conn–Gould–Toint, (15.5.21)"
+
+[[node]]
+id = "filterRatioRadius_bound"
+source = "Conn–Gould–Toint, (15.5.21), small-radius ratio bound"
+
+[[node]]
+id = "filterObjectiveMarginRadius"
+source = "Conn–Gould–Toint, (15.5.23) with strict radius comparison"
+
+[[node]]
+id = "filterObjectiveMarginRadius_bound"
+source = "Conn–Gould–Toint, strict objective-margin bound from (15.5.23)"
+
+[[node]]
+id = "filterTangentialDecreaseFloor"
+source = "Conn–Gould–Toint, (15.5.31)"
+
+[[node]]
+id = "filterTangentialDecreaseFloor_le"
+source = "Conn–Gould–Toint, (15.5.31), decrease floor from a radius and criticality lower bound"
+
+[[node]]
+id = "filterPredecessorRadius"
+source = "Conn–Gould–Toint, (15.5.37)"
+
+[[node]]
+id = "filterPredecessorRadius_le"
+source = "Conn–Gould–Toint, (15.5.37)–(15.5.38)"

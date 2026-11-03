@@ -301,6 +301,91 @@ theorem lemma_15_5_3 [Fintype ι] (eq : ι → Bool) (c cTrial : ι → ℝ)
       · simpa only [hj, sub_zero] using he
     exact hB.trans (mul_le_mul_of_nonneg_right (le_max_right _ _) (sq_nonneg _))
 
+/-- The model decrease radius in (15.5.19). Here `K` is the product
+of the two normal-step compatibility constants. -/
+noncomputable def filterModelRadius (G B K κ ε μ : ℝ) : ℝ :=
+  min (ε / (B + 1))
+    (min ((2 * G / ((B + 1) * K)) ^ (1 / (1 + μ)))
+      ((κ * ε / (4 * G * K)) ^ (1 / μ)))
+
+/-- A positive upper bound for the gradient gives the printed threshold
+and implies the division-free normal-cost condition of Lemma 15.5.4. -/
+theorem filterModelRadius_bounds {G B K κ ε μ Δ χ : ℝ}
+    (hG : 0 < G) (hB : 0 ≤ B) (hK : 0 < K) (hκ : 0 < κ) (hε : 0 < ε) (hμ : 0 < μ)
+    (hΔ : 0 < Δ) (hχ : ε ≤ χ) (hsmall : Δ ≤ filterModelRadius G B K κ ε μ) :
+    Δ ≤ χ / (B + 1) ∧
+      (G + (1 / 2) * B * (K * Δ ^ (1 + μ))) * K * Δ ^ μ ≤ κ * ε / 2 := by
+  have hB₁ : 0 < B + 1 := by positivity
+  unfold filterModelRadius at hsmall
+  obtain ⟨h₁, h₂, h₃⟩ := (le_min_iff.mp hsmall).imp_right le_min_iff.mp
+  have hp₂ : Δ ^ (1 + μ) ≤ 2 * G / ((B + 1) * K) :=
+    (Real.le_rpow_inv_iff_of_pos hΔ.le (by positivity) (by positivity)).mp
+      (by simpa only [one_div] using h₂)
+  have hp₃ : Δ ^ μ ≤ κ * ε / (4 * G * K) :=
+    (Real.le_rpow_inv_iff_of_pos hΔ.le (by positivity) hμ).mp
+      (by simpa only [one_div] using h₃)
+  have hq₂ := (le_div_iff₀ (mul_pos hB₁ hK)).mp hp₂
+  have hq₃ := (le_div_iff₀ (by positivity : 0 < 4 * G * K)).mp hp₃
+  have hnorm : 0 ≤ K * Δ ^ (1 + μ) := by positivity
+  have hcost : G + (1 / 2) * B * (K * Δ ^ (1 + μ)) ≤ 2 * G := by
+    nlinarith only [hq₂, hnorm]
+  refine ⟨h₁.trans (div_le_div_of_nonneg_right hχ hB₁.le), ?_⟩
+  calc
+    _ ≤ (2 * G) * K * Δ ^ μ := by gcongr
+    _ ≤ _ := by nlinarith only [hq₃]
+
+/-- The radius ensuring a very successful ratio in (15.5.21). -/
+noncomputable def filterRatioRadius (δm η κ ε C : ℝ) : ℝ :=
+  min δm ((1 - η) * κ * ε / (2 * C))
+
+/-- The ratio threshold gives the error bound required by Lemma 15.5.5. -/
+theorem filterRatioRadius_bound {δm η κ ε C Δ : ℝ} (hC : 0 < C)
+    (hΔ : Δ ≤ filterRatioRadius δm η κ ε C) :
+    Δ ≤ δm ∧ C * Δ ≤ (1 - η) * (κ * ε / 2) := by
+  obtain ⟨h₁, h₂⟩ := le_min_iff.mp hΔ
+  exact ⟨h₁, by nlinarith only [(le_div_iff₀ (by positivity : 0 < 2 * C)).mp h₂]⟩
+
+/-- The objective-margin radius in (15.5.23). -/
+noncomputable def filterObjectiveMarginRadius (δρ η κ ε M γ : ℝ) : ℝ :=
+  min (η * κ * ε / (2 * M * γ)) δρ
+
+/-- Strict inequality at the radius threshold gives the strict filter
+margin required by the objective branch. -/
+theorem filterObjectiveMarginRadius_bound {δρ η κ ε M γ Δ : ℝ}
+    (hM : 0 < M) (hγ : 0 < γ) (hΔ : Δ < filterObjectiveMarginRadius δρ η κ ε M γ) :
+    Δ < δρ ∧ γ * M * Δ < η * (κ * ε / 2) := by
+  obtain ⟨h₁, h₂⟩ := lt_min_iff.mp hΔ
+  exact ⟨h₂, by nlinarith only [(lt_div_iff₀ (by positivity : 0 < 2 * M * γ)).mp h₁]⟩
+
+/-- The positive tangential decrease floor (15.5.31). -/
+noncomputable def filterTangentialDecreaseFloor (κ ε r B : ℝ) : ℝ :=
+  κ * ε * min (ε / B) r
+
+theorem filterTangentialDecreaseFloor_le {κ ε r B χ Δ : ℝ}
+    (hκ : 0 < κ) (hε : 0 < ε) (hr : 0 < r) (hB : 0 < B)
+    (hχ : ε ≤ χ) (hΔ : r ≤ Δ) :
+    0 < filterTangentialDecreaseFloor κ ε r B ∧
+      filterTangentialDecreaseFloor κ ε r B ≤ κ * χ * min (χ / B) Δ := by
+  unfold filterTangentialDecreaseFloor
+  constructor
+  · positivity
+  · have hmin := min_le_min (div_le_div_of_nonneg_right hχ hB.le) hΔ
+    exact mul_le_mul (mul_le_mul_of_nonneg_left hχ hκ.le) hmin
+      (le_min (div_pos hε hB).le hr.le) (mul_nonneg hκ.le (hε.le.trans hχ))
+
+/-- The predecessor radius in (15.5.37), with the minimum violation
+of the filter supplied as a parameter. -/
+noncomputable def filterPredecessorRadius (δρ γ θF M Δ₀ : ℝ) : ℝ :=
+  min δρ (min (Real.sqrt ((1 - γ) * θF / M)) Δ₀)
+
+/-- The lower radius-update factor transfers (15.5.37) to the preceding
+iteration, as in (15.5.38). -/
+theorem filterPredecessorRadius_le {δρ γ θF M Δ₀ γ₀ Δprev Δ : ℝ}
+    (hγ₀ : 0 < γ₀) (hupdate : γ₀ * Δprev ≤ Δ)
+    (hΔ : Δ ≤ γ₀ * filterPredecessorRadius δρ γ θF M Δ₀) :
+    Δprev ≤ filterPredecessorRadius δρ γ θF M Δ₀ :=
+  le_of_mul_le_mul_left (hupdate.trans hΔ) hγ₀
+
 /-- Lemma 15.5.4. The normal model cost is bounded by the gradient
 and Hessian bounds times the compatibility step length. The smallness
 test is written without dividing by the gradient bound, which can be
