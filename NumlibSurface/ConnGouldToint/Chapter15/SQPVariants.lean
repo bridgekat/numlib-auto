@@ -132,11 +132,11 @@ def algorithm_15_4_5 (P : SQPVariantParams) (f : E → ℝ) (c : E → F)
     x' = Optimization.acceptStep P.η₁ merit tr.x s pred ∧
     BTRRadiusUpdate P.toBTRParams (Optimization.reductionRatio merit tr.x s pred) tr.radius Δ'
 
-/-- One iteration of Algorithm 15.4.7. The correction selector supplies a
+/-- One iteration of Algorithm 15.4.6. The correction selector supplies a
 full or partial correction as appropriate for the original SQP step. The
 linearized-feasibility test and norm cap determine whether it is tried. -/
-def algorithm_15_4_7 (P : SQPVariantParams) (f : E → ℝ) (c : E → F)
-    (tr : SQPCompositeTrial E F) (ξN ξT κN βN κdrs κT κ₂ τ ηCS : ℝ)
+def algorithm_15_4_6 (P : SQPVariantParams) (f : E → ℝ) (c : E → F)
+    (tr : SQPCompositeTrial E F) (ξN ξT κN βN κdrs κT ηCS : ℝ)
     (R : U →ₗ[ℝ] E) (N : V →L[ℝ] E) (nR : U) (nN : V)
     (correctionOK : E → Prop) (correction x' : E) (Δ' σ : ℝ) : Prop :=
   open Classical in
@@ -152,17 +152,26 @@ def algorithm_15_4_7 (P : SQPVariantParams) (f : E → ℝ) (c : E → F)
   let HN := N.adjoint.comp (tr.H.comp N)
   0 < tr.radius ∧ 0 < tr.previousPenalty ∧
     ξN ∈ Set.Ioc 0 1 ∧ ξT ∈ Set.Ioc 0 1 ∧ 0 < κN ∧ 0 < βN ∧ 0 ≤ κdrs ∧ 0 < κT ∧
-    tr.A = fderiv ℝ c tr.x ∧ tr.g = gradient f tr.x ∧
+    0 < ηCS ∧ tr.A = fderiv ℝ c tr.x ∧ tr.g = gradient f tr.x ∧
     ByrdOmojokunNormalStep (c tr.x) tr.A tr.p ξN tr.radius κN βN κdrs R N.toLinearMap tr.n nR nN ∧
     (tr.p tr.n = ξN * tr.radius ∨ exactNormal) ∧
-    SQPSecondOrderTangentialStep tr.A tr.g tr.n tr.t tr.H tr.p ξT tr.radius
-      gN ‖N‖ κT (quadraticCurvatureBound HN) κ₂ τ ∧
-    0 < κ₂ ∧ τ = sInf ((fun v : V ↦ ⟪v, HN v⟫) '' Metric.sphere 0 1) ∧
+    tr.cauchy ξT gN ‖N‖ κT (quadraticCurvatureBound HN) ∧
     (original < P.η₁ → exactNormal → correctionOK correction) ∧
     σ = tr.penalty P f c ∧ 0 < pred ∧
     x' = Optimization.acceptStep P.η₁ merit tr.x tested pred ∧
     BTRRadiusUpdate P.toBTRParams ρ tr.radius Δ' ∧
     (P.η₁ ≤ ρ → ρ < P.η₂ → x' = tr.x + s → exactNormal → Δ' = tr.radius)
+
+/-- Algorithm 15.4.7 adds AA.2d to the corrected Byrd–Omojokun iteration. -/
+def algorithm_15_4_7 (P : SQPVariantParams) (f : E → ℝ) (c : E → F)
+    (tr : SQPCompositeTrial E F) (ξN ξT κN βN κdrs κT κ₂ τ ηCS : ℝ)
+    (R : U →ₗ[ℝ] E) (N : V →L[ℝ] E) (nR : U) (nN : V)
+    (correctionOK : E → Prop) (correction x' : E) (Δ' σ : ℝ) : Prop :=
+  let HN := N.adjoint.comp (tr.H.comp N)
+  algorithm_15_4_6 P f c tr ξN ξT κN βN κdrs κT ηCS R N nR nN correctionOK correction x' Δ' σ ∧
+    0 < κ₂ ∧ τ = sInf ((fun v : V ↦ ⟪v, HN v⟫) '' Metric.sphere 0 1) ∧
+    (τ < 0 → -(κ₂ * τ * tr.radius ^ 2) ≤
+      sqpTangentialModel tr.g tr.H tr.n 0 - sqpTangentialModel tr.g tr.H tr.n tr.t)
 
 end CompositeSteps
 

@@ -359,7 +359,10 @@ and requires the cluster set to control the tail, as relative compactness ensure
 Theorems 15.4.22–25 treat the Byrd–Omojokun method with corrected steps.
 Theorem 15.4.23 corrects the printed algorithm reference, and Theorem 15.4.25
 uses the maximum cluster curvature.
-Section 15.5 uses Pareto deletion so earlier filter exclusions survive.
+The filter algorithms use Pareto deletion so earlier exclusions survive.
+The composite and single-step variants share acceptance and restoration.
+An accepted feasibility step below the first ratio threshold uses the
+shrink interval, which is missing from the printed radius update.
 The printed margin-based deletion admits a bounded insertion stream
 with violations bounded away from zero. Strict rejection shrinkage
 prevents the verified smooth nonstationary stalling trace.

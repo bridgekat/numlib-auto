@@ -1,5 +1,4 @@
 namespace = "ConnGouldToint.Chapter15"
-desc = "Byrd–Omojokun step variants and the infeasibility-reducing SQP iteration."
 
 [[node]]
 id = "ByrdOmojokunNormalStep"
@@ -76,3 +75,7 @@ source = "Conn–Gould–Toint, Algorithms 15.4.5 and 15.4.7"
 [[node]]
 id = "SQPCompositeTrial.cauchy"
 source = "Conn–Gould–Toint, AA.1i"
+
+[[node]]
+id = "algorithm_15_4_6"
+source = "Conn–Gould–Toint, Algorithm 15.4.6 and (15.4.153)–(15.4.156)"

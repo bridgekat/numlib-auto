@@ -1,0 +1,45 @@
+namespace = "ConnGouldToint.Chapter15"
+
+[[node]]
+id = "FilterSQPParams"
+source = "Conn–Gould–Toint, Algorithm 15.5.1 with strict rejection shrinkage"
+
+[[node]]
+id = "FilterSQPState"
+source = "Conn–Gould–Toint, Algorithms 15.5.1 and 15.5.2 state"
+
+[[node]]
+id = "FilterSQPState.initial"
+source = "Conn–Gould–Toint, Algorithm 15.5.1 Step 0"
+
+[[node]]
+id = "filterSQPModel"
+source = "Conn–Gould–Toint, the model of TRQP(x, Δ) in Section 15.5.1"
+
+[[node]]
+id = "filterSQPFeasible"
+source = "Conn–Gould–Toint, the constraints of TRQP(x, Δ) in Section 15.5.1"
+
+[[node]]
+id = "filterSQPAccepted"
+source = "Conn–Gould–Toint, (15.5.7)–(15.5.9)"
+
+[[node]]
+id = "FilterSQPStep"
+source = "Conn–Gould–Toint, Algorithm 15.5.1 Steps 1 and 3–6, shared with Algorithm 15.5.2"
+
+[[node]]
+id = "compositeFilterSQPStep"
+source = "Conn–Gould–Toint, Algorithm 15.5.1, including AA.1m"
+
+[[node]]
+id = "singleFilterSQPStep"
+source = "Conn–Gould–Toint, Algorithm 15.5.2 and (15.5.45)"
+
+[[node]]
+id = "FilterSQPStep.accepts_next"
+source = "Conn–Gould–Toint, each continued filter iterate is acceptable at the start of its iteration"
+
+[[node]]
+id = "FilterSQPStep.compatible_of_restored"
+source = "Conn–Gould–Toint, compatibility at a restored iterate"

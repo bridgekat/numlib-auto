@@ -376,6 +376,7 @@ theorem filterObjectiveMarginRadius_bound {δρ η κ ε M γ Δ : ℝ}
 noncomputable def filterTangentialDecreaseFloor (κ ε r B : ℝ) : ℝ :=
   κ * ε * min (ε / B) r
 
+/-- Radius and criticality lower bounds give the positive floor in (15.5.31). -/
 theorem filterTangentialDecreaseFloor_le {κ ε r B χ Δ : ℝ}
     (hκ : 0 < κ) (hε : 0 < ε) (hr : 0 < r) (hB : 0 < B)
     (hχ : ε ≤ χ) (hΔ : r ≤ Δ) :

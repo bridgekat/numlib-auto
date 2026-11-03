@@ -72,9 +72,11 @@ namespace RelaxedSQPTrials
 variable [CompleteSpace E] [CompleteSpace F] [CompleteSpace W]
   {f : E → ℝ} {c : E → F} {P : RelaxedSQPParams}
 
+/-- The scaled normal step (15.4.9). -/
 noncomputable def normal (tr : RelaxedSQPTrials f c P W) (k : ℕ) : E :=
   tr.scale k • tr.normalTrial k
 
+/-- The sum of the normal and tangential displacements. -/
 noncomputable def step (tr : RelaxedSQPTrials f c P W) (k : ℕ) : E :=
   tr.normal k + tr.tangential k
 
@@ -94,12 +96,14 @@ noncomputable def penalty (tr : RelaxedSQPTrials f c P W) (k : ℕ) : ℝ :=
     else tr.penaltyBase k
   sqpPenaltyUpdate P.τ₁ P.τ₂ required (tr.previousPenalty k)
 
+/-- The overall model decrease predicted for the original trial. -/
 noncomputable def prediction (tr : RelaxedSQPTrials f c P W) (k : ℕ) : ℝ :=
   let x := tr.x k
   let model := sqpOverallModel (f x) (gradient f x) (tr.H k) (c x) (fderiv ℝ c x)
     (tr.penalty k)
   model 0 - model (tr.step k)
 
+/-- The merit ratio for a trial, using the original predicted decrease. -/
 noncomputable def ratio (tr : RelaxedSQPTrials f c P W) (k : ℕ) (s : E) : ℝ :=
   reductionRatio (sqpMerit f c (tr.penalty k)) (tr.x k) s (tr.prediction k)
 
