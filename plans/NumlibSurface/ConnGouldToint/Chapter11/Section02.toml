@@ -1,5 +1,4 @@
 namespace = "ConnGouldToint.Chapter11"
-desc = "Normalized model errors, compact-parameter uniformity under equicontinuity, and the success ratio for sufficiently small radii."
 
 [[node]]
 id = "normalizedModelError"
