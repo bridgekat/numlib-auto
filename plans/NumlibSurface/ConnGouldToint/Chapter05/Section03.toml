@@ -3,3 +3,7 @@ namespace = "ConnGouldToint.Chapter05"
 [[node]]
 id = "theorem_5_3_1"
 source = "Conn–Gould–Toint, Theorem 5.3.1"
+
+[[node]]
+id = "algorithm_5_3_1"
+source = "Conn, Gould and Toint, Trust-Region Methods, Algorithm 5.3.1"

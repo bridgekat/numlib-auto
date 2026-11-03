@@ -58,6 +58,9 @@ augmented system. For (4.4.14), feasibility, stationarity and reduced
 positive semidefiniteness characterize minimizers.
 
 Chapter 5 covers CG and PCG estimates, Krylov growth, and normal-equation residuals.
+The Lanczos and least-squares recurrences are linked to the underlying
+algorithms. Reduced and projected PCG agree state by state on the feasible
+affine space.
 The CG bounds are expressed in product form to include exact initial iterates.
 Lemma 5.1.5 needs nonzero residual pairings at the earlier directions as well as the last.
 The identity-Hessian counterexample shows what fails when an earlier line step is zero.

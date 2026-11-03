@@ -1,5 +1,5 @@
 import Mathlib.Basic.Real.Basic
-import Numlib.Krylov.Subspace
+import Numlib.Krylov.Lanczos
 
 /-!
 # The Lanczos basis
@@ -46,5 +46,37 @@ theorem lemma_5_2_1 {E : Type*} [AddCommGroup E] [Module ℝ E]
     rw [hspan (i + 1) (by omega)]
     exact Submodule.subset_span ⟨⟨i + 1, Nat.lt_succ_self _⟩, rfl⟩
   simpa [W, K, hspan i (by omega)] using hnext hq
+
+
+open scoped RealInnerProductSpace
+
+/-- Algorithms 5.2.1 and 5.2.2 are the three-term symmetric Lanczos recurrence.
+The initial unnormalized vector is the starting residual, and the preceding
+basis vector at step zero is zero. -/
+theorem algorithm_5_2_1 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+    {H : E →ₗ[ℝ] E} (hH : H.IsSymmetric) {r₀ : E} (hr₀ : r₀ ≠ 0) (k : ℕ) :
+    let q := Arnoldi.vec H r₀
+    let y : ℕ → E := fun | 0 => r₀ | j + 1 => Arnoldi.w H r₀ j
+    let prev : ℕ → E := fun | 0 => 0 | j + 1 => q j
+    q k = ‖y k‖⁻¹ • y k ∧
+      y (k + 1) = H (q k) - ⟪q k, H (q k)⟫ • q k - ‖y k‖ • prev k := by
+  intro q y prev
+  have hd (j : ℕ) : Lanczos.alpha H r₀ j = ⟪q j, H (q j)⟫ := by
+    simp [Lanczos.alpha, Arnoldi.coeff, q]
+  cases k with
+  | zero =>
+    refine ⟨by simpa using Arnoldi.vec_zero H r₀ hr₀, ?_⟩
+    change Arnoldi.w H r₀ 0 = H (q 0) - ⟪q 0, H (q 0)⟫ • q 0 - ‖r₀‖ • (0 : E)
+    have ha : H (q 0) = Lanczos.alpha H r₀ 0 • q 0 + Arnoldi.w H r₀ 0 := by
+      have h := Lanczos.apply_vec_zero r₀ hH
+      rw [Lanczos.beta, ← Arnoldi.w_eq_norm_smul_vec] at h
+      simpa only [q, RCLike.ofReal_real_eq_id, id_eq] using h
+    rw [← hd, ha, smul_zero, sub_zero]
+    abel
+  | succ j =>
+    refine ⟨by simpa using Arnoldi.vec_succ_eq H r₀ j, ?_⟩
+    change Arnoldi.w H r₀ (j + 1) = H (q (j + 1)) - ⟪q (j + 1), H (q (j + 1))⟫ •
+      q (j + 1) - ‖Arnoldi.w H r₀ j‖ • q j
+    simpa only [q, hd, Lanczos.beta, RCLike.ofReal_real_eq_id, id_eq] using Lanczos.w_succ_eq r₀ hH j
 
 end ConnGouldToint.Chapter05

@@ -1,0 +1,31 @@
+namespace = "ConnGouldToint.Chapter05"
+
+desc = "Null-space and projected preconditioned conjugate-gradient recurrences, with the saddle-system implementation of the projected inverse."
+
+[[node]]
+id = "projectedPCG"
+source = "Conn, Gould and Toint, Trust-Region Methods, Algorithm 5.4.2"
+
+[[node]]
+id = "algorithm_5_4_2_eq_reduced"
+source = "Conn, Gould and Toint, Trust-Region Methods, Algorithms 5.4.1–5.4.2"
+
+[[node]]
+id = "projected_inverse_5_4_5"
+source = "Conn, Gould and Toint, Trust-Region Methods, (5.4.5)"
+
+[[node]]
+id = "shifted_projected_system_5_4_7"
+source = "Conn, Gould and Toint, Trust-Region Methods, (5.4.7)"
+
+[[node]]
+id = "null_space_quadratic_5_4_2"
+source = "Conn, Gould and Toint, Trust-Region Methods, (5.4.1)–(5.4.2)"
+
+[[node]]
+id = "projectedPCG_feasible"
+source = "Conn, Gould and Toint, Trust-Region Methods, Algorithm 5.4.2"
+
+[[node]]
+id = "constrained_quadratic_system_5_4_6"
+source = "Conn, Gould and Toint, Trust-Region Methods, (5.4.6)"
