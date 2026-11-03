@@ -19,3 +19,43 @@ source = "Conn–Gould–Toint, equivalence of (16.3.1) and (16.3.3)"
 [[node]]
 id = "complementarityMerit"
 source = "Conn–Gould–Toint, (16.3.7)"
+
+[[node]]
+id = "complementarityCoefficient"
+source = "Conn–Gould–Toint, (16.3.5)–(16.3.6)"
+
+[[node]]
+id = "complementarityCoefficient_disk"
+source = "Conn–Gould–Toint, (16.3.5)"
+
+[[node]]
+id = "complementarityLinearization"
+source = "Conn–Gould–Toint, corrected (16.3.4)"
+
+[[node]]
+id = "hasFDerivAt_complementarityResidual"
+source = "Conn–Gould–Toint, (16.3.4)–(16.3.6)"
+
+[[node]]
+id = "hasFDerivAt_complementarityMerit"
+source = "Conn–Gould–Toint, (16.3.8)"
+
+[[node]]
+id = "complementarityModel"
+source = "Conn–Gould–Toint, (16.3.9)"
+
+[[node]]
+id = "complementarityModel_expansion"
+source = "Conn–Gould–Toint, (16.3.9)"
+
+[[node]]
+id = "HasRegularitySigns"
+source = "Conn–Gould–Toint, regularity definition preceding Theorem 16.3.1"
+
+[[node]]
+id = "ComplementarityRegular"
+source = "Conn–Gould–Toint, regularity definition preceding Theorem 16.3.1"
+
+[[node]]
+id = "theorem_16_3_1"
+source = "Conn–Gould–Toint, Theorem 16.3.1"

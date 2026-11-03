@@ -116,6 +116,9 @@ sequence can otherwise make the first stationary subproblem inconsistent.
 
 Chapter 16 covers the uniform least-squares Hessian bound, exact minimization of the scalar
 epigraph merit function, and the Fischer–Burmeister residual formulation of complementarity.
+Section 16.3 uses the direction-to-residual Jacobian in (16.3.4), transposing the
+printed column-gradient matrix to agree with (16.3.8)–(16.3.9). The merit
+derivative also holds at simultaneous zeros of the residual arguments.
 At a residual root in Theorem 16.1.4, the Jacobian must be injective for positive
 definiteness. Even with regular roots of a square system and exact residual models, a BTR
 run can alternate between roots. The eventual model-root result uses convergence
