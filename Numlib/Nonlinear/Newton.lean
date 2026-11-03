@@ -1157,6 +1157,27 @@ theorem kantorovich {Fn : E → F} {F' : E → E →L[𝕜] F} {x₀ : E} {r β 
   have hu1 : Real.sqrt (1 - 2 * (β * L * η)) ≤ 1 := by nlinarith
   exact kantorovich_of_sq hβ hL e he hβ' hη' hF hLip hu0 hu1 (by linarith) hr
 
+/-- Under the Newton–Kantorovich hypotheses, every Newton iterate has an invertible
+derivative. -/
+theorem kantorovich_invertible {Fn : E → F} {F' : E → E →L[𝕜] F} {x₀ : E}
+    {r β η L : ℝ} (hβ : 0 < β) (hL : 0 < L) (hη : 0 ≤ η)
+    (e : E ≃L[𝕜] F) (he : (e : E →L[𝕜] F) = F' x₀)
+    (hβ' : ‖(e.symm : F →L[𝕜] E)‖ ≤ β) (hη' : ‖e.symm (Fn x₀)‖ ≤ η)
+    (hF : ∀ x ∈ Metric.closedBall x₀ r, HasFDerivAt Fn (F' x) x)
+    (hLip : ∀ x ∈ Metric.closedBall x₀ r, ∀ y ∈ Metric.closedBall x₀ r,
+      ‖F' x - F' y‖ ≤ L * ‖x - y‖)
+    (hh : β * L * η ≤ 1 / 2) (hr : (1 - Real.sqrt (1 - 2 * (β * L * η))) / (β * L) ≤ r)
+    (k : ℕ) : ∃ e' : E ≃L[𝕜] F, (e' : E →L[𝕜] F) = F' (iterate Fn F' x₀ k) := by
+  set u := Real.sqrt (1 - 2 * (β * L * η))
+  have hh0 : (0 : ℝ) ≤ β * L * η := by positivity
+  have hu0 : 0 ≤ u := Real.sqrt_nonneg _
+  have hu2 : u ^ 2 = 1 - 2 * (β * L * η) := Real.sq_sqrt (by linarith)
+  have hu1 : u ≤ 1 := by nlinarith
+  have hb := (kantorovich_invariant hβ hL e he hβ' hη' hF hLip hu0 hu1
+    (by linarith : 2 * (β * L * η) = 1 - u ^ 2) hr k).1
+  obtain ⟨e', he', -⟩ := exists_equiv_of_le_majorant hβ hL e he hβ' hLip hu0 hu1 hr hb
+  exact ⟨e', he'⟩
+
 /-- **The sharp a priori bound of the Newton–Kantorovich theorem**: `‖x_k - x*‖ ≤ (1 - √(1 -
 2h))^(2^k) / (2^k β L)` with `h = β L η`.
 

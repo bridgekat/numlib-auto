@@ -17,6 +17,8 @@ to nonlinear equations.
 
 Chapter 3 covers Taylor estimates, unconstrained optimality, and convergence rates. The Q-rate
 definitions use the successor error to the limit, correcting the printed successive difference.
+Theorem 3.3.2 includes the Kantorovich ball condition. A small correction can otherwise
+take the first step outside the domain.
 
 Chapter 5 covers CG and PCG estimates, Krylov growth, and normal-equation residuals.
 The CG bounds are expressed in product form to include exact initial iterates.

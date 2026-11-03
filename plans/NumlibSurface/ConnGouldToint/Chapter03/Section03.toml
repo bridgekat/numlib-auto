@@ -19,3 +19,15 @@ source = "Conn, Gould and Toint, Trust-Region Methods, §3.3.1, R-quadratic conv
 [[node]]
 id = "reciprocal_succ_counterexample"
 source = "Conn, Gould and Toint, Trust-Region Methods, §3.3.1, Q-quadratic convergence, erratum"
+
+[[node]]
+id = "theorem_3_3_1"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.3.1"
+
+[[node]]
+id = "theorem_3_3_2"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.3.2, domain condition explicit"
+
+[[node]]
+id = "newton_correction_small_without_domain_ball"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.3.2, domain condition example"
