@@ -1,0 +1,78 @@
+namespace = "ConnGouldToint.Chapter15"
+desc = "Byrd–Omojokun step variants and the infeasibility-reducing SQP iteration."
+
+[[node]]
+id = "ByrdOmojokunNormalStep"
+source = "Conn–Gould–Toint, Algorithm 15.4.5, AA.1j and AA.1k"
+
+[[node]]
+id = "ByrdOmojokunNormalStep.eq_zero_of_normal_stationary"
+source = "Conn–Gould–Toint, (15.4.121)"
+
+[[node]]
+id = "SQPSecondOrderTangentialStep"
+source = "Conn–Gould–Toint, Algorithm 15.4.7, AA.1i and AA.2d"
+
+[[node]]
+id = "algorithm_15_4_5"
+source = "Conn–Gould–Toint, Algorithm 15.4.5"
+
+[[node]]
+id = "algorithm_15_4_7"
+source = "Conn–Gould–Toint, Algorithm 15.4.7"
+
+[[node]]
+id = "SQPVariantParams"
+source = "Conn–Gould–Toint, Algorithm 15.4.8, Step 0"
+
+[[node]]
+id = "infeasibilitySQPMerit"
+source = "Conn–Gould–Toint, Section 15.4.3 augmented merit, multiplier sign convention"
+
+[[node]]
+id = "infeasibilitySQPModel"
+source = "Conn–Gould–Toint, Section 15.4.3 augmented model, corrected center normalization"
+
+[[node]]
+id = "infeasibilitySQPModel_zero"
+source = "Conn–Gould–Toint, Algorithm 15.4.8, Step 2"
+
+[[node]]
+id = "infeasibilitySQPPenaltyRequired"
+source = "Conn–Gould–Toint, Algorithm 15.4.8, corrected Step 2"
+
+[[node]]
+id = "infeasibilitySQPPenaltyRequired_le_iff"
+source = "Conn–Gould–Toint, (15.4.171), corrected penalty threshold"
+
+[[node]]
+id = "infeasibilitySQPPenalty_printed_sign_counterexample"
+source = "Conn–Gould–Toint, Algorithm 15.4.8, Step 2 sign counterexample"
+
+[[node]]
+id = "algorithm_15_4_8"
+source = "Conn–Gould–Toint, Algorithm 15.4.8"
+
+[[node]]
+id = "infeasibilitySQPModel_drop"
+source = "Conn–Gould–Toint, (15.4.171)"
+
+[[node]]
+id = "algorithm_15_4_8_invariants"
+source = "Conn–Gould–Toint, Algorithm 15.4.8, Steps 2–4 and (15.4.171)"
+
+[[node]]
+id = "SQPCompositeTrial"
+source = "Conn–Gould–Toint, Algorithms 15.4.5 and 15.4.7"
+
+[[node]]
+id = "SQPCompositeTrial.penalty"
+source = "Conn–Gould–Toint, Algorithm 15.4.1, inherited Step 2"
+
+[[node]]
+id = "SQPCompositeTrial.prediction"
+source = "Conn–Gould–Toint, Algorithms 15.4.5 and 15.4.7"
+
+[[node]]
+id = "SQPCompositeTrial.cauchy"
+source = "Conn–Gould–Toint, AA.1i"
