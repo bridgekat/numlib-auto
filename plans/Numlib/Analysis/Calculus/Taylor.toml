@@ -66,3 +66,9 @@ id = "norm_sub_firstOrder_le_of_lipschitzAt_segment"
 
 [[node]]
 id = "abs_sub_secondOrder_le_of_lipschitzAt_segment"
+
+[[node]]
+id = "norm_sub_firstOrder_le_of_lipschitz_on_segment"
+
+[[node]]
+id = "norm_sub_firstOrder_le_of_hessian_bound"

@@ -919,6 +919,31 @@ private theorem norm_le_mul_pow_succ_of_norm_deriv_le
     (fun u hu => (hd u (Ico_subset_Icc_self hu)).hasDerivWithinAt)
     (by simp [hzero]) hB (fun u hu => hb u (Ico_subset_Icc_self hu)) ht
 
+/-- The derivative estimate along a segment gives the quadratic Taylor remainder.
+Differentiability and the estimate are required only on the segment. -/
+theorem norm_sub_firstOrder_le_of_lipschitz_on_segment {f : E → F} {x s : E} {γ : ℝ}
+    (hd : ∀ t ∈ Icc (0 : ℝ) 1, DifferentiableAt ℝ f (x + t • s))
+    (hlip : ∀ t ∈ Icc (0 : ℝ) 1,
+      ‖fderiv ℝ f (x + t • s) - fderiv ℝ f x‖ ≤ γ * (t * ‖s‖)) :
+    ‖f (x + s) - (f x + fderiv ℝ f x s)‖ ≤ (1 / 2 : ℝ) * γ * ‖s‖ ^ 2 := by
+  let d := fderiv ℝ f x s
+  let g : ℝ → F := fun t => f (x + t • s) - (f x + t • d)
+  have hg (t : ℝ) (ht : t ∈ Icc (0 : ℝ) 1) :
+      HasDerivAt g ((fderiv ℝ f (x + t • s) - fderiv ℝ f x) s) t := by
+    have h := (hd t ht).hasDerivAt_comp_add_smul
+    simpa [g, d] using h.fun_sub (((hasDerivAt_id t).smul_const d).const_add (f x))
+  have hb (t : ℝ) (ht : t ∈ Icc (0 : ℝ) 1) :
+      ‖(fderiv ℝ f (x + t • s) - fderiv ℝ f x) s‖ ≤ (γ * ‖s‖ ^ 2) * t ^ 1 := by
+    calc
+      _ ≤ ‖fderiv ℝ f (x + t • s) - fderiv ℝ f x‖ * ‖s‖ :=
+        ContinuousLinearMap.le_opNorm _ _
+      _ ≤ (γ * (t * ‖s‖)) * ‖s‖ := mul_le_mul_of_nonneg_right (hlip t ht) (norm_nonneg _)
+      _ = _ := by ring
+  have h := norm_le_mul_pow_succ_of_norm_deriv_le (n := 1) (by simp [g]) hg hb 1
+    (right_mem_Icc.2 zero_le_one)
+  norm_num [g, d] at h
+  convert h using 1; ring
+
 /-- A pointwise Lipschitz bound on the Fréchet derivative gives the quadratic remainder
 bound along any segment in the differentiability domain. -/
 theorem norm_sub_firstOrder_le_of_lipschitzAt_segment {S : Set E} (hS : IsOpen S) {f : E → F}
@@ -926,26 +951,26 @@ theorem norm_sub_firstOrder_le_of_lipschitzAt_segment {S : Set E} (hS : IsOpen S
     (hseg : ∀ t ∈ Icc (0 : ℝ) 1, x + t • s ∈ S)
     (hlip : ∀ z ∈ S, ‖fderiv ℝ f z - fderiv ℝ f x‖ ≤ γ * ‖z - x‖) :
     ‖f (x + s) - (f x + fderiv ℝ f x s)‖ ≤ (1 / 2 : ℝ) * γ * ‖s‖ ^ 2 := by
-  let d := fderiv ℝ f x s
-  let g : ℝ → F := fun t => f (x + t • s) - (f x + t • d)
-  have hg (t : ℝ) (ht : t ∈ Icc (0 : ℝ) 1) :
-      HasDerivAt g ((fderiv ℝ f (x + t • s) - fderiv ℝ f x) s) t := by
-    have h := DifferentiableAt.hasDerivAt_comp_add_smul
-      ((hf.contDiffAt (hS.mem_nhds (hseg t ht))).differentiableAt (by norm_num))
-    simpa [g, d] using h.fun_sub (((hasDerivAt_id t).smul_const d).const_add (f x))
-  have hb (t : ℝ) (ht : t ∈ Icc (0 : ℝ) 1) :
-      ‖(fderiv ℝ f (x + t • s) - fderiv ℝ f x) s‖ ≤ (γ * ‖s‖ ^ 2) * t ^ 1 := by
-    have h := hlip _ (hseg t ht)
-    rw [add_sub_cancel_left, norm_smul, Real.norm_of_nonneg ht.1] at h
-    calc
-      _ ≤ ‖fderiv ℝ f (x + t • s) - fderiv ℝ f x‖ * ‖s‖ :=
-        ContinuousLinearMap.le_opNorm _ _
-      _ ≤ (γ * (t * ‖s‖)) * ‖s‖ := mul_le_mul_of_nonneg_right h (norm_nonneg _)
-      _ = _ := by ring
-  have h := norm_le_mul_pow_succ_of_norm_deriv_le (n := 1) (by simp [g]) hg hb 1
-    (right_mem_Icc.2 zero_le_one)
-  norm_num [g, d] at h
-  convert h using 1; ring
+  apply norm_sub_firstOrder_le_of_lipschitz_on_segment
+  · exact fun t ht ↦ (hf.contDiffAt (hS.mem_nhds (hseg t ht))).differentiableAt (by norm_num)
+  · intro t ht
+    simpa only [add_sub_cancel_left, norm_smul, Real.norm_of_nonneg ht.1] using
+      hlip _ (hseg t ht)
+
+/-- On a convex set, a uniform bound on the second derivative gives the usual
+quadratic Taylor remainder with coefficient half that bound. -/
+theorem norm_sub_firstOrder_le_of_hessian_bound {S : Set E} (hS : Convex ℝ S)
+    {f : E → F} {x s : E} (hx : x ∈ S) (hs : x + s ∈ S)
+    (hf : ∀ z ∈ S, DifferentiableAt ℝ f z)
+    (hd : ∀ z ∈ S, DifferentiableAt ℝ (fderiv ℝ f) z)
+    {B : ℝ} (hB : ∀ z ∈ S, ‖fderiv ℝ (fderiv ℝ f) z‖ ≤ B) :
+    ‖f (x + s) - (f x + fderiv ℝ f x s)‖ ≤ (1 / 2 : ℝ) * B * ‖s‖ ^ 2 := by
+  have hseg (t : ℝ) (ht : t ∈ Icc (0 : ℝ) 1) : x + t • s ∈ S := by
+    simpa only [add_sub_cancel_left] using hS.add_smul_sub_mem hx hs ht
+  refine norm_sub_firstOrder_le_of_lipschitz_on_segment (fun t ht ↦ hf _ (hseg t ht)) ?_
+  intro t ht
+  simpa only [add_sub_cancel_left, norm_smul, Real.norm_of_nonneg ht.1] using
+    Convex.norm_image_sub_le_of_norm_fderiv_le hd hB hS hx (hseg t ht)
 
 /-- A Hessian that is Lipschitz relative to the expansion point
 gives a cubic remainder for the second-order Taylor model. -/

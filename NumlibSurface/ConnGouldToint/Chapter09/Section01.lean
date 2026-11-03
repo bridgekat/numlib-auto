@@ -16,13 +16,9 @@ private theorem abs_remainder_le {f : E → ℝ} (hf : Differentiable ℝ f)
     (hB : ∀ z, ‖fderiv ℝ (fderiv ℝ f) z‖ ≤ B) (x s : E) :
     |f (x + s) - (f x + fderiv ℝ f x s)| ≤ (1 / 2 : ℝ) * B * ‖s‖ ^ 2 := by
   rw [← Real.norm_eq_abs]
-  have h₁ : ContDiff ℝ 1 f := contDiff_one_iff_fderiv.mpr ⟨hf, hd.continuous⟩
-  refine norm_sub_firstOrder_le_of_lipschitzAt_segment isOpen_univ h₁.contDiffOn
-    (fun _ _ ↦ Set.mem_univ _) (fun z _ ↦ ?_)
-  exact Convex.norm_image_sub_le_of_norm_fderiv_le
-    (fun z _ ↦ hd z)
-    (fun z _ ↦ hB z) (convex_univ : Convex ℝ (Set.univ : Set E))
-    (Set.mem_univ x) (Set.mem_univ z)
+  exact norm_sub_firstOrder_le_of_hessian_bound
+    (convex_univ : Convex ℝ (Set.univ : Set E)) (Set.mem_univ x) (Set.mem_univ (x + s))
+    (fun z _ ↦ hf z) (fun z _ ↦ hd z) (fun z _ ↦ hB z)
 
 /-- Theorem 9.1.1. A conditionally valid model has gradient error of order δ
 under uniform Hessian bounds. The ball radius must be positive. -/
