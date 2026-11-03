@@ -91,3 +91,23 @@ source = "Conn–Gould–Toint, Corollary 5.1.8"
 [[node]]
 id = "corollary_5_1_9"
 source = "Conn–Gould–Toint, Corollary 5.1.9"
+
+[[node]]
+id = "algorithm_5_1_3"
+source = "Conn–Gould–Toint, Algorithm 5.1.3"
+
+[[node]]
+id = "algorithm_5_1_3_zero"
+source = "Conn–Gould–Toint, Algorithm 5.1.3 (transformed initialization)"
+
+[[node]]
+id = "algorithm_5_1_3_succ"
+source = "Conn–Gould–Toint, Algorithm 5.1.3, (5.1.46)–(5.1.50)"
+
+[[node]]
+id = "transformedCGPreconditioner"
+source = "Conn–Gould–Toint, (5.1.53)"
+
+[[node]]
+id = "transformedCGPreconditioner_apply_inverse"
+source = "Conn–Gould–Toint, (5.1.53) (inverse used by transformed CG)"

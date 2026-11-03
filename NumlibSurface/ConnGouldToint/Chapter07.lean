@@ -8,5 +8,6 @@ import NumlibSurface.ConnGouldToint.Chapter07.Section03Matrix
 import NumlibSurface.ConnGouldToint.Chapter07.Section04
 import NumlibSurface.ConnGouldToint.Chapter07.Section05
 import NumlibSurface.ConnGouldToint.Chapter07.Section05Algorithm
+import NumlibSurface.ConnGouldToint.Chapter07.Section07
 
 /-! # Chapter 7. The Trust-Region Subproblem -/

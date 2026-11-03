@@ -114,6 +114,85 @@ stores the residual `-gₖ` in place of the gradient `gₖ`. -/
 noncomputable abbrev algorithm_5_1_2 (H : E →ₗ[ℝ] E) (c x₀ : E) (k : ℕ) : CG.State E :=
   CG.iterate H (-c) x₀ k
 
+/-- Algorithm 5.1.3 applies ordinary CG to the congruence-transformed
+quadratic. The inverse transformation is `S = R⁻¹`, so the transformed
+Hessian and linear term are `S.adjoint ∘ H ∘ S` and `S.adjoint c`. -/
+noncomputable abbrev algorithm_5_1_3 {F : Type*}
+    [NormedAddCommGroup F] [InnerProductSpace ℝ F] [CompleteSpace E] [CompleteSpace F]
+    (R : E ≃L[ℝ] F) (H : E →ₗ[ℝ] E) (c : E) (xbar₀ : F) (k : ℕ) : CG.State F :=
+  let S := R.symm.toContinuousLinearMap
+  algorithm_5_1_2 (S.adjoint.toLinearMap ∘ₗ H ∘ₗ S.toLinearMap) (S.adjoint c) xbar₀ k
+
+/-- The transformed CG residual stores the negative of the initial gradient. -/
+theorem algorithm_5_1_3_zero {F : Type*}
+    [NormedAddCommGroup F] [InnerProductSpace ℝ F] [CompleteSpace E] [CompleteSpace F]
+    (R : E ≃L[ℝ] F) (H : E →ₗ[ℝ] E) (c : E) (xbar₀ : F) :
+    let S := R.symm.toContinuousLinearMap
+    let gbar₀ := S.adjoint (H (S xbar₀) + c)
+    algorithm_5_1_3 R H c xbar₀ 0 = ⟨xbar₀, -gbar₀, -gbar₀⟩ := by
+  simp [algorithm_5_1_3, CG.init, map_add, sub_eq_add_neg, add_comm]
+
+/-- The transformed iterates satisfy (5.1.46)–(5.1.50) with the book's
+gradient sign. -/
+theorem algorithm_5_1_3_succ {F : Type*}
+    [NormedAddCommGroup F] [InnerProductSpace ℝ F] [CompleteSpace E] [CompleteSpace F]
+    (R : E ≃L[ℝ] F) (H : E →ₗ[ℝ] E) (c : E) (xbar₀ : F) (k : ℕ) :
+    let S := R.symm.toContinuousLinearMap
+    let A := S.adjoint.toLinearMap ∘ₗ H ∘ₗ S.toLinearMap
+    let s := algorithm_5_1_3 R H c xbar₀ k
+    let g := -s.r
+    let α := ‖g‖ ^ 2 / ⟪s.p, A s.p⟫
+    let g' := g + α • A s.p
+    let β := ‖g'‖ ^ 2 / ‖g‖ ^ 2
+    algorithm_5_1_3 R H c xbar₀ (k + 1) = ⟨s.x + α • s.p, -g', -g' + β • s.p⟩ := by
+  intro S A s g α g' β
+  change CG.iterate A (-(S.adjoint c)) xbar₀ (k + 1) = _
+  rw [CG.iterate_succ]
+  change CG.step A s = _
+  have hα : CG.alpha A s = α := by
+    rw [CG.alpha, real_inner_self_eq_norm_sq, real_inner_comm s.p (A s.p)]
+    simp only [α, g, norm_neg]
+  have hr : (CG.step A s).r = -g' := by
+    rw [CG.step_r, hα]
+    change s.r - α • A s.p = -(-s.r + α • A s.p)
+    abel
+  have hβ : CG.beta A s = β := by
+    rw [CG.beta, real_inner_self_eq_norm_sq, real_inner_self_eq_norm_sq, hr]
+    simp [β, g]
+  cases he : CG.step A s with
+  | mk x r p =>
+    have hx := CG.step_x A s
+    have hp := CG.step_p A s
+    rw [he, hα] at hx
+    rw [hβ, hr, he] at hp
+    rw [he] at hr
+    simp only at hx hr hp
+    rw [hx, hr, hp]
+
+/-- The preconditioner induced by the transformation, `M = Rᵀ R`
+in (5.1.53). -/
+noncomputable def transformedCGPreconditioner {F : Type*}
+    [NormedAddCommGroup F] [InnerProductSpace ℝ F] [CompleteSpace E] [CompleteSpace F]
+    (R : E ≃L[ℝ] F) : E →L[ℝ] E :=
+  R.toContinuousLinearMap.adjoint.comp R.toContinuousLinearMap
+
+/-- The inverse preconditioner applies `R⁻¹R⁻ᵀ`, as in the
+implicit realization of transformed CG. -/
+theorem transformedCGPreconditioner_apply_inverse {F : Type*}
+    [NormedAddCommGroup F] [InnerProductSpace ℝ F] [CompleteSpace E] [CompleteSpace F]
+    (R : E ≃L[ℝ] F) (x : E) :
+    let S := R.symm.toContinuousLinearMap
+    transformedCGPreconditioner R (S (S.adjoint x)) = x := by
+  let S := R.symm.toContinuousLinearMap
+  let L := R.toContinuousLinearMap
+  have hSL : S.comp L = ContinuousLinearMap.id ℝ E :=
+    ContinuousLinearMap.ext R.symm_apply_apply
+  have h := congrArg ContinuousLinearMap.adjoint hSL
+  rw [ContinuousLinearMap.adjoint_comp, ContinuousLinearMap.adjoint_id] at h
+  change L.adjoint (R (R.symm (S.adjoint x))) = x
+  rw [R.apply_symm_apply]
+  exact congrArg (fun T : E →L[ℝ] E => T x) h
+
 /-- Algorithm 5.1.4. The state of the preconditioned conjugate gradient recurrence.
 The library stores the residual `-gₖ` and evaluates the preconditioned gradient
 through the given inverse when needed. -/

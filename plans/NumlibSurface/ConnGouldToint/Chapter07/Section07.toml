@@ -1,0 +1,73 @@
+namespace = "ConnGouldToint.Chapter07"
+
+[[node]]
+id = "diagonalShiftInverse"
+source = "Conn–Gould–Toint, Algorithm 7.7.1 (coordinate pseudoinverse)"
+
+[[node]]
+id = "diagonalNullGradient"
+source = "Conn–Gould–Toint, Algorithm 7.7.1 Step 2"
+
+[[node]]
+id = "diagonalNewtonStep"
+source = "Conn–Gould–Toint, Algorithm 7.7.1 Steps 4–5"
+
+[[node]]
+id = "algorithm_7_7_1"
+source = "Conn–Gould–Toint, Algorithm 7.7.1"
+
+[[node]]
+id = "diagonal_leftmost"
+source = "Conn–Gould–Toint, Algorithm 7.7.1 Step 2 (least diagonal eigenvalue)"
+
+[[node]]
+id = "diagonalShiftStep_solves"
+source = "Conn–Gould–Toint, Algorithm 7.7.1 Steps 1, 2 and 5 (coordinate shifted solve)"
+
+[[node]]
+id = "diagonalOperator"
+source = "Conn–Gould–Toint, (7.7.14) (diagonal Hessian)"
+
+[[node]]
+id = "diagonalOperator_symm"
+source = "Conn–Gould–Toint, (7.7.14) (symmetry of the diagonal Hessian)"
+
+[[node]]
+id = "diagonalShiftStep_eq"
+source = "Conn–Gould–Toint, Algorithm 7.7.1 (shifted step above the pole)"
+
+[[node]]
+id = "diagonalNewtonStep_eq"
+source = "Conn–Gould–Toint, Algorithm 7.7.1 Step 4 (equivalence to secular Newton)"
+
+[[node]]
+id = "algorithm_7_7_1_newton_stop"
+source = "Conn–Gould–Toint, Algorithm 7.7.1 Steps 3–5 (finite stopping including a compatible pole start)"
+
+[[node]]
+id = "algorithm_7_7_1_seed_norm"
+source = "Conn–Gould–Toint, Algorithm 7.7.1 Step 2b (outside-or-on-boundary initial trial)"
+
+[[node]]
+id = "algorithm_7_7_1_returns"
+source = "Conn–Gould–Toint, Algorithm 7.7.1 (finite return, exact early branches and radius test)"
+
+[[node]]
+id = "algorithm_7_7_1_auto"
+source = "Conn–Gould–Toint, Algorithm 7.7.1 (automatic least diagonal selection)"
+
+[[node]]
+id = "modifiedAbsoluteValuePreconditioner"
+source = "Conn–Gould–Toint, (7.7.12)"
+
+[[node]]
+id = "algorithm_7_7_1_auto_returns"
+source = "Conn–Gould–Toint, Algorithm 7.7.1 (verified run with automatic least diagonal selection)"
+
+[[node]]
+id = "modifiedAbsoluteValuePreconditioner_posDef"
+source = "Conn–Gould–Toint, (7.7.12) (positive definite modified metric)"
+
+[[node]]
+id = "algorithm_7_7_1_newton_converges"
+source = "Conn–Gould–Toint, Algorithm 7.7.1 (global Q-linear bound and asymptotic Q-quadratic order)"
