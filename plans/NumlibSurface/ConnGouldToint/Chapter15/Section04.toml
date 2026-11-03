@@ -143,3 +143,55 @@ source = "Conn–Gould–Toint, small-radius original-trial guarantee in Theorem
 [[node]]
 id = "sqp_normal_criticality_of_accepted_decrease"
 source = "Conn–Gould–Toint, extension of Theorem 15.4.19 to corrected accepted trials in Theorem 15.4.23"
+
+[[node]]
+id = "sqpCriticalityNeighborhood"
+source = "Conn–Gould–Toint, (15.4.45) and (15.4.127)"
+
+[[node]]
+id = "sqpCriticalityNeighborhood_bounds"
+source = "Conn–Gould–Toint, (15.4.44)–(15.4.47) and (15.4.126)–(15.4.128)"
+
+[[node]]
+id = "sqpNeighborhoodRadiusFloor"
+source = "Conn–Gould–Toint, (15.4.50)"
+
+[[node]]
+id = "sqpNeighborhoodRadiusFloor_le"
+source = "Conn–Gould–Toint, (15.4.50)"
+
+[[node]]
+id = "sqpFeasibilityExitCoeff"
+source = "Conn–Gould–Toint, (15.4.57), corrected minimum"
+
+[[node]]
+id = "sqpFeasibilityExitCoeff_bound"
+source = "Conn–Gould–Toint, (15.4.57), corrected minimum"
+
+[[node]]
+id = "sqpTangentialAcceptanceRadius"
+source = "Conn–Gould–Toint, (15.4.71), with effective decrease and model-error coefficients"
+
+[[node]]
+id = "sqpNormalCurvatureBound"
+source = "Conn–Gould–Toint, (15.4.131), uniform bound without an attainment requirement"
+
+[[node]]
+id = "sqpNormalCurvatureBound_le"
+source = "Conn–Gould–Toint, (15.4.131)"
+
+[[node]]
+id = "sqpNormalCriticalityExitCoeff"
+source = "Conn–Gould–Toint, (15.4.140), corrected minimum"
+
+[[node]]
+id = "sqpNormalCriticalityExitCoeff_bound"
+source = "Conn–Gould–Toint, (15.4.140), corrected minimum"
+
+[[node]]
+id = "sqp_exit_max_counterexamples"
+source = "Conn–Gould–Toint, counterexamples to maximum in (15.4.57) and (15.4.140)"
+
+[[node]]
+id = "sqpTangentialAcceptanceRadius_ratio"
+source = "Conn–Gould–Toint, (15.4.71), corrected tangential acceptance estimate"

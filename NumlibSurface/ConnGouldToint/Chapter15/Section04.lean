@@ -341,6 +341,212 @@ theorem lemma_15_4_5 (f : E → ℝ) (c : E → F) (x : ℕ → E) (σ d : ℕ �
     exact add_nonneg (div_nonneg (sub_nonneg.mpr (hf i)) (hσ i).le) (norm_nonneg _)
   · exact (hanti (Nat.add_le_add_left hj i)).trans (hstep i)
 
+
+/-- The ball used to retain a positive lower bound on the residual norm in
+(15.4.45) or on the normal criticality measure in (15.4.127). -/
+noncomputable def sqpCriticalityNeighborhood (u : E → ℝ) (x : E) (γ : ℝ) : Set E :=
+  Metric.ball x (u x / (2 * γ))
+
+omit [InnerProductSpace ℝ E] in
+/-- A measure with Lipschitz bound γ varies by less than half its center
+value inside the criticality neighborhood. -/
+theorem sqpCriticalityNeighborhood_bounds {u : E → ℝ} {x y : E} {γ : ℝ}
+    (hγ : 0 < γ) (hLip : |u y - u x| ≤ γ * dist y x)
+    (hy : y ∈ sqpCriticalityNeighborhood u x γ) :
+    u x / 2 < u y ∧ u y < 3 * u x / 2 := by
+  have hd : dist y x < u x / (2 * γ) := hy
+  have h := (lt_div_iff₀ (show 0 < 2 * γ by positivity)).mp hd
+  have hh := abs_le.mp hLip
+  constructor <;> linarith
+
+/-- The radius floor in (15.4.50) includes the radius at entry to the
+criticality neighborhood. -/
+def sqpNeighborhoodRadiusFloor (γ entry threshold : ℝ) : ℝ :=
+  γ * min entry threshold
+
+private theorem sqp_radius_floor {Δ : ℕ → ℝ} {γ r : ℝ} {N : ℕ}
+    (hγ : 0 ≤ γ) (hnext : ∀ k, γ * Δ k ≤ Δ (k + 1))
+    (hsmall : ∀ k ≥ N, Δ k ≤ r → Δ k ≤ Δ (k + 1)) :
+    ∀ k ≥ N, min (Δ N) (γ * r) ≤ Δ k := by
+  intro k hk
+  induction k, hk using Nat.le_induction with
+  | base => exact min_le_left _ _
+  | succ k hk ih =>
+    by_cases h : Δ k ≤ r
+    · exact ih.trans (hsmall k hk h)
+    · exact (min_le_right _ _).trans
+        ((mul_le_mul_of_nonneg_left (le_of_not_ge h) hγ).trans (hnext k))
+
+/-- The lower bound (15.4.50) follows from the radius update and
+nondecreasing radii when the current radius is sufficiently small. -/
+theorem sqpNeighborhoodRadiusFloor_le {Δ : ℕ → ℝ} {γ r : ℝ} {N k : ℕ}
+    (hγ : γ ∈ Set.Icc (0 : ℝ) 1) (hN : 0 ≤ Δ N) (hk : N ≤ k)
+    (hnext : ∀ j, γ * Δ j ≤ Δ (j + 1))
+    (hsmall : ∀ j ≥ N, Δ j ≤ r → Δ j ≤ Δ (j + 1)) :
+    sqpNeighborhoodRadiusFloor γ (Δ N) r ≤ Δ k := by
+  apply le_trans ?_ (sqp_radius_floor hγ.1 hnext hsmall k hk)
+  apply le_min
+  · exact (mul_le_mul_of_nonneg_left (min_le_left _ _) hγ.1).trans
+      (mul_le_of_le_one_left hN hγ.2)
+  · exact mul_le_mul_of_nonneg_left (min_le_right _ _) hγ.1
+
+/-- A sufficient radius threshold for (15.4.71). The parameter G bounds the
+reduced gradient from below, β bounds reduced curvature, and b converts the
+radius into the tangential radius in reduced coordinates. The coefficient κ
+includes the fraction of tangential Cauchy decrease required of the overall
+model, and C bounds the full trial error coefficient. -/
+noncomputable def sqpTangentialAcceptanceRadius (G β b η κ C : ℝ) : ℝ :=
+  min (G / (β * b)) ((1 - η) * κ * G * b / (C + 1))
+
+/-- Under the tangential decrease and quadratic trial-error estimates, a
+positive radius below the threshold guarantees the requested ratio. -/
+theorem sqpTangentialAcceptanceRadius_ratio {G β b η κ C r d actual : ℝ}
+    (hG : 0 < G) (hβ : 0 < β) (hb : 0 < b) (hη : η < 1)
+    (hκ : 0 < κ) (hC : 0 ≤ C) (hr : 0 < r)
+    (hthreshold : r ≤ sqpTangentialAcceptanceRadius G β b η κ C)
+    (hpred : κ * G * min (b * r) (G / β) ≤ d)
+    (herr : |actual - d| ≤ C * r ^ 2) : η ≤ actual / d := by
+  have hD : b * r ≤ G / β := by
+    have hh := (le_div_iff₀ (mul_pos hβ hb)).mp (hthreshold.trans (min_le_left _ _))
+    apply (le_div_iff₀ hβ).mpr
+    nlinarith only [hh]
+  rw [min_eq_left hD] at hpred
+  have hpos : 0 < d := (mul_pos (mul_pos hκ hG) (mul_pos hb hr)).trans_le hpred
+  have hCr : C * r ≤ (1 - η) * κ * G * b := by
+    have hh := (le_div_iff₀ (by positivity : 0 < C + 1)).mp
+      (hthreshold.trans (min_le_right _ _))
+    linarith only [hh, hr]
+  have h₁ := mul_le_mul_of_nonneg_right hCr hr.le
+  have h₂ := mul_le_mul_of_nonneg_left hpred (sub_nonneg.mpr hη.le)
+  have he : |actual - d| ≤ (1 - η) * d := herr.trans (by nlinarith only [h₁, h₂])
+  exact (le_div_iff₀ hpos).mpr (by linarith only [(abs_le.mp he).1])
+
+/-- The uniform normal-model curvature bound (15.4.131), using an upper
+bound B on the Jacobian norms along the iterates. -/
+def sqpNormalCurvatureBound (B : ℝ) : ℝ := 1 + B ^ 2
+
+/-- A bound on the Jacobian norm suffices for (15.4.131). -/
+theorem sqpNormalCurvatureBound_le
+    {X Y : Type*} [NormedAddCommGroup X] [InnerProductSpace ℝ X] [CompleteSpace X]
+    [NormedAddCommGroup Y] [InnerProductSpace ℝ Y] [CompleteSpace Y]
+    (A : X →L[ℝ] Y) {B : ℝ} (hB : ‖A‖ ≤ B) :
+    quadraticCurvatureBound (A.adjoint.comp A) ≤ sqpNormalCurvatureBound B := by
+  rw [quadraticCurvatureBound, sqpNormalCurvatureBound,
+    ContinuousLinearMap.norm_adjoint_comp_self]
+  simpa only [pow_two] using add_le_add (le_refl (1 : ℝ)) (pow_le_pow_left₀ (norm_nonneg _) hB 2)
+
+private theorem sqp_capped_drop_sum {v r : ℕ → ℝ} {a b T : ℝ}
+    (ha : 0 ≤ a) (hb : 0 ≤ b) (hT : 0 ≤ T) (hr : ∀ k, 0 ≤ r k)
+    (n : ℕ) (hdrop : ∀ k < n, a * min T (b * r k) ≤ v k - v (k + 1)) :
+    a * min T (b * ∑ k ∈ Finset.range n, r k) ≤ v 0 - v n := by
+  induction n with
+  | zero => simp [min_eq_right hT]
+  | succ n ih =>
+    have h₁ := ih (fun k hk ↦ hdrop k (hk.trans (Nat.lt_succ_self n)))
+    have h₂ := hdrop n (Nat.lt_succ_self n)
+    let u := b * ∑ k ∈ Finset.range n, r k
+    let w := b * r n
+    have hu : 0 ≤ u := mul_nonneg hb (Finset.sum_nonneg fun k _ ↦ hr k)
+    have hw : 0 ≤ w := mul_nonneg hb (hr n)
+    have hmin : min T (u + w) ≤ min T u + min T w := by
+      rcases le_or_gt T u with h | h
+      · rw [min_eq_left h]
+        exact (min_le_left _ _).trans (le_add_of_nonneg_right (le_min hT hw))
+      rcases le_or_gt T w with h' | h'
+      · rw [min_eq_left h']
+        exact (min_le_left _ _).trans (le_add_of_nonneg_left (le_min hT hu))
+      · rw [min_eq_right h.le, min_eq_right h'.le]
+        exact min_le_right _ _
+    rw [Finset.sum_range_succ, mul_add]
+    have hh := mul_le_mul_of_nonneg_left hmin ha
+    change a * min T (u + w) ≤ _
+    rw [mul_add] at hh
+    linarith only [hh, h₁, h₂]
+
+/-- The common decrease coefficient in (15.4.57), using the minimum
+of the bounds from the two exit cases. -/
+noncomputable def sqpFeasibilityExitCoeff (η ν b γ ξ : ℝ) : ℝ :=
+  η * ν / 2 * min 1 (b / (γ * ξ))
+
+/-- If the accepted steps leave the neighborhood (15.4.45), their
+accumulated merit decrease satisfies (15.4.57) with the corrected coefficient. -/
+theorem sqpFeasibilityExitCoeff_bound {v r : ℕ → ℝ} {η ν b γ ξ u : ℝ}
+    (hη : 0 ≤ η) (hν : 0 ≤ ν) (hb : 0 ≤ b) (_hγ : 0 < γ) (hξ : 0 < ξ)
+    (hu : 0 ≤ u) (hr : ∀ k, 0 ≤ r k) (n : ℕ)
+    (hexit : u / (2 * γ) ≤ ξ * ∑ k ∈ Finset.range n, r k)
+    (hdrop : ∀ k < n, η * ν * min (u / 2) (b * r k) ≤ v k - v (k + 1)) :
+    sqpFeasibilityExitCoeff η ν b γ ξ * u ≤ v 0 - v n := by
+  have hR : u / (2 * (γ * ξ)) ≤ ∑ k ∈ Finset.range n, r k := by
+    rw [← mul_assoc, ← div_div]
+    exact (div_le_iff₀ hξ).mpr (by simpa only [mul_comm] using hexit)
+  have hmin := min_le_min_left (u / 2) (mul_le_mul_of_nonneg_left hR hb)
+  have hd := (mul_le_mul_of_nonneg_left hmin (mul_nonneg hη hν)).trans
+    (sqp_capped_drop_sum (mul_nonneg hη hν) hb (by positivity) hr n hdrop)
+  calc
+    _ = η * ν * ((u / 2) * min 1 (b / (γ * ξ))) := by
+      unfold sqpFeasibilityExitCoeff
+      ring
+    _ = η * ν * min (u / 2) (b * (u / (2 * (γ * ξ)))) := by
+      rw [mul_min_of_nonneg _ _ (by positivity : 0 ≤ u / 2), mul_one]
+      congr 2
+      ring
+    _ ≤ _ := hd
+
+/-- The common decrease coefficient in (15.4.140), using the minimum
+of the bounds from the two exit cases. -/
+noncomputable def sqpNormalCriticalityExitCoeff (η κ ν cmax β b γ ξ : ℝ) : ℝ :=
+  η * κ * ν / (4 * cmax) * min (1 / β) (b / (γ * ξ))
+
+/-- If the accepted steps leave the neighborhood (15.4.127), their
+accumulated merit decrease satisfies (15.4.140) with the corrected coefficient. -/
+theorem sqpNormalCriticalityExitCoeff_bound {v r : ℕ → ℝ}
+    {η κ ν cmax β b γ ξ u : ℝ}
+    (hη : 0 ≤ η) (hκ : 0 ≤ κ) (hν : 0 ≤ ν) (hcmax : 0 < cmax) (hβ : 0 < β)
+    (hb : 0 ≤ b) (_hγ : 0 < γ) (hξ : 0 < ξ)
+    (hu : 0 ≤ u) (hr : ∀ k, 0 ≤ r k) (n : ℕ)
+    (hexit : u / (2 * γ) ≤ ξ * ∑ k ∈ Finset.range n, r k)
+    (hdrop : ∀ k < n, (η * κ * ν * u / (2 * cmax)) * min (u / (2 * β)) (b * r k) ≤
+      v k - v (k + 1)) :
+    sqpNormalCriticalityExitCoeff η κ ν cmax β b γ ξ * u ^ 2 ≤ v 0 - v n := by
+  let a := η * κ * ν * u / (2 * cmax)
+  have ha : 0 ≤ a := by dsimp [a]; positivity
+  have hR : u / (2 * (γ * ξ)) ≤ ∑ k ∈ Finset.range n, r k := by
+    rw [← mul_assoc, ← div_div]
+    exact (div_le_iff₀ hξ).mpr (by simpa only [mul_comm] using hexit)
+  have hmin := min_le_min_left (u / (2 * β)) (mul_le_mul_of_nonneg_left hR hb)
+  have hd := (mul_le_mul_of_nonneg_left hmin ha).trans
+    (sqp_capped_drop_sum ha hb (by positivity) hr n hdrop)
+  calc
+    _ = a * ((u / 2) * min (1 / β) (b / (γ * ξ))) := by
+      unfold sqpNormalCriticalityExitCoeff a
+      ring
+    _ = a * min (u / (2 * β)) (b * (u / (2 * (γ * ξ)))) := by
+      rw [mul_min_of_nonneg _ _ (by positivity : 0 ≤ u / 2)]
+      congr 2 <;> ring
+    _ ≤ _ := hd
+
+/-- The maxima in (15.4.57) and (15.4.140) can exceed the total merit
+decrease permitted by the accepted-step estimates and the exit distance.
+Here the exit occurs in one step, with both acceptance and normal fractions
+equal to one half. -/
+theorem sqp_exit_max_counterexamples :
+    let r : ℕ → ℝ := fun _ ↦ 1
+    let v : ℕ → ℝ := fun k ↦ if k = 0 then 1 / 8 else 0
+    let w : ℕ → ℝ := fun k ↦ if k = 0 then 1 / 16 else 0
+    (1 / 2 : ℝ) ≤ ∑ k ∈ Finset.range 1, r k ∧
+      (∀ k < 1, (1 / 4 : ℝ) * min (1 / 2) (2 * r k) ≤ v k - v (k + 1)) ∧
+      (∀ k < 1, (1 / 8 : ℝ) * min (1 / 2) (2 * r k) ≤ w k - w (k + 1)) ∧
+      v 0 - v 1 < (1 / 8 : ℝ) * max 1 2 ∧
+      w 0 - w 1 < (1 / 16 : ℝ) * max 1 2 := by
+  intro r v w
+  refine ⟨by norm_num [r], ?_, ?_, by norm_num [v, max_def], by norm_num [w, max_def]⟩
+  · intro k hk
+    have hk' : k = 0 := by omega
+    norm_num [hk', r, v, min_def]
+  · intro k hk
+    have hk' : k = 0 := by omega
+    norm_num [hk', r, w, min_def]
+
 private def HasRelaxedProgress (u v Δ : ℕ → ℝ) (S : Set ℕ) : Prop :=
   ∀ ε > 0, ∃ (a b e r : ℝ) (K : ℕ), 0 < a ∧ 0 < b ∧ 0 < e ∧ 0 < r ∧
     ∀ k ≥ K, ε ≤ u k →
@@ -364,15 +570,9 @@ private theorem relaxed_progress_frequently_small {u v Δ : ℕ → ℝ} {S : Se
   let N := max K N₀
   let d := min (Δ N) (γ * r)
   have hd : 0 < d := lt_min (hΔ N) (mul_pos hγ hr)
-  have hfloor (k : ℕ) (hk : N ≤ k) : d ≤ Δ k := by
-    induction k, hk using Nat.le_induction with
-    | base => exact min_le_left _ _
-    | succ k hk ih =>
-      by_cases h : Δ k ≤ r
-      · exact ih.trans ((hcontrol k ((le_max_left _ _).trans hk)
-          (hfail k ((le_max_right _ _).trans hk))).1 h).2
-      · exact (min_le_right _ _).trans
-          ((mul_le_mul_of_nonneg_left (lt_of_not_ge h).le hγ.le).trans (hnext k))
+  have hfloor : ∀ k ≥ N, d ≤ Δ k :=
+    sqp_radius_floor hγ.le hnext (fun k hk h ↦ ((hcontrol k ((le_max_left _ _).trans hk)
+      (hfail k ((le_max_right _ _).trans hk))).1 h).2)
   have hpos : 0 < a * min e (b * d) := mul_pos ha (lt_min he (mul_pos hb hd))
   obtain ⟨J, hJ⟩ := Filter.eventually_atTop.mp (hdiff.eventually (gt_mem_nhds hpos))
   let M := max J N
@@ -837,7 +1037,7 @@ private theorem tangentialProgress {P : BTRParams} {u w v Δ d actual : ℕ → 
   intro ε hε
   let e := ε / 2
   have he : 0 < e := half_pos hε
-  let r := min (e / (β * b)) ((1 - P.η₂) * κ * e * b / (C + 1))
+  let r := sqpTangentialAcceptanceRadius e β b P.η₂ κ C
   have hr : 0 < r := lt_min (div_pos he (mul_pos hβ hb)) (by positivity [P.eta₂_lt_one])
   have hsmall := hpert.eventually (lt_mem_nhds (neg_neg_of_pos he))
   obtain ⟨K, hK⟩ := Filter.eventually_atTop.mp ((hsmall.and hpred).and herr)
@@ -856,22 +1056,8 @@ private theorem tangentialProgress {P : BTRParams} {u w v Δ d actual : ℕ → 
     · exact mul_nonneg hκ.le (he.le.trans hw)
   constructor
   · intro hΔ
-    have hD : b * Δ k ≤ e / β := by
-      have hh := (le_div_iff₀ (mul_pos hβ hb)).mp (hΔ.trans (min_le_left _ _))
-      apply (le_div_iff₀ hβ).mpr
-      nlinarith only [hh]
-    rw [min_eq_left hD] at hbound
-    have hpos : 0 < d k :=
-      (mul_pos (mul_pos hκ he) (mul_pos hb (run.radius_pos k))).trans_le hbound
-    have hCΔ : C * Δ k ≤ (1 - P.η₂) * κ * e * b := by
-      have hh := (le_div_iff₀ (by positivity : 0 < C + 1)).mp (hΔ.trans (min_le_right _ _))
-      linarith only [hh, run.radius_pos k]
-    have h₁ := mul_le_mul_of_nonneg_right hCΔ (run.radius_pos k).le
-    have h₂ := mul_le_mul_of_nonneg_left hbound (sub_nonneg.mpr P.eta₂_lt_one.le)
-    have he' : |actual k - d k| ≤ (1 - P.η₂) * d k := h.2.trans (by nlinarith only [h₁, h₂])
-    apply run.very_successful k
-    apply (le_div_iff₀ hpos).mpr
-    linarith only [(abs_le.mp he').1]
+    exact run.very_successful k (sqpTangentialAcceptanceRadius_ratio he hβ hb
+      P.eta₂_lt_one hκ hC (run.radius_pos k) hΔ hbound h.2)
   · intro hkS
     have hh := mul_le_mul_of_nonneg_left hbound P.eta₁_pos.le
     rw [min_comm (e / β), mul_assoc P.η₁ κ]
