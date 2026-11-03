@@ -50,3 +50,11 @@ id = "eventually_clarkeDerivative_le_of_lt"
 [[node]]
 id = "clarkeDerivative_eq_of_hasStrictFDerivAt"
 source = "Conn–Gould–Toint, Section 3.1.4"
+
+[[node]]
+id = "eventually_base_quotient_lt_of_clarkeDerivative_lt"
+source = "Conn–Gould–Toint, Theorem 3.2.15"
+
+[[node]]
+id = "clarkeSubgradient_subset_subdifferential"
+source = "Conn–Gould–Toint, Theorem 3.2.15"

@@ -105,9 +105,9 @@ The tangent cone cannot be replaced by the radial directions `d ∈ C(x)`
 Proof: a violating sequence `y_k → x` in `C` has unit directions converging to some `d` in the
 tangent cone; first-order expansions give `∇f(x)[d] = 0`, and the second-order expansion together
 with `∇f(x)[y_k - x] ≥ 0` gives `∇²f(x)[d]² ≤ 0`. -/
-theorem isStrictLocalMinOn_of_tangentCone [FiniteDimensional ℝ E] {f : E → ℝ} {C : Set E} {x : E}
+theorem isStrictLocalMinOn_of_posTangentCone [FiniteDimensional ℝ E] {f : E → ℝ} {C : Set E} {x : E}
     (hf : ContDiffAt ℝ 2 f x) (hfo : ∀ᶠ y in 𝓝[C] x, 0 ≤ fderiv ℝ f x (y - x))
-    (hso : ∀ d ∈ tangentConeAt ℝ C x, d ≠ 0 → fderiv ℝ f x d = 0 →
+    (hso : ∀ d ∈ posTangentConeAt C x, d ≠ 0 → fderiv ℝ f x d = 0 →
       0 < iteratedFDeriv ℝ 2 f x (fun _ => d)) :
     IsStrictLocalMinOn f C x := by
   by_contra hcon
@@ -119,9 +119,11 @@ theorem isStrictLocalMinOn_of_tangentCone [FiniteDimensional ℝ E] {f : E → �
   have hfoN : ∀ᶠ n in atTop, 0 ≤ fderiv ℝ f x (y n - x) :=
     (tendsto_nhdsWithin_iff.2 ⟨hylim, Eventually.of_forall fun n => (hy n).1⟩).eventually hfo
   -- the limit direction is tangent
-  have htan : z ∈ tangentConeAt ℝ C x :=
-    mem_tangentConeAt_of_seq atTop (fun n => ‖y n - x‖⁻¹) (fun n => y n - x) hw
-      (Eventually.of_forall fun n => by simpa using (hy n).1) hyz
+  have htan : z ∈ posTangentConeAt C x := by
+    apply mem_tangentConeAt_of_seq atTop (fun n => Real.toNNReal ‖y n - x‖⁻¹)
+      (fun n => y n - x) hw (Eventually.of_forall fun n => by simpa using (hy n).1)
+    exact hyz.congr fun n => by
+      rw [NNReal.smul_def, Real.coe_toNNReal _ (inv_nonneg.2 (norm_nonneg _))]
   -- first order: `∇f(x)[z] = 0`
   have hfd : HasFDerivAt f (fderiv ℝ f x) x :=
     (hf.differentiableAt (by norm_num)).hasFDerivAt
@@ -145,6 +147,14 @@ theorem isStrictLocalMinOn_of_tangentCone [FiniteDimensional ℝ E] {f : E → �
     refine div_nonpos_of_nonpos_of_nonneg ?_ (sq_nonneg _)
     linarith [(hy n).2.2]
   linarith [hso z htan hz0 hz1]
+
+/-- Second-order sufficiency expressed using the real tangent cone. -/
+theorem isStrictLocalMinOn_of_tangentCone [FiniteDimensional ℝ E] {f : E → ℝ} {C : Set E} {x : E}
+    (hf : ContDiffAt ℝ 2 f x) (hfo : ∀ᶠ y in 𝓝[C] x, 0 ≤ fderiv ℝ f x (y - x))
+    (hso : ∀ d ∈ tangentConeAt ℝ C x, d ≠ 0 → fderiv ℝ f x d = 0 →
+      0 < iteratedFDeriv ℝ 2 f x (fun _ => d)) :
+    IsStrictLocalMinOn f C x :=
+  isStrictLocalMinOn_of_posTangentCone hf hfo fun d hd ↦ hso d (tangentConeAt_mono_field hd)
 
 /-- **Feasible directions do not give a sufficient condition** (cf. [cartis2022evaluation],
 Theorem 1.1.2). On `ℝ × ℝ`, `C = {p | p.1² ≤ p.2}` is closed and convex, and `f p = p.2 - 2 p.1²`

@@ -137,3 +137,7 @@ id = "innerLagrangian_apply_eq_lagrangian"
 
 [[node]]
 id = "innerLagrangian_apply_eq_augmented"
+
+[[node]]
+id = "exists_kkt_of_linearized_feasible_directions"
+source = "Conn–Gould–Toint, Theorem 3.2.4"

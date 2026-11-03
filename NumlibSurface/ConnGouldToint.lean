@@ -32,6 +32,12 @@ definitions use the successor error to the limit, correcting the printed success
 Theorem 3.3.2 includes the Kantorovich ball condition. A small correction can otherwise
 take the first step outside the domain.
 The Clarke composite rule in Corollary 3.2.13 uses the outer support bound.
+Theorem 3.2.8 uses nonempty compact feasible fibers and gives continuity of
+the minimum value and upper hemicontinuity of the optimizer correspondence.
+Separate examples show why the printed continuity claims need these changes.
+Theorem 3.2.15 uses local Lipschitz outer functions and a strict Clarke
+descent direction for an active constraint. A boundary example shows why
+the printed outer-domain conditions are insufficient.
 A counterexample disproves equality with the derivative of the composite in general.
 
 

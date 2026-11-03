@@ -1,11 +1,16 @@
-import Numlib.Optimization.Optimality.Unconstrained
-import Numlib.Optimization.Optimality.Clarke
-import Numlib.Optimization.Descent
-import Numlib.Analysis.Convex.Subdifferential.Defs
-import Numlib.Analysis.Convex.LinearInequalities
-import Mathlib.Analysis.Calculus.Gradient.Basic
 import Mathlib.Analysis.Calculus.Deriv.Slope
+import Mathlib.Analysis.Calculus.Gradient.Basic
+import Mathlib.Analysis.Convex.Join
+import Mathlib.Analysis.Convex.SpecificFunctions.Pow
 import Mathlib.Analysis.InnerProductSpace.Adjoint
+import Mathlib.Topology.Semicontinuity.Hemicontinuity
+import Numlib.Analysis.Convex.LinearInequalities
+import Numlib.Analysis.Convex.Subdifferential.Calculus
+import Numlib.Optimization.Constrained.SecondOrder
+import Numlib.Optimization.Descent
+import Numlib.Optimization.Optimality.Clarke
+import Numlib.Optimization.Optimality.ConvexSet
+import Numlib.Optimization.Optimality.Unconstrained
 
 /-! # Optimality conditions
 
@@ -371,5 +376,619 @@ theorem clarke_composite_equality_counterexample :
     exact (le_div_iff₀ ht).2 le_rfl
 
 end ConvexNonsmooth
+
+
+/-- Theorem 3.2.4 under the tangent inclusion form of AO.1.
+The inequality multipliers are nonnegative for constraints written `cᵢ ≥ 0`. -/
+theorem theorem_3_2_4 [FiniteDimensional ℝ E] {ι κ : Type*} [Fintype ι] [Fintype κ]
+    {f : E → ℝ} {ce : ι → E → ℝ} {ci : κ → E → ℝ} {x : E}
+    (hf : DifferentiableAt ℝ f x)
+    (hx : x ∈ Constrained.feasible ce (fun i y ↦ -ci i y))
+    (hQ : ∀ d : E, (∀ i, fderiv ℝ (ce i) x d = 0) →
+      (∀ i, ci i x = 0 → 0 ≤ fderiv ℝ (ci i) x d) →
+      d ∈ posTangentConeAt (Constrained.feasible ce (fun i y ↦ -ci i y)) x)
+    (hmin : IsLocalMinOn f (Constrained.feasible ce (fun i y ↦ -ci i y)) x) :
+    ∃ (l : ι → ℝ) (μ : κ → ℝ),
+      fderiv ℝ f x = (∑ i, l i • fderiv ℝ (ce i) x) + ∑ i, μ i • fderiv ℝ (ci i) x ∧
+      (∀ i, ce i x = 0) ∧ (∀ i, 0 ≤ ci i x ∧ 0 ≤ μ i ∧ ci i x * μ i = 0) := by
+  obtain ⟨l, μ, h⟩ := Constrained.exists_kkt_of_linearized_feasible_directions
+    (f' := fderiv ℝ f) (h' := fun i ↦ fderiv ℝ (ce i)) (g' := fun i y ↦ -fderiv ℝ (ci i) y)
+    hx fun d hd₁ hd₂ ↦ hmin.hasFDerivWithinAt_nonneg hf.hasFDerivAt.hasFDerivWithinAt
+      (hQ d hd₁ fun i hi ↦ by simpa using hd₂ i (by simp [Constrained.activeSet, hi]))
+  refine ⟨-l, μ, ?_, h.feasible_eq, fun i ↦ ⟨by simpa using h.feasible_ineq i, h.nonneg i, ?_⟩⟩
+  · have hs := h.stationary
+    simp only [smul_neg, Finset.sum_neg_distrib] at hs
+    simp only [Pi.neg_apply, neg_smul, Finset.sum_neg_distrib]
+    apply sub_eq_zero.mp
+    calc
+      _ = fderiv ℝ f x + (∑ i, l i • fderiv ℝ (ce i) x) -
+          ∑ i, μ i • fderiv ℝ (ci i) x := by abel
+      _ = 0 := by simpa [sub_eq_add_neg] using hs
+  · have hp := h.complementary i
+    simpa [mul_comm] using hp
+
+section SmoothSecondOrder
+
+open Constrained
+
+variable {ι κ : Type*} [Fintype ι] [Fintype κ] [FiniteDimensional ℝ E]
+
+/-- Theorem 3.2.5 under LICQ, which supplies both constraint qualifications.
+The inequalities are written as `g ≤ 0`, so the inequality part of the
+Lagrangian is added. Negating the textbook's constraints yields this convention. -/
+theorem theorem_3_2_5 {f : E → ℝ} {h : ι → E → ℝ} {g : κ → E → ℝ} {x : E}
+    (hf : ContDiffAt ℝ 2 f x) (hh : ∀ i, ContDiffAt ℝ 2 (h i) x)
+    (hg : ∀ j, ContDiffAt ℝ 2 (g j) x)
+    (hreg : IsRegularPointIneq h (fun i ↦ fderiv ℝ (h i)) g (fun j ↦ fderiv ℝ (g j)) x)
+    (hmin : IsLocalMinOn f (feasible h g) x) :
+    ∃ (l : ι → ℝ) (μ : κ → ℝ),
+      IsKKTPoint (fderiv ℝ f) h (fun i ↦ fderiv ℝ (h i)) g (fun j ↦ fderiv ℝ (g j)) x l μ ∧
+      ∀ d ∈ criticalCone (fun i ↦ fderiv ℝ (h i)) g (fun j ↦ fderiv ℝ (g j)) x μ,
+        0 ≤ iteratedFDeriv ℝ 2 (kktLagrangian f h g l μ) x (fun _ ↦ d) :=
+  secondOrder_necessary_ineq hreg hmin hf hh hg
+    (fun i ↦ ((hh i).differentiableAt (by norm_num)).hasFDerivAt)
+    (fun j ↦ ((hg j).differentiableAt (by norm_num)).hasFDerivAt)
+
+/-- Theorem 3.2.6. KKT and positive Lagrangian curvature on the nonzero critical
+directions suffice for a strict constrained local minimum. -/
+theorem theorem_3_2_6 {f : E → ℝ} {h : ι → E → ℝ} {g : κ → E → ℝ} {x : E}
+    {l : ι → ℝ} {μ : κ → ℝ}
+    (hf : ContDiffAt ℝ 2 f x) (hh : ∀ i, ContDiffAt ℝ 2 (h i) x)
+    (hg : ∀ j, ContDiffAt ℝ 2 (g j) x)
+    (hkkt : IsKKTPoint (fderiv ℝ f) h (fun i ↦ fderiv ℝ (h i)) g (fun j ↦ fderiv ℝ (g j)) x l μ)
+    (hpos : ∀ d ∈ criticalCone (fun i ↦ fderiv ℝ (h i)) g (fun j ↦ fderiv ℝ (g j)) x μ,
+      d ≠ 0 → 0 < iteratedFDeriv ℝ 2 (kktLagrangian f h g l μ) x (fun _ ↦ d)) :
+    Optimization.IsStrictLocalMinOn f (feasible h g) x :=
+  isStrictLocalMinOn_of_secondOrder_sufficient hkkt hf hh hg
+    (hf.differentiableAt (by norm_num)).hasFDerivAt
+    (fun i ↦ ((hh i).differentiableAt (by norm_num)).hasFDerivAt)
+    (fun j ↦ ((hg j).differentiableAt (by norm_num)).hasFDerivAt) hpos
+
+end SmoothSecondOrder
+
+section ParametricMinimum
+
+variable {X P : Type*} [TopologicalSpace X] [TopologicalSpace P]
+
+private theorem eventually_feasible_prod_subset {C : P → Set X} {p : P}
+    (hC : IsCompact (C p)) (hU : UpperHemicontinuousAt C p)
+    {S : Set (X × P)} (hS : IsOpen S) (hmem : ∀ x ∈ C p, (x, p) ∈ S) :
+    ∀ᶠ q in 𝓝 p, ∀ x ∈ C q, (x, q) ∈ S := by
+  have hprod : S ∈ (𝓝ˢ (C p)) ×ˢ 𝓝 p := hC.mem_nhdsSet_prod_of_forall fun x hx ↦ by
+    rw [← nhds_prod_eq]
+    exact hS.mem_nhds (hmem x hx)
+  obtain ⟨U, hUn, V, hV, hsub⟩ := Filter.mem_prod_iff.mp hprod
+  obtain ⟨U', hU'o, hCU', hU'U⟩ := mem_nhdsSet_iff_exists.mp hUn
+  filter_upwards [hU.forall_isOpen U' hU'o hCU', hV] with q hq hqV
+  exact fun x hx ↦ hsub ⟨hU'U (hq hx), hqV⟩
+
+/-- Theorem 3.2.8 with compact, nonempty feasible fibers. The minimum value is continuous,
+and the minimizer correspondence is upper hemicontinuous. Lower hemicontinuity can
+fail even for linear objectives on a fixed compact convex feasible set. -/
+theorem theorem_3_2_8 {C : P → Set X} {f : X × P → ℝ}
+    (hC : ∀ p, IsCompact (C p)) (hne : ∀ p, (C p).Nonempty)
+    (hupper : UpperHemicontinuous C) (hlower : LowerHemicontinuous C) (hf : Continuous f) :
+    let value := fun p ↦ sInf ((fun x ↦ f (x, p)) '' C p)
+    let sol := fun p ↦ {x ∈ C p | f (x, p) = value p}
+    Continuous value ∧ UpperHemicontinuous sol ∧ ∀ p, (sol p).Nonempty := by
+  let value (p : P) := sInf ((fun x ↦ f (x, p)) '' C p)
+  let sol (p : P) := {x ∈ C p | f (x, p) = value p}
+  have hmin (p : P) : ∃ x ∈ C p, f (x, p) = value p ∧ ∀ y ∈ C p, f (x, p) ≤ f (y, p) := by
+    obtain ⟨x, hx, hm⟩ := (hC p).exists_isMinOn (hne p)
+      (hf.comp (continuous_id.prodMk continuous_const)).continuousOn
+    refine ⟨x, hx, ?_, fun y hy ↦ hm hy⟩
+    exact (show IsLeast ((fun y ↦ f (y, p)) '' C p) (f (x, p)) from
+      ⟨mem_image_of_mem _ hx, by rintro _ ⟨y, hy, rfl⟩; exact hm hy⟩).csInf_eq.symm
+  have hle (p : P) (x : X) (hx : x ∈ C p) : value p ≤ f (x, p) := by
+    obtain ⟨z, -, hz, h⟩ := hmin p
+    rw [← hz]
+    exact h x hx
+  have hvalue : Continuous value := by
+    rw [continuous_iff_continuousAt]
+    intro p
+    apply tendsto_order.mpr
+    constructor
+    · intro b hb
+      have h := eventually_feasible_prod_subset (hC p) (upperHemicontinuous_iff.mp hupper p)
+        (S := {z | b < f z}) (isOpen_lt continuous_const hf)
+        (fun x hx ↦ hb.trans_le (hle p x hx))
+      filter_upwards [h] with q hq
+      obtain ⟨x, hx, hv, -⟩ := hmin q
+      exact hv ▸ hq x hx
+    · intro b hb
+      obtain ⟨x, hx, hv, -⟩ := hmin p
+      have hp : (x, p) ∈ {z | f z < b} := by
+        change f (x, p) < b
+        rwa [hv]
+      have hopen : IsOpen {z | f z < b} := isOpen_lt hf continuous_const
+      have hprod : {z | f z < b} ∈ 𝓝 x ×ˢ 𝓝 p := by
+        rw [← nhds_prod_eq]
+        exact hopen.mem_nhds hp
+      obtain ⟨U, hU, V, hV, hsub⟩ := Filter.mem_prod_iff.mp hprod
+      obtain ⟨W, hWU, hW, hxW⟩ := mem_nhds_iff.mp hU
+      have hhit : {q | (C q ∩ W).Nonempty} ∈ 𝓝 p :=
+        ((lowerHemicontinuous_iff_isOpen_inter_nonempty.mp hlower) W hW).mem_nhds
+          ⟨x, hx, hxW⟩
+      filter_upwards [hhit, hV] with q hq hqV
+      obtain ⟨y, hy, hyW⟩ := hq
+      exact (hle q y hy).trans_lt (hsub ⟨hWU hyW, hqV⟩)
+  refine ⟨hvalue, upperHemicontinuous_iff_forall_isOpen.mpr ?_, ?_⟩
+  · intro p U hU hp
+    have hopen : IsOpen {z : X × P | z.1 ∈ U ∨ value z.2 < f z} :=
+      (hU.preimage continuous_fst).union (isOpen_lt (hvalue.comp continuous_snd) hf)
+    have hmem (x : X) (hx : x ∈ C p) : (x, p) ∈ {z : X × P | z.1 ∈ U ∨ value z.2 < f z} := by
+      by_cases he : f (x, p) = value p
+      · exact Or.inl (hp ⟨hx, he⟩)
+      · exact Or.inr (lt_of_le_of_ne (hle p x hx) (Ne.symm he))
+    filter_upwards [eventually_feasible_prod_subset (hC p)
+      (upperHemicontinuous_iff.mp hupper p) hopen hmem] with q hq
+    intro x hx
+    exact (hq x hx.1).resolve_right (by rw [hx.2]; exact lt_irrefl _)
+  · intro p
+    obtain ⟨x, hx, hv, -⟩ := hmin p
+    exact ⟨x, hx, hv⟩
+
+end ParametricMinimum
+
+/-- The optimizers of `p * x` on `[0,1]` fail lower hemicontinuity at `p = 0`,
+although the feasible set is fixed and the objective is jointly continuous and affine
+in the decision variable. -/
+theorem theorem_3_2_8_counterexample :
+    ¬ LowerHemicontinuous (fun p : ℝ ↦
+      {x ∈ Icc (0 : ℝ) 1 | IsMinOn (fun y ↦ p * y) (Icc (0 : ℝ) 1) x}) := by
+  intro h
+  have hopen := lowerHemicontinuous_iff_isOpen_inter_nonempty.mp h (Ioi (1 / 2 : ℝ)) isOpen_Ioi
+  have hmem : (0 : ℝ) ∈ {p : ℝ | ({x ∈ Icc (0 : ℝ) 1 |
+      IsMinOn (fun y ↦ p * y) (Icc (0 : ℝ) 1) x} ∩ Ioi (1 / 2 : ℝ)).Nonempty} := by
+    refine ⟨1, ⟨⟨by norm_num, le_rfl⟩, ?_⟩, by norm_num⟩
+    intro y _
+    simp
+  obtain ⟨ε, hε, hsub⟩ := Metric.mem_nhds_iff.mp (hopen.mem_nhds hmem)
+  have hεball : ε / 2 ∈ Metric.ball (0 : ℝ) ε := by
+    rw [Metric.mem_ball, Real.dist_eq, sub_zero, abs_of_pos (half_pos hε)]
+    linarith
+  obtain ⟨x, ⟨hx, hxmin⟩, hxopen⟩ := hsub hεball
+  have hle : (ε / 2) * x ≤ (ε / 2) * 0 := hxmin (show 0 ∈ Icc (0 : ℝ) 1 by norm_num)
+  have hpos : 0 < (ε / 2) * x := mul_pos (half_pos hε) (by linarith [show (1 / 2 : ℝ) < x from hxopen])
+  linarith
+
+
+private theorem strictLocalMinOn_of_minorant [FiniteDimensional ℝ E]
+    {F L : E → ℝ} {S : Set E} {x : E} (hL : ContDiffAt ℝ 2 L x)
+    (hstat : fderiv ℝ L x = 0) (hminor : ∀ y ∈ S, L y - L x ≤ F y - F x)
+    (hpos : ∀ d ∈ posTangentConeAt {y ∈ S | F y ≤ F x} x, d ≠ 0 →
+      0 < iteratedFDeriv ℝ 2 L x (fun _ ↦ d)) :
+    Optimization.IsStrictLocalMinOn F S x := by
+  have hm := Optimization.isStrictLocalMinOn_of_posTangentCone hL
+    (C := {y ∈ S | F y ≤ F x})
+    (Eventually.of_forall fun y ↦ by simp [hstat]) (fun d hd hn _ ↦ hpos d hd hn)
+  rw [Optimization.isStrictLocalMinOn_iff_eventually] at hm ⊢
+  filter_upwards [hm] with y hy hyS hyx
+  by_contra! hbad
+  exact (not_lt_of_ge (by linarith [hminor y hyS, hbad])) (hy ⟨hyS, hbad⟩ hyx)
+
+/-- Theorem 3.2.14. A stationary supporting Lagrangian with positive Hessian on
+the unit critical directions gives a strict local minimizer of the composite.
+Because the chosen subgradient gives zero first variation, the zero support
+condition in (3.2.24) is equivalent to all supporting first variations being
+nonpositive. Subgradients are taken relative to the domain `C`. -/
+theorem theorem_3_2_14 [FiniteDimensional ℝ E]
+    {W : Type*} [NormedAddCommGroup W] [InnerProductSpace ℝ W]
+    {f : E → ℝ} {c : E → W} {h : W → ℝ} {S : Set E} {C : Set W} {x : E}
+    (hx : x ∈ S) (hcS : MapsTo c S C) (hf : ContDiffAt ℝ 2 f x) (hc : ContDiffAt ℝ 2 c x) :
+    let K := {g : W | ∀ z ∈ C, h (c x) + ⟪z - c x, g⟫ ≤ h z}
+    let L := fun (g : W) (y : E) ↦ f y + ⟪c y, g⟫
+    ∀ gStar ∈ K, fderiv ℝ (L gStar) x = 0 →
+      (∀ d : E, ‖d‖ = 1 → (∀ g ∈ K, fderiv ℝ (L g) x d ≤ 0) →
+        0 < iteratedFDeriv ℝ 2 (L gStar) x (fun _ ↦ d)) →
+      x ∈ S ∧ Optimization.IsStrictLocalMinOn (fun y ↦ f y + h (c y)) S x := by
+  dsimp only
+  intro gStar hgStar hstat hpos
+  let F (y : E) := f y + h (c y)
+  let L (g : W) (y : E) := f y + ⟪c y, g⟫
+  let K := {g : W | ∀ z ∈ C, h (c x) + ⟪z - c x, g⟫ ≤ h z}
+  have hL (g : W) : ContDiffAt ℝ 2 (L g) x := hf.add (hc.inner ℝ contDiffAt_const)
+  have hminor (g : W) (hg : g ∈ K) (y : E) (hy : y ∈ S) : L g y - L g x ≤ F y - F x := by
+    have hp := hg (c y) (hcS hy)
+    rw [inner_sub_left] at hp
+    dsimp [L, F]
+    linarith
+  refine ⟨hx, strictLocalMinOn_of_minorant (F := F) (L := L gStar) (hL gStar) hstat
+    (hminor gStar hgStar) ?_⟩
+  intro d hd hd₀
+  have hdir (g : W) (hg : g ∈ K) : fderiv ℝ (L g) x d ≤ 0 := by
+    have hm : IsMaxOn (L g) {y ∈ S | F y ≤ F x} x := by
+      intro y hy
+      change y ∈ S ∧ F y ≤ F x at hy
+      change L g y ≤ L g x
+      linarith [hminor g hg y hy.1, hy.2]
+    exact hm.isLocalMaxOn.hasFDerivWithinAt_nonpos
+      ((hL g).differentiableAt (by norm_num)).hasFDerivAt.hasFDerivWithinAt hd
+  let a : ℝ := ‖d‖⁻¹
+  have ha : 0 < a := inv_pos.mpr (norm_pos_iff.mpr hd₀)
+  have hunit : ‖a • d‖ = 1 := by
+    rw [norm_smul, Real.norm_of_nonneg ha.le]
+    exact inv_mul_cancel₀ (norm_ne_zero_iff.mpr hd₀)
+  have hp := hpos (a • d) hunit (fun g hg ↦ by
+    rw [map_smul, smul_eq_mul]
+    exact mul_nonpos_of_nonneg_of_nonpos ha.le (hdir g hg))
+  let H := iteratedFDeriv ℝ 2 (L gStar) x
+  have hscale : H (fun _ ↦ a • d) = a ^ 2 * H (fun _ ↦ d) := by
+    change H.toMultilinearMap (fun _ ↦ a • d) = _
+    rw [H.toMultilinearMap.map_smul_univ (fun _ ↦ a) (fun _ ↦ d)]
+    simp
+  change 0 < H (fun _ ↦ a • d) at hp
+  rw [hscale] at hp
+  exact pos_of_mul_pos_right hp (sq_nonneg a)
+
+
+section SmoothNormalMultipliers
+
+variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
+  [CompleteSpace V] [FiniteDimensional ℝ V]
+
+open Constrained
+open scoped Pointwise
+
+/-- Theorem 3.2.11. The constraint qualification requires linearized feasible
+displacements to lie in the feasible tangent cone and the normal cone sum rule
+to be exact for the base set and the linearized constraints. Inequalities are
+written as `g ≤ 0`. -/
+theorem theorem_3_2_11 {ι κ : Type*} [Fintype ι] [Fintype κ]
+    {C : Set V} {f : V → ℝ} {h : ι → V → ℝ} {g : κ → V → ℝ} {x : V}
+    (hxC : x ∈ C) (hx : x ∈ feasible h g) (hf : DifferentiableAt ℝ f x)
+    (hmin : IsLocalMinOn f (C ∩ feasible h g) x) :
+    let Q := {z : V | (∀ i, fderiv ℝ (h i) x (z - x) = 0) ∧
+      ∀ j ∈ activeSet g x, fderiv ℝ (g j) x (z - x) ≤ 0}
+    (∀ z ∈ C ∩ Q, z - x ∈ posTangentConeAt (C ∩ feasible h g) x) →
+    IsExactSum (innerₗ V) (indicatorFn C) (indicatorFn Q) →
+    ∃ (l : ι → ℝ) (μ : κ → ℝ), (∀ i, h i x = 0) ∧
+      (∀ j, g j x ≤ 0 ∧ 0 ≤ μ j ∧ μ j * g j x = 0) ∧
+      -gradient f x - (∑ i, l i • gradient (h i) x) - (∑ j, μ j • gradient (g j) x) ∈
+        normalCone (innerₗ V) C x := by
+  classical
+  intro Q hQ hsum
+  have hxQ : x ∈ Q := by simp [Q]
+  have hn : -gradient f x ∈ normalCone (innerₗ V) (C ∩ Q) x := by
+    intro z hz
+    have hp := hmin.hasFDerivWithinAt_nonneg hf.hasFDerivAt.hasFDerivWithinAt (hQ z hz)
+    simpa [innerₗ_apply_apply] using hp
+  rw [hsum.normalCone_inter hxC hxQ] at hn
+  obtain ⟨n, hn, w, hw, hnw⟩ := hn
+  let A : (ι ⊕ ι) ⊕ activeSet g x → V :=
+    Sum.elim (Sum.elim (fun i ↦ gradient (h i) x) (fun i ↦ -gradient (h i) x))
+      (fun j ↦ gradient (g j) x)
+  have hlin : ∀ d : V, (∀ i, innerₗ V d (A i) ≤ 0) → innerₗ V d w ≤ 0 := by
+    intro d hd
+    have hh (i : ι) : fderiv ℝ (h i) x d = 0 := by
+      refine le_antisymm ?_ ?_
+      · simpa [A, innerₗ_apply_apply] using hd (.inl (.inl i))
+      · simpa [A, innerₗ_apply_apply] using hd (.inl (.inr i))
+    have hg (j : κ) (hj : j ∈ activeSet g x) : fderiv ℝ (g j) x d ≤ 0 := by
+      simpa [A, innerₗ_apply_apply] using hd (.inr ⟨j, hj⟩)
+    have hz : x + d ∈ Q := by simpa [Q] using And.intro hh hg
+    simpa using hw (x + d) hz
+  obtain ⟨a, ha, hwa⟩ := (ConvexAnalysis.farkas (B := innerₗ V) A w).mp hlin
+  let l (i : ι) := a (.inl (.inl i)) - a (.inl (.inr i))
+  let μ := Function.extend (Subtype.val : activeSet g x → κ) (fun j ↦ a (.inr j)) 0
+  have hμactive (j : κ) (hj : j ∈ activeSet g x) : μ j = a (.inr ⟨j, hj⟩) :=
+    Subtype.val_injective.extend_apply _ _ ⟨j, hj⟩
+  have hμinactive (j : κ) (hj : j ∉ activeSet g x) : μ j = 0 :=
+    Function.extend_apply' _ _ _ (by rintro ⟨⟨j', hj'⟩, rfl⟩; exact hj hj')
+  have hw' : (∑ i, l i • gradient (h i) x) + (∑ j, μ j • gradient (g j) x) = w := by
+    rw [show (∑ j, μ j • gradient (g j) x) = ∑ j : activeSet g x,
+      a (.inr j) • gradient (g j) x from sum_extend_activeSet_smul _ _]
+    rw [Fintype.sum_sum_type, Fintype.sum_sum_type] at hwa
+    simp only [l, sub_eq_add_neg, add_smul, neg_smul, Finset.sum_add_distrib, Finset.sum_neg_distrib]
+    simpa [A, smul_neg, Finset.sum_neg_distrib] using hwa
+  refine ⟨l, μ, hx.1, fun j ↦ ⟨hx.2 j, ?_, ?_⟩, ?_⟩
+  · by_cases hj : j ∈ activeSet g x
+    · rw [hμactive j hj]
+      exact ha _
+    · rw [hμinactive j hj]
+  · by_cases hj : j ∈ activeSet g x
+    · rw [mem_activeSet.mp hj, mul_zero]
+    · rw [hμinactive j hj, zero_mul]
+  · have heq : -gradient f x - (∑ i, l i • gradient (h i) x) -
+        (∑ j, μ j • gradient (g j) x) = n := by
+      rw [← sub_add_eq_sub_sub, hw', ← hnw]
+      exact add_sub_cancel_right n w
+    simpa only [heq] using hn
+
+end SmoothNormalMultipliers
+
+/-- On the fixed feasible set `ℝ`, the minimum value of `(p * x - 1)^2`
+is discontinuous at `p = 0`. This gives a separate failure of Theorem 3.2.8
+when feasible sets are unbounded. -/
+theorem theorem_3_2_8_noncompact_value_counterexample :
+    ¬ Continuous (fun p : ℝ ↦ sInf (Set.range (fun x : ℝ ↦ (p * x - 1) ^ 2))) := by
+  let v (p : ℝ) := sInf (Set.range (fun x : ℝ ↦ (p * x - 1) ^ 2))
+  have hv₀ : v 0 = 1 := by simp [v]
+  have hv (p : ℝ) (hp : p ≠ 0) : v p = 0 := by
+    apply IsLeast.csInf_eq
+    refine ⟨⟨p⁻¹, by simp [hp]⟩, ?_⟩
+    rintro _ ⟨x, rfl⟩
+    exact sq_nonneg _
+  intro hc
+  have hnear := (hc.continuousAt (x := (0 : ℝ))).eventually
+    (Metric.ball_mem_nhds (v 0) (show (0 : ℝ) < 1 / 2 by norm_num))
+  change ∀ᶠ p in 𝓝 (0 : ℝ), v p ∈ Metric.ball (v 0) (1 / 2) at hnear
+  obtain ⟨ε, hε, hsub⟩ := Metric.mem_nhds_iff.mp hnear
+  have hb : ε / 2 ∈ Metric.ball (0 : ℝ) ε := by
+    rw [Metric.mem_ball, Real.dist_eq, sub_zero, abs_of_pos (half_pos hε)]
+    linarith
+  have hcontra := hsub hb
+  norm_num [hv₀, hv (ε / 2) (half_pos hε).ne', Metric.mem_ball, Real.dist_eq] at hcontra
+
+
+/-- Theorem 3.2.15 needs regularity of the outer objective at the composite point.
+The convex function `-√z` on `z ≥ 0` has no subgradient at zero, yet composing
+it with `x ↦ x⁴` and adding `2x²` gives `x²`. The constraint is strictly inactive
+everywhere. -/
+theorem theorem_3_2_15_boundary_counterexample :
+    let h := fun z : ℝ ↦ -Real.sqrt z
+    let c := fun x : ℝ ↦ x ^ 4
+    let f := fun x : ℝ ↦ 2 * x ^ 2
+    let t := fun _ : ℝ ↦ (-1 : ℝ)
+    let r := fun _ : ℝ ↦ (0 : ℝ)
+    ConvexOn ℝ (Ici 0) h ∧ ConvexOn ℝ univ t ∧ MapsTo c univ (Ici 0) ∧
+    ContDiff ℝ 1 f ∧ ContDiff ℝ 1 c ∧ ContDiff ℝ 1 r ∧ t (r 0) < 0 ∧
+    IsLocalMinOn (fun x ↦ f x + h (c x)) {x | t (r x) ≤ 0} 0 ∧
+    ¬ ∃ a : ℝ, ∀ z ≥ 0, h (c 0) + (z - c 0) * a ≤ h z := by
+  dsimp only
+  refine ⟨Real.strictConcaveOn_sqrt.concaveOn.neg, convexOn_const _ convex_univ,
+    fun x _ ↦ (by positivity : 0 ≤ x ^ 4), contDiff_const.mul (contDiff_id.pow 2),
+    contDiff_id.pow 4, contDiff_const, by norm_num, ?_, ?_⟩
+  · apply IsMinOn.isLocalMinOn
+    intro x _
+    have hsq : Real.sqrt (x ^ 4) = x ^ 2 := by
+      rw [show x ^ 4 = (x ^ 2) ^ 2 by ring, Real.sqrt_sq (sq_nonneg x)]
+    change 2 * (0 : ℝ) ^ 2 + -Real.sqrt (0 ^ 4) ≤ 2 * x ^ 2 + -Real.sqrt (x ^ 4)
+    rw [hsq]
+    norm_num
+    nlinarith [sq_nonneg x]
+  · rintro ⟨a, ha⟩
+    let ε : ℝ := (|a| + 2)⁻¹
+    have hε : 0 < ε := inv_pos.mpr (by positivity)
+    have heq : (|a| + 2) * ε = 1 := mul_inv_cancel₀ (by positivity)
+    have h := ha (ε ^ 2) (sq_nonneg ε)
+    simp only [zero_pow (by decide : (4 : ℕ) ≠ 0), Real.sqrt_zero, neg_zero, sub_zero, zero_add,
+      Real.sqrt_sq hε.le] at h
+    have h' : ε * a ≤ -1 := by
+      apply (mul_le_mul_iff_right₀ hε).mp
+      calc
+        ε * (ε * a) = ε ^ 2 * a := by ring
+        _ ≤ -ε := h
+        _ = ε * -1 := by ring
+    have hl := mul_le_mul_of_nonneg_right (neg_abs_le a) hε.le
+    nlinarith [hl]
+
+
+section CompositeKKT
+
+variable {V W Z : Type*}
+  [NormedAddCommGroup V] [InnerProductSpace ℝ V] [CompleteSpace V]
+  [NormedAddCommGroup W] [InnerProductSpace ℝ W] [FiniteDimensional ℝ W]
+  [NormedAddCommGroup Z] [InnerProductSpace ℝ Z] [FiniteDimensional ℝ Z]
+
+open Optimization
+
+omit [CompleteSpace V] [FiniteDimensional ℝ W] in
+private theorem eventually_composite_ray_quotient_lt
+    {f : V → ℝ} {c : V → W} {h : W → ℝ} {x d : V} {b : ℝ}
+    (hf : DifferentiableAt ℝ f x) (hc : DifferentiableAt ℝ c x)
+    {U : Set W} {K : ℝ≥0} (hU : U ∈ 𝓝 (c x)) (hK : LipschitzOnWith K h U)
+    (hb : fderiv ℝ f x d + clarkeDerivative h (c x) (fderiv ℝ c x d) < b) :
+    ∀ᶠ s in 𝓝[>] (0 : ℝ),
+      ((f (x + s • d) + h (c (x + s • d))) - (f x + h (c x))) / s < b := by
+  let p (s : ℝ) := x + s • d
+  let v := fderiv ℝ c x d
+  let A := fderiv ℝ f x d
+  let B := clarkeDerivative h (c x) v
+  let ε := (b - (A + B)) / 3
+  have hε : 0 < ε := by dsimp [ε, A, B, v]; linarith
+  have hp : HasDerivAt p d 0 := by
+    simpa [p] using ((hasDerivAt_id (0 : ℝ)).smul_const d).const_add x
+  have hp₀ : p 0 = x := by simp [p]
+  have hpn : Tendsto p (𝓝[>] (0 : ℝ)) (𝓝 x) := by
+    rw [← hp₀]
+    exact hp.continuousAt.tendsto.mono_left nhdsWithin_le_nhds
+  have hfn : Tendsto (fun s : ℝ ↦ (f (p s) - f x) / s) (𝓝[>] 0) (𝓝 A) := by
+    have h : HasFDerivAt f (fderiv ℝ f x) (p 0) := hp₀ ▸ hf.hasFDerivAt
+    simpa [hp₀, Function.comp_def, A, smul_eq_mul, div_eq_mul_inv, mul_comm] using
+      (h.comp_hasDerivAt 0 hp).tendsto_slope_zero_right
+  have hcn : Tendsto (fun s : ℝ ↦ s⁻¹ • (c (p s) - c x)) (𝓝[>] 0) (𝓝 v) := by
+    have h : HasFDerivAt c (fderiv ℝ c x) (p 0) := hp₀ ▸ hc.hasFDerivAt
+    simpa [hp₀, Function.comp_def, v] using (h.comp_hasDerivAt 0 hp).tendsto_slope_zero_right
+  have he : Tendsto (fun s : ℝ ↦ (K : ℝ) * ‖s⁻¹ • (c (p s) - c x) - v‖)
+      (𝓝[>] 0) (𝓝 0) := by
+    simpa using ((hcn.sub (tendsto_const_nhds (x := v))).norm.const_mul (K : ℝ))
+  have hlin : Tendsto (fun s : ℝ ↦ c x + s • v) (𝓝[>] (0 : ℝ)) (𝓝 (c x)) := by
+    have ht : Tendsto (fun s : ℝ ↦ s) (𝓝[>] 0) (𝓝 0) :=
+      tendsto_id.mono_right nhdsWithin_le_nhds
+    simpa using (tendsto_const_nhds (x := c x)).add (ht.smul (tendsto_const_nhds (x := v)))
+  have hbase := eventually_base_quotient_lt_of_clarkeDerivative_lt hU hK
+    (show B < B + ε by linarith)
+  filter_upwards [hfn.eventually_lt_const (show A < A + ε by linarith),
+    he.eventually_lt_const hε, hbase, (hc.continuousAt.tendsto.comp hpn).eventually hU,
+    hlin.eventually hU, self_mem_nhdsWithin] with s hsF hsE hsH hsC hsL hs
+  change 0 < s at hs
+  have hnorm : ‖s⁻¹ • (c (p s) - c x) - v‖ = ‖c (p s) - (c x + s • v)‖ / s := by
+    have heq : s⁻¹ • (c (p s) - c x) - v = s⁻¹ • (c (p s) - (c x + s • v)) := by
+      rw [show c (p s) - (c x + s • v) = (c (p s) - c x) - s • v by abel]
+      simp only [smul_sub, inv_smul_smul₀ hs.ne']
+    rw [heq, norm_smul, Real.norm_of_nonneg (inv_nonneg.2 hs.le), div_eq_mul_inv, mul_comm]
+  have hLip := hK.dist_le_mul _ hsC _ hsL
+  rw [Real.dist_eq, dist_eq_norm] at hLip
+  have herror : (h (c (p s)) - h (c x + s • v)) / s ≤
+      (K : ℝ) * ‖s⁻¹ • (c (p s) - c x) - v‖ := by
+    rw [hnorm, ← mul_div_assoc]
+    exact div_le_div_of_nonneg_right ((le_abs_self _).trans hLip) hs.le
+  change ((f (p s) + h (c (p s))) - (f x + h (c x))) / s < b
+  have hsplit : ((f (p s) + h (c (p s))) - (f x + h (c x))) / s =
+      (f (p s) - f x) / s + (h (c (p s)) - h (c x + s • v)) / s +
+        (h (c x + s • v) - h (c x)) / s := by ring
+  rw [hsplit]
+  dsimp only [ε] at hsF hsE hsH
+  linarith
+
+omit [CompleteSpace V] in
+private theorem isCompact_convexJoin_real {P Q : Set V} (hP : IsCompact P) (hQ : IsCompact Q) :
+    IsCompact (convexJoin ℝ P Q) := by
+  let T (z : ℝ × V × V) := z.1 • z.2.1 + (1 - z.1) • z.2.2
+  have hT : Continuous T := (continuous_fst.smul (continuous_fst.comp continuous_snd)).add
+    ((continuous_const.sub continuous_fst).smul (continuous_snd.comp continuous_snd))
+  have heq : convexJoin ℝ P Q = T '' (Icc (0 : ℝ) 1 ×ˢ (P ×ˢ Q)) := by
+    ext z
+    rw [mem_convexJoin]
+    constructor
+    · rintro ⟨p, hp, q, hq, a, b, ha, hb, hab, rfl⟩
+      exact ⟨(a, p, q), ⟨⟨ha, by linarith⟩, hp, hq⟩, by
+        change a • p + (1 - a) • q = a • p + b • q
+        rw [show 1 - a = b by linarith]⟩
+    · rintro ⟨⟨a, p, q⟩, ⟨ha, hp, hq⟩, rfl⟩
+      exact ⟨p, hp, q, hq, a, 1 - a, ha.1, sub_nonneg.mpr ha.2, by ring, rfl⟩
+  rw [heq]
+  exact (isCompact_Icc.prod (hP.prod hQ)).image hT
+
+/-- Theorem 3.2.15 with locally Lipschitz outer functions and an explicit Clarke
+constraint qualification. At an active constraint a direction must strictly
+decrease its linearized Clarke derivative. The multipliers use Clarke
+subgradients, so the statement also applies to locally Lipschitz nonconvex outer functions. -/
+theorem theorem_3_2_15_clarke {f : V → ℝ} {c : V → W} {r : V → Z} {h : W → ℝ}
+    {t : Z → ℝ} {x : V} (hf : DifferentiableAt ℝ f x) (hc : DifferentiableAt ℝ c x)
+    (hr : DifferentiableAt ℝ r x) {U : Set W} {T : Set Z} {K M : ℝ≥0}
+    (hU : U ∈ 𝓝 (c x)) (hK : LipschitzOnWith K h U)
+    (hT : T ∈ 𝓝 (r x)) (hM : LipschitzOnWith M t T)
+    (hfeas : t (r x) ≤ 0)
+    (hQ : t (r x) = 0 → ∃ d, clarkeDerivative t (r x) (fderiv ℝ r x d) < 0)
+    (hmin : IsLocalMinOn (fun z ↦ f z + h (c z)) {z | t (r z) ≤ 0} x) :
+    ∃ y ∈ clarkeSubgradient h (c x), ∃ u ∈ clarkeSubgradient t (r x), ∃ μ : ℝ,
+      0 ≤ μ ∧ t (r x) * μ = 0 ∧
+      gradient f x + (fderiv ℝ c x).adjoint y + μ • (fderiv ℝ r x).adjoint u = 0 := by
+  let H := clarkeSubgradient h (c x)
+  let J := clarkeSubgradient t (r x)
+  let A := (fderiv ℝ c x).adjoint
+  let B := (fderiv ℝ r x).adjoint
+  have hsH := hasClarkeSupport_of_lipschitzOnWith hU hK
+  have hsJ := hasClarkeSupport_of_lipschitzOnWith hT hM
+  rcases hfeas.lt_or_eq with hinact | hact
+  · have hct : ContinuousAt (fun z ↦ t (r z)) x :=
+      (hM.continuousOn.continuousAt hT).comp hr.continuousAt
+    have hnear : ∀ᶠ z in 𝓝 x, z ∈ {z | t (r z) ≤ 0} :=
+      (hct.tendsto.eventually (Iio_mem_nhds hinact)).mono fun _ hz ↦ le_of_lt hz
+    have hm : IsLocalMin (fun z ↦ f z + h (c z)) x := by
+      change ∀ᶠ z in 𝓝[{z | t (r z) ≤ 0}] x,
+        f x + h (c x) ≤ f z + h (c z) at hmin
+      rw [eventually_nhdsWithin_iff] at hmin
+      filter_upwards [hmin, hnear] with z hz hz'
+      exact hz hz'
+    obtain ⟨y, hy, hzero⟩ := (corollary_3_2_13 hf hc hm hU hK).1
+    obtain ⟨u, hu⟩ := hsJ.nonempty
+    exact ⟨y, hy, u, hu, 0, le_rfl, by simp, by simpa using hzero⟩
+  · let P := (fun y ↦ gradient f x + A y) '' H
+    let Q := B '' J
+    have hP : IsCompact P := (isCompact_clarkeSubgradient hU hK).image
+      (continuous_const.add A.continuous)
+    have hQ' : IsCompact Q := (isCompact_clarkeSubgradient hT hM).image B.continuous
+    have hPc : Convex ℝ P := by
+      intro p hp q hq a b ha hb hab
+      obtain ⟨y, hy, rfl⟩ := hp
+      obtain ⟨z, hz, rfl⟩ := hq
+      refine ⟨a • y + b • z, convex_clarkeSubgradient h (c x) hy hz ha hb hab, ?_⟩
+      simp only [map_add, map_smul, smul_add]
+      have he : gradient f x = a • gradient f x + b • gradient f x := by
+        rw [← add_smul, hab, one_smul]
+      conv_lhs => rw [he]
+      abel
+    have hQc : Convex ℝ Q := (convex_clarkeSubgradient t (r x)).linear_image B.toLinearMap
+    have hjoin : convexHull ℝ (P ∪ Q) = convexJoin ℝ P Q :=
+      hPc.convexHull_union hQc (hsH.nonempty.image _) (hsJ.nonempty.image _)
+    have hmem : (0 : V) ∈ convexJoin ℝ P Q := by
+      rw [← (isCompact_convexJoin_real hP hQ').isClosed.closure_eq, ← hjoin]
+      apply (mem_closure_convexHull_iff_le_supportFn (B := innerₗ V) (P ∪ Q) 0).mpr
+      intro d
+      simp only [innerₗ_apply_apply, inner_zero_left]
+      by_contra! hneg
+      have hdot (v : V) (hv : v ∈ P ∪ Q) : ⟪v, d⟫ < 0 := by
+        have he : ((⟪v, d⟫ : ℝ) : EReal) < 0 :=
+          (le_supportFn (B := innerₗ V) hv d).trans_lt hneg
+        exact EReal.coe_lt_coe_iff.mp (by simpa using he)
+      have hmax :
+          fderiv ℝ f x d + clarkeDerivative h (c x) (fderiv ℝ c x d) < 0 := by
+        obtain ⟨y, hy, hymax⟩ := (isCompact_clarkeSubgradient hU hK).exists_isMaxOn
+          hsH.nonempty (continuous_id.inner continuous_const :
+            Continuous (fun z : W ↦ ⟪z, fderiv ℝ c x d⟫)).continuousOn
+        have hle := (supportFn_le_coe_iff (B := innerₗ W) (s := H)
+          (y := fderiv ℝ c x d)).2 (fun z hz ↦ hymax hz)
+        rw [hsH] at hle
+        have hv := hdot (gradient f x + A y) (Or.inl ⟨y, hy, rfl⟩)
+        rw [inner_add_left, inner_gradient_left, ContinuousLinearMap.adjoint_inner_left] at hv
+        exact (add_le_add_right (EReal.coe_le_coe_iff.mp hle) _).trans_lt hv
+      have hmaxT : clarkeDerivative t (r x) (fderiv ℝ r x d) < 0 := by
+        obtain ⟨u, hu, humax⟩ := (isCompact_clarkeSubgradient hT hM).exists_isMaxOn
+          hsJ.nonempty (continuous_id.inner continuous_const :
+            Continuous (fun z : Z ↦ ⟪z, fderiv ℝ r x d⟫)).continuousOn
+        have hle := (supportFn_le_coe_iff (B := innerₗ Z) (s := J)
+          (y := fderiv ℝ r x d)).2 (fun z hz ↦ humax hz)
+        rw [hsJ] at hle
+        have hv := hdot (B u) (Or.inr ⟨u, hu, rfl⟩)
+        rw [ContinuousLinearMap.adjoint_inner_left] at hv
+        exact (EReal.coe_le_coe_iff.mp hle).trans_lt hv
+      have hbad := eventually_composite_ray_quotient_lt hf hc hU hK hmax
+      have hfeas' := eventually_composite_ray_quotient_lt
+        (f := fun _ : V ↦ (0 : ℝ)) (d := d) (differentiableAt_const 0) hr hT hM
+        (b := 0) (by simpa using hmaxT)
+      have hray : Tendsto (fun s : ℝ ↦ x + s • d) (𝓝[>] (0 : ℝ))
+          (𝓝[{z | t (r z) ≤ 0}] x) := by
+        apply tendsto_nhdsWithin_iff.mpr
+        constructor
+        · have ht : Tendsto (fun s : ℝ ↦ s) (𝓝[>] 0) (𝓝 0) :=
+            tendsto_id.mono_right nhdsWithin_le_nhds
+          simpa using (tendsto_const_nhds (x := x)).add (ht.smul (tendsto_const_nhds (x := d)))
+        · filter_upwards [hfeas', self_mem_nhdsWithin] with s hfs hs
+          change 0 < s at hs
+          simpa only [zero_add, hact, sub_zero, zero_mul] using
+            ((div_lt_iff₀ hs).mp hfs).le
+      obtain ⟨s, hsbad, hsm, hs⟩ :=
+        (hbad.and ((hray.eventually hmin).and self_mem_nhdsWithin)).exists
+      exact (not_lt_of_ge (sub_nonneg.mpr hsm)) ((div_lt_iff₀ hs).mp hsbad |>.trans_eq (zero_mul _))
+    obtain ⟨p, ⟨y, hy, rfl⟩, q, ⟨u, hu, rfl⟩, a, b, ha, hb, hab, hzero⟩ :=
+      mem_convexJoin.mp hmem
+    have hap : 0 < a := by
+      by_contra! han
+      have ha0 : a = 0 := le_antisymm han ha
+      have hb1 : b = 1 := by linarith
+      have hq0 : B u = 0 := by simpa [ha0, hb1] using hzero
+      obtain ⟨d, hd⟩ := hQ hact
+      have hu' := hu (fderiv ℝ r x d)
+      rw [← ContinuousLinearMap.adjoint_inner_left, hq0, inner_zero_left] at hu'
+      linarith
+    refine ⟨y, hy, u, hu, b / a, div_nonneg hb hap.le, by rw [hact, zero_mul], ?_⟩
+    have hscaled := congrArg (fun z : V ↦ a⁻¹ • z) hzero
+    simpa [smul_add, smul_smul, inv_mul_cancel₀ hap.ne', div_eq_mul_inv, mul_comm a⁻¹ b] using hscaled
+
+/-- Theorem 3.2.15 for continuous convex outer functions on their full spaces,
+locally Lipschitz at the image points. An active constraint must admit a strict
+Clarke descent direction through the inner map. -/
+theorem theorem_3_2_15 {f : V → ℝ} {c : V → W} {r : V → Z} {h : W → ℝ}
+    {t : Z → ℝ} {x : V} (hf : DifferentiableAt ℝ f x) (hc : DifferentiableAt ℝ c x)
+    (hr : DifferentiableAt ℝ r x) (hh : ConvexOn ℝ univ h) (ht : ConvexOn ℝ univ t)
+    (hch : Continuous h) (hct : Continuous t) {U : Set W} {T : Set Z} {K M : ℝ≥0}
+    (hU : U ∈ 𝓝 (c x)) (hK : LipschitzOnWith K h U)
+    (hT : T ∈ 𝓝 (r x)) (hM : LipschitzOnWith M t T)
+    (hfeas : t (r x) ≤ 0)
+    (hQ : t (r x) = 0 → ∃ d, clarkeDerivative t (r x) (fderiv ℝ r x d) < 0)
+    (hmin : IsLocalMinOn (fun z ↦ f z + h (c z)) {z | t (r z) ≤ 0} x) :
+    ∃ y ∈ subdifferential (innerₗ W) (fun w ↦ (h w : EReal)) (c x),
+      ∃ u ∈ subdifferential (innerₗ Z) (fun z ↦ (t z : EReal)) (r x), ∃ μ : ℝ,
+        0 ≤ μ ∧ t (r x) * μ = 0 ∧
+        gradient f x + (fderiv ℝ c x).adjoint y + μ • (fderiv ℝ r x).adjoint u = 0 := by
+  obtain ⟨y, hy, u, hu, μ, hμ, hcomp, hstat⟩ :=
+    theorem_3_2_15_clarke hf hc hr hU hK hT hM hfeas hQ hmin
+  exact ⟨y, clarkeSubgradient_subset_subdifferential hh hch hU hK hy,
+    u, clarkeSubgradient_subset_subdifferential ht hct hT hM hu, μ, hμ, hcomp, hstat⟩
+
+end CompositeKKT
 
 end ConnGouldToint.Chapter03

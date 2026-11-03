@@ -663,28 +663,17 @@ theorem sum_extend_activeSet_smul {V : Type*} [AddCommMonoid V] [Module ℝ V] {
         zero_smul])]
   exact Finset.sum_congr rfl fun j _ => by rw [Subtype.val_injective.extend_apply]
 
-/-- [quarteroni2000numerical] Property 7.12, the Karush–Kuhn–Tucker necessary conditions under
-the linear independence constraint qualification ([nocedal2006numerical] Theorem 12.1): in finite
-dimension, if `x` is a regular local minimizer of `f` on the mixed constraints, `f` differentiable
-at `x`, the `h_i` and `g_j` strictly differentiable at `x` (as every `C¹` function is,
-`ContDiffAt.hasStrictFDerivAt`), then there are multipliers `(λ, μ)` making `x` a
-Karush–Kuhn–Tucker point; they are unique by `kkt_multipliers_unique`. Every `z` of the
-linearized cone lies in the positive tangent cone of the feasible set
-(`mem_posTangentConeAt_of_isRegularPointIneq`), so `f' x z ≥ 0` there
-(`IsLocalMinOn.hasFDerivWithinAt_nonneg`); Farkas' lemma (`ConvexAnalysis.farkas`, for the
-pairing of `E` with its dual, the coefficient vectors `h_i' x`, `-h_i' x` and the active
-`g_j' x`) then writes `-f' x` as a nonnegative combination of them. -/
-theorem exists_kkt_of_isLocalMinOn [FiniteDimensional ℝ E] {f : E → ℝ} {f' : E → E →L[ℝ] ℝ}
-    {h : ι → E → ℝ} {h' : ι → E → E →L[ℝ] ℝ} {g : κ → E → ℝ} {g' : κ → E → E →L[ℝ] ℝ} {x : E}
-    (hx : IsRegularPointIneq h h' g g' x) (hmin : IsLocalMinOn f (feasible h g) x)
-    (hf : HasFDerivAt f (f' x) x) (hh : ∀ i, HasStrictFDerivAt (h i) (h' i x) x)
-    (hg : ∀ j, HasStrictFDerivAt (g j) (g' j x) x) :
+/-- Farkas' lemma converts the first-order inequality on feasible linearized
+directions into KKT multipliers. This is independent of the constraint qualification
+used to establish that inequality. -/
+theorem exists_kkt_of_linearized_feasible_directions [FiniteDimensional ℝ E]
+    {f' : E → E →L[ℝ] ℝ} {h : ι → E → ℝ} {h' : ι → E → E →L[ℝ] ℝ}
+    {g : κ → E → ℝ} {g' : κ → E → E →L[ℝ] ℝ} {x : E}
+    (hx : x ∈ feasible h g)
+    (hfo : ∀ z, (∀ i, h' i x z = 0) → (∀ j ∈ activeSet g x, g' j x z ≤ 0) →
+      0 ≤ f' x z) :
     ∃ (l : ι → ℝ) (μ : κ → ℝ), IsKKTPoint f' h h' g g' x l μ := by
   classical
-  -- the first-order condition on the linearized cone
-  have hfo : ∀ z, (∀ i, h' i x z = 0) → (∀ j ∈ activeSet g x, g' j x z ≤ 0) → 0 ≤ f' x z :=
-    fun z hz1 hz2 => hmin.hasFDerivWithinAt_nonneg hf.hasFDerivWithinAt
-      (mem_posTangentConeAt_of_isRegularPointIneq hx hh hg hz1 hz2)
   -- Farkas' lemma for the generators `h_i'`, `-h_i'`, active `g_j'`
   set A : (ι ⊕ ι) ⊕ activeSet g x → StrongDual ℝ E :=
     Sum.elim (Sum.elim (fun i => h' i x) fun i => -h' i x) fun j => g' j x with hA
@@ -696,7 +685,7 @@ theorem exists_kkt_of_isLocalMinOn [FiniteDimensional ℝ E] {f : E → ℝ} {f'
     exact hfo z (fun i => le_antisymm (hz.1.1 i) (hz.1.2 i)) fun j hj => hz.2 ⟨j, hj⟩
   obtain ⟨lam, hlam, hsum⟩ := hfarkas
   refine ⟨fun i => lam (Sum.inl (Sum.inl i)) - lam (Sum.inl (Sum.inr i)),
-    Function.extend Subtype.val (fun j => lam (Sum.inr j)) 0, hx.1, hx.2.1, ?_, ?_, ?_⟩
+    Function.extend Subtype.val (fun j => lam (Sum.inr j)) 0, hx.1, hx.2, ?_, ?_, ?_⟩
   · rw [sum_extend_activeSet_smul]
     rw [Fintype.sum_sum_type, Fintype.sum_sum_type] at hsum
     simp only [hA, Sum.elim_inl, Sum.elim_inr, smul_neg] at hsum
@@ -715,6 +704,27 @@ theorem exists_kkt_of_isLocalMinOn [FiniteDimensional ℝ E] {f : E → ℝ} {f'
     · rw [mem_activeSet.1 hj, mul_zero]
     · rw [Function.extend_apply' _ _ _ (by rintro ⟨⟨j', hj'⟩, rfl⟩; exact hj hj'), Pi.zero_apply,
         zero_mul]
+
+/-- [quarteroni2000numerical] Property 7.12, the Karush–Kuhn–Tucker necessary conditions under
+the linear independence constraint qualification ([nocedal2006numerical] Theorem 12.1): in finite
+dimension, if `x` is a regular local minimizer of `f` on the mixed constraints, `f` differentiable
+at `x`, the `h_i` and `g_j` strictly differentiable at `x` (as every `C¹` function is,
+`ContDiffAt.hasStrictFDerivAt`), then there are multipliers `(λ, μ)` making `x` a
+Karush–Kuhn–Tucker point; they are unique by `kkt_multipliers_unique`. Every `z` of the
+linearized cone lies in the positive tangent cone of the feasible set
+(`mem_posTangentConeAt_of_isRegularPointIneq`), so `f' x z ≥ 0` there
+(`IsLocalMinOn.hasFDerivWithinAt_nonneg`); Farkas' lemma (`ConvexAnalysis.farkas`, for the
+pairing of `E` with its dual, the coefficient vectors `h_i' x`, `-h_i' x` and the active
+`g_j' x`) then writes `-f' x` as a nonnegative combination of them. -/
+theorem exists_kkt_of_isLocalMinOn [FiniteDimensional ℝ E] {f : E → ℝ} {f' : E → E →L[ℝ] ℝ}
+    {h : ι → E → ℝ} {h' : ι → E → E →L[ℝ] ℝ} {g : κ → E → ℝ} {g' : κ → E → E →L[ℝ] ℝ} {x : E}
+    (hx : IsRegularPointIneq h h' g g' x) (hmin : IsLocalMinOn f (feasible h g) x)
+    (hf : HasFDerivAt f (f' x) x) (hh : ∀ i, HasStrictFDerivAt (h i) (h' i x) x)
+    (hg : ∀ j, HasStrictFDerivAt (g j) (g' j x) x) :
+    ∃ (l : ι → ℝ) (μ : κ → ℝ), IsKKTPoint f' h h' g g' x l μ :=
+  exists_kkt_of_linearized_feasible_directions hx.mem_feasible fun _ hz₁ hz₂ ↦
+    hmin.hasFDerivWithinAt_nonneg hf.hasFDerivWithinAt
+      (mem_posTangentConeAt_of_isRegularPointIneq hx hh hg hz₁ hz₂)
 
 /-! ### Sufficiency for convex programs -/
 

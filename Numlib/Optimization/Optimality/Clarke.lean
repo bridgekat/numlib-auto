@@ -1,4 +1,4 @@
-import Numlib.Analysis.Convex.Duality.Support
+import Numlib.Analysis.Convex.Subdifferential.Defs
 import Numlib.Analysis.Convex.Duality.InnerPairing
 import Mathlib.Topology.Algebra.Order.LiminfLimsup
 import Mathlib.Tactic.FieldSimp
@@ -100,6 +100,17 @@ theorem le_clarkeDerivative_of_eventually_base_quotient_ge
     (ha : ∀ᶠ t in 𝓝[>] (0 : ℝ), a ≤ (f (x + t • d) - f x) / t) :
     a ≤ clarkeDerivative f x d :=
   le_clarkeDerivative_of_eventually_path_quotient_ge hU hL tendsto_const_nhds ha
+
+/-- A strict upper bound on the Clarke derivative bounds the fixed-base
+directional quotient for all sufficiently small positive steps. -/
+theorem eventually_base_quotient_lt_of_clarkeDerivative_lt
+    {f : E → ℝ} {x d : E} {U : Set E} {L : ℝ≥0} {b : ℝ}
+    (hU : U ∈ 𝓝 x) (hL : LipschitzOnWith L f U) (hb : clarkeDerivative f x d < b) :
+    ∀ᶠ t in 𝓝[>] (0 : ℝ), (f (x + t • d) - f x) / t < b := by
+  have hpath : Tendsto (fun t : ℝ ↦ (x, t)) (𝓝[>] (0 : ℝ)) (clarkeFilter x) :=
+    tendsto_const_nhds.prodMk tendsto_id
+  exact hpath.eventually (eventually_lt_of_limsup_lt hb
+    ⟨_, (eventually_abs_clarkeQuotient_le hU hL d).mono fun _ hp ↦ (abs_le.mp hp).2⟩)
 
 /-- The Clarke directional derivative of a constant is zero. -/
 theorem clarkeDerivative_const (a : ℝ) (x d : E) :
@@ -260,6 +271,42 @@ theorem clarkeDerivative_eq_of_hasStrictFDerivAt {f : E → ℝ} {x : E} {A : E 
 derivative in every direction. -/
 def clarkeSubgradient (f : E → ℝ) (x : E) : Set E :=
   {g | ∀ d : E, ⟪g, d⟫ ≤ clarkeDerivative f x d}
+
+/-- A Clarke subgradient of a continuous convex function is a supporting
+convex subgradient. The local Lipschitz hypothesis ensures the limsup is finite. -/
+theorem clarkeSubgradient_subset_subdifferential {f : E → ℝ} {x : E}
+    (hconv : ConvexOn ℝ Set.univ f) (hf : Continuous f)
+    {U : Set E} {L : ℝ≥0} (hU : U ∈ 𝓝 x) (hL : LipschitzOnWith L f U) :
+    clarkeSubgradient f x ⊆ subdifferential (innerₗ E) (fun z ↦ (f z : EReal)) x := by
+  intro g hg z
+  let d := z - x
+  let F := clarkeFilter x
+  have hsec (p : E × ℝ) (hp : 0 < p.2) (ht : p.2 ≤ 1) :
+      clarkeQuotient f d p ≤ f (p.1 + d) - f p.1 := by
+    have heq : (1 - p.2) • p.1 + p.2 • (p.1 + d) = p.1 + p.2 • d := by
+      rw [smul_add, ← add_assoc, ← add_smul, sub_add_cancel, one_smul]
+    have h := hconv.2 (Set.mem_univ p.1) (Set.mem_univ (p.1 + d))
+      (sub_nonneg.mpr ht) hp.le (sub_add_cancel 1 p.2)
+    rw [heq, smul_eq_mul, smul_eq_mul] at h
+    change (f (p.1 + p.2 • d) - f p.1) / p.2 ≤ _
+    apply (div_le_iff₀ hp).mpr
+    linarith
+  have hsecF : ∀ᶠ p in F, clarkeQuotient f d p ≤ f (p.1 + d) - f p.1 := by
+    have hs : Tendsto Prod.snd F (𝓝[>] (0 : ℝ)) := tendsto_snd
+    filter_upwards [hs.eventually (Ioo_mem_nhdsGT (zero_lt_one' ℝ))] with p hp
+    exact hsec p hp.1 hp.2.le
+  have hyl : Tendsto Prod.fst F (𝓝 x) := tendsto_fst
+  have hl : Tendsto (fun p : E × ℝ ↦ f (p.1 + d) - f p.1) F (𝓝 (f (x + d) - f x)) :=
+    ((hf.tendsto (x + d)).comp (hyl.add_const d)).sub ((hf.tendsto x).comp hyl)
+  have hlow : F.IsBoundedUnder (· ≥ ·) (clarkeQuotient f d) :=
+    ⟨_, (eventually_abs_clarkeQuotient_le hU hL d).mono fun _ hp ↦ (abs_le.mp hp).1⟩
+  have hlim := limsup_le_limsup hsecF hlow.isCoboundedUnder_le hl.isBoundedUnder_le
+  rw [hl.limsup_eq] at hlim
+  have hreal : ⟪z - x, g⟫ ≤ f z - f x := by
+    have h := (hg d).trans hlim
+    simpa [d, real_inner_comm g] using h
+  change (f x : EReal) + (⟪z - x, g⟫ : EReal) ≤ f z
+  exact_mod_cast (by linarith : f x + ⟪z - x, g⟫ ≤ f z)
 
 theorem clarkeSubgradient_eq_iInter (f : E → ℝ) (x : E) :
     clarkeSubgradient f x = ⋂ d : E, {g | ⟪g, d⟫ ≤ clarkeDerivative f x d} := by

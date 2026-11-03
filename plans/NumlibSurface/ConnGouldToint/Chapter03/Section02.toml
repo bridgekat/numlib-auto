@@ -55,3 +55,47 @@ source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.10, normal-co
 [[node]]
 id = "clarke_composite_equality_counterexample"
 source = "Conn, Gould and Toint, Trust-Region Methods, Corollary 3.2.13, equality counterexample"
+
+[[node]]
+id = "theorem_3_2_4"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.4"
+
+[[node]]
+id = "theorem_3_2_8"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.8"
+
+[[node]]
+id = "theorem_3_2_8_counterexample"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.8"
+
+[[node]]
+id = "theorem_3_2_14"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.14"
+
+[[node]]
+id = "theorem_3_2_5"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.5"
+
+[[node]]
+id = "theorem_3_2_6"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.6"
+
+[[node]]
+id = "theorem_3_2_11"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.11"
+
+[[node]]
+id = "theorem_3_2_8_noncompact_value_counterexample"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.8"
+
+[[node]]
+id = "theorem_3_2_15_boundary_counterexample"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.15"
+
+[[node]]
+id = "theorem_3_2_15"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.15"
+
+[[node]]
+id = "theorem_3_2_15_clarke"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.15"

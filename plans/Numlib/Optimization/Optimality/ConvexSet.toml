@@ -19,3 +19,7 @@ source = "Cartis–Gould–Toint, Theorem 1.1.2 (converse as printed is false)"
 [[node]]
 id = "IsLocalMinOn.fderiv_apply_nonneg_of_convex"
 source = "Cartis–Gould–Toint, Theorem 1.1.2, (1.1.6)"
+
+[[node]]
+id = "isStrictLocalMinOn_of_posTangentCone"
+source = "Conn–Gould–Toint, Theorems 3.2.6 and 3.2.14"
