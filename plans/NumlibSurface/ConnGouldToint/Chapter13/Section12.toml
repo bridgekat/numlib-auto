@@ -156,3 +156,15 @@ source = "Conn–Gould–Toint, (13.12.25)"
 
 [[node]]
 id = "scaledHessian_sub_eq"
+
+[[node]]
+id = "theorem_13_12_6"
+source = "Conn–Gould–Toint, Theorem 13.12.6, quantitative scaled-model curvature transfer to the active face"
+
+[[node]]
+id = "theorem_13_12_4"
+source = "Conn–Gould–Toint, Theorem 13.12.4, Coleman–Li run with the corrected Cauchy decrease"
+
+[[node]]
+id = "colemanLi_curvature_transfer"
+source = "Conn–Gould–Toint, (13.12.25) and Theorem 13.12.6, quantitative scaled Hessian comparison"

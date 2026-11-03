@@ -1,3 +1,4 @@
+import NumlibSurface.ConnGouldToint.Chapter06.Section04
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Analysis.CStarAlgebra.Matrix
 import Numlib.Optimization.LogBarrier
@@ -729,6 +730,394 @@ theorem scaledHessian_sub_eq (x g : ι → ℝ) (A H : Matrix ι ι ℝ) :
   simp [scaledHessian, Matrix.mul_sub, Matrix.sub_mul]
 
 end OperatorNorm
+
+section Convergence
+
+open scoped Matrix.Norms.L2Operator
+
+private theorem abs_matrix_quadratic_le (A : Matrix ι ι ℝ) (v : ι → ℝ) :
+    |v ⬝ᵥ (A *ᵥ v)| ≤ ‖A‖ * ‖WithLp.toLp 2 v‖ ^ 2 := by
+  let V := WithLp.toLp 2 v
+  have he : inner ℝ V ((Matrix.toEuclideanCLM (n := ι) (𝕜 := ℝ) A) V) = v ⬝ᵥ (A *ᵥ v) := by
+    rw [Matrix.toEuclideanCLM_toLp, EuclideanSpace.inner_eq_star_dotProduct]
+    simp [V, dotProduct_comm]
+  rw [← he]
+  calc
+    _ ≤ ‖V‖ * ‖(Matrix.toEuclideanCLM (n := ι) (𝕜 := ℝ) A) V‖ := abs_real_inner_le_norm _ _
+    _ ≤ ‖V‖ * (‖A‖ * ‖V‖) := mul_le_mul_of_nonneg_left
+      (by rw [Matrix.cstar_norm_def]; exact ((Matrix.toEuclideanCLM (n := ι) (𝕜 := ℝ) A)).le_opNorm V)
+      (norm_nonneg _)
+    _ = _ := by ring
+
+private theorem scale_mulVec_div {x g : ι → ℝ} (hx : ∀ i, 0 < x i) (d : ι → ℝ) :
+    scalingMatrix x g *ᵥ (fun i => d i / Real.sqrt |scalingVector x g i|) = d := by
+  funext i
+  have hv : 0 < |scalingVector x g i| := by
+    by_cases hg : 0 ≤ g i
+    · simpa [scalingVector, hg, abs_of_pos (hx i)] using hx i
+    · simp [scalingVector, hg]
+  rw [scalingMatrix, Matrix.mulVec_diagonal, mul_comm, div_mul_cancel₀ _ (Real.sqrt_pos.mpr hv).ne']
+
+/-- A quantitative curvature transfer for a fixed trial point. A scaled
+model lower bound and the Hessian consistency error control the objective
+quadratic form in original coordinates, with the positive-gradient
+diagonal separated explicitly. -/
+theorem colemanLi_curvature_transfer (x g w : ι → ℝ) (A H : Matrix ι ι ℝ) {e : ℝ}
+    (hmodel : -e * ‖WithLp.toLp 2 w‖ ^ 2 ≤ w ⬝ᵥ (scaledHessian x g H *ᵥ w)) :
+    -(e + ‖scalingMatrix x g * (A - H) * scalingMatrix x g‖) * ‖WithLp.toLp 2 w‖ ^ 2 -
+      (∑ i, max (g i) 0 * (w i) ^ 2) ≤
+      (scalingMatrix x g *ᵥ w) ⬝ᵥ (A *ᵥ (scalingMatrix x g *ᵥ w)) := by
+  have herr := abs_matrix_quadratic_le (scaledHessian x g A - scaledHessian x g H) w
+  rw [Matrix.sub_mulVec, dotProduct_sub, scaledHessian_sub_eq] at herr
+  have herr' := (neg_le_neg herr).trans (neg_abs_le _)
+  linarith only [hmodel, herr', scaledHessian_form x g w A]
+
+/-- The second-order transfer in Theorem 13.12.6. The scaled model curvature
+must have vanishing negative part along the subsequence. The scaled Hessian
+error in (13.12.25) then bounds the objective curvature error on bounded
+preimages of every active-face direction. -/
+theorem theorem_13_12_6 {x g : ℕ → ι → ℝ} {A H : ℕ → Matrix ι ι ℝ}
+    {x₀ g₀ : ι → ℝ} {A₀ : Matrix ι ι ℝ}
+    (hx : Tendsto x atTop (𝓝 x₀)) (hg : Tendsto g atTop (𝓝 g₀))
+    (hA : Tendsto A atTop (𝓝 A₀)) (hpos : ∀ k i, 0 < x k i)
+    (hfirst : Tendsto (fun k => scaledGradientNorm (x k) (g k)) atTop (𝓝 0))
+    (hcons : ScaledHessianConsistency x g A H)
+    {e : ℕ → ℝ} (he : Tendsto e atTop (𝓝 0)) (he₀ : ∀ k, 0 ≤ e k)
+    (hcurv : ∀ k w, -e k * ‖WithLp.toLp 2 w‖ ^ 2 ≤
+      w ⬝ᵥ (scaledHessian (x k) (g k) (H k) *ᵥ w)) :
+    OrthantWeakSecondOrder x₀ g₀ A₀ := by
+  have hfo := orthantFirstOrder_of_tendsto_scaledGradientNorm hx hg
+    (Eventually.of_forall fun k i => (hpos k i).le) hfirst
+  refine ⟨hfo, fun d hd => ?_⟩
+  let w (k : ℕ) (i : ι) := d i / Real.sqrt |scalingVector (x k) (g k) i|
+  let D (i : ι) := |d i| / Real.sqrt (min 1 (x₀ i / 2))
+  have hbound : ∀ᶠ k in atTop, ∀ i, |w k i| ≤ D i := by
+    have hi (i : ι) : ∀ᶠ k in atTop, |w k i| ≤ D i := by
+      by_cases hz : x₀ i = 0
+      · exact Eventually.of_forall fun k => by simp [w, D, hd i hz]
+      have hxi : 0 < x₀ i :=
+        lt_of_le_of_ne (ge_of_tendsto ((continuous_apply i).continuousAt.tendsto.comp hx)
+          (Eventually.of_forall fun k => (hpos k i).le)) (Ne.symm hz)
+      filter_upwards [((continuous_apply i).continuousAt.tendsto.comp hx).eventually
+        (lt_mem_nhds (half_lt_self hxi))] with k hk
+      have hden : min 1 (x₀ i / 2) ≤ |scalingVector (x k) (g k) i| := by
+        by_cases hgi : 0 ≤ g k i
+        · simpa [scalingVector, hgi, abs_of_pos (hpos k i)] using
+            (min_le_right (1 : ℝ) (x₀ i / 2)).trans hk.le
+        · simp [scalingVector, hgi]
+      rw [show |w k i| = |d i| / Real.sqrt |scalingVector (x k) (g k) i| by
+        dsimp only [w]
+        rw [abs_div, abs_of_nonneg (Real.sqrt_nonneg _)]]
+      exact div_le_div_of_nonneg_left (abs_nonneg _)
+        (Real.sqrt_pos.mpr (lt_min zero_lt_one (half_pos hxi))) (Real.sqrt_le_sqrt hden)
+    exact Filter.eventually_all.mpr hi
+  let B := ∑ i, (D i) ^ 2
+  have hB : ∀ᶠ k in atTop, ‖WithLp.toLp 2 (w k)‖ ^ 2 ≤ B := by
+    filter_upwards [hbound] with k hk
+    rw [EuclideanSpace.real_norm_sq_eq]
+    exact Finset.sum_le_sum fun i _ => by
+      simpa only [sq_abs] using pow_le_pow_left₀ (abs_nonneg _) (hk i) 2
+  have hterm (i : ι) :
+      Tendsto (fun k => max (g k i) 0 * (w k i) ^ 2) atTop (𝓝 0) := by
+    by_cases hz : x₀ i = 0
+    · simp [w, hd i hz]
+    have hxi : 0 < x₀ i :=
+      lt_of_le_of_ne (ge_of_tendsto ((continuous_apply i).continuousAt.tendsto.comp hx)
+        (Eventually.of_forall fun k => (hpos k i).le)) (Ne.symm hz)
+    have hzero := (hfo i).2 hxi
+    have hmax : Tendsto (fun k => max (g k i) 0) atTop (𝓝 0) := by
+      simpa only [hzero, max_self, Function.comp_apply] using
+        ((continuous_apply i).continuousAt.tendsto.comp hg).max (tendsto_const_nhds (x := (0 : ℝ)))
+    apply squeeze_zero' (Eventually.of_forall fun k => mul_nonneg (le_max_right _ _) (sq_nonneg _))
+      _ (by simpa only [zero_mul] using hmax.mul_const ((D i) ^ 2))
+    filter_upwards [hbound] with k hk
+    apply mul_le_mul_of_nonneg_left _ (le_max_right _ _)
+    simpa only [sq_abs] using pow_le_pow_left₀ (abs_nonneg _) (hk i) 2
+  have hcorr : Tendsto (fun k => ∑ i, max (g k i) 0 * (w k i) ^ 2) atTop (𝓝 0) := by
+    simpa using tendsto_finsetSum Finset.univ (fun i _ => hterm i)
+  let δ (k : ℕ) := ‖scalingMatrix (x k) (g k) * (A k - H k) * scalingMatrix (x k) (g k)‖
+  have hδ : Tendsto δ atTop (𝓝 0) := hcons hfirst
+  have hq : ∀ᶠ k in atTop, -(e k + δ k) * B -
+      (∑ i, max (g k i) 0 * (w k i) ^ 2) ≤ d ⬝ᵥ (A k *ᵥ d) := by
+    filter_upwards [hB] with k hk
+    have hlow := mul_le_mul_of_nonpos_left hk
+      (neg_nonpos.mpr (add_nonneg (he₀ k) (norm_nonneg _)) : -(e k + δ k) ≤ 0)
+    have htransfer := colemanLi_curvature_transfer (x k) (g k) (w k) (A k) (H k) (hcurv k (w k))
+    have hscale := scale_mulVec_div (hpos k) (g := g k) d
+    change scalingMatrix (x k) (g k) *ᵥ w k = d at hscale
+    rw [hscale] at htransfer
+    exact (sub_le_sub_right hlow _).trans htransfer
+  have hlim : Tendsto (fun k => -(e k + δ k) * B -
+      (∑ i, max (g k i) 0 * (w k i) ^ 2)) atTop (𝓝 0) := by
+    simpa only [add_zero, neg_zero, zero_mul, sub_zero] using
+      (((he.add hδ).neg.mul_const B).sub hcorr)
+  have hcont : Continuous (fun M : Matrix ι ι ℝ => d ⬝ᵥ (M *ᵥ d)) := by
+    unfold dotProduct Matrix.mulVec
+    fun_prop
+  exact le_of_tendsto_of_tendsto hlim (hcont.continuousAt.tendsto.comp hA) hq
+
+open ConnGouldToint.Chapter06 in
+private theorem scalar_btr_criticality {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    {P : BTRParams} {f : E → ℝ} {sufficient : ℕ → (E → ℝ) → E → E → Prop}
+    (run : BTRRun f P sufficient) {a : ℕ → ℝ} {κ β C K : ℝ}
+    (ha : ∀ k, 0 ≤ a k) (hκ : 0 < κ) (hκ₁ : κ < 1) (hβ : 0 < β) (hβC : β ≤ C)
+    (hK : 0 < K) (hval : ∀ k, f (run.x k) = run.model k (run.x k))
+    (hdec : ∀ k, κ * a k * min (a k / β) (run.Δ k) ≤
+      run.model k (run.x k) - run.model k (run.x k + run.s k))
+    (herr : ∀ k, |f (run.x k + run.s k) - run.model k (run.x k + run.s k)| ≤ C * (run.Δ k) ^ 2)
+    (hstep : ∀ k, ‖run.s k‖ ≤ K * run.Δ k)
+    (hcont : ∀ ε > 0, ∃ r > 0, ∀ i j, ‖run.x i - run.x j‖ < r → |a i - a j| < ε)
+    (hlower : BddBelow (Set.range f)) :
+    Tendsto a atTop (𝓝 0) := by
+  let F (k : ℕ) := f (run.x k)
+  have hFbound : BddBelow (Set.range F) := hlower.mono (Set.range_comp_subset_range run.x f)
+  have hF := tendsto_atTop_ciInf run.objective_antitone hFbound
+  have hdiff : Tendsto (fun k => F k - F (k + 1)) atTop (𝓝 0) := by
+    simpa only [Function.comp_apply, sub_self] using hF.sub (hF.comp (tendsto_add_atTop_nat 1))
+  have hC : 0 < C := hβ.trans_le hβC
+  have hη : 0 < 1 - P.η₂ := sub_pos.mpr P.eta₂_lt_one
+  have hfreq (ε : ℝ) (hε : 0 < ε) : ∃ᶠ k in atTop, a k < ε := by
+    by_contra! hn
+    obtain ⟨N, hN⟩ := eventually_atTop.mp hn
+    let θ := κ * ε * (1 - P.η₂) / C
+    let r := min (run.Δ N) (P.γ₁ * θ)
+    have hr : 0 < r := lt_min (run.delta_pos N)
+      (mul_pos P.gamma₁_pos (div_pos (mul_pos (mul_pos hκ hε) hη) hC))
+    have hrad (k : ℕ) (hk : N ≤ k) : r ≤ run.Δ k := by
+      have h := (run.tail N).delta_lower_bound (θ := θ) (fun j hj => ?_) (k - N)
+      · change r ≤ run.Δ (N + (k - N)) at h
+        simpa only [Nat.add_sub_of_le hk] using h
+      · let i := N + j
+        have hi := hN i (Nat.le_add_right N j)
+        have hsmall : run.Δ i ≤ κ * a i * (1 - P.η₂) / C := by
+          exact hj.trans (div_le_div_of_nonneg_right
+            (mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left hi hκ.le) hη.le) hC.le)
+        exact btrRatio_ge_eta₂_of_small_radius_of_decrease hβ hβC (run.delta_pos i)
+          (hε.trans_le hi) hκ hκ₁ (hval i) (hdec i) (herr i) hsmall
+    let b := P.η₁ * (κ * ε * min (ε / β) r)
+    have hb : 0 < b := mul_pos P.eta₁_pos
+      (mul_pos (mul_pos hκ hε) (lt_min (div_pos hε hβ) hr))
+    obtain ⟨J, hJ⟩ := eventually_atTop.mp (hdiff.eventually (gt_mem_nhds hb))
+    let L := max N J
+    have hfail (k : ℕ) (hk : L ≤ k) : k ∉ run.successful := by
+      intro hks
+      have hkN := (le_max_left N J).trans hk
+      have hmin := min_le_min (div_le_div_of_nonneg_right (hN k hkN) hβ.le) (hrad k hkN)
+      have hlow := (mul_le_mul (mul_le_mul_of_nonneg_left (hN k hkN) hκ.le)
+        hmin (le_min (div_nonneg hε.le hβ.le) hr.le) (mul_nonneg hκ.le (ha k))).trans (hdec k)
+      exact (hJ k ((le_max_right N J).trans hk)).not_ge
+        ((mul_le_mul_of_nonneg_left hlow P.eta₁_pos.le).trans (run.objective_drop_of_successful hks))
+    have hγ := P.gamma₁_pos.trans_le P.gamma₁_le_gamma₂
+    have hp (j : ℕ) : run.Δ (L + j) ≤ P.γ₂ ^ j * run.Δ L := by
+      induction j with
+      | zero => simp
+      | succ j ih =>
+        have hh := ((run.radius_update (L + j)).unsuccessful
+          (lt_of_not_ge (hfail (L + j) (Nat.le_add_right _ _)))).2
+        rw [Nat.add_succ, pow_succ, mul_comm (P.γ₂ ^ j), mul_assoc]
+        exact hh.trans (mul_le_mul_of_nonneg_left ih hγ.le)
+    have hlim : Tendsto (fun j : ℕ => P.γ₂ ^ j * run.Δ L) atTop (𝓝 0) := by
+      simpa only [zero_mul] using
+        (tendsto_pow_atTop_nhds_zero_of_lt_one hγ.le P.gamma₂_lt_one).mul_const (run.Δ L)
+    obtain ⟨j, hj⟩ := (hlim.eventually (gt_mem_nhds hr)).exists
+    exact hj.not_ge ((hrad _ ((le_max_left N J).trans (Nat.le_add_right L j))).trans (hp j))
+  apply tendsto_order.mpr
+  refine ⟨fun b hb => Eventually.of_forall fun k => hb.trans_le (ha k), ?_⟩
+  intro ε hε
+  let δ := ε / 2
+  have hδ : 0 < δ := half_pos hε
+  obtain ⟨r, hr, hnear⟩ := hcont δ hδ
+  let c := P.η₁ * (κ * δ)
+  have hc : 0 < c := mul_pos P.eta₁_pos (mul_pos hκ hδ)
+  obtain ⟨N, hN⟩ := eventually_atTop.mp (hdiff.eventually (gt_mem_nhds (mul_pos hc (div_pos hδ hβ))))
+  have hKc : 0 < K / c := div_pos hK hc
+  obtain ⟨M, hM⟩ := eventually_atTop.mp
+    (hF.eventually (gt_mem_nhds (lt_add_of_pos_right _ (div_pos hr hKc))))
+  apply eventually_atTop.mpr
+  refine ⟨max N M, fun n hn => ?_⟩
+  have hnN : N ≤ n := (le_max_left _ _).trans hn
+  have hnM : M ≤ n := (le_max_right _ _).trans hn
+  have hex : ∃ j, n ≤ j ∧ a j < δ := by
+    obtain ⟨j, hj, hnj⟩ := ((hfreq δ hδ).and_eventually (eventually_ge_atTop n)).exists
+    exact ⟨j, hnj, hj⟩
+  classical
+  let j := Nat.find hex
+  obtain ⟨hnj, hj⟩ := Nat.find_spec hex
+  have hmove (k : ℕ) (hkn : n ≤ k) (hkj : k < j) :
+      ‖run.x k - run.x (k + 1)‖ ≤ (K / c) * (F k - F (k + 1)) := by
+    by_cases hs : k ∈ run.successful
+    · have hk : δ ≤ a k := le_of_not_gt (fun h => Nat.find_min hex hkj ⟨hkn, h⟩)
+      have hmin := min_le_min (div_le_div_of_nonneg_right hk hβ.le) (le_refl (run.Δ k))
+      have hm := (mul_le_mul (mul_le_mul_of_nonneg_left hk hκ.le) hmin
+        (le_min (div_nonneg hδ.le hβ.le) (run.delta_pos k).le) (mul_nonneg hκ.le (ha k))).trans (hdec k)
+      have hdrop : c * min (δ / β) (run.Δ k) ≤ F k - F (k + 1) := by
+        simpa only [c, mul_assoc] using
+          (mul_le_mul_of_nonneg_left hm P.eta₁_pos.le).trans (run.objective_drop_of_successful hs)
+      have hrad : run.Δ k ≤ δ / β := by
+        by_contra! hbad
+        rw [min_eq_left hbad.le] at hdrop
+        exact (hN k (hnN.trans hkn)).not_ge hdrop
+      rw [min_eq_right hrad] at hdrop
+      rw [run.iterate_update, Optimization.acceptStep_of_le hs, sub_add_cancel_left, norm_neg]
+      apply (hstep k).trans
+      have hh : run.Δ k ≤ (F k - F (k + 1)) / c := (le_div_iff₀ hc).mpr (by rwa [mul_comm])
+      rw [div_mul_eq_mul_div, mul_div_assoc]
+      exact mul_le_mul_of_nonneg_left hh hK.le
+    · simp [run.iterate_eq_of_unsuccessful hs, F]
+  have hpath (t : ℕ) (ht : n + t ≤ j) :
+      ‖run.x n - run.x (n + t)‖ ≤ (K / c) * (F n - F (n + t)) := by
+    induction t with
+    | zero => simp
+    | succ t ih =>
+      have hlt : n + t < j := by omega
+      have hm := hmove (n + t) (Nat.le_add_right n t) hlt
+      have hprev := ih hlt.le
+      have htri : ‖run.x n - run.x (n + (t + 1))‖ ≤
+          ‖run.x n - run.x (n + t)‖ + ‖run.x (n + t) - run.x (n + t + 1)‖ := by
+        simpa only [sub_add_sub_cancel, Nat.add_assoc] using
+          norm_add_le (run.x n - run.x (n + t)) (run.x (n + t) - run.x (n + t + 1))
+      rw [← Nat.add_assoc]
+      exact htri.trans (by linarith only [hprev, hm])
+  have hnj' : n + (j - n) = j := Nat.add_sub_of_le hnj
+  have hdist := hpath (j - n) hnj'.le
+  rw [hnj'] at hdist
+  have hgap : F n - F j < r / (K / c) := by
+    have hh : F n < (⨅ k, F k) + r / (K / c) := hM n hnM
+    linarith only [hh, ciInf_le hFbound j]
+  have hd := hdist.trans_lt (by
+    rw [mul_comm]
+    exact (lt_div_iff₀ hKc).mp hgap)
+  have hh := le_abs_self (a n - a j)
+  have hj' : a j < δ := hj
+  have hnear' := hnear n j hd
+  dsimp [δ] at hj' hnear'
+  linarith only [hnear', hh, hj']
+
+open ConnGouldToint.Chapter06 in
+/-- Theorem 13.12.4. A bounded interior Coleman–Li run converges in the
+scaled gradient norm and has first-order critical limit points. The trial
+model decrease is compared with the feasible scaled Cauchy point, with
+the corrected time-cap estimate from Theorem 13.12.3. -/
+theorem theorem_13_12_4 [Nonempty ι]
+    {f : EuclideanSpace ℝ ι → ℝ} {P : BTRParams}
+    {sufficient : ℕ → (EuclideanSpace ℝ ι → ℝ) → EuclideanSpace ℝ ι → EuclideanSpace ℝ ι → Prop}
+    (run : BTRRun f P sufficient)
+    (g : EuclideanSpace ℝ ι → (ι → ℝ)) (H : ℕ → Matrix ι ι ℝ)
+    (hf : ContDiff ℝ 2 f) (hg : Continuous g)
+    (hgrad : ∀ x v, fderiv ℝ f x v = g x ⬝ᵥ WithLp.ofLp v)
+    (hlower : BddBelow (Set.range f))
+    {S : Set (EuclideanSpace ℝ ι)} (hS : IsCompact S) (hxS : ∀ k, run.x k ∈ S)
+    {B G U L σ α : ℝ} (hB : 1 ≤ B) (hG : 0 < G) (hU : 0 ≤ U) (hL : 0 ≤ L)
+    (hσ : 0 < σ) (hσ₁ : σ < 1) (hα : 0 < α) (hα₁ : α ≤ 1)
+    (hcap : α ≤ (1 - σ) / G)
+    (hx : ∀ k i, 0 < run.x k i) (hbound : ∀ k i, run.x k i ≤ B)
+    (hgBound : ∀ k i, g (run.x k) i ≤ G) (hH : ∀ k, ‖H k‖ ≤ U)
+    (hfH : ∀ y, ‖fderiv ℝ (fderiv ℝ f) y‖ ≤ L)
+    (hp : ∀ k (v : EuclideanSpace ℝ ι), run.p k v =
+      ‖WithLp.toLp 2 (fun i => v i / Real.sqrt |scalingVector
+        (WithLp.ofLp (run.x k)) (g (run.x k)) i|)‖)
+    (hm : ∀ k (v : EuclideanSpace ℝ ι), run.model k (run.x k + v) =
+      unscaledModel (f (run.x k)) (WithLp.ofLp (run.x k)) (g (run.x k)) (H k) (WithLp.ofLp v))
+    (hCauchy : ∀ k, ∃ t, IsScaledCauchyTime (f (run.x k))
+      (WithLp.ofLp (run.x k)) (g (run.x k)) (H k) (run.Δ k) σ t ∧
+      run.model k (run.x k + run.s k) ≤
+        unscaledModel (f (run.x k)) (WithLp.ofLp (run.x k)) (g (run.x k)) (H k)
+          ((-t) • ((scalingMatrix (WithLp.ofLp (run.x k)) (g (run.x k)) *
+            scalingMatrix (WithLp.ofLp (run.x k)) (g (run.x k))) *ᵥ g (run.x k)))) :
+    Tendsto (fun k => scaledGradientNorm (WithLp.ofLp (run.x k)) (g (run.x k))) atTop (𝓝 0) ∧
+      ∀ z (j : ℕ → ℕ), Tendsto j atTop atTop → Tendsto (run.x ∘ j) atTop (𝓝 z) →
+        OrthantFirstOrder (WithLp.ofLp z) (g z) := by
+  let a (x : EuclideanSpace ℝ ι) := scaledGradientNorm (WithLp.ofLp x) (g x)
+  let β := 1 + B * U + G
+  have hB₀ : 0 ≤ B := zero_le_one.trans hB
+  have hβ : 1 ≤ β := by dsimp [β]; linarith [mul_nonneg hB₀ hU]
+  have hβ₀ : 0 < β := zero_lt_one.trans_le hβ
+  have hmodelH (k : ℕ) :
+      ‖scaledHessian (WithLp.ofLp (run.x k)) (g (run.x k)) (H k)‖ ≤ β :=
+    (norm_scaledHessian_le (fun i => (hx k i).le) hB (hbound k) hG.le (hgBound k) (hH k)).trans
+      (by dsimp [β]; linarith)
+  have hval (k : ℕ) : f (run.x k) = run.model k (run.x k) := by
+    simpa [unscaledModel, affineQuadraticModel] using (hm k 0).symm
+  have hdec (k : ℕ) : (α / 2) * a (run.x k) * min (a (run.x k) / β) (run.Δ k) ≤
+      run.model k (run.x k) - run.model k (run.x k + run.s k) := by
+    obtain ⟨t, ht, hcmp⟩ := hCauchy k
+    have hcurv := (le_abs_self _).trans (abs_matrix_quadratic_le
+      (scaledHessian (WithLp.ofLp (run.x k)) (g (run.x k)) (H k))
+      (scaledGradient (WithLp.ofLp (run.x k)) (g (run.x k))))
+    have hcurv' : scaledGradient (WithLp.ofLp (run.x k)) (g (run.x k)) ⬝ᵥ
+        (scaledHessian (WithLp.ofLp (run.x k)) (g (run.x k)) (H k) *ᵥ
+          scaledGradient (WithLp.ofLp (run.x k)) (g (run.x k))) ≤ β * a (run.x k) ^ 2 :=
+      hcurv.trans (mul_le_mul_of_nonneg_right (hmodelH k) (sq_nonneg _))
+    have hh := scaledCauchyTime_sufficientDecrease (f (run.x k)) (hx k) (H k)
+      (run.delta_pos k).le hσ hσ₁ hG (hgBound k) hβ hα hα₁ hcap hcurv' ht
+    exact hh.trans (by rw [← hval k]; exact sub_le_sub_left hcmp _)
+  have hfeas (k : ℕ) : run.p k (run.s k) ≤ run.Δ k := by
+    have h := run.feasible k
+    change run.p k (run.x k + run.s k - run.x k) ≤ run.Δ k at h
+    rwa [add_sub_cancel_left] at h
+  have hstep (k : ℕ) : ‖run.s k‖ ≤ Real.sqrt B * run.Δ k := by
+    have h := norm_le_colemanLiScaledNorm (g := g (run.x k)) (hx k) hB (hbound k)
+      (WithLp.ofLp (run.s k))
+    rw [WithLp.toLp_ofLp, ← hp] at h
+    exact h.trans (mul_le_mul_of_nonneg_left (hfeas k) (Real.sqrt_nonneg _))
+  have herror (k : ℕ) : |f (run.x k + run.s k) - run.model k (run.x k + run.s k)| ≤
+      (β + L * B) * (run.Δ k) ^ 2 := by
+    let x := run.x k
+    let s := run.s k
+    let w (i : ι) := s i / Real.sqrt |scalingVector (WithLp.ofLp x) (g x) i|
+    let V := scalingMatrix (WithLp.ofLp x) (g x)
+    have hw : V *ᵥ w = WithLp.ofLp s := scale_mulVec_div (hx k) _
+    have hM : run.model k (x + s) = f x + fderiv ℝ f x s +
+        (1 / 2) * (w ⬝ᵥ (scaledHessian (WithLp.ofLp x) (g x) (H k) *ᵥ w)) := by
+      rw [hm, ← hw, ← scaledModel_eq_unscaledModel (f x) (hx k), scaledModel,
+        affineQuadraticModel, scaledGradient, hgrad, ← hw, dotProduct_comm (V *ᵥ g x),
+        Matrix.dotProduct_mulVec, vecMul_scalingMatrix, dotProduct_comm]
+    have hDf := (hf.fderiv_right (show (1 : WithTop ℕ∞) + 1 ≤ 2 by norm_num)).differentiable
+      (by norm_num)
+    have hrem := norm_sub_firstOrder_le_of_hessian_bound
+      (convex_univ : Convex ℝ (Set.univ : Set (EuclideanSpace ℝ ι)))
+      (Set.mem_univ x) (Set.mem_univ (x + s))
+      (fun z _ => hf.differentiable (by norm_num) z) (fun z _ => hDf z)
+      (fun z _ => hfH z)
+    rw [Real.norm_eq_abs] at hrem
+    have hQ := (abs_matrix_quadratic_le (scaledHessian (WithLp.ofLp x) (g x) (H k)) w).trans
+      (mul_le_mul_of_nonneg_right (hmodelH k) (sq_nonneg _))
+    have hwΔ : ‖WithLp.toLp 2 w‖ ≤ run.Δ k := by
+      exact ((hp k s).symm.le).trans (hfeas k)
+    have hsΔ := pow_le_pow_left₀ (norm_nonneg _) (hstep k) 2
+    rw [mul_pow, Real.sq_sqrt hB₀] at hsΔ
+    have hQΔ := hQ.trans (mul_le_mul_of_nonneg_left
+      (pow_le_pow_left₀ (norm_nonneg _) hwΔ 2) hβ₀.le)
+    have hremΔ := hrem.trans (mul_le_mul_of_nonneg_left hsΔ
+      (mul_nonneg (by norm_num : (0 : ℝ) ≤ 1 / 2) hL))
+    rw [hM]
+    obtain ⟨h₁, h₂⟩ := abs_le.mp hQΔ
+    obtain ⟨h₃, h₄⟩ := abs_le.mp hremΔ
+    apply abs_le.mpr
+    constructor <;> nlinarith only [h₁, h₂, h₃, h₄,
+      mul_nonneg (add_nonneg hβ₀.le (mul_nonneg hL hB₀)) (sq_nonneg (run.Δ k))]
+  have ha : Continuous a := by
+    have ho : Continuous (WithLp.ofLp : EuclideanSpace ℝ ι → (ι → ℝ)) :=
+      PiLp.continuous_ofLp _ _
+    exact continuous_norm.comp ((PiLp.continuous_toLp _ _).comp
+      (continuous_scaledGradient.comp (ho.prodMk hg)))
+  have huc := Metric.uniformContinuousOn_iff.mp (hS.uniformContinuousOn_of_continuous ha.continuousOn)
+  have hz : Tendsto (a ∘ run.x) atTop (𝓝 0) :=
+    scalar_btr_criticality run (fun _ => norm_nonneg _) (half_pos hα)
+      (by linarith) hβ₀ (le_add_of_nonneg_right (mul_nonneg hL hB₀))
+      (Real.sqrt_pos.mpr (zero_lt_one.trans_le hB)) hval hdec herror hstep
+      (fun ε hε => by
+        obtain ⟨r, hr, hh⟩ := huc ε hε
+        refine ⟨r, hr, fun i j hij => ?_⟩
+        simpa only [Real.dist_eq, Function.comp_apply] using hh (run.x i) (hxS i) (run.x j) (hxS j)
+          (by simpa only [dist_eq_norm] using hij)) hlower
+  refine ⟨hz, fun z j hj hjz => ?_⟩
+  exact orthantFirstOrder_of_tendsto_scaledGradientNorm
+    ((PiLp.continuous_ofLp _ _).continuousAt.tendsto.comp hjz)
+    (hg.continuousAt.tendsto.comp hjz) (Eventually.of_forall fun k i => (hx (j k) i).le)
+    (hz.comp hj)
+
+end Convergence
 
 end Finite
 

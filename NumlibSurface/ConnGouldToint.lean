@@ -221,6 +221,10 @@ The corrected Cauchy decrease in Theorem 13.12.3 includes a fraction-to-boundary
 A one-dimensional example violates the printed bound for every positive criticality cap.
 Theorem 13.12.5 gives positive decrease at the eigenpoint, with a feasibility cap
 covering every coordinate that decreases along the chosen ray.
+Theorem 13.12.4 proves scaled gradient convergence for the corrected run.
+Theorem 13.12.6 transfers vanishing scaled model curvature error to weak
+second-order stationarity on the active face. The version-two run must
+still supply the curvature error bound.
 
 
 
