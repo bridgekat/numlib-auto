@@ -603,6 +603,7 @@ noncomputable def activeKKTLinearization (A : V →L[ℝ] Y) (H : V →L[ℝ] V)
   (H.comp (fst ℝ V Y) + A.adjoint.comp (snd ℝ V Y)).prod (A.comp (fst ℝ V Y))
 
 omit [FiniteDimensional ℝ V] [FiniteDimensional ℝ Y] in
+/-- The active KKT block maps a primal-dual direction to its stationarity and feasibility terms. -/
 @[simp] theorem activeKKTLinearization_apply (A : V →L[ℝ] Y) (H : V →L[ℝ] V)
     (z : V × Y) : activeKKTLinearization A H z = (H z.1 + A.adjoint z.2, A z.1) := rfl
 
