@@ -253,9 +253,8 @@ Chapter 15 covers local SQP convergence. Theorem 15.2.1(i) needs supplied multip
 to stay near the root multiplier from the first iteration. A convergent multiplier
 sequence can otherwise make the first stationary subproblem inconsistent.
 Theorem 15.2.2 proves rates and exact active-set identification along the
-active-equation branch. Both branches eventually select the unique mixed-QP
-local minimizer closest to the origin. Uniform agreement with that selection
-rule from the first iteration remains open.
+active-equation branch. For sufficiently close starts, both branches select
+the unique mixed-QP local minimizer closest to the origin at every iteration.
 Section 15.3 uses a distance penalty and explicit chain-rule, restoration, and
 Taylor estimates. A C² example violates the printed quadratic Newton estimate
 without additional Hessian regularity. The corrected merit ratio requires
