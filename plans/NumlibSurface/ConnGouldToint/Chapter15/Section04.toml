@@ -87,3 +87,19 @@ source = "Conn–Gould–Toint, Lemma 15.4.4"
 [[node]]
 id = "theorem_15_4_6"
 source = "Conn–Gould–Toint, Theorem 15.4.6"
+
+[[node]]
+id = "SQPTangentialRun"
+source = "Conn–Gould–Toint, stabilized tail of Algorithm 15.4.1"
+
+[[node]]
+id = "sqpReducedGradient_perturbation"
+source = "Conn–Gould–Toint, reduced gradient estimate in Theorem 15.4.10"
+
+[[node]]
+id = "theorem_15_4_10"
+source = "Conn–Gould–Toint, Theorem 15.4.10 under uniform trial-segment control"
+
+[[node]]
+id = "theorem_15_4_11"
+source = "Conn–Gould–Toint, Theorem 15.4.11 under trial-segment and reduced-gradient control"

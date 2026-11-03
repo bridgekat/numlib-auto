@@ -161,6 +161,9 @@ The composite SQP analysis evaluates the normal-step estimate at the Cauchy
 step and uses Lipschitz control along the full trial segments. The radius
 argument in Theorem 15.4.6 uses the very-successful update. The corrected
 coefficient in Lemma 15.4.9 stays positive for every nonnegative model bound.
+Theorem 15.4.10 includes the Cauchy coefficient in the radius threshold and
+the initial tail radius in the floor. Theorem 15.4.11 makes the required
+uniform control of accepted-step variation explicit.
 
 Chapter 16 covers the uniform least-squares Hessian bound, exact minimization of the scalar
 epigraph merit function, and the Fischer–Burmeister residual formulation of complementarity.

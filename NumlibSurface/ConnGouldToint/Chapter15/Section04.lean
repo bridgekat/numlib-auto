@@ -1,6 +1,7 @@
 import Numlib.Analysis.Calculus.Taylor
 import Mathlib.Analysis.SpecificLimits.Basic
 import NumlibSurface.ConnGouldToint.Chapter06.Section03
+import Mathlib.Topology.Algebra.Order.LiminfLimsup
 import Mathlib.Topology.Order.MonotoneConvergence
 import Numlib.Optimization.ModelBased.RatioTest
 
@@ -313,16 +314,72 @@ theorem lemma_15_4_5 (f : E → ℝ) (c : E → F) (x : ℕ → E) (σ d : ℕ �
     exact add_nonneg (div_nonneg (sub_nonneg.mpr (hf i)) (hσ i).le) (norm_nonneg _)
   · exact (hanti (Nat.add_le_add_left hj i)).trans (hstep i)
 
+private def HasRelaxedProgress (u v Δ : ℕ → ℝ) (S : Set ℕ) : Prop :=
+  ∀ ε > 0, ∃ (a b e r : ℝ) (K : ℕ), 0 < a ∧ 0 < b ∧ 0 < e ∧ 0 < r ∧
+    ∀ k ≥ K, ε ≤ u k →
+      (Δ k ≤ r → k ∈ S ∧ Δ k ≤ Δ (k + 1)) ∧
+      (k ∈ S → a * min e (b * Δ k) ≤ v k - v (k + 1))
+
+private theorem relaxed_progress_frequently_small {u v Δ : ℕ → ℝ} {S : Set ℕ}
+    {γ γ₂ : ℝ} (hγ : 0 < γ) (hγ₂ : 0 ≤ γ₂) (hγ₂' : γ₂ < 1)
+    (hv : ∀ k, 0 ≤ v k) (hΔ : ∀ k, 0 < Δ k)
+    (hmono : Antitone v) (hnext : ∀ k, γ * Δ k ≤ Δ (k + 1))
+    (hrej : ∀ k ∉ S, Δ (k + 1) ≤ γ₂ * Δ k)
+    (hcontrol : HasRelaxedProgress u v Δ S) (ε : ℝ) (hε : 0 < ε) (N₀ : ℕ) :
+    ∃ k ≥ N₀, u k < ε := by
+  have hbdd : BddBelow (Set.range v) := ⟨0, by rintro _ ⟨k, rfl⟩; exact hv k⟩
+  have hlim := tendsto_atTop_ciInf hmono hbdd
+  have hdiff : Filter.Tendsto (fun k => v k - v (k + 1)) Filter.atTop (nhds 0) := by
+    simpa only [Function.comp_apply, sub_self] using
+      hlim.sub (hlim.comp (Filter.tendsto_add_atTop_nat 1))
+  by_contra! hfail
+  obtain ⟨a, b, e, r, K, ha, hb, he, hr, hcontrol⟩ := hcontrol ε hε
+  let N := max K N₀
+  let d := min (Δ N) (γ * r)
+  have hd : 0 < d := lt_min (hΔ N) (mul_pos hγ hr)
+  have hfloor (k : ℕ) (hk : N ≤ k) : d ≤ Δ k := by
+    induction k, hk using Nat.le_induction with
+    | base => exact min_le_left _ _
+    | succ k hk ih =>
+      by_cases h : Δ k ≤ r
+      · exact ih.trans ((hcontrol k ((le_max_left _ _).trans hk)
+          (hfail k ((le_max_right _ _).trans hk))).1 h).2
+      · exact (min_le_right _ _).trans
+          ((mul_le_mul_of_nonneg_left (lt_of_not_ge h).le hγ.le).trans (hnext k))
+  have hpos : 0 < a * min e (b * d) := mul_pos ha (lt_min he (mul_pos hb hd))
+  obtain ⟨J, hJ⟩ := Filter.eventually_atTop.mp (hdiff.eventually (gt_mem_nhds hpos))
+  let M := max J N
+  have hstop (k : ℕ) (hk : M ≤ k) : k ∉ S := by
+    intro h
+    have hkN := (le_max_right _ _).trans hk
+    have hlow : a * min e (b * d) ≤ a * min e (b * Δ k) := mul_le_mul_of_nonneg_left
+      (min_le_min le_rfl (mul_le_mul_of_nonneg_left (hfloor k hkN) hb.le)) ha.le
+    exact (not_le_of_gt (hJ k ((le_max_left _ _).trans hk))) (hlow.trans ((hcontrol k ((le_max_left _ _).trans hkN)
+      (hfail k ((le_max_right _ _).trans hkN))).2 h))
+  have hpow (j : ℕ) : Δ (M + j) ≤ γ₂ ^ j * Δ M := by
+    induction j with
+    | zero => simp
+    | succ j ih =>
+      have hmj : M ≤ M + j := Nat.le_add_right _ _
+      change Δ (M + j + 1) ≤ γ₂ ^ (j + 1) * Δ M
+      rw [pow_succ', mul_assoc]
+      exact (hrej (M + j) (hstop _ hmj)).trans
+        (mul_le_mul_of_nonneg_left ih hγ₂)
+  have hzero : Filter.Tendsto (fun j => γ₂ ^ j * Δ M) Filter.atTop (nhds 0) := by
+    simpa only [zero_mul] using
+      (tendsto_pow_atTop_nhds_zero_of_lt_one hγ₂ hγ₂').mul_const (Δ M)
+  obtain ⟨j, hj⟩ := (hzero.eventually (gt_mem_nhds hd)).exists
+  have hm : N ≤ M + j := (le_max_right J N).trans (Nat.le_add_right _ _)
+  exact (not_le_of_gt hj) ((hfloor _ hm).trans (hpow j))
+
 private theorem tendsto_zero_of_relaxed_steps {u v Δ : ℕ → ℝ} {S : Set ℕ}
-    {a b L γ γ₂ : ℝ} (ha : 0 < a) (hb : 0 < b) (hL : 0 ≤ L)
+    {L γ γ₂ : ℝ} (hL : 0 ≤ L)
     (hγ : 0 < γ) (hγ₂ : 0 ≤ γ₂) (hγ₂' : γ₂ < 1)
     (hu : ∀ k, 0 ≤ u k) (hv : ∀ k, 0 ≤ v k) (hΔ : ∀ k, 0 < Δ k)
     (hmono : Antitone v) (hnext : ∀ k, γ * Δ k ≤ Δ (k + 1))
     (hrej : ∀ k ∉ S, Δ (k + 1) ≤ γ₂ * Δ k ∧ u (k + 1) = u k)
-    (hdrop : ∀ k ∈ S, a * min (u k) (b * Δ k) ≤ v k - v (k + 1))
     (hmove : ∀ k ∈ S, u k - u (k + 1) ≤ L * Δ k)
-    (hsmall : ∀ ε > 0, ∃ r > 0, ∀ k, ε ≤ u k → Δ k ≤ r →
-      k ∈ S ∧ Δ k ≤ Δ (k + 1)) :
+    (hcontrol : HasRelaxedProgress u v Δ S) :
     Filter.Tendsto u Filter.atTop (nhds 0) := by
   have hbdd : BddBelow (Set.range v) := ⟨0, by rintro _ ⟨k, rfl⟩; exact hv k⟩
   have hlim := tendsto_atTop_ciInf hmono hbdd
@@ -331,70 +388,36 @@ private theorem tendsto_zero_of_relaxed_steps {u v Δ : ℕ → ℝ} {S : Set �
       hlim.sub (hlim.comp (Filter.tendsto_add_atTop_nat 1))
   have htail : Filter.Tendsto (fun k => v k - ⨅ j, v j) Filter.atTop (nhds 0) := by
     simpa using hlim.sub_const (⨅ j, v j)
-  have hfreq (ε : ℝ) (hε : 0 < ε) (N : ℕ) : ∃ k ≥ N, u k < ε := by
-    by_contra! hfail
-    obtain ⟨r, hr, hs⟩ := hsmall ε hε
-    let d := min (Δ N) (γ * r)
-    have hd : 0 < d := lt_min (hΔ N) (mul_pos hγ hr)
-    have hfloor (k : ℕ) (hk : N ≤ k) : d ≤ Δ k := by
-      induction k, hk using Nat.le_induction with
-      | base => exact min_le_left _ _
-      | succ k hk ih =>
-        by_cases h : Δ k ≤ r
-        · exact ih.trans (hs k (hfail k hk) h).2
-        · exact (min_le_right _ _).trans
-            ((mul_le_mul_of_nonneg_left (lt_of_not_ge h).le hγ.le).trans (hnext k))
-    have hpos : 0 < a * min ε (b * d) := mul_pos ha (lt_min hε (mul_pos hb hd))
-    obtain ⟨J, hJ⟩ := Filter.eventually_atTop.mp (hdiff.eventually (gt_mem_nhds hpos))
-    let M := max J N
-    have hstop (k : ℕ) (hk : M ≤ k) : k ∉ S := by
-      intro h
-      have hkN := (le_max_right _ _).trans hk
-      have hlow := mul_le_mul_of_nonneg_left
-        (min_le_min (hfail k hkN) (mul_le_mul_of_nonneg_left (hfloor k hkN) hb.le)) ha.le
-      exact (not_le_of_gt (hJ k ((le_max_left _ _).trans hk))) (hlow.trans (hdrop k h))
-    have hpow (j : ℕ) : Δ (M + j) ≤ γ₂ ^ j * Δ M := by
-      induction j with
-      | zero => simp
-      | succ j ih =>
-        have hmj : M ≤ M + j := Nat.le_add_right _ _
-        change Δ (M + j + 1) ≤ γ₂ ^ (j + 1) * Δ M
-        rw [pow_succ', mul_assoc]
-        exact (hrej (M + j) (hstop _ hmj)).1.trans
-          (mul_le_mul_of_nonneg_left ih hγ₂)
-    have hzero : Filter.Tendsto (fun j => γ₂ ^ j * Δ M) Filter.atTop (nhds 0) := by
-      simpa only [zero_mul] using
-        (tendsto_pow_atTop_nhds_zero_of_lt_one hγ₂ hγ₂').mul_const (Δ M)
-    obtain ⟨j, hj⟩ := (hzero.eventually (gt_mem_nhds hd)).exists
-    have hm : N ≤ M + j := (le_max_right J N).trans (Nat.le_add_right _ _)
-    exact (not_le_of_gt hj) ((hfloor _ hm).trans (hpow j))
+  have hfreq := relaxed_progress_frequently_small hγ hγ₂ hγ₂' hv hΔ hmono hnext
+    (fun k hk => (hrej k hk).1) hcontrol
   apply Metric.tendsto_atTop.mpr
   intro ε hε
   let e := ε / 2
   have he : 0 < e := half_pos hε
+  obtain ⟨a, b, e₀, r, K, ha, hb, he₀, hr, hc⟩ := hcontrol e he
   let C := L / (a * b)
   have hC : 0 ≤ C := div_nonneg hL (mul_nonneg ha.le hb.le)
-  obtain ⟨N, hN⟩ := Filter.eventually_atTop.mp (hdiff.eventually (gt_mem_nhds (mul_pos ha he)))
+  obtain ⟨N, hN⟩ := Filter.eventually_atTop.mp (hdiff.eventually (gt_mem_nhds (mul_pos ha he₀)))
   obtain ⟨J, hJ⟩ := Filter.eventually_atTop.mp
     (htail.eventually (gt_mem_nhds (div_pos he (by positivity : 0 < C + 1))))
-  have hlocal (k : ℕ) (hk : N ≤ k) (hhigh : e ≤ u k) :
+  have hlocal (k : ℕ) (hk : max N K ≤ k) (hhigh : e ≤ u k) :
       u k - u (k + 1) ≤ C * (v k - v (k + 1)) := by
     by_cases hs : k ∈ S
-    · have hΔe : b * Δ k < e := by
+    · have hdrop := (hc k ((le_max_right _ _).trans hk) hhigh).2 hs
+      have hΔe : b * Δ k < e₀ := by
         by_contra! hh
-        have hh' := mul_le_mul_of_nonneg_left (le_min hhigh hh) ha.le
-        exact (not_le_of_gt (hN k hk)) (hh'.trans (hdrop k hs))
-      have hdec := hdrop k hs
-      rw [min_eq_right (hΔe.le.trans hhigh)] at hdec
+        have hh' := mul_le_mul_of_nonneg_left (le_min le_rfl hh) ha.le
+        exact (not_le_of_gt (hN k ((le_max_left _ _).trans hk))) (hh'.trans hdrop)
+      rw [min_eq_right hΔe.le] at hdrop
       refine (hmove k hs).trans ?_
-      have h := mul_le_mul_of_nonneg_left hdec hC
+      have h := mul_le_mul_of_nonneg_left hdrop hC
       have hid : C * (a * (b * Δ k)) = L * Δ k := by
         dsimp [C]
         field_simp
       rwa [hid] at h
     · rw [(hrej k hs).2, sub_self]
       exact mul_nonneg hC (sub_nonneg.mpr (hmono (Nat.le_succ k)))
-  refine ⟨max N J, fun k hk => ?_⟩
+  refine ⟨max (max N K) J, fun k hk => ?_⟩
   rw [Real.dist_eq, sub_zero, abs_of_nonneg (hu k)]
   by_contra! hhigh
   let j := Nat.find (hfreq e he k)
@@ -521,10 +544,17 @@ theorem theorem_15_4_6 (f : E → ℝ) (c : E → F) (x s : ℕ → E) (σ d Δ 
         ((herr k).trans (by nlinarith only [hbound, hbound']))
       linarith only [h]
     exact ⟨(hratio k).mpr (hη₂.trans hv), hvery k hv⟩
+  have hcontrol : HasRelaxedProgress u v Δ S := by
+    intro ε hε
+    obtain ⟨r, hr, hs⟩ := hsmall ε hε
+    refine ⟨η * p, b, ε, r, 0, mul_pos hη hp, hb, hε, hr, fun k _ hk => ⟨hs k hk, ?_⟩⟩
+    intro hS
+    exact (mul_le_mul_of_nonneg_left (min_le_min_right _ hk) (mul_nonneg hη.le hp.le)).trans
+      (hdrop k hS)
   rw [tendsto_zero_iff_norm_tendsto_zero]
-  refine tendsto_zero_of_relaxed_steps (mul_pos hη hp) hb hL hγ hγ₂ hγ₂'
+  refine tendsto_zero_of_relaxed_steps hL hγ hγ₂ hγ₂'
     (fun k => norm_nonneg _) ?_ hΔ hmono hnext
-    (fun k hk => ⟨(hrej k hk).2, by simp only [(hrej k hk).1]⟩) hdrop ?_ hsmall
+    (fun k hk => ⟨(hrej k hk).2, by simp only [(hrej k hk).1]⟩) ?_ hcontrol
   · intro k
     rw [show v k = sqpNormalizedMerit f c fmin (σ k) (x k) from rfl,
       hexpand _ (hσpos k).ne']
@@ -700,5 +730,136 @@ theorem lemma_15_4_9 {ν σ B : ℝ} (hν : 0 < ν) (hσ : 0 < σ) (hB : 0 ≤ B
 theorem printed_tangential_coefficient_nonpos :
     (1 / 2 : ℝ) * min 1 ((1 / 2) * 2 / (1 - 2)) < 0 := by
   norm_num
+
+/-- The scalar data of a stabilized relaxed-SQP tail. Here u is the
+unshifted reduced gradient norm, w includes the normal-step correction,
+and v is the merit function at the fixed penalty shifted by a lower bound. -/
+structure SQPTangentialRun (P : BTRParams) (u w v Δ d actual : ℕ → ℝ) (S : Set ℕ) where
+  u_nonneg : ∀ k, 0 ≤ u k
+  merit_nonneg : ∀ k, 0 ≤ v k
+  radius_pos : ∀ k, 0 < Δ k
+  merit_antitone : Antitone v
+  radius_lower : ∀ k, P.γ₁ * Δ k ≤ Δ (k + 1)
+  radius_rejected : ∀ k ∉ S, Δ (k + 1) ≤ P.γ₂ * Δ k
+  merit_successful : ∀ k ∈ S, P.η₁ * d k ≤ v k - v (k + 1)
+  very_successful : ∀ k, P.η₂ ≤ actual k / d k → k ∈ S ∧ Δ k ≤ Δ (k + 1)
+
+/-- With bounded reduced-coordinate maps and Hessians, the vanishing
+normal step gives a vanishing perturbation of the reduced gradient. -/
+theorem sqpReducedGradient_perturbation {Z : Type*} [NormedAddCommGroup Z] [NormedSpace ℝ Z]
+    (g n : ℕ → E) (H : ℕ → E →L[ℝ] E) (NT : ℕ → E →L[ℝ] Z)
+    {B D : ℝ} (hD : 0 ≤ D)
+    (hH : ∀ k, ‖H k‖ ≤ B) (hNT : ∀ k, ‖NT k‖ ≤ D)
+    (hn : Filter.Tendsto n Filter.atTop (nhds 0)) :
+    Filter.Tendsto (fun k => ‖NT k (g k + H k (n k))‖ - ‖NT k (g k)‖)
+      Filter.atTop (nhds 0) := by
+  have hn' : Filter.Tendsto (fun k => ‖n k‖) Filter.atTop (nhds 0) :=
+    tendsto_zero_iff_norm_tendsto_zero.mp hn
+  refine squeeze_zero_norm' (a := fun k => D * (B * ‖n k‖)) ?_ ?_
+  · apply Filter.Eventually.of_forall
+    intro k
+    calc
+      _ ≤ ‖NT k (g k + H k (n k)) - NT k (g k)‖ := abs_norm_sub_norm_le _ _
+      _ = ‖NT k (H k (n k))‖ := by rw [map_add, add_sub_cancel_left]
+      _ ≤ ‖NT k‖ * ‖H k (n k)‖ := (NT k).le_opNorm _
+      _ ≤ D * (B * ‖n k‖) := by
+        exact mul_le_mul (hNT k) (((H k).le_opNorm _).trans
+          (mul_le_mul_of_nonneg_right (hH k) (norm_nonneg _))) (norm_nonneg _) hD
+  · simpa only [mul_zero] using (hn'.const_mul B).const_mul D
+
+private theorem tangentialProgress {P : BTRParams} {u w v Δ d actual : ℕ → ℝ} {S : Set ℕ}
+    (run : SQPTangentialRun P u w v Δ d actual S)
+    {κ b β C : ℝ} (hκ : 0 < κ) (hb : 0 < b) (hβ : 0 < β) (hC : 0 ≤ C)
+    (hpert : Filter.Tendsto (fun k => w k - u k) Filter.atTop (nhds 0))
+    (hpred : ∀ᶠ k in Filter.atTop, κ * w k * min (b * Δ k) (w k / β) ≤ d k)
+    (herr : ∀ᶠ k in Filter.atTop, |actual k - d k| ≤ C * (Δ k) ^ 2) :
+    HasRelaxedProgress u v Δ S := by
+  intro ε hε
+  let e := ε / 2
+  have he : 0 < e := half_pos hε
+  let r := min (e / (β * b)) ((1 - P.η₂) * κ * e * b / (C + 1))
+  have hr : 0 < r := lt_min (div_pos he (mul_pos hβ hb)) (by positivity [P.eta₂_lt_one])
+  have hsmall := hpert.eventually (lt_mem_nhds (neg_neg_of_pos he))
+  obtain ⟨K, hK⟩ := Filter.eventually_atTop.mp ((hsmall.and hpred).and herr)
+  refine ⟨P.η₁ * κ * e, b, e / β, r, K, by positivity [P.eta₁_pos], hb,
+    div_pos he hβ, hr, ?_⟩
+  intro k hk hu
+  have h := hK k hk
+  have hw : e ≤ w k := by
+    have ht : -e < w k - u k := h.1.1
+    dsimp [e] at ht ⊢
+    linarith
+  have hbound : κ * e * min (b * Δ k) (e / β) ≤ d k := by
+    refine (mul_le_mul (mul_le_mul_of_nonneg_left hw hκ.le) ?_ ?_ ?_).trans h.1.2
+    · exact min_le_min_left _ (div_le_div_of_nonneg_right hw hβ.le)
+    · exact le_min (mul_nonneg hb.le (run.radius_pos k).le) (div_nonneg he.le hβ.le)
+    · exact mul_nonneg hκ.le (he.le.trans hw)
+  constructor
+  · intro hΔ
+    have hD : b * Δ k ≤ e / β := by
+      have hh := (le_div_iff₀ (mul_pos hβ hb)).mp (hΔ.trans (min_le_left _ _))
+      apply (le_div_iff₀ hβ).mpr
+      nlinarith only [hh]
+    rw [min_eq_left hD] at hbound
+    have hpos : 0 < d k :=
+      (mul_pos (mul_pos hκ he) (mul_pos hb (run.radius_pos k))).trans_le hbound
+    have hCΔ : C * Δ k ≤ (1 - P.η₂) * κ * e * b := by
+      have hh := (le_div_iff₀ (by positivity : 0 < C + 1)).mp (hΔ.trans (min_le_right _ _))
+      linarith only [hh, run.radius_pos k]
+    have h₁ := mul_le_mul_of_nonneg_right hCΔ (run.radius_pos k).le
+    have h₂ := mul_le_mul_of_nonneg_left hbound (sub_nonneg.mpr P.eta₂_lt_one.le)
+    have he' : |actual k - d k| ≤ (1 - P.η₂) * d k := h.2.trans (by nlinarith only [h₁, h₂])
+    apply run.very_successful k
+    apply (le_div_iff₀ hpos).mpr
+    linarith only [(abs_le.mp he').1]
+  · intro hkS
+    have hh := mul_le_mul_of_nonneg_left hbound P.eta₁_pos.le
+    rw [min_comm (e / β), mul_assoc P.η₁ κ]
+    simpa only [mul_assoc] using hh.trans (run.merit_successful k hkS)
+
+/-- Theorem 15.4.10. A bounded penalty, a vanishing normal perturbation and
+the uniform trial-segment error bound give zero limit inferior of the
+unshifted reduced gradient norm. -/
+theorem theorem_15_4_10 {P : BTRParams} {u w v Δ d actual : ℕ → ℝ} {S : Set ℕ}
+    (run : SQPTangentialRun P u w v Δ d actual S)
+    {κ b β C : ℝ} (hκ : 0 < κ) (hb : 0 < b) (hβ : 0 < β) (hC : 0 ≤ C)
+    (hpert : Filter.Tendsto (fun k => w k - u k) Filter.atTop (nhds 0))
+    (hpred : ∀ᶠ k in Filter.atTop, κ * w k * min (b * Δ k) (w k / β) ≤ d k)
+    (herr : ∀ᶠ k in Filter.atTop, |actual k - d k| ≤ C * (Δ k) ^ 2) :
+    Filter.liminf u Filter.atTop = 0 := by
+  have hcontrol := tangentialProgress run hκ hb hβ hC hpert hpred herr
+  have hfreq (ε : ℝ) (hε : 0 < ε) : ∃ᶠ k in Filter.atTop, u k < ε :=
+    Filter.frequently_atTop.mpr (relaxed_progress_frequently_small P.gamma₁_pos
+      (P.gamma₁_pos.le.trans P.gamma₁_le_gamma₂) P.gamma₂_lt_one run.merit_nonneg
+      run.radius_pos run.merit_antitone run.radius_lower run.radius_rejected hcontrol ε hε)
+  have hbdd : (Filter.atTop : Filter ℕ).IsBoundedUnder (· ≥ ·) u :=
+    ⟨0, show ∀ᶠ k in Filter.atTop, 0 ≤ u k from Filter.Eventually.of_forall run.u_nonneg⟩
+  have hc : (Filter.atTop : Filter ℕ).IsCoboundedUnder (· ≥ ·) u := by
+    refine ⟨1, fun b h => ?_⟩
+    obtain ⟨k, hk, hbk⟩ := ((hfreq 1 zero_lt_one).and_eventually h).exists
+    exact hbk.trans hk.le
+  refine le_antisymm ?_ (Filter.le_liminf_of_le hc (Filter.Eventually.of_forall run.u_nonneg))
+  by_contra! hp
+  have hlim := Filter.liminf_le_of_frequently_le
+    ((hfreq _ (half_pos hp)).mono fun _ h => h.le) hbdd
+  linarith
+
+/-- Theorem 15.4.11 with uniform variation control for the unshifted reduced
+gradient on accepted steps. This control is supplied, for example, by a
+Lipschitz reduced-gradient map and the composite step radius bound. -/
+theorem theorem_15_4_11 {P : BTRParams} {u w v Δ d actual : ℕ → ℝ} {S : Set ℕ}
+    (run : SQPTangentialRun P u w v Δ d actual S)
+    {κ b β C L : ℝ} (hκ : 0 < κ) (hb : 0 < b) (hβ : 0 < β) (hC : 0 ≤ C)
+    (hpert : Filter.Tendsto (fun k => w k - u k) Filter.atTop (nhds 0))
+    (hpred : ∀ᶠ k in Filter.atTop, κ * w k * min (b * Δ k) (w k / β) ≤ d k)
+    (herr : ∀ᶠ k in Filter.atTop, |actual k - d k| ≤ C * (Δ k) ^ 2)
+    (hL : 0 ≤ L) (hmove : ∀ k ∈ S, u k - u (k + 1) ≤ L * Δ k)
+    (hstay : ∀ k ∉ S, u (k + 1) = u k) :
+    Filter.Tendsto u Filter.atTop (nhds 0) :=
+  tendsto_zero_of_relaxed_steps hL P.gamma₁_pos
+    (P.gamma₁_pos.le.trans P.gamma₁_le_gamma₂) P.gamma₂_lt_one
+    run.u_nonneg run.merit_nonneg run.radius_pos run.merit_antitone run.radius_lower
+    (fun k hk => ⟨run.radius_rejected k hk, hstay k hk⟩) hmove
+    (tangentialProgress run hκ hb hβ hC hpert hpred herr)
 
 end ConnGouldToint.Chapter15
