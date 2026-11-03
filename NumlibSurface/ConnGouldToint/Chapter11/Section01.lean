@@ -4,8 +4,8 @@ import Numlib.Optimization.Optimality.Clarke
 /-!
 # Steepest descent for a nonsmooth objective
 
-[conn2000trust], Section 11.1. The steepest-descent calculation uses the support
-representation of the Clarke derivative from (3.1.4) as a hypothesis.
+[conn2000trust], Section 11.1. The steepest-descent calculation follows from the
+Clarke support representation (3.1.4) and metric projection.
 -/
 
 open Filter Metric ConvexAnalysis Optimization
@@ -45,12 +45,14 @@ variable [CompleteSpace E]
 /-- Lemma 11.1.1 and formula (11.1.6), using the support representation (3.1.4).
 The selected direction attains the least slope, equal to minus the norm of the
 minimum-norm Clarke subgradient. -/
-theorem lemma_11_1_1 {f : E → ℝ} {x : E} (h : HasClarkeSupport f x) :
+theorem lemma_11_1_1 {f : E → ℝ} {x : E} {U : Set E} {L : NNReal}
+    (hU : U ∈ 𝓝 x) (hL : LipschitzOnWith L f U) :
     (minimumNormSubgradient f x ∈ clarkeSubgradient f x ∧
       ∀ z ∈ clarkeSubgradient f x, ‖minimumNormSubgradient f x‖ ≤ ‖z‖) ∧
     IsSteepestDirection f x (steepestDirection f x) ∧
     clarkeDerivative f x (steepestDirection f x) = steepestSlope f x ∧
     steepestSlope f x = -‖minimumNormSubgradient f x‖ := by
+  have h := hasClarkeSupport_of_lipschitzOnWith hU hL
   let K := clarkeSubgradient f x
   have hcl := isClosed_clarkeSubgradient f x
   have hco := convex_clarkeSubgradient f x
@@ -78,12 +80,14 @@ theorem lemma_11_1_1 {f : E → ℝ} {x : E} (h : HasClarkeSupport f x) :
   · exact hval'.le.trans (hlo d (mem_closedBall_zero_iff.mp hd))
 
 /-- The least slope vanishes exactly at Clarke stationary points. -/
-theorem steepestSlope_eq_zero_iff {f : E → ℝ} {x : E} (h : HasClarkeSupport f x) :
+theorem steepestSlope_eq_zero_iff {f : E → ℝ} {x : E} {U : Set E} {L : NNReal}
+    (hU : U ∈ 𝓝 x) (hL : LipschitzOnWith L f U) :
     steepestSlope f x = 0 ↔ (0 : E) ∈ clarkeSubgradient f x := by
-  rw [(lemma_11_1_1 h).2.2.2, neg_eq_zero, norm_eq_zero]
+  have h := hasClarkeSupport_of_lipschitzOnWith hU hL
+  rw [(lemma_11_1_1 hU hL).2.2.2, neg_eq_zero, norm_eq_zero]
   constructor
   · intro hg
-    exact hg ▸ (lemma_11_1_1 h).1.1
+    exact hg ▸ (lemma_11_1_1 hU hL).1.1
   · intro hzero
     apply (bestApprox_eq_iff h.nonempty (isClosed_clarkeSubgradient f x)
       (convex_clarkeSubgradient f x)).mpr

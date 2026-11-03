@@ -1,3 +1,4 @@
+import Numlib.Optimization.Optimality.Clarke
 import Numlib.Analysis.Calculus.Taylor
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 
@@ -122,5 +123,31 @@ theorem theorem_3_1_6 {S : Set E} (hS : IsOpen S) {f : E → F}
     (hlip : ∀ z ∈ S, ‖fderiv ℝ f z - fderiv ℝ f x‖ ≤ γ * ‖z - x‖) :
     ‖f (x + s) - (f x + fderiv ℝ f x s)‖ ≤ (1 / 2 : ℝ) * γ * ‖s‖ ^ 2 :=
   norm_sub_firstOrder_le_of_lipschitzAt_segment hS hf hseg hlip
+
+open Optimization ConvexAnalysis in
+/-- Equation (3.1.4). The Clarke directional derivative is the maximum of the
+pairing with a Clarke subgradient. Local Lipschitz continuity ensures the
+support identity and compactness supplies attainment in finite dimension. -/
+theorem clarkeDerivative_isGreatest {V : Type*} [NormedAddCommGroup V]
+    [InnerProductSpace ℝ V] [FiniteDimensional ℝ V] {f : V → ℝ} {x : V}
+    {U : Set V} {L : NNReal} (hU : U ∈ 𝓝 x) (hL : LipschitzOnWith L f U) (d : V) :
+    IsGreatest ((fun g : V ↦ inner ℝ g d) '' Optimization.clarkeSubgradient f x)
+      (Optimization.clarkeDerivative f x d) := by
+  have hs := hasClarkeSupport_of_lipschitzOnWith hU hL
+  have hc := isCompact_clarkeSubgradient hU hL
+  have hcont : Continuous (fun g : V ↦ inner ℝ g d) :=
+    continuous_id.inner continuous_const
+  obtain ⟨g, hg, hm⟩ := hc.exists_isMaxOn hs.nonempty hcont.continuousOn
+  have hu (z : V) (hz : z ∈ clarkeSubgradient f x) :
+      inner ℝ z d ≤ clarkeDerivative f x d := hz d
+  have hmax : clarkeDerivative f x d ≤ inner ℝ g d := by
+    apply EReal.coe_le_coe_iff.mp
+    rw [← hs d]
+    apply supportFn_le_coe_iff.mpr
+    intro z hz
+    simpa only [innerₗ_apply_apply] using isMaxOn_iff.mp hm z hz
+  refine ⟨⟨g, hg, le_antisymm (hu g hg) hmax⟩, ?_⟩
+  rintro _ ⟨z, hz, rfl⟩
+  exact hu z hz
 
 end ConnGouldToint.Chapter03

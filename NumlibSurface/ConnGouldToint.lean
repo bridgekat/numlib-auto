@@ -50,8 +50,7 @@ validity at the center alone gives no gradient bound.
 Chapter 10 covers cumulative model decrease for the nonmonotone acceptance rule.
 The reference schedule in (10.1.2) requires strict decrease only when the reference changes.
 
-Chapter 11 covers Clarke steepest descent. Lemma 11.1.1 uses the support identity (3.1.4)
-as an explicit prerequisite.
+Chapter 11 covers Clarke steepest descent using the support identity proved in (3.1.4).
 
 Section 12.1 covers box projection, the projected-gradient path, and the criticality measure.
 In (12.1.3), the radial formula applies outside the closed ball. Points inside project to

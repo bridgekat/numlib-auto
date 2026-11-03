@@ -18,4 +18,19 @@ source = "Conn–Gould–Toint, Section 3.1.4"
 
 [[node]]
 id = "HasClarkeSupport"
-source = "Conn–Gould–Toint, (3.1.4) as a prerequisite"
+source = "Conn–Gould–Toint, (3.1.4)"
+
+[[node]]
+id = "clarkeDerivative_add_le"
+source = "Clarke derivative subadditivity"
+
+[[node]]
+id = "clarkeDerivative_pos_smul"
+source = "Clarke derivative positive homogeneity"
+
+[[node]]
+id = "lipschitzWith_clarkeDerivative"
+
+[[node]]
+id = "hasClarkeSupport_of_lipschitzOnWith"
+source = "Conn–Gould–Toint, (3.1.4)"
