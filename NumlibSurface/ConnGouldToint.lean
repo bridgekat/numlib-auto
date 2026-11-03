@@ -88,7 +88,9 @@ The Newton interpolation construction in Section 9.4 uses a simplex lattice
 to produce a complete, uniformly bounded graded polynomial basis. In (9.4.5),
 the normalization divides by the signed pivot to produce a unit diagonal. The model
 error estimate uses affine reproduction and uniform bounds on all Newton
-blocks on the ball.
+blocks on the ball. A five-point incomplete quadratic example satisfies the
+printed adjacent-block and final-block bounds and violates (9.4.21) for every
+proposed uniform constant.
 In Section 9.5 the memory estimate uses the bound on past models at the
 last accepted center. The quadratic error proof controls the product of
 recent weights using the adjacent radius lower factor, allowing radii to
