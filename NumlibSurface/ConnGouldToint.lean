@@ -58,7 +58,10 @@ The identity-Hessian counterexample shows what fails when an earlier line step i
 
 Chapters 6 and 8 cover the basic trust-region iteration, Cauchy model decrease,
 and dual-norm estimates. In the proof of Theorem 6.4.3 the explicit radius lower bound
-also includes the initial radius. In Section 6.5, the corrected ratio estimates
+also includes the initial radius. Theorem 6.3.3 uses the first actual Armijo
+acceptance. A sufficient length cutoff guarantees termination, and the
+failed predecessor gives the decrease bound.
+In Section 6.5, the corrected ratio estimates
 assume uniform Hessian control on the trial segments. Theorem 6.5.5 also
 assumes local model curvature along those segments to keep the iterates near
 the limiting point. Section 6.6 proves the eigenpoint decrease and the
