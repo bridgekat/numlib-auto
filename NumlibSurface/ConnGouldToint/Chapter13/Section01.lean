@@ -1,5 +1,6 @@
 import Numlib.Optimization.LogBarrier
 import Mathlib.Analysis.SpecificLimits.Basic
+import Mathlib.Analysis.Convex.Intrinsic
 import Mathlib.Tactic.FinCases
 
 /-! # The logarithmic barrier -/
@@ -8,6 +9,37 @@ open Filter Metric
 open scoped BigOperators Topology
 
 namespace ConnGouldToint.Chapter13
+
+/-- Algorithm 13.1.1 delegates each inner minimization to a solver
+relation. Its arguments are the fixed barrier parameter, the objective
+being minimized, the inner iterates, and the terminal index. The starting
+point may be chosen independently of the previous outer iterate. A
+solver can terminate at index zero if its start already qualifies,
+which extends the convention of a positive terminal index in the text. -/
+structure BarrierOuterRun {E : Type*} [TopologicalSpace E] [AddCommGroup E] [Module ℝ E]
+    (C : Set E) (φ : E → ℝ → ℝ)
+    (solves : ℝ → (E → ℝ) → (ℕ → E) → ℕ → Prop) where
+  x : ℕ → E
+  μ : ℕ → ℝ
+  inner : ℕ → ℕ → E
+  stopIndex : ℕ → ℕ
+  initial_interior : x 0 ∈ intrinsicInterior ℝ C
+  parameter_pos : ∀ k, 0 < μ k
+  parameter_limit : Tendsto μ atTop (𝓝 0)
+  inner_start_interior : ∀ k, inner k 0 ∈ intrinsicInterior ℝ C
+  inner_solved : ∀ k, solves (μ k) (fun y ↦ φ y (μ k)) (inner k) (stopIndex k)
+  inner_finish_interior : ∀ k, inner k (stopIndex k) ∈ intrinsicInterior ℝ C
+  outer_update : ∀ k, x (k + 1) = inner k (stopIndex k)
+
+/-- Every accepted outer iterate stays in the barrier domain. -/
+theorem BarrierOuterRun.interior_iterate {E : Type*} [TopologicalSpace E] [AddCommGroup E] [Module ℝ E]
+    {C : Set E} {φ : E → ℝ → ℝ} {solves : ℝ → (E → ℝ) → (ℕ → E) → ℕ → Prop}
+    (r : BarrierOuterRun C φ solves) (k : ℕ) : r.x k ∈ intrinsicInterior ℝ C := by
+  cases k with
+  | zero => exact r.initial_interior
+  | succ k =>
+    rw [r.outer_update]
+    exact r.inner_finish_interior k
 
 /-- The log-barrier term (13.1.2), evaluated on strictly positive vectors. -/
 noncomputable abbrev logBarrier {ι : Type*} [Fintype ι] (x : ι → ℝ) (μ : ℝ) : ℝ :=

@@ -147,3 +147,31 @@ source = "Conn–Gould–Toint, AA.1 and AA.2 for the actual Euclidean quadratic
 [[node]]
 id = "escapeModel_source_models"
 source = "Conn–Gould–Toint, verification of AM.1–AM.4i and AM.6 for the primal counterexample models"
+
+[[node]]
+id = "logBarrierEuclideanDomain"
+source = "Conn–Gould–Toint, positive orthant in Algorithm 13.4.1"
+
+[[node]]
+id = "PrimalBarrierStepRule"
+source = "Conn–Gould–Toint, alternatives Algorithms 13.2.1 and 13.3.1 in Algorithm 13.4.1"
+
+[[node]]
+id = "PrimalLogBarrierInnerPrefix"
+source = "Conn–Gould–Toint, finite inner minimization and exact log model in Algorithm 13.4.1"
+
+[[node]]
+id = "PrimalLogBarrierOuterRun"
+source = "Conn–Gould–Toint, Algorithm 13.4.1"
+
+[[node]]
+id = "PrimalLogBarrierOuterRun.toBarrierOuterRun"
+source = "Conn–Gould–Toint, Algorithm 13.4.1 as an instance of Algorithm 13.1.1"
+
+[[node]]
+id = "PrimalLogBarrierOuterRun.convergence"
+source = "Conn–Gould–Toint, Theorem 13.4.3 for completed runs of Algorithm 13.4.1"
+
+[[node]]
+id = "PrimalLogBarrierOuterRun.weakSecondOrder_limit"
+source = "Conn–Gould–Toint, Corollary 13.4.4 for completed runs of Algorithm 13.4.1"

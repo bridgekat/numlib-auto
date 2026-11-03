@@ -723,6 +723,152 @@ theorem corollary_13_4_4 {α : Type*} {l : Filter α} [l.NeBot]
 end Outer
 
 
+section PrimalOuterRun
+
+open Chapter06 Set
+
+/-- The closed nonnegative orthant with the Euclidean metric. Its interior
+is the domain of the logarithmic barrier. -/
+def logBarrierEuclideanDomain (ι : Type*) [Fintype ι] : Set (EuclideanSpace ℝ ι) :=
+  WithLp.ofLp ⁻¹' Optimization.nonnegativeOrthant ι
+
+private theorem mem_interior_logBarrierEuclideanDomain (x : EuclideanSpace ℝ ι) :
+    x ∈ interior (logBarrierEuclideanDomain ι) ↔ ∀ i, 0 < x.ofLp i := by
+  let T := (PiLp.continuousLinearEquiv 2 ℝ (fun _ : ι ↦ ℝ)).toHomeomorph
+  change x ∈ interior (T ⁻¹' Optimization.nonnegativeOrthant ι) ↔ _
+  rw [← T.preimage_interior]
+  change x.ofLp ∈ interior (Set.univ.pi (fun _ : ι ↦ Ici (0 : ℝ))) ↔ _
+  rw [interior_pi_set Set.finite_univ]
+  simp only [Set.mem_pi, Set.mem_univ, true_implies, interior_Ici, Set.mem_Ioi]
+
+/-- Algorithm 13.4.1 can either reject an exterior trial after computing
+it, or impose the fraction-to-boundary condition in the step calculation. -/
+inductive PrimalBarrierStepRule
+  | rejectOutside
+  | constrainTrial
+
+/-- A finite primal log-barrier inner minimization. The exact quadratic
+barrier term is (13.4.2). The selected step rule distinguishes the
+uncapped decrease and guarded ratio of Algorithm 13.2.1 from the
+feasible capped decrease of Algorithm 13.3.1. -/
+structure PrimalLogBarrierInnerPrefix (P : BTRParams) (f : (ι → ℝ) → ℝ)
+    (σ μ : ℝ) (x : ℕ → EuclideanSpace ℝ ι) (J : ℕ)
+    extends PrimalBarrierInnerPrefix P (logBarrierEuclideanDomain ι) σ
+      (fun v ↦ logBarrierObjective f v.ofLp μ) x J where
+  rule : PrimalBarrierStepRule
+  fraction : σ ∈ Ioo (0 : ℝ) 1
+  objectiveModel : ℕ → EuclideanSpace ℝ ι → ℝ
+  model_split : ∀ j < J, ∀ v ∈ closedBall (x j) (Δ j),
+    model j v = objectiveModel j v + logBarrierModel (x j).ofLp (v - x j).ofLp μ
+  objective_model_twice_diff : ∀ j < J,
+    DifferentiableOn ℝ (objectiveModel j) (closedBall (x j) (Δ j)) ∧
+    DifferentiableOn ℝ (fderiv ℝ (objectiveModel j)) (closedBall (x j) (Δ j))
+  objective_model_value : ∀ j < J, objectiveModel j (x j) = f (x j).ofLp
+  objective_model_derivative : ∀ j < J, fderiv ℝ (objectiveModel j) (x j) =
+    fderiv ℝ (fun v : EuclideanSpace ℝ ι ↦ f v.ofLp) (x j)
+  objective_model_hessian_bound : ∃ K : ℝ, ∀ j < J, ∀ v ∈ closedBall (x j) (Δ j),
+    v ∈ interior (logBarrierEuclideanDomain ι) → ‖fderiv ℝ (fderiv ℝ (objectiveModel j)) v‖ ≤ K
+  κ : ℝ
+  decrease_constant : κ ∈ Ioo (0 : ℝ) 1
+  step_rule : ∀ j < J,
+    let g := gradient (model j) (x j)
+    let β := 1 + sSup ((fun v ↦ ‖fderiv ℝ (fderiv ℝ (model j)) v‖) '' closedBall (x j) (Δ j))
+    let τ := min 0 (leastUnitCurvature (fderiv ℝ (fderiv ℝ (model j)) (x j)))
+    match rule with
+    | .rejectOutside =>
+      HasSufficientModelDecrease (model j) (x j) (s j) g β (Δ j) κ ∧
+      HasNegativeCurvatureDecrease (model j) (x j) (s j) τ (Δ j) κ
+    | .constrainTrial =>
+      BarrierAdmissibleTrial (logBarrierEuclideanDomain ι) σ (x j) (x j + s j) ∧
+      HasConstrainedBarrierDecrease (model j) (x j) (s j) g β (Δ j) σ
+        (infDist (x j) (frontier (logBarrierEuclideanDomain ι))) τ κ
+
+variable [DecidableEq ι]
+
+/-- Algorithm 13.4.1 starts each finite inner minimization at the current
+outer iterate, stops at the first qualifying point, and drives the
+positive barrier parameter to zero. The terminal index may be zero. -/
+structure PrimalLogBarrierOuterRun (P : BTRParams) (f : (ι → ℝ) → ℝ) where
+  x : ℕ → EuclideanSpace ℝ ι
+  μ : ℕ → ℝ
+  σ : ℕ → ℝ
+  εD : ℝ → ℝ
+  εE : ℝ → ℝ
+  inner : ℕ → ℕ → EuclideanSpace ℝ ι
+  stopIndex : ℕ → ℕ
+  initial_positive : ∀ i, 0 < (x 0).ofLp i
+  parameter_pos : ∀ k, 0 < μ k
+  parameter_limit : Tendsto μ atTop (𝓝 0)
+  forcing_pos : ∀ μ > 0, 0 < εD μ ∧ 0 < εE μ
+  forcing_limit : Tendsto εD (𝓝[>] 0) (𝓝 0) ∧ Tendsto εE (𝓝[>] 0) (𝓝 0)
+  inner_trace : ∀ k, PrimalLogBarrierInnerPrefix P f (σ k) (μ k) (inner k) (stopIndex k)
+  start_inner : ∀ k, inner k 0 = x k
+  finish_inner : ∀ k, x (k + 1) = inner k (stopIndex k)
+  stopping_test : ∀ k, BarrierSecondOrderStop f (x (k + 1)).ofLp (μ k) (εD (μ k)) (εE (μ k))
+  first_stop : ∀ k j, j < stopIndex k →
+    ¬ BarrierSecondOrderStop f (inner k j).ofLp (μ k) (εD (μ k)) (εE (μ k))
+
+/-- The primal algorithm instantiates the generic barrier outer iteration
+with one of its finite trust-region solvers at each stage. -/
+def PrimalLogBarrierOuterRun.toBarrierOuterRun {P : BTRParams} {f : (ι → ℝ) → ℝ}
+    (r : PrimalLogBarrierOuterRun P f) :
+    BarrierOuterRun (logBarrierEuclideanDomain ι)
+      (fun v μ ↦ logBarrierObjective f v.ofLp μ)
+      (fun μ φ x J ↦ φ = (fun v ↦ logBarrierObjective f v.ofLp μ) ∧
+        ∃ σ, Nonempty (PrimalLogBarrierInnerPrefix P f σ μ x J)) where
+  x := r.x
+  μ := r.μ
+  inner := r.inner
+  stopIndex := r.stopIndex
+  initial_interior := interior_subset_intrinsicInterior (𝕜 := ℝ)
+    ((mem_interior_logBarrierEuclideanDomain _).mpr r.initial_positive)
+  parameter_pos := r.parameter_pos
+  parameter_limit := r.parameter_limit
+  inner_start_interior := fun k ↦ interior_subset_intrinsicInterior (𝕜 := ℝ)
+    (r.inner_trace k).initial_interior
+  inner_solved := fun k ↦ ⟨rfl, r.σ k, ⟨r.inner_trace k⟩⟩
+  inner_finish_interior := fun k ↦ interior_subset_intrinsicInterior (𝕜 := ℝ)
+    ((r.inner_trace k).toPrimalBarrierInnerPrefix.interior_iterate le_rfl)
+  outer_update := r.finish_inner
+
+private theorem PrimalLogBarrierOuterRun.forcing_tendsto {P : BTRParams}
+    {f : (ι → ℝ) → ℝ} (r : PrimalLogBarrierOuterRun P f) :
+    Tendsto (fun k ↦ r.εD (r.μ k)) atTop (𝓝 0) ∧
+      Tendsto (fun k ↦ r.εE (r.μ k)) atTop (𝓝 0) := by
+  have hμ : Tendsto r.μ atTop (𝓝[>] 0) := tendsto_nhdsWithin_iff.mpr
+    ⟨r.parameter_limit, Eventually.of_forall r.parameter_pos⟩
+  exact ⟨r.forcing_limit.1.comp hμ, r.forcing_limit.2.comp hμ⟩
+
+/-- Theorem 13.4.3 applied to the completed iterations of Algorithm 13.4.1.
+The shifted sequence uses the barrier parameter that generated each
+completed iterate. -/
+theorem PrimalLogBarrierOuterRun.convergence {P : BTRParams} {f : (ι → ℝ) → ℝ}
+    (r : PrimalLogBarrierOuterRun P f) :
+    (∀ i η, 0 < η → ∀ᶠ k in atTop, -η ≤ barrierCoordinateGradient f (r.x (k + 1)).ofLp i) ∧
+    (∀ i, (∃ δ > 0, ∀ᶠ k in atTop, δ ≤ (r.x (k + 1)).ofLp i) →
+      Tendsto (fun k ↦ barrierCoordinateGradient f (r.x (k + 1)).ofLp i) atTop (𝓝 0)) ∧
+    ∀ d : ι → ℝ, (∀ i, d i ≠ 0 → ∃ δ > 0, ∀ᶠ k in atTop, δ ≤ (r.x (k + 1)).ofLp i) →
+      ∀ η, 0 < η → ∀ᶠ k in atTop, -η ≤ fderiv ℝ (fderiv ℝ f) (r.x (k + 1)).ofLp d d := by
+  exact theorem_13_4_3 r.parameter_limit (fun k ↦ (r.parameter_pos k).le)
+    r.forcing_tendsto.1 (fun k ↦ (r.forcing_pos _ (r.parameter_pos k)).1.le)
+    r.forcing_tendsto.2 r.stopping_test
+
+/-- Corollary 13.4.4 for a limit of completed primal barrier iterations.
+The Hessian inequality is on the nullspace of all active bounds. -/
+theorem PrimalLogBarrierOuterRun.weakSecondOrder_limit {P : BTRParams}
+    {f : (ι → ℝ) → ℝ} (r : PrimalLogBarrierOuterRun P f) (hf : ContDiff ℝ 2 f)
+    {j : ℕ → ℕ} (hj : Tendsto j atTop atTop) {xstar : ι → ℝ}
+    (hx : Tendsto (fun k ↦ (r.x (j k + 1)).ofLp) atTop (𝓝 xstar)) :
+    (∀ i, 0 ≤ xstar i) ∧
+    (∀ i, 0 ≤ barrierCoordinateGradient f xstar i ∧
+      (0 < xstar i → barrierCoordinateGradient f xstar i = 0)) ∧
+    ∀ d : ι → ℝ, (∀ i, xstar i = 0 → d i = 0) → 0 ≤ fderiv ℝ (fderiv ℝ f) xstar d d := by
+  exact corollary_13_4_4 hf hx (r.parameter_limit.comp hj) (fun k ↦ (r.parameter_pos (j k)).le)
+    (r.forcing_tendsto.1.comp hj) (fun k ↦ (r.forcing_pos _ (r.parameter_pos (j k))).1.le)
+    (r.forcing_tendsto.2.comp hj) (fun k ↦ r.stopping_test (j k))
+
+end PrimalOuterRun
+
 section StrongCounterexample
 
 private noncomputable def logBarrierCounterVector : Fin 4 → ℝ :=

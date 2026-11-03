@@ -50,6 +50,61 @@ structure PrimalBarrierInnerRun (P : Chapter06.BTRParams) (C : Set E) (σ : ℝ)
   radius_update : ∀ j,
     Chapter06.BTRRadiusUpdate P (primalBarrierRatio C σ φ (model j) (x j) (s j)) (Δ j) (Δ (j + 1))
 
+/-- The common primal inner state on a finite trace. The ratio and update
+rules apply to trial indices strictly before the terminal index, so an
+inner minimizer can terminate even when its terminal model has no
+positive-decrease trial. -/
+structure PrimalBarrierInnerPrefix (P : Chapter06.BTRParams) (C : Set E)
+    (σ : ℝ) (φ : E → ℝ) (x : ℕ → E) (J : ℕ) where
+  s : ℕ → E
+  Δ : ℕ → ℝ
+  model : ℕ → E → ℝ
+  initial_interior : x 0 ∈ interior C
+  initial_radius_pos : 0 < Δ 0
+  step_feasible : ∀ j < J, ‖s j‖ ≤ Δ j
+  predicted_pos : ∀ j < J, 0 < model j (x j) - model j (x j + s j)
+  iterate_update : ∀ j < J,
+    x (j + 1) = if P.η₁ ≤ primalBarrierRatio C σ φ (model j) (x j) (s j)
+      then x j + s j else x j
+  radius_update : ∀ j < J,
+    Chapter06.BTRRadiusUpdate P (primalBarrierRatio C σ φ (model j) (x j) (s j)) (Δ j) (Δ (j + 1))
+
+/-- Restrict an infinite run to its first prescribed number of trials. -/
+def PrimalBarrierInnerRun.prefix {P : Chapter06.BTRParams} {C : Set E} {σ : ℝ}
+    {φ : E → ℝ} (r : PrimalBarrierInnerRun P C σ φ) (J : ℕ) :
+    PrimalBarrierInnerPrefix P C σ φ r.x J where
+  s := r.s
+  Δ := r.Δ
+  model := r.model
+  initial_interior := r.initial_interior
+  initial_radius_pos := r.initial_radius_pos
+  step_feasible := fun j _ ↦ r.step_feasible j
+  predicted_pos := fun j _ ↦ r.predicted_pos j
+  iterate_update := fun j _ ↦ r.iterate_update j
+  radius_update := fun j _ ↦ r.radius_update j
+
+omit [NormedSpace ℝ E] in
+/-- The guarded update preserves strict feasibility through the last iterate
+of the finite trace. -/
+theorem PrimalBarrierInnerPrefix.interior_iterate {P : Chapter06.BTRParams} {C : Set E}
+    {σ : ℝ} {φ : E → ℝ} {x : ℕ → E} {J : ℕ}
+    (r : PrimalBarrierInnerPrefix P C σ φ x J) {j : ℕ} (hj : j ≤ J) :
+    x j ∈ interior C := by
+  classical
+  induction j with
+  | zero => exact r.initial_interior
+  | succ j ih =>
+    have hj' : j < J := Nat.lt_of_succ_le hj
+    by_cases ha : BarrierAdmissibleTrial C σ (x j) (x j + r.s j)
+    · by_cases hρ : P.η₁ ≤ Chapter06.btrRatio φ (r.model j) (x j) (r.s j)
+      · rw [r.iterate_update j hj', primalBarrierRatio, ite_eq_left ha, ite_eq_left hρ]
+        exact ha.1
+      · rw [r.iterate_update j hj', primalBarrierRatio, ite_eq_left ha, ite_eq_right hρ]
+        exact ih hj'.le
+    · rw [r.iterate_update j hj', primalBarrierRatio, ite_eq_right ha,
+        ite_eq_right (not_le_of_gt P.eta₁_pos)]
+      exact ih hj'.le
+
 omit [NormedSpace ℝ E] in
 /-- Accepted trials and retained iterates both stay in the interior. -/
 theorem PrimalBarrierInnerRun.interior_iterate {P : Chapter06.BTRParams} {C : Set E}

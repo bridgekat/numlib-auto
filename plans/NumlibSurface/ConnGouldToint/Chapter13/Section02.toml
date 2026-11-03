@@ -111,3 +111,15 @@ source = "Conn–Gould–Toint, gradient of the bilinear counterexample objectiv
 [[node]]
 id = "barrierBilinearObjective_smooth_bounded_hessian"
 source = "Conn–Gould–Toint, verification of AF.1 and AF.3 for the bilinear counterexample"
+
+[[node]]
+id = "PrimalBarrierInnerPrefix"
+source = "Conn–Gould–Toint, finite trace of the common primal inner state update"
+
+[[node]]
+id = "PrimalBarrierInnerRun.prefix"
+source = "Conn–Gould–Toint, finite restriction of Algorithm 13.2.1"
+
+[[node]]
+id = "PrimalBarrierInnerPrefix.interior_iterate"
+source = "Conn–Gould–Toint, primal barrier feasibility on a finite inner trace"

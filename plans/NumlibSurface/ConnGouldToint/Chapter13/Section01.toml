@@ -15,3 +15,11 @@ source = "Conn–Gould–Toint, corrected AC.8 for the logarithmic barrier"
 [[node]]
 id = "logBarrier_unbounded_boundary_counterexample"
 source = "Conn–Gould–Toint, counterexample to the claim that (13.1.2) satisfies AC.8"
+
+[[node]]
+id = "BarrierOuterRun"
+source = "Conn–Gould–Toint, Algorithm 13.1.1"
+
+[[node]]
+id = "BarrierOuterRun.interior_iterate"
+source = "Conn–Gould–Toint, feasible accepted output of Algorithm 13.1.1"

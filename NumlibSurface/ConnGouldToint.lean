@@ -212,6 +212,9 @@ trial-segment Hessian agreement explicit. The corrected generalized eigenpoint
 test and decrease bound use the sign appropriate to negative curvature.
 A cubic model shows that the printed test can accept a strict increase.
 
+Algorithms 13.1.1 and 13.4.1 use finite inner traces, including a zero-step
+trace when the starting point meets the stopping test. Completed primal
+outer iterations satisfy Theorem 13.4.3 and Corollary 13.4.4.
 Chapter 13 covers the logarithmic barrier. Theorem 13.2.1 uses a lower objective
 bound to bound the barrier along the run. For log barriers, AC.8 holds on
 uniformly bounded positive paths.
