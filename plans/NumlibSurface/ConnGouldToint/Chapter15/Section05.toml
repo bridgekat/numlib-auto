@@ -155,3 +155,11 @@ source = "Conn–Gould–Toint, (15.5.37)"
 [[node]]
 id = "filterPredecessorRadius_le"
 source = "Conn–Gould–Toint, (15.5.37)–(15.5.38)"
+
+[[node]]
+id = "filterFeasibilityRadius"
+source = "Conn–Gould–Toint, (15.5.22)"
+
+[[node]]
+id = "filterFeasibilityRadius_bound"
+source = "Conn–Gould–Toint, (15.5.22), feasibility threshold in Lemma 15.5.6"

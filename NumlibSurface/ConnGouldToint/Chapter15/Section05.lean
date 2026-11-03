@@ -345,6 +345,21 @@ theorem filterRatioRadius_bound {δm η κ ε C Δ : ℝ} (hC : 0 < C)
   obtain ⟨h₁, h₂⟩ := le_min_iff.mp hΔ
   exact ⟨h₁, by nlinarith only [(le_div_iff₀ (by positivity : 0 < 2 * C)).mp h₂]⟩
 
+/-- The feasibility-switch radius in (15.5.22). -/
+noncomputable def filterFeasibilityRadius (δm κ ε κθ K μ : ℝ) : ℝ :=
+  min δm ((κ * ε / (2 * κθ * K ^ 2)) ^ (1 / (1 + 2 * μ)))
+
+/-- The feasibility-switch threshold yields the bound in Lemma 15.5.6. -/
+theorem filterFeasibilityRadius_bound {δm κ ε κθ K μ Δ : ℝ}
+    (hκ : 0 < κ) (hε : 0 < ε) (hκθ : 0 < κθ) (hK : 0 < K) (hμ : 0 ≤ μ)
+    (hΔ : 0 ≤ Δ) (hsmall : Δ ≤ filterFeasibilityRadius δm κ ε κθ K μ) :
+    Δ ≤ δm ∧ κθ * K ^ 2 * Δ ^ (1 + 2 * μ) ≤ κ * ε / 2 := by
+  obtain ⟨h₁, h₂⟩ := le_min_iff.mp hsmall
+  have hp : Δ ^ (1 + 2 * μ) ≤ κ * ε / (2 * κθ * K ^ 2) :=
+    (Real.le_rpow_inv_iff_of_pos hΔ (by positivity) (by positivity)).mp
+      (by simpa only [one_div] using h₂)
+  exact ⟨h₁, by nlinarith only [(le_div_iff₀ (by positivity : 0 < 2 * κθ * K ^ 2)).mp hp]⟩
+
 /-- The objective-margin radius in (15.5.23). -/
 noncomputable def filterObjectiveMarginRadius (δρ η κ ε M γ : ℝ) : ℝ :=
   min (η * κ * ε / (2 * M * γ)) δρ
