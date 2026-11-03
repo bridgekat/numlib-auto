@@ -1,0 +1,21 @@
+namespace = "Optimization"
+
+[[node]]
+id = "clarkeDerivative"
+source = "Conn–Gould–Toint, Section 3.1.4"
+
+[[node]]
+id = "clarkeSubgradient"
+source = "Conn–Gould–Toint, Section 3.1.4"
+
+[[node]]
+id = "abs_clarkeDerivative_le"
+source = "Conn–Gould–Toint, Section 3.1.4"
+
+[[node]]
+id = "isCompact_clarkeSubgradient"
+source = "Conn–Gould–Toint, Section 3.1.4"
+
+[[node]]
+id = "HasClarkeSupport"
+source = "Conn–Gould–Toint, (3.1.4) as a prerequisite"

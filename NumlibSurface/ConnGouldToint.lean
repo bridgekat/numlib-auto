@@ -6,6 +6,7 @@ import NumlibSurface.ConnGouldToint.Chapter07
 import NumlibSurface.ConnGouldToint.Chapter08
 import NumlibSurface.ConnGouldToint.Chapter09
 import NumlibSurface.ConnGouldToint.Chapter10
+import NumlibSurface.ConnGouldToint.Chapter11
 import NumlibSurface.ConnGouldToint.Chapter12
 import NumlibSurface.ConnGouldToint.Chapter14
 import NumlibSurface.ConnGouldToint.Chapter16
@@ -46,6 +47,9 @@ validity at the center alone gives no gradient bound.
 
 Chapter 10 covers cumulative model decrease for the nonmonotone acceptance rule.
 The reference schedule in (10.1.2) requires strict decrease only when the reference changes.
+
+Chapter 11 covers Clarke steepest descent. Lemma 11.1.1 uses the support identity (3.1.4)
+as an explicit prerequisite.
 
 Section 12.1 covers box projection, the projected-gradient path, and the criticality measure.
 In (12.1.3), the radial formula applies outside the closed ball. Points inside project to

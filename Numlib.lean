@@ -761,6 +761,7 @@ import Numlib.Optimization.ModelBased.LinearDecrease
 import Numlib.Optimization.ModelBased.ProjectedPath
 import Numlib.Optimization.ModelBased.RatioTest
 import Numlib.Optimization.ModelBased.ReferenceDecrease
+import Numlib.Optimization.ModelBased.SupportDescent
 import Numlib.Optimization.ModelBased.RegularizationUpdate
 import Numlib.Optimization.ModelBased.TRRun
 import Numlib.Optimization.ModelBased.TaylorModel
@@ -771,6 +772,7 @@ import Numlib.Optimization.Optimality.ConvexSet
 import Numlib.Optimization.Optimality.CurveConditions
 import Numlib.Optimization.Optimality.HighOrder
 import Numlib.Optimization.Optimality.TaylorStability
+import Numlib.Optimization.Optimality.Clarke
 import Numlib.Optimization.Optimality.Unconstrained
 import Numlib.Optimization.QuasiNewton
 import Numlib.Optimization.EpigraphPenalty
