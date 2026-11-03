@@ -19,3 +19,23 @@ source = "Conn, Gould and Toint, Trust-Region Methods, (5.2.51)"
 [[node]]
 id = "preconditioned_lanczos_matrix_relations_5_2_52_53"
 source = "Conn–Gould–Toint, preconditioned matrix relations (5.2.52)–(5.2.53)"
+
+[[node]]
+id = "lanczosBasisMatrix"
+source = "Conn–Gould–Toint, §5.2.1 (matrix of the Lanczos vectors)"
+
+[[node]]
+id = "lanczos_relation_5_2_14"
+source = "Conn–Gould–Toint, (5.2.14)"
+
+[[node]]
+id = "lanczos_orthonormal_5_2_16"
+source = "Conn–Gould–Toint, (5.2.16)"
+
+[[node]]
+id = "lanczos_projection_5_2_17"
+source = "Conn–Gould–Toint, (5.2.17)"
+
+[[node]]
+id = "preconditioned_lanczos_run_relations_5_2_52_53"
+source = "Conn–Gould–Toint, (5.2.52)–(5.2.53) from the transformed recurrence"

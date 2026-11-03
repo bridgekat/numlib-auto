@@ -1,5 +1,6 @@
 import Mathlib.Basic.Real.Basic
 import Numlib.Krylov.Lanczos
+import Numlib.Analysis.Matrix.ToEuclideanLin
 
 /-!
 # The Lanczos basis
@@ -79,6 +80,93 @@ theorem algorithm_5_2_1 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace �
       q (j + 1) - ‖Arnoldi.w H r₀ j‖ • q j
     simpa only [q, hd, Lanczos.beta, RCLike.ofReal_real_eq_id, id_eq] using Lanczos.w_succ_eq r₀ hH j
 
+
+section MatrixLanczos
+
+open Matrix WithLp
+
+variable {n : Type*} [Fintype n] [DecidableEq n]
+
+/-- The columns of `Qₖ` are the Lanczos vectors through index `k`. -/
+noncomputable def lanczosBasisMatrix (H : Matrix n n ℝ) (r₀ : n → ℝ) (k : ℕ) :
+    Matrix n (Fin (k + 1)) ℝ :=
+  Matrix.of fun i j => ofLp (Arnoldi.vec (toEuclideanLin H) (toLp 2 r₀) j) i
+
+/-- The three-term recurrence gives (5.2.14). The rank-one residual
+is supported on the last column, and vanishes at breakdown. -/
+theorem lanczos_relation_5_2_14 {H : Matrix n n ℝ} (hH : H.IsSymm)
+    (r₀ : n → ℝ) (k : ℕ) :
+    let A := toEuclideanLin H
+    let b : EuclideanSpace ℝ n := toLp 2 r₀
+    let Q := lanczosBasisMatrix H r₀ k
+    let T := Lanczos.tridiag A b (k + 1)
+    let qnext := ofLp (Arnoldi.vec A b (k + 1))
+    H * Q - Q * T = Lanczos.beta A b k • Matrix.vecMulVec qnext (Pi.single (Fin.last k) 1) := by
+  let A := toEuclideanLin H
+  let b : EuclideanSpace ℝ n := toLp 2 r₀
+  let Q := lanczosBasisMatrix H r₀ k
+  let T := Lanczos.tridiag A b (k + 1)
+  let q := Arnoldi.vec A b
+  change H * Q - Q * T =
+    Lanczos.beta A b k • Matrix.vecMulVec (ofLp (q (k + 1))) (Pi.single (Fin.last k) 1)
+  have hQ (z : Fin (k + 1) → ℝ) :
+      toLp 2 (Q *ᵥ z) = ∑ j : Fin (k + 1), z j • q j := by
+    rw [← Matrix.toEuclideanLin_toLp, Matrix.toEuclideanLin_apply_eq_sum]
+    exact Finset.sum_congr rfl fun j _ => by
+      change z j • toLp 2 (ofLp (q j)) = z j • q j
+      rw [WithLp.toLp_ofLp]
+  apply sub_eq_iff_eq_add'.mpr
+  apply Matrix.ext_iff_mulVec.mpr
+  intro z
+  apply WithLp.toLp_injective 2
+  rw [Matrix.add_mulVec, ← Matrix.mulVec_mulVec, ← Matrix.mulVec_mulVec z Q T,
+    Matrix.smul_mulVec, Matrix.vecMulVec_mulVec, op_smul_eq_smul, single_one_dotProduct,
+    smul_smul, WithLp.toLp_add, WithLp.toLp_smul, WithLp.toLp_ofLp,
+    ← Matrix.toEuclideanLin_toLp H, hQ, hQ]
+  simpa only [A, b, T, q, Algebra.algebraMap_self, RingHom.coe_id, Matrix.map_id,
+    RCLike.ofReal_real_eq_id, id_eq] using Lanczos.apply_sum b hH.isSymmetric_toEuclideanLin k z
+
+/-- The active Lanczos columns have Gram matrix equal to the identity,
+and the next vector is orthogonal to them, as in (5.2.16). -/
+theorem lanczos_orthonormal_5_2_16 (H : Matrix n n ℝ) (r₀ : n → ℝ) (k : ℕ)
+    (hactive : ∀ j : Fin (k + 1), Arnoldi.vec (toEuclideanLin H) (toLp 2 r₀) j ≠ 0) :
+    let q := Arnoldi.vec (toEuclideanLin H) (toLp 2 r₀)
+    let Q := lanczosBasisMatrix H r₀ k
+    Qᵀ * Q = 1 ∧ Qᵀ *ᵥ ofLp (q (k + 1)) = 0 := by
+  let A := toEuclideanLin H
+  let b : EuclideanSpace ℝ n := toLp 2 r₀
+  let q := Arnoldi.vec A b
+  let Q := lanczosBasisMatrix H r₀ k
+  change Qᵀ * Q = 1 ∧ Qᵀ *ᵥ ofLp (q (k + 1)) = 0
+  constructor
+  · ext i j
+    change ofLp (q i) ⬝ᵥ ofLp (q j) = (1 : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ) i j
+    rw [← EuclideanSpace.inner_toLp_toLp_real, WithLp.toLp_ofLp, WithLp.toLp_ofLp]
+    by_cases h : i = j
+    · subst j
+      rw [real_inner_self_eq_norm_sq, Arnoldi.norm_vec_eq_one_of_ne_zero A b (hactive i),
+        one_pow, Matrix.one_apply_eq]
+    · rw [Arnoldi.inner_vec_eq_zero A b (fun he => h (Fin.ext he)), Matrix.one_apply_ne h]
+  · ext i
+    change ofLp (q i) ⬝ᵥ ofLp (q (k + 1)) = 0
+    rw [← EuclideanSpace.inner_toLp_toLp_real, WithLp.toLp_ofLp, WithLp.toLp_ofLp]
+    exact Arnoldi.inner_vec_eq_zero A b (ne_of_lt i.isLt)
+
+/-- Projecting (5.2.14) onto the active Lanczos basis gives (5.2.17). -/
+theorem lanczos_projection_5_2_17 {H : Matrix n n ℝ} (hH : H.IsSymm)
+    (r₀ : n → ℝ) (k : ℕ)
+    (hactive : ∀ j : Fin (k + 1), Arnoldi.vec (toEuclideanLin H) (toLp 2 r₀) j ≠ 0) :
+    let Q := lanczosBasisMatrix H r₀ k
+    Qᵀ * H * Q = Lanczos.tridiag (toEuclideanLin H) (toLp 2 r₀) (k + 1) := by
+  let Q := lanczosBasisMatrix H r₀ k
+  obtain ⟨horth, hperp⟩ := lanczos_orthonormal_5_2_16 H r₀ k hactive
+  have hrec := sub_eq_iff_eq_add'.mp (lanczos_relation_5_2_14 hH r₀ k)
+  change Qᵀ * H * Q = _
+  rw [Matrix.mul_assoc, hrec, Matrix.mul_add, ← Matrix.mul_assoc, horth,
+    Matrix.one_mul, Matrix.mul_smul, Matrix.mul_vecMulVec, hperp]
+  simp
+
+end MatrixLanczos
 
 /-- Algorithms 5.2.3 and 5.2.4 are the same Lanczos iteration transported
 through the factor of the preconditioner. The second recurrence uses the
@@ -242,5 +330,39 @@ theorem preconditioned_lanczos_matrix_relations_5_2_52_53
         rw [hsum, Matrix.mul_add, ← Matrix.mul_assoc Qbarᵀ Qbar T, horth,
           Matrix.one_mul, Matrix.mul_smul, Matrix.mul_vecMulVec, hperp]
         simp
+
+open Matrix WithLp in
+/-- Applying (5.2.14) and (5.2.16) to the transformed matrix gives the
+preconditioned matrix identities directly from the Lanczos run. -/
+theorem preconditioned_lanczos_run_relations_5_2_52_53
+    {n : Type*} [Fintype n] [DecidableEq n] {H : Matrix n n ℝ} (hH : H.IsSymm)
+    (R Rinv : Matrix n n ℝ) (r₀ : n → ℝ) (k : ℕ)
+    (hL : Rinv * R = 1) (hR : R * Rinv = 1)
+    (hactive : ∀ j : Fin (k + 1),
+      Arnoldi.vec (toEuclideanLin (Rinvᵀ * H * Rinv)) (toLp 2 (Rinvᵀ *ᵥ r₀)) j ≠ 0) :
+    let Hbar := Rinvᵀ * H * Rinv
+    let rbar := Rinvᵀ *ᵥ r₀
+    let A := toEuclideanLin Hbar
+    let b : EuclideanSpace ℝ n := toLp 2 rbar
+    let Q := Rinv * lanczosBasisMatrix Hbar rbar k
+    let M := Rᵀ * R
+    let T := Lanczos.tridiag A b (k + 1)
+    let qnext := ofLp (Arnoldi.vec A b (k + 1))
+    H * Q - M * Q * T =
+        Lanczos.beta A b k • Matrix.vecMulVec (Rᵀ *ᵥ qnext) (Pi.single (Fin.last k) 1) ∧
+      Qᵀ * H * Q = T := by
+  let Hbar := Rinvᵀ * H * Rinv
+  let rbar := Rinvᵀ *ᵥ r₀
+  let A := toEuclideanLin Hbar
+  let b : EuclideanSpace ℝ n := toLp 2 rbar
+  have hsym : Hbar.IsSymm := by
+    change (Rinvᵀ * H * Rinv)ᵀ = Rinvᵀ * H * Rinv
+    rw [Matrix.transpose_mul, Matrix.transpose_mul, Matrix.transpose_transpose, hH.eq,
+      Matrix.mul_assoc]
+  obtain ⟨horth, hperp⟩ := lanczos_orthonormal_5_2_16 Hbar rbar k hactive
+  exact preconditioned_lanczos_matrix_relations_5_2_52_53 H R Rinv
+    (lanczosBasisMatrix Hbar rbar k) (Lanczos.tridiag A b (k + 1))
+    (ofLp (Arnoldi.vec A b (k + 1))) (Pi.single (Fin.last k) 1) (Lanczos.beta A b k)
+    hL hR (lanczos_relation_5_2_14 hsym rbar k) horth hperp
 
 end ConnGouldToint.Chapter05
