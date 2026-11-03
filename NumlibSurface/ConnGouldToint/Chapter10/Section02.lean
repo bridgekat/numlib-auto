@@ -1,5 +1,7 @@
 import NumlibSurface.ConnGouldToint.Chapter06.Section04
 import Mathlib.Analysis.InnerProductSpace.Projection.Submodule
+import Mathlib.Analysis.InnerProductSpace.PiL2
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Deriv
 
 /-!
 # Structured trust regions
@@ -902,7 +904,8 @@ private theorem StructuredTRRun.drop_error (run : StructuredTRRun P elements N �
     (hval : ∀ k i, run.model k i (run.x k) = elements i (run.x k))
     (hgrad : ∀ k i, fderiv ℝ (run.model k i) (run.x k) = fderiv ℝ (elements i) (run.x k))
     (k : ℕ) (i : ι) :
-    |run.actualDrop k i - run.predictedDrop k i| ≤ uniformHessianConstant K κf κm * (run.Δ k i) ^ 2 := by
+    |run.actualDrop k i - run.predictedDrop k i| ≤
+      uniformHessianConstant K κf κm * (run.Δ k i) ^ 2 := by
   have heq : run.actualDrop k i - run.predictedDrop k i =
       -(elements i (run.x k + run.s k) - run.model k i (run.x k + run.s k)) := by
     unfold StructuredTRRun.actualDrop StructuredTRRun.predictedDrop
@@ -916,7 +919,8 @@ private theorem StructuredTRRun.drop_error (run : StructuredTRRun P elements N �
 
 private theorem uniformHessianConstant_pos {K κf κm : ℝ} (hK : 1 ≤ K) (hκf : 1 ≤ κf) :
     0 < uniformHessianConstant K κf κm :=
-  mul_pos (pow_pos (zero_lt_one.trans_le hK) 2) ((zero_lt_one.trans_le hκf).trans_le (le_max_left _ _))
+  mul_pos (pow_pos (zero_lt_one.trans_le hK) 2)
+    ((zero_lt_one.trans_le hκf).trans_le (le_max_left _ _))
 
 /-- Theorem 10.2.5. With the usual aggregate curvature choice and quadratic
 element accuracy from the smoothness assumptions, a uniform positive gradient
@@ -964,5 +968,303 @@ theorem theorem_10_2_6 (run : StructuredTRRun P elements N β κ)
     (run.gradients_agree hf hmodel hgrad) hfinite
 
 end Convergence
+
+section MissingNormEquivalence
+
+open scoped NNReal
+
+private abbrev CounterSpace := EuclideanSpace ℝ (Fin 2)
+private noncomputable def counterCoord : CounterSpace →L[ℝ] ℝ :=
+  PiLp.proj 2 (fun _ : Fin 2 ↦ ℝ) 0
+
+private noncomputable def counterNull (_ : Unit) : Submodule ℝ CounterSpace :=
+  LinearMap.ker counterCoord.toLinearMap
+
+private noncomputable def counterObjective (_ : Unit) (x : CounterSpace) : ℝ :=
+  Real.sin (counterCoord x)
+
+private noncomputable def counterStep : CounterSpace := EuclideanSpace.single 0 (-Real.pi)
+
+private noncomputable def counterRadius (k : ℕ) : ℝ := (1 / 2 : ℝ) ^ k
+
+private theorem counterRadius_pos (k : ℕ) : 0 < counterRadius k := by
+  unfold counterRadius
+  positivity
+
+private noncomputable def counterNorm (k : ℕ) : Seminorm ℝ CounterSpace :=
+  (counterRadius k / Real.pi).toNNReal • normSeminorm ℝ CounterSpace
+
+private theorem counterNorm_apply (k : ℕ) (x : CounterSpace) :
+    counterNorm k x = (counterRadius k / Real.pi) * ‖x‖ := by
+  rw [counterNorm, smul_apply, NNReal.smul_def,
+    Real.coe_toNNReal _ (div_nonneg (counterRadius_pos k).le Real.pi_pos.le)]
+  rfl
+
+private theorem counterCoord_step : counterCoord counterStep = -Real.pi := by
+  simp [counterCoord, counterStep, PiLp.proj_apply]
+
+private theorem counterStep_norm : ‖counterStep‖ = Real.pi := by
+  rw [counterStep, PiLp.norm_single, Real.norm_eq_abs, abs_neg, abs_of_pos Real.pi_pos]
+
+private theorem counterCoord_norm_le : ‖counterCoord‖ ≤ 1 :=
+  counterCoord.opNorm_le_bound zero_le_one fun x ↦ by
+    simpa only [counterCoord, PiLp.proj_apply, one_mul] using PiLp.norm_apply_le x (0 : Fin 2)
+
+private theorem counterCoord_ne_zero : counterCoord ≠ 0 := by
+  intro h
+  have hc := DFunLike.congr_fun h counterStep
+  rw [counterCoord_step] at hc
+  simpa using (Real.pi_ne_zero (neg_eq_zero.mp hc))
+
+private theorem counterNull_ne_bot (i : Unit) : counterNull i ≠ ⊥ := by
+  let y : CounterSpace := EuclideanSpace.single 1 1
+  have hy : y ∈ counterNull i := by
+    change counterCoord y = 0
+    simp [y, counterCoord, PiLp.proj_apply]
+  intro h
+  rw [h, Submodule.mem_bot] at hy
+  have he := congrArg (fun v : CounterSpace ↦ v 1) hy
+  simp [y] at he
+
+private noncomputable def counterParams : StructuredTRParams where
+  η₁ := 1 / 10
+  η₂ := 1 / 2
+  η₃ := 3 / 4
+  μ₁ := 1 / 10
+  μ₂ := 1 / 5
+  γ₁ := 1 / 2
+  γ₂ := 1 / 2
+  eta₁_pos := by norm_num
+  eta₁_le_eta₂ := by norm_num
+  eta₂_lt_one := by norm_num
+  gamma₁_pos := by norm_num
+  gamma₁_le_gamma₂ := le_rfl
+  gamma₂_lt_one := by norm_num
+  eta₂_lt_eta₃ := by norm_num
+  eta₃_lt_one := by norm_num
+  mu₁_pos := by norm_num
+  mu₁_lt_mu₂ := by norm_num
+  mu₂_lt_one := by norm_num
+  compatible := by norm_num
+
+private theorem counter_not_successful :
+    ¬ structuredSuccessful counterParams.η₁ (fun _ : Unit ↦ Real.pi) (fun _ ↦ 0) := by
+  simp [structuredSuccessful, counterParams, Real.pi_pos]
+
+private theorem counter_no_fit₂ (i : Unit) :
+    ¬ elementFit counterParams.η₂ (fun _ : Unit ↦ Real.pi) (fun _ ↦ 0) i := by
+  simp [elementFit, counterParams]
+  linarith [Real.pi_pos]
+
+private theorem counter_no_fit₃ (i : Unit) :
+    ¬ elementFit counterParams.η₃ (fun _ : Unit ↦ Real.pi) (fun _ ↦ 0) i := by
+  simp [elementFit, counterParams]
+  linarith [Real.pi_pos]
+
+private theorem counter_not_negligible (i : Unit) :
+    i ∉ negligibleElements counterParams.μ₁ (fun _ : Unit ↦ Real.pi) := by
+  classical
+  have hp : ¬ Real.pi ≤ (1 / 10 : ℝ) * Real.pi := by linarith [Real.pi_pos]
+  simp only [negligibleElements, Finset.mem_filter, Finset.mem_univ, true_and]
+  simpa [counterParams, abs_of_pos Real.pi_pos] using hp
+
+private theorem counter_update (k : ℕ) :
+    StructuredRadiusUpdate counterParams (fun _ : Unit ↦ Real.pi) (fun _ ↦ 0)
+      (fun _ ↦ counterRadius k) (fun _ ↦ counterRadius (k + 1)) := by
+  have hr : counterRadius (k + 1) = (1 / 2) * counterRadius k := by
+    simp only [counterRadius, pow_succ, mul_comm]
+  constructor
+  · exact fun i _ hf _ ↦ (counter_no_fit₃ i hf).elim
+  · exact fun i _ hf _ ↦ (counter_no_fit₃ i hf).elim
+  · exact fun i _ _ hf ↦ (counter_no_fit₂ i hf).elim
+  · intro i _ _
+    constructor <;> simpa only [counterParams, hr] using le_rfl
+  · exact fun i hi _ _ ↦ (counter_not_negligible i hi).elim
+  · exact fun i hi _ _ ↦ (counter_not_negligible i hi).elim
+  · exact fun i hi _ ↦ (counter_not_negligible i hi).elim
+
+private theorem counterObjectives_drop :
+    counterObjective () 0 - counterObjective () (0 + counterStep) = 0 := by
+  simp [counterObjective, counterCoord_step, Real.sin_neg]
+
+private theorem counterPredictedDrop :
+    (fun _ : Unit ↦ counterCoord 0 - counterCoord (0 + counterStep)) = fun _ ↦ Real.pi := by
+  funext i
+  simp [counterCoord_step]
+
+private theorem counterActualDrop :
+    (fun i : Unit ↦ counterObjective i 0 - counterObjective i (0 + counterStep)) = fun _ ↦ 0 :=
+  funext fun i ↦ by cases i; exact counterObjectives_drop
+
+private noncomputable def counterRun :
+    StructuredTRRun counterParams counterObjective counterNull (fun _ ↦ 1) (Real.pi / 2) where
+  x := fun _ ↦ 0
+  s := fun _ ↦ counterStep
+  p := counterNorm
+  model := fun _ _ ↦ counterCoord
+  Δ := fun k _ ↦ counterRadius k
+  norm_separates := by
+    intro k v h
+    rw [counterNorm_apply] at h
+    exact norm_eq_zero.mp ((mul_eq_zero.mp h).resolve_left
+      (div_pos (counterRadius_pos k) Real.pi_pos).ne')
+  invariant_nontrivial := counterNull_ne_bot
+  objective_invariant := by
+    intro i x w hw
+    change counterCoord w = 0 at hw
+    simp [counterObjective, map_add, hw]
+  model_invariant := by
+    intro k i x w hw
+    change counterCoord w = 0 at hw
+    simp [map_add, hw]
+  initial_pos := fun _ ↦ counterRadius_pos 0
+  β_pos := fun _ ↦ zero_lt_one
+  κ_pos := half_pos Real.pi_pos
+  feasible := by
+    intro k
+    rw [structuredTrustRegion, mem_iInter]
+    intro i
+    change counterNorm k ((counterNull i)ᗮ.starProjection (0 + counterStep - 0)) ≤ counterRadius k
+    rw [zero_add, sub_zero, counterNorm_apply]
+    have h := ((counterNull i)ᗮ.norm_starProjection_apply_le counterStep).trans_eq counterStep_norm
+    calc
+      _ ≤ counterRadius k / Real.pi * Real.pi :=
+        mul_le_mul_of_nonneg_left h (div_nonneg (counterRadius_pos k).le Real.pi_pos.le)
+      _ = _ := div_mul_cancel₀ _ Real.pi_ne_zero
+  sufficient := by
+    intro k
+    unfold structuredSufficientDecrease
+    simp only [Fintype.sum_unique, div_one, zero_add, map_zero, counterCoord_step,
+      zero_sub, neg_neg]
+    let g := ‖gradient (counterCoord : CounterSpace → ℝ) 0‖
+    have hg : g ≤ 1 := by
+      simpa only [g, gradient, LinearIsometryEquiv.norm_map, counterCoord.fderiv] using
+        counterCoord_norm_le
+    change Real.pi / 2 * g * min g _ ≤ Real.pi
+    have hp : 0 ≤ Real.pi / 2 * g := mul_nonneg (half_pos Real.pi_pos).le (norm_nonneg _)
+    calc
+      _ ≤ Real.pi / 2 * g * g := mul_le_mul_of_nonneg_left (min_le_left _ _) hp
+      _ ≤ Real.pi / 2 * 1 * 1 := by gcongr
+      _ ≤ _ := by linarith [Real.pi_pos]
+  predicted_pos := by simp [counterCoord_step, Real.pi_pos]
+  radius_update := by
+    intro k
+    rw [counterPredictedDrop, counterActualDrop]
+    exact counter_update k
+  iterate_update := by
+    intro k
+    rw [counterPredictedDrop, counterActualDrop, ite_eq_right counter_not_successful]
+
+private theorem counterObjective_fderiv (i : Unit) (x : CounterSpace) :
+    fderiv ℝ (counterObjective i) x = Real.cos (counterCoord x) • counterCoord :=
+  ((Real.hasDerivAt_sin (counterCoord x)).comp_hasFDerivAt x counterCoord.hasFDerivAt).fderiv
+
+private theorem counterObjective_hessian_norm_le (i : Unit) (x : CounterSpace) :
+    ‖fderiv ℝ (fderiv ℝ (counterObjective i)) x‖ ≤ 1 := by
+  have hcos : HasFDerivAt (fun y ↦ Real.cos (counterCoord y))
+      ((-Real.sin (counterCoord x)) • counterCoord) x :=
+    (Real.hasDerivAt_cos (counterCoord x)).comp_hasFDerivAt x counterCoord.hasFDerivAt
+  rw [show fderiv ℝ (counterObjective i) =
+    fun y ↦ Real.cos (counterCoord y) • counterCoord from funext (counterObjective_fderiv i),
+    (hcos.smul_const counterCoord).fderiv,
+    ContinuousLinearMap.norm_smulRight_apply, norm_smul, Real.norm_eq_abs, abs_neg]
+  calc
+    |Real.sin (counterCoord x)| * ‖counterCoord‖ * ‖counterCoord‖ ≤ 1 * 1 * 1 := by
+      exact mul_le_mul
+        (mul_le_mul (Real.abs_sin_le_one _) counterCoord_norm_le (norm_nonneg _) zero_le_one)
+        counterCoord_norm_le (norm_nonneg _) (by norm_num)
+    _ = 1 := by norm_num
+
+private theorem counterModel_hessian (z : CounterSpace) :
+    fderiv ℝ (fderiv ℝ (counterCoord : CounterSpace → ℝ)) z = 0 := by
+  rw [show fderiv ℝ (counterCoord : CounterSpace → ℝ) = fun _ ↦ counterCoord from
+    funext fun _ ↦ counterCoord.fderiv]
+  exact fderiv_const_apply _
+
+/-- Without uniform norm equivalence, all trials can be rejected at a fixed
+noncritical iterate even though the element objective and model satisfy the
+uniform smoothness and gradient bounds. This supplies the missing AN.1 premise
+in the printed statement of Theorem 10.2.6. -/
+theorem theorem_10_2_6_without_norm_bound_counterexample :
+    ∃ (P : StructuredTRParams)
+      (f : Unit → EuclideanSpace ℝ (Fin 2) → ℝ)
+      (N : Unit → Submodule ℝ (EuclideanSpace ℝ (Fin 2)))
+      (run : StructuredTRRun P f N (fun _ ↦ 1) (Real.pi / 2)),
+      (∀ i, ContDiff ℝ 2 (f i)) ∧
+      (∀ i z, ‖fderiv ℝ (fderiv ℝ (f i)) z‖ ≤ 1) ∧
+      (∀ i z, ‖gradient (f i) z‖ ≤ 1) ∧
+      (∀ k i z, ContDiffAt ℝ 2 (run.model k i) z) ∧
+      (∀ k i z, fderiv ℝ (fderiv ℝ (run.model k i)) z = 0) ∧
+      (∀ k i, run.model k i (run.x k) = f i (run.x k) ∧
+        fderiv ℝ (run.model k i) (run.x k) = fderiv ℝ (f i) (run.x k)) ∧
+      (∀ k, run.aggregateCurvature k = 1) ∧
+      run.successful = ∅ ∧
+      (∀ k, run.x k = 0 ∧ run.objectiveGradient k ≠ 0) ∧
+      ∀ K : ℝ, ∃ k v, K * run.p k v < ‖v‖ := by
+  refine ⟨counterParams, counterObjective, counterNull, counterRun, ?_,
+    counterObjective_hessian_norm_le, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · intro i
+    exact Real.contDiff_sin.comp counterCoord.contDiff
+  · intro i z
+    rw [gradient, LinearIsometryEquiv.norm_map, counterObjective_fderiv,
+      norm_smul, Real.norm_eq_abs]
+    calc
+      _ ≤ 1 * 1 := mul_le_mul (Real.abs_cos_le_one _) counterCoord_norm_le
+        (norm_nonneg _) zero_le_one
+      _ = _ := by norm_num
+  · intro k i z
+    exact counterCoord.contDiff.contDiffAt
+  · intro k i z
+    exact counterModel_hessian z
+  · intro k i
+    change counterCoord 0 = counterObjective i 0 ∧
+      fderiv ℝ (counterCoord : CounterSpace → ℝ) 0 = fderiv ℝ (counterObjective i) 0
+    simp [counterObjective, counterObjective_fderiv, counterCoord.fderiv]
+  · intro k
+    unfold StructuredTRRun.aggregateCurvature
+    have hfun : (fun x : CounterSpace ↦ ∑ i, counterRun.model k i x) = counterCoord := by
+      funext x
+      simp only [Fintype.sum_unique]
+      rfl
+    rw [hfun]
+    simp only [counterModel_hessian]
+    have hmem : (0 : CounterSpace) ∈ structuredTrustRegion (counterRun.p k) counterNull
+        (counterRun.x k) (counterRun.Δ k) := by
+      rw [structuredTrustRegion, mem_iInter]
+      intro i
+      change counterNorm k ((counterNull i)ᗮ.starProjection (0 - 0)) ≤ counterRadius k
+      simp [(counterRadius_pos k).le]
+    rw [Set.Nonempty.image_const ⟨0, hmem⟩, csSup_singleton]
+    have hzero : ‖(0 : CounterSpace →L[ℝ] CounterSpace →L[ℝ] ℝ)‖ = 0 :=
+      ContinuousLinearMap.opNorm_zero
+    rw [hzero, add_zero]
+  · ext k
+    have ha : counterRun.actualDrop k = (fun _ : Unit ↦ 0) := counterActualDrop
+    have hd : counterRun.predictedDrop k = (fun _ : Unit ↦ Real.pi) := counterPredictedDrop
+    simp only [StructuredTRRun.successful, mem_ofPred_eq, ha, hd, mem_empty_iff_false, iff_false]
+    exact counter_not_successful
+  · intro k
+    refine ⟨rfl, ?_⟩
+    unfold StructuredTRRun.objectiveGradient gradient
+    simp only [Fintype.sum_unique]
+    change (InnerProductSpace.toDual ℝ CounterSpace).symm
+      (fderiv ℝ (counterObjective ()) 0) ≠ 0
+    rw [counterObjective_fderiv, map_zero, Real.cos_zero, one_smul]
+    intro h
+    apply counterCoord_ne_zero
+    exact (InnerProductSpace.toDual ℝ CounterSpace).symm.injective (h.trans (map_zero _).symm)
+  · intro K
+    have hnorm (k : ℕ) : counterRun.p k counterStep = counterRadius k := by
+      change counterNorm k counterStep = counterRadius k
+      rw [counterNorm_apply, counterStep_norm, div_mul_cancel₀ _ Real.pi_ne_zero]
+    have ht : Filter.Tendsto (fun k ↦ K * counterRun.p k counterStep) Filter.atTop (𝓝 0) := by
+      simp only [hnorm, counterRadius]
+      simpa only [mul_zero] using
+        (tendsto_pow_atTop_nhds_zero_of_lt_one (by norm_num : 0 ≤ (1 / 2 : ℝ))
+          (by norm_num)).const_mul K
+    obtain ⟨k, hk⟩ := (ht.eventually (gt_mem_nhds Real.pi_pos)).exists
+    exact ⟨k, counterStep, by simpa only [counterStep_norm] using hk⟩
+
+end MissingNormEquivalence
 
 end ConnGouldToint.Chapter10
