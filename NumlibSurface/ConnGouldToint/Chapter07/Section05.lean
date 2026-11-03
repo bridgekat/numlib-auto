@@ -613,4 +613,98 @@ theorem theorem_7_5_16 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ
   rw [Krylov.subspace_eq_of_grade_le _ _ hgrade]
   exact Krylov.subspace_grade_mem_invtSubmodule _ _
 
+/-- Theorem 7.5.17. Work in the preconditioner inner product. The invariant
+subspace `V` is the image of the first Lanczos block, and `v` is the lift
+of a leftmost eigenvector from the final block. If the first-block multiplier
+reaches the global threshold, its step already solves the full problem.
+Otherwise the threshold system on the first block has a unique solution,
+and an orthogonal eigenvector correction takes it to the boundary. -/
+theorem theorem_7_5_17 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+    [FiniteDimensional ℝ E] {H : E →L[ℝ] E} (hH : (H : E →ₗ[ℝ] E).IsSymmetric)
+    (V : Submodule ℝ E) (hV : ∀ x ∈ V, H x ∈ V)
+    {g s v : E} {Δ μ θ : ℝ}
+    (hsV : s ∈ V) (hsΔ : ‖s‖ ≤ Δ) (hμ : 0 ≤ μ)
+    (hs : (H + μ • (1 : E →L[ℝ] E)) s = -g) (hc : μ * (‖s‖ - Δ) = 0)
+    (hfirst : ∀ x ∈ V, x ≠ 0 → 0 < inner ℝ ((H + μ • (1 : E →L[ℝ] E)) x) x)
+    (hθ : θ = -Subproblem.leftmost hH)
+    (hv : H v = (-θ) • v) (hv₀ : v ≠ 0) (hvV : v ∈ Vᗮ) :
+    (θ ≤ μ → IsMinOn (Subproblem.quadModel g H) (Metric.closedBall 0 Δ) s) ∧
+    (μ < θ → ∃ y ∈ V, (H + θ • (1 : E →L[ℝ] E)) y = -g ∧
+      (∀ z ∈ V, (H + θ • (1 : E →L[ℝ] E)) z = -g → z = y) ∧
+      ∃ α : ℝ, ‖y‖ ^ 2 + α ^ 2 * ‖v‖ ^ 2 = Δ ^ 2 ∧
+        IsMinOn (Subproblem.quadModel g H) (Metric.closedBall 0 Δ) (y + α • v)) := by
+  open scoped RealInnerProductSpace in
+  constructor
+  · intro h
+    have hpos : ((H + μ • (1 : E →L[ℝ] E) : E →L[ℝ] E) : E →ₗ[ℝ] E).IsPositive :=
+      Subproblem.isPositive_add_smul_of_le (hH := hH) (hθ ▸ h)
+    exact (⟨hμ, hs, hpos, hc⟩ : Subproblem.IsTrustRegionMultiplier g H Δ s μ).isMinOn hH
+  · intro h
+    let A := H + θ • (1 : E →L[ℝ] E)
+    let B := H + μ • (1 : E →L[ℝ] E)
+    have hA (x : E) : A x = B x + (θ - μ) • x := by
+      change H x + θ • x = H x + μ • x + (θ - μ) • x
+      rw [add_assoc, ← add_smul, add_sub_cancel]
+    have hAV (x : E) (hx : x ∈ V) : A x ∈ V := by
+      change H x + θ • x ∈ V
+      exact V.add_mem (hV x hx) (V.smul_mem _ hx)
+    have hrhs : -g ∈ V := by
+      rw [← hs]
+      exact V.add_mem (hV s hsV) (V.smul_mem _ hsV)
+    let C : V →ₗ[ℝ] V :=
+      (((A : E →ₗ[ℝ] E).comp V.subtype).codRestrict V fun x => hAV x x.property)
+    have hker (x : V) (hx : C x = 0) : x = 0 := by
+      by_contra hn
+      have hx₀ : (x : E) ≠ 0 := fun he => hn (Subtype.ext he)
+      have he : A (x : E) = 0 := congrArg Subtype.val hx
+      rw [hA] at he
+      have hpos := hfirst x x.property hx₀
+      have hin := congrArg (fun z : E => inner ℝ z (x : E)) he
+      simp only [inner_add_left, real_inner_smul_left, inner_zero_left] at hin
+      linarith [mul_nonneg (sub_nonneg.mpr h.le) (real_inner_self_nonneg (x := (x : E)))]
+    have hinj : Function.Injective C := by
+      intro x z he
+      apply sub_eq_zero.mp
+      apply hker
+      rw [map_sub, he, sub_self]
+    obtain ⟨y, hy⟩ := LinearMap.injective_iff_surjective.mp hinj ⟨-g, hrhs⟩
+    have hys : A (y : E) = -g := congrArg Subtype.val hy
+    have hdiff : B (s - (y : E)) = (θ - μ) • (y : E) := by
+      have hys' := hys
+      rw [hA] at hys'
+      rw [map_sub, show B s = -g from hs, ← hys', add_sub_cancel_left]
+    have hcross : 0 ≤ inner ℝ (y : E) (s - (y : E)) := by
+      have hpos : 0 ≤ inner ℝ (B (s - (y : E))) (s - (y : E)) := by
+        by_cases hz : s - (y : E) = 0
+        · simp [hz]
+        · exact (hfirst _ (V.sub_mem hsV y.property) hz).le
+      rw [hdiff, real_inner_smul_left] at hpos
+      exact nonneg_of_mul_nonneg_right hpos (sub_pos.mpr h)
+    have hyΔ : ‖(y : E)‖ ≤ Δ := by
+      have hsq := norm_add_sq_real (y : E) (s - (y : E))
+      rw [add_comm (y : E), sub_add_cancel] at hsq
+      have hle : ‖(y : E)‖ ^ 2 ≤ ‖s‖ ^ 2 := by
+        linarith [sq_nonneg ‖s - (y : E)‖]
+      exact ((pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).mp hle).trans hsΔ
+    have hort : inner ℝ (y : E) v = 0 := hvV y y.property
+    have hΔ : 0 ≤ Δ := (norm_nonneg _).trans hsΔ
+    obtain ⟨α, hα, -⟩ := Subproblem.exists_norm_particular_add_smul_eq hort hv₀
+      (pow_le_pow_left₀ (norm_nonneg _) hyΔ 2)
+    have hnorm := (pow_left_inj₀ (norm_nonneg _) hΔ two_ne_zero).mp hα
+    have hαsq := norm_add_sq_real (y : E) (α • v)
+    rw [hα, inner_smul_right, hort, mul_zero, mul_zero, add_zero,
+      norm_smul, mul_pow, Real.norm_eq_abs, sq_abs] at hαsq
+    have hvker : A v = 0 := by
+      change H v + θ • v = 0
+      rw [hv, neg_smul, neg_add_cancel]
+    refine ⟨y, y.property, hys, ?_, α, hαsq.symm, ?_⟩
+    · intro z hz hzs
+      exact congrArg Subtype.val (hinj (show C ⟨z, hz⟩ = C y from Subtype.ext (hzs.trans hys.symm)))
+    · have hpos : (A : E →ₗ[ℝ] E).IsPositive :=
+        Subproblem.isPositive_add_smul_of_le (hH := hH) hθ.ge
+      have hshift : A ((y : E) + α • v) = -g := by
+        rw [map_add, map_smul, hys, hvker, smul_zero, add_zero]
+      exact (⟨hμ.trans h.le, hshift, hpos, by rw [hnorm, sub_self, mul_zero]⟩ :
+        Subproblem.IsTrustRegionMultiplier g H Δ ((y : E) + α • v) θ).isMinOn hH
+
 end ConnGouldToint.Chapter07
