@@ -1,0 +1,49 @@
+namespace = "ConnGouldToint.Chapter07"
+
+[[node]]
+id = "algorithm_7_3_2"
+source = "Conn–Gould–Toint, Algorithm 7.3.2 (midpoint realization of bracket choices)"
+
+[[node]]
+id = "algorithm_7_3_2_failed_newton"
+source = "Conn–Gould–Toint, Algorithm 7.3.2, Steps 2b–2c"
+
+[[node]]
+id = "algorithm_7_3_3"
+source = "Conn–Gould–Toint, Algorithm 7.3.3"
+
+[[node]]
+id = "algorithm_7_3_3_preserves_bracket"
+source = "Conn–Gould–Toint, Algorithm 7.3.3 (bracket invariant)"
+
+[[node]]
+id = "algorithm_7_3_6_exact_threshold"
+source = "Conn–Gould–Toint, Algorithm 7.3.6 (corrected exact threshold test and solution)"
+
+[[node]]
+id = "algorithm_7_3_6_easy_stop"
+source = "Conn–Gould–Toint, Algorithm 7.3.6, Steps 4–6 (finite Newton stopping)"
+
+[[node]]
+id = "algorithm_7_3_6_perturbation_counterexample"
+source = "Conn–Gould–Toint, Algorithm 7.3.6 Step 3 (a finite probe can falsely report the hard case)"
+
+[[node]]
+id = "algorithm_7_3_6_easy_start"
+source = "Conn–Gould–Toint, Algorithm 7.3.6 Steps 1–2 and 4–6 (corrected easy initialization and finite stopping)"
+
+[[node]]
+id = "algorithm_7_3_6"
+source = "Conn–Gould–Toint, Algorithm 7.3.6 (corrected threshold decision and first Newton stopping trial)"
+
+[[node]]
+id = "algorithm_7_3_6_returns_exact"
+source = "Conn–Gould–Toint, Algorithm 7.3.6 (corrected terminal branch)"
+
+[[node]]
+id = "algorithm_7_3_6_returns_easy"
+source = "Conn–Gould–Toint, Algorithm 7.3.6 (finite return in the easy branch)"
+
+[[node]]
+id = "algorithm_7_3_3_preserves_multiplier"
+source = "Conn–Gould–Toint, Algorithm 7.3.3 (the update retains the trust-region multiplier)"

@@ -1,0 +1,33 @@
+namespace = "ConnGouldToint.Chapter07"
+
+[[node]]
+id = "gltrInterior"
+source = "Conn–Gould–Toint, Algorithm 7.5.2 (sticky interior flag)"
+
+[[node]]
+id = "gltrInterior_succ"
+source = "Conn–Gould–Toint, Algorithm 7.5.2 (interior-to-reduced switch)"
+
+[[node]]
+id = "algorithm_7_5_2"
+source = "Conn–Gould–Toint, Algorithm 7.5.2 (PCG interior, exact Lanczos reduced step and residual test)"
+
+[[node]]
+id = "algorithm_7_5_2_feasible"
+source = "Conn–Gould–Toint, Algorithm 7.5.2 (feasibility of the lifted trial before breakdown)"
+
+[[node]]
+id = "algorithm_7_5_2_reduced_residual"
+source = "Conn–Gould–Toint, Algorithm 7.5.2 (correctness of the reduced stopping residual)"
+
+[[node]]
+id = "algorithm_7_5_2_until"
+source = "Conn–Gould–Toint, Algorithm 7.5.2 (scan trials through the first invariant Krylov subspace)"
+
+[[node]]
+id = "algorithm_7_5_2_until_spec"
+source = "Conn–Gould–Toint, Algorithm 7.5.2 (feasibility and stopping test of a returned step)"
+
+[[node]]
+id = "algorithm_7_5_2_until_terminates"
+source = "Conn–Gould–Toint, Algorithm 7.5.2 (finite exact stopping by the first Krylov grade)"
