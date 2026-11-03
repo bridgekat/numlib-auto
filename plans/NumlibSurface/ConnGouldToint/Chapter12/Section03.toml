@@ -135,3 +135,23 @@ source = "Conn–Gould–Toint, Section 12.3, radius estimate at a Cauchy trial 
 [[node]]
 id = "theorem_12_3_8_of_compact_run_of_trial_displacements_tendsto_zero"
 source = "Conn–Gould–Toint, corrected Theorem 12.3.8 with vanishing trial displacements"
+
+[[node]]
+id = "theorem_12_3_8_of_compact_run_of_Cauchy_displacements_tendsto_zero"
+source = "Conn–Gould–Toint, corrected Theorem 12.3.8 with vanishing Cauchy and iterate displacements"
+
+[[node]]
+id = "activeLinearizedConeMatches_of_activeGradient_independent"
+source = "Conn–Gould–Toint, AC.1, AC.7 and AO.1c imply the tangent qualification in Section 12.3"
+
+[[node]]
+id = "eventually_activeGradient_independent"
+source = "Conn–Gould–Toint, Section 12.3, persistence of active-gradient independence near cluster points"
+
+[[node]]
+id = "eventually_activeLinearizedConeMatches_of_compact"
+source = "Conn–Gould–Toint, Section 12.3, exact tangent linearization at late nearby Cauchy points"
+
+[[node]]
+id = "theorem_12_3_8_of_smooth_compact_run"
+source = "Conn–Gould–Toint, corrected Theorem 12.3.8 for smooth constraints and compact runs"
