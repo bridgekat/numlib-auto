@@ -19,3 +19,11 @@ source = "Conn–Gould–Toint, corrected Lemma 6.5.3"
 [[node]]
 id = "lemma_6_5_4"
 source = "Conn–Gould–Toint, corrected Lemma 6.5.4"
+
+[[node]]
+id = "theorem_6_5_2"
+source = "Conn–Gould–Toint, Theorem 6.5.2"
+
+[[node]]
+id = "theorem_6_5_5"
+source = "Conn–Gould–Toint, corrected Theorem 6.5.5"

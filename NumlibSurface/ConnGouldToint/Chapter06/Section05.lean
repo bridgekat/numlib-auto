@@ -210,4 +210,238 @@ theorem lemma_6_5_4 {P : BTRParams} {f : E → ℝ}
     · exact ih.trans ((run.radius_update k).very_successful (hN k hk))
     · exact hδN (k + 1) (Nat.succ_le_of_lt (lt_of_not_ge hk))
 
+private theorem norm_fderiv_lower_bound {f : E → ℝ} {x₀ : E}
+    (hf : DifferentiableAt ℝ (fderiv ℝ f) x₀) (hzero : fderiv ℝ f x₀ = 0)
+    {σ : ℝ} (hσ : 0 < σ) (hH : ∀ v, σ * ‖v‖ ≤ ‖fderiv ℝ (fderiv ℝ f) x₀ v‖) :
+    ∃ R > 0, ∀ x, ‖x - x₀‖ < R → (σ / 2) * ‖x - x₀‖ ≤ ‖fderiv ℝ f x‖ := by
+  have h := Asymptotics.isLittleO_iff.mp hf.hasFDerivAt.isLittleO (half_pos hσ)
+  obtain ⟨R, hR, hRsub⟩ := Metric.eventually_nhds_iff_ball.mp h
+  refine ⟨R, hR, fun x hx ↦ ?_⟩
+  have hx' := hRsub x (show x ∈ Metric.ball x₀ R by simpa [dist_eq_norm] using hx)
+  rw [hzero, sub_zero] at hx'
+  have ht := norm_sub_le (fderiv ℝ f x)
+    (fderiv ℝ f x - fderiv ℝ (fderiv ℝ f) x₀ (x - x₀))
+  rw [sub_sub_cancel] at ht
+  linarith only [ht, hx', hH (x - x₀)]
+
+omit [NormedSpace ℝ E] in
+private theorem tendsto_of_local_step_bound {x : ℕ → E} {x₀ : E} {u : ℕ → ℝ}
+    {R C c : ℝ} (hR : 0 < R) (hc : 0 < c)
+    (hu : Tendsto u atTop (𝓝 0))
+    {j : ℕ → ℕ} (hj : Tendsto j atTop atTop) (hx : Tendsto (x ∘ j) atTop (𝓝 x₀))
+    (hlower : ∀ k, ‖x k - x₀‖ < R → c * ‖x k - x₀‖ ≤ u k)
+    (hstep : ∀ᶠ k in atTop, ‖x k - x₀‖ < R → ‖x (k + 1) - x k‖ ≤ C * u k) :
+    Tendsto x atTop (𝓝 x₀) := by
+  rw [Metric.tendsto_atTop]
+  intro ε hε
+  let r := min (R / 2) ε
+  have hr : 0 < r := lt_min (half_pos hR) hε
+  have hrR : r ≤ R / 2 := min_le_left _ _
+  have ht : ∀ᶠ k in atTop, C * u k < R / 2 :=
+    (by simpa using (tendsto_const_nhds (x := C)).mul hu : Tendsto (C * u ·) atTop (𝓝 0)).eventually
+      (gt_mem_nhds (half_pos hR))
+  obtain ⟨N, hN⟩ := eventually_atTop.mp
+    (hstep.and (ht.and (hu.eventually (gt_mem_nhds (mul_pos hc hr)))))
+  have hentry := (hx.eventually (Metric.ball_mem_nhds x₀ hr)).and
+    (hj.eventually (eventually_ge_atTop N))
+  obtain ⟨i, hi, hiN⟩ := hentry.exists
+  have hstart : ‖x (j i) - x₀‖ < r := by simpa [Metric.mem_ball, dist_eq_norm] using hi
+  have hind (d : ℕ) : ‖x (j i + d) - x₀‖ < r := by
+    induction d with
+    | zero => simpa using hstart
+    | succ d ih =>
+      let k := j i + d
+      have hkN : N ≤ k := hiN.trans (Nat.le_add_right _ _)
+      have hkR : ‖x k - x₀‖ < R := ih.trans_le (hrR.trans (by linarith))
+      have hs := ((hN k hkN).1 hkR).trans_lt (hN k hkN).2.1
+      have htri := norm_add_le (x (k + 1) - x k) (x k - x₀)
+      rw [sub_add_sub_cancel] at htri
+      have hnext : ‖x (k + 1) - x₀‖ < R := by linarith only [htri, hs, ih, hrR]
+      have hbound := (hlower (k + 1) hnext).trans_lt
+        (hN (k + 1) (hkN.trans (Nat.le_succ _))).2.2
+      exact lt_of_mul_lt_mul_left hbound hc.le
+  refine ⟨j i, fun k hk ↦ ?_⟩
+  obtain ⟨d, rfl⟩ := Nat.exists_eq_add_of_le hk
+  rw [dist_eq_norm]
+  exact (hind d).trans_le (min_le_right _ _)
+
+private theorem step_norm_le_of_model_curvature {P : BTRParams} {f : E → ℝ}
+    {sufficient : ℕ → (E → ℝ) → E → E → Prop} (run : BTRRun f P sufficient)
+    {k : ℕ} {μ : ℝ} (hμ : 0 < μ)
+    (hm : ∀ z ∈ segment ℝ (run.x k) (run.x k + run.s k), DifferentiableAt ℝ (run.model k) z)
+    (hDm : ∀ z ∈ segment ℝ (run.x k) (run.x k + run.s k),
+      DifferentiableAt ℝ (fderiv ℝ (run.model k)) z)
+    (hgrad : fderiv ℝ f (run.x k) = fderiv ℝ (run.model k) (run.x k))
+    (hcurv : ∀ z ∈ segment ℝ (run.x k) (run.x k + run.s k), μ * ‖run.s k‖ ^ 2 ≤
+      fderiv ℝ (fderiv ℝ (run.model k)) z (run.s k) (run.s k)) :
+    ‖run.s k‖ ≤ 2 / μ * ‖fderiv ℝ f (run.x k)‖ := by
+  have hseg (t : ℝ) (ht : t ∈ Icc (0 : ℝ) 1) :
+      run.x k + t • run.s k ∈ segment ℝ (run.x k) (run.x k + run.s k) := by
+    simpa only [add_sub_cancel_left] using
+      (convex_segment (𝕜 := ℝ) (run.x k) (run.x k + run.s k)).add_smul_sub_mem
+        (left_mem_segment ℝ (run.x k) _) (right_mem_segment ℝ (run.x k) _) ht
+  rw [hgrad]
+  exact lemma_6_5_1 hμ (fun t ht ↦ hm _ (hseg t ht)) (fun t ht ↦ hDm _ (hseg t ht))
+    (fun t ht ↦ hcurv _ (hseg t ht)) (sub_nonneg.mp (run.predicted_pos k).le)
+
+/-- Theorem 6.5.2. A subsequence converges to a first-order point with a nonsingular
+Hessian. The lower bound on the Hessian as a linear map is the finite-dimensional
+form of nonsingularity. Uniform local model convexity need only hold along the
+trial steps. The gradient limit is supplied by Theorem 6.4.6. -/
+theorem theorem_6_5_2 {P : BTRParams} {f : E → ℝ}
+    {sufficient : ℕ → (E → ℝ) → E → E → Prop} (run : BTRRun f P sufficient)
+    {x₀ : E} {j : ℕ → ℕ} (hj : Tendsto j atTop atTop)
+    (hx : Tendsto (run.x ∘ j) atTop (𝓝 x₀)) (hf : ContDiff ℝ 2 f)
+    (hzero : fderiv ℝ f x₀ = 0)
+    (hcrit : Tendsto (fun k ↦ ‖fderiv ℝ f (run.x k)‖) atTop (𝓝 0))
+    {σ R μ : ℝ} (hσ : 0 < σ) (hR : 0 < R) (hμ : 0 < μ)
+    (hH : ∀ v, σ * ‖v‖ ≤ ‖fderiv ℝ (fderiv ℝ f) x₀ v‖)
+    (hm : ∀ k z, z ∈ segment ℝ (run.x k) (run.x k + run.s k) →
+      DifferentiableAt ℝ (run.model k) z)
+    (hDm : ∀ k z, z ∈ segment ℝ (run.x k) (run.x k + run.s k) →
+      DifferentiableAt ℝ (fderiv ℝ (run.model k)) z)
+    (hgrad : ∀ k, fderiv ℝ f (run.x k) = fderiv ℝ (run.model k) (run.x k))
+    (hcurv : ∀ᶠ k in atTop, ‖run.x k - x₀‖ < R →
+      ∀ z ∈ segment ℝ (run.x k) (run.x k + run.s k), μ * ‖run.s k‖ ^ 2 ≤
+        fderiv ℝ (fderiv ℝ (run.model k)) z (run.s k) (run.s k)) :
+    Tendsto run.x atTop (𝓝 x₀) := by
+  have hd := (hf.fderiv_right (show (1 : WithTop ℕ∞) + 1 ≤ 2 by norm_num)).differentiable
+    (by norm_num) x₀
+  obtain ⟨r, hr, hlow⟩ := norm_fderiv_lower_bound hd hzero hσ hH
+  refine tendsto_of_local_step_bound (C := 2 / μ) (lt_min hR hr) (half_pos hσ)
+    hcrit hj hx (fun k hk ↦ hlow _ (hk.trans_le (min_le_right _ _))) ?_
+  filter_upwards [hcurv] with k hk hnear
+  have hb := step_norm_le_of_model_curvature run hμ (hm k) (hDm k) (hgrad k)
+    (hk (hnear.trans_le (min_le_left _ _)))
+  by_cases hs : k ∈ run.successful
+  · rw [run.iterate_update, Optimization.acceptStep_of_le hs, add_sub_cancel_left]
+    exact hb
+  · rw [run.iterate_eq_of_unsuccessful hs, sub_self, norm_zero]
+    exact mul_nonneg (div_nonneg (by norm_num) hμ.le) (norm_nonneg _)
+
+private theorem hessianVariationVanishes_of_tendsto {f : E → ℝ} (hf : ContDiff ℝ 2 f)
+    {x s : ℕ → E} {x₀ : E} (hx : Tendsto x atTop (𝓝 x₀)) (hs : Tendsto s atTop (𝓝 0)) :
+    HessianVariationVanishes (fun _ ↦ f) x s := by
+  intro ε hε
+  let H := fderiv ℝ (fderiv ℝ f)
+  have hH : ContinuousAt H x₀ :=
+    ((hf.fderiv_right (show (1 : WithTop ℕ∞) + 1 ≤ 2 by norm_num)).fderiv_right
+      (show (0 : WithTop ℕ∞) + 1 ≤ 1 by norm_num)).continuous.continuousAt
+  obtain ⟨δ, hδ, hd⟩ := Metric.continuousAt_iff.mp hH (ε / 2) (half_pos hε)
+  filter_upwards [hx.eventually (Metric.ball_mem_nhds x₀ (half_pos hδ)),
+    hs.eventually (Metric.ball_mem_nhds 0 (half_pos hδ))] with k hxk hsk t ht
+  have hxk' : ‖x k - x₀‖ < δ / 2 := by simpa [Metric.mem_ball, dist_eq_norm] using hxk
+  have hsk' : ‖s k‖ < δ / 2 := by simpa [Metric.mem_ball, dist_eq_norm] using hsk
+  have hts : ‖t • s k‖ ≤ ‖s k‖ := by
+    rw [norm_smul, Real.norm_of_nonneg ht.1]
+    exact mul_le_of_le_one_left (norm_nonneg _) ht.2
+  have hseg : dist (x k + t • s k) x₀ < δ := by
+    rw [dist_eq_norm, add_comm (x k), add_sub_assoc]
+    linarith only [norm_add_le (t • s k) (x k - x₀), hts, hxk', hsk']
+  have h₁ := hd hseg
+  have h₂ := hd (show dist (x k) x₀ < δ by rw [dist_eq_norm]; linarith)
+  rw [dist_eq_norm] at h₁ h₂
+  have hb := norm_sub_le (H (x k + t • s k) - H x₀) (H (x k) - H x₀)
+  rw [sub_sub_sub_cancel_right] at hb
+  exact hb.trans (by linarith)
+
+/-- Corrected Theorem 6.5.5. The local model curvature condition keeps trial
+steps near a positive-definite limit once the iterates enter its neighborhood.
+Center Hessian agreement alone does not control the models on whole trial
+segments. The uniform model variation condition supplies the remaining
+hypothesis of the ratio estimate once the steps vanish. -/
+theorem theorem_6_5_5 {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
+    [CompleteSpace F] {P : BTRParams} {f : F → ℝ}
+    {sufficient : ℕ → (F → ℝ) → F → F → Prop} (run : BTRRun f P sufficient)
+    {x₀ : F} {j : ℕ → ℕ} (hj : Tendsto j atTop atTop)
+    (hx : Tendsto (run.x ∘ j) atTop (𝓝 x₀)) (hf : ContDiff ℝ 2 f)
+    (hzero : fderiv ℝ f x₀ = 0)
+    (hcrit : Tendsto (fun k ↦ ‖fderiv ℝ f (run.x k)‖) atTop (𝓝 0))
+    {σ R μ K B κ : ℝ} (hσ : 0 < σ) (hR : 0 < R) (hμ : 0 < μ)
+    (hK : 0 < K) (hB : 0 < B) (hκ : 0 < κ)
+    (hH : ∀ v, σ * ‖v‖ ^ 2 ≤ fderiv ℝ (fderiv ℝ f) x₀ v v)
+    (hnorm : ∀ k v, ‖v‖ ≤ K * run.p k v)
+    (β : ℕ → ℝ) (hβ : ∀ k, 0 < β k) (hβB : ∀ k, β k ≤ B)
+    (hm : ∀ k z, z ∈ segment ℝ (run.x k) (run.x k + run.s k) →
+      DifferentiableAt ℝ (run.model k) z)
+    (hDm : ∀ k z, z ∈ segment ℝ (run.x k) (run.x k + run.s k) →
+      DifferentiableAt ℝ (fderiv ℝ (run.model k)) z)
+    (hval : ∀ k, f (run.x k) = run.model k (run.x k))
+    (hgrad : ∀ k, fderiv ℝ f (run.x k) = fderiv ℝ (run.model k) (run.x k))
+    (hagree : ModelHessianAgreement f run.model run.x)
+    (hcurv : ∀ᶠ k in atTop, ‖run.x k - x₀‖ < R →
+      ∀ z ∈ segment ℝ (run.x k) (run.x k + run.s k), μ * ‖run.s k‖ ^ 2 ≤
+        fderiv ℝ (fderiv ℝ (run.model k)) z (run.s k) (run.s k))
+    (hMvar : Tendsto run.s atTop (𝓝 0) → HessianVariationVanishes run.model run.x run.s)
+    (hdec : ∀ k, HasSufficientModelDecrease (run.model k) (run.x k) (run.s k)
+      (gradient f (run.x k)) (β k) (run.Δ k) κ) :
+    Tendsto run.x atTop (𝓝 x₀) ∧ (∀ᶠ k in atTop, k ∈ run.verySuccessful) ∧
+      ∃ δ > 0, ∀ k, δ ≤ run.Δ k := by
+  have hlower (v : F) : σ * ‖v‖ ≤ ‖fderiv ℝ (fderiv ℝ f) x₀ v‖ := by
+    rcases eq_or_ne v 0 with rfl | hv
+    · simp
+    have hop := (fderiv ℝ (fderiv ℝ f) x₀ v).le_opNorm v
+    rw [Real.norm_eq_abs] at hop
+    have hb := (hH v).trans ((le_abs_self _).trans hop)
+    exact le_of_mul_le_mul_right (by simpa [pow_two, mul_assoc] using hb) (norm_pos_iff.mpr hv)
+  have hconv := theorem_6_5_2 run hj hx hf hzero hcrit hσ hR hμ hlower
+    hm hDm hgrad hcurv
+  have hstep : ∀ᶠ k in atTop, ‖run.s k‖ ≤ 2 / μ * ‖fderiv ℝ f (run.x k)‖ := by
+    filter_upwards [hcurv, hconv.eventually (Metric.ball_mem_nhds x₀ hR)] with k hk hnear
+    exact step_norm_le_of_model_curvature run hμ (hm k) (hDm k) (hgrad k)
+      (hk (by simpa [Metric.mem_ball, dist_eq_norm] using hnear))
+  have ht : Tendsto (fun k ↦ 2 / μ * ‖fderiv ℝ f (run.x k)‖) atTop (𝓝 0) := by
+    simpa using (tendsto_const_nhds (x := 2 / μ)).mul hcrit
+  have hsnorm : Tendsto (fun k ↦ ‖run.s k‖) atTop (𝓝 0) :=
+    tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds ht
+      (Eventually.of_forall fun _ ↦ norm_nonneg _) hstep
+  have hs : Tendsto run.s atTop (𝓝 0) := tendsto_zero_iff_norm_tendsto_zero.mpr hsnorm
+  let a := μ / 2
+  let b := min (a / B) (1 / K)
+  have ha : 0 < a := half_pos hμ
+  have hb : 0 < b := lt_min (div_pos ha hB) (div_pos zero_lt_one hK)
+  have hq : ∀ᶠ k in atTop, 0 < (κ * a * b) * ‖run.s k‖ ^ 2 ∧
+      (κ * a * b) * ‖run.s k‖ ^ 2 ≤
+        run.model k (run.x k) - run.model k (run.x k + run.s k) := by
+    filter_upwards [hstep] with k hk
+    let u := ‖run.s k‖
+    let g := ‖gradient f (run.x k)‖
+    have hgnorm : g = ‖fderiv ℝ f (run.x k)‖ := by
+      unfold g gradient
+      exact LinearIsometryEquiv.norm_map _ _
+    have hgu : a * u ≤ g := by
+      rw [hgnorm]
+      change u ≤ 2 / μ * ‖fderiv ℝ f (run.x k)‖ at hk
+      rw [div_mul_eq_mul_div] at hk
+      dsimp [a]
+      linarith only [(le_div_iff₀ hμ).mp hk]
+    have hfeas : run.p k (run.s k) ≤ run.Δ k := by
+      have h := run.feasible k
+      simpa [trustRegion] using h
+    have hΔ : u / K ≤ run.Δ k :=
+      (div_le_iff₀ hK).mpr ((hnorm k (run.s k)).trans
+        (by simpa [mul_comm] using mul_le_mul_of_nonneg_left hfeas hK.le))
+    have hmin : b * u ≤ min (g / β k) (run.Δ k) := by
+      refine le_min ?_ ?_
+      · calc
+          _ ≤ (a / B) * u := mul_le_mul_of_nonneg_right (min_le_left _ _) (norm_nonneg _)
+          _ = (a * u) / B := by ring
+          _ ≤ g / β k := div_le_div₀ (norm_nonneg _) hgu (hβ k) (hβB k)
+      · exact (mul_le_mul_of_nonneg_right (min_le_right (a / B) (1 / K))
+          (norm_nonneg _)).trans (by simpa [one_div, div_eq_mul_inv, mul_comm] using hΔ)
+    have hu : 0 < u := by
+      apply norm_pos_iff.mpr
+      intro hz
+      have hp := run.predicted_pos k
+      simp [hz] at hp
+    refine ⟨mul_pos (mul_pos (mul_pos hκ ha) hb) (pow_pos hu _), ?_⟩
+    calc
+      _ = (κ * (a * u)) * (b * u) := by ring
+      _ ≤ (κ * g) * min (g / β k) (run.Δ k) :=
+        mul_le_mul (mul_le_mul_of_nonneg_left hgu hκ.le) hmin
+          (mul_nonneg hb.le hu.le) (mul_nonneg hκ.le (norm_nonneg _))
+      _ ≤ _ := (hdec k).2
+  exact ⟨hconv, lemma_6_5_4 run (mul_pos (mul_pos hκ ha) hb) hf hm hDm hval hgrad hcrit
+    hagree (hessianVariationVanishes_of_tendsto hf hconv hs) (hMvar hs) hq⟩
+
 end ConnGouldToint.Chapter06

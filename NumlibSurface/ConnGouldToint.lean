@@ -48,7 +48,10 @@ The identity-Hessian counterexample shows what fails when an earlier line step i
 
 Chapters 6 and 8 cover the basic trust-region iteration, Cauchy model decrease,
 and dual-norm estimates. In the proof of Theorem 6.4.3 the explicit radius lower bound
-also includes the initial radius. For Theorem 8.1.8, uniform norm equivalence alone
+also includes the initial radius. In Section 6.5, the corrected ratio estimates
+assume uniform Hessian control on the trial segments. Theorem 6.5.5 also
+assumes local model curvature along those segments to keep the iterates near
+the limiting point. For Theorem 8.1.8, uniform norm equivalence alone
 does not imply AN.3. A scaling counterexample and a fixed-norm version with Lipschitz
 gradients along the iterates are formalized.
 
