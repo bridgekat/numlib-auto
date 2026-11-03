@@ -1,0 +1,17 @@
+namespace = "ConnGouldToint.Chapter11"
+
+[[node]]
+id = "compositeTaylorModel"
+source = "Conn–Gould–Toint, (11.5.1)–(11.5.3)"
+
+[[node]]
+id = "compositeTaylorModel_error"
+source = "Conn–Gould–Toint, corrected model accuracy in Theorem 11.5.1"
+
+[[node]]
+id = "theorem_11_5_1_uniform_agreement"
+source = "Conn–Gould–Toint, uniform normalized error argument in Theorem 11.5.1"
+
+[[node]]
+id = "compositeTaylorModel_domain_counterexample"
+source = "Conn–Gould–Toint, counterexample to model domain coverage in Theorem 11.5.1"

@@ -26,16 +26,19 @@ def HasStrictActiveMultipliers [Fintype ι] (c : ι → E → ℝ) (n : ι → E
     (∀ i ∈ activeConstraintSet c x, 0 < μ i) ∧
     ∀ i ∉ activeConstraintSet c x, μ i = 0
 
-/-- The active set is locally constant relative to a set of strictly
-complementary stationary points with independent active normals. -/
-theorem eventually_activeConstraintSet_eq [Fintype ι] {S : Set E}
+/-- A supported normal representation near a strictly complementary point
+identifies the active set even when the represented vector is perturbed. -/
+theorem eventually_activeConstraintSet_eq_of_normal_representation [Fintype ι]
     {c : ι → E → ℝ} {n : ι → E → E} {g : E → E} {x : E}
-    (hx : x ∈ S) (hc : ∀ i, Continuous (c i)) (hn : ∀ i, Continuous (n i))
-    (hg : Continuous g)
+    (hc : ∀ i, Continuous (c i)) (hn : ∀ i, Continuous (n i))
     (hind : LinearIndependent ℝ (fun i : activeConstraintSet c x ↦ n i x))
-    (hmul : ∀ y ∈ S, HasStrictActiveMultipliers c n g y) :
-    ∀ᶠ y in 𝓝 x, y ∈ S → activeConstraintSet c y = activeConstraintSet c x := by
+    (hmul : HasStrictActiveMultipliers c n g x) :
+    ∀ᶠ y : E × E in 𝓝 (x, g x),
+      (∃ μ : ι → ℝ, y.2 = ∑ i, μ i • n i y.1 ∧
+        ∀ i ∉ activeConstraintSet c y.1, μ i = 0) →
+      activeConstraintSet c y.1 = activeConstraintSet c x := by
   classical
+  let w₀ : E × E := (x, g x)
   let J := activeConstraintSet c x
   have hsub : ∀ᶠ y in 𝓝 x, activeConstraintSet c y ⊆ J := by
     have h (i : ι) : ∀ᶠ y in 𝓝 x, i ∈ activeConstraintSet c y → i ∈ J := by
@@ -46,59 +49,100 @@ theorem eventually_activeConstraintSet_eq [Fintype ι] {S : Set E}
         have he : ∀ᶠ y in 𝓝 x, c i y ≠ 0 := (hc i).continuousAt ho
         exact he.mono fun y hy hy' ↦ (hy hy').elim
     exact (eventually_all.mpr h).mono fun y hy i ↦ hy i
-  let G (y : E) : Matrix J J ℝ := Matrix.gram ℝ (fun i : J ↦ n i y)
-  let rhs (y : E) (i : J) := ⟪n i y, g y⟫
-  let a (y : E) := (G y)⁻¹ *ᵥ rhs y
-  have hG : Continuous G := continuous_matrix fun i j ↦ (hn i).inner (hn j)
-  have hdet : (G x).det ≠ 0 := (Matrix.det_gram_ne_zero_iff_linearIndependent).mpr hind
-  have hdnear : ∀ᶠ y in 𝓝 x, (G y).det ≠ 0 :=
+  let G (y : E × E) : Matrix J J ℝ := Matrix.gram ℝ (fun i : J ↦ n i y.1)
+  let rhs (y : E × E) (i : J) := ⟪n i y.1, y.2⟫
+  let a (y : E × E) := (G y)⁻¹ *ᵥ rhs y
+  have hG : Continuous G := continuous_matrix fun i j ↦
+    ((hn i).comp continuous_fst).inner ((hn j).comp continuous_fst)
+  have hdet : (G w₀).det ≠ 0 := (Matrix.det_gram_ne_zero_iff_linearIndependent).mpr hind
+  have hdnear : ∀ᶠ y in 𝓝 w₀, (G y).det ≠ 0 :=
     hG.matrix_det.continuousAt ((show IsOpen {y : ℝ | y ≠ 0} from isOpen_ne).mem_nhds hdet)
-  have hGi : ContinuousAt (fun y ↦ (G y)⁻¹) x := by
-    apply (continuousAt_matrix_inv (G x) ?_).comp hG.continuousAt
-    change ContinuousAt (fun y : ℝ ↦ Ring.inverse y) (G x).det
+  have hGi : ContinuousAt (fun y ↦ (G y)⁻¹) w₀ := by
+    apply (continuousAt_matrix_inv (G w₀) ?_).comp hG.continuousAt
+    change ContinuousAt (fun y : ℝ ↦ Ring.inverse y) (G w₀).det
     simp_rw [Ring.inverse_eq_inv]
     exact continuousAt_inv₀ hdet
-  have ha (i : J) : ContinuousAt (fun y ↦ a y i) x := by
-    change ContinuousAt (fun y ↦ ∑ j : J, (G y)⁻¹ i j * rhs y j) x
+  have ha (i : J) : ContinuousAt (fun y ↦ a y i) w₀ := by
+    change ContinuousAt (fun y ↦ ∑ j : J, (G y)⁻¹ i j * rhs y j) w₀
     apply tendsto_finsetSum _ fun j _ ↦ ?_
+    have hrhs : ContinuousAt (fun y : E × E ↦ ⟪n j y.1, y.2⟫) w₀ :=
+      (((hn j).comp continuous_fst).inner continuous_snd).continuousAt
     exact ((continuous_apply j).continuousAt.comp
-      ((continuous_apply i).continuousAt.comp hGi)).mul ((hn j).inner hg).continuousAt
-  have hcoef (y : E) (hJ : activeConstraintSet c y ⊆ J) (hdet' : (G y).det ≠ 0)
-      (μ : ι → ℝ) (hstat : g y = ∑ i, μ i • n i y)
-      (hzero : ∀ i ∉ activeConstraintSet c y, μ i = 0) :
+      ((continuous_apply i).continuousAt.comp hGi)).mul hrhs
+  have hcoef (y : E × E) (hJ : activeConstraintSet c y.1 ⊆ J) (hdet' : (G y).det ≠ 0)
+      (μ : ι → ℝ) (hstat : y.2 = ∑ i, μ i • n i y.1)
+      (hzero : ∀ i ∉ activeConstraintSet c y.1, μ i = 0) :
       a y = fun i : J ↦ μ i := by
     let μJ : J → ℝ := fun i ↦ μ i
-    have hsum : (∑ i : J, μ i • n i y) = ∑ i, μ i • n i y := by
-      have hzero' : (∑ i : {i // i ∉ J}, μ i • n i y) = 0 := by
+    have hsum : (∑ i : J, μ i • n i y.1) = ∑ i, μ i • n i y.1 := by
+      have hzero' : (∑ i : {i // i ∉ J}, μ i • n i y.1) = 0 := by
         apply Finset.sum_eq_zero
         intro i _
         rw [hzero i (fun hai ↦ i.2 (hJ hai)), zero_smul]
       simpa only [hzero', add_zero] using
-        Fintype.sum_subtype_add_sum_subtype (· ∈ J) (fun i ↦ μ i • n i y)
+        Fintype.sum_subtype_add_sum_subtype (· ∈ J) (fun i ↦ μ i • n i y.1)
     have hnormal : G y *ᵥ μJ = rhs y := by
       funext i
-      change (∑ j : J, ⟪n i y, n j y⟫ * μ j) = ⟪n i y, g y⟫
+      change (∑ j : J, ⟪n i y.1, n j y.1⟫ * μ j) = ⟪n i y.1, y.2⟫
       rw [hstat, ← hsum, inner_sum]
       simp only [real_inner_smul_right, mul_comm]
     change (G y)⁻¹ *ᵥ rhs y = μJ
     rw [← hnormal, Matrix.mulVec_mulVec, Matrix.nonsing_inv_mul _ (isUnit_iff_ne_zero.mpr hdet'),
       Matrix.one_mulVec]
-  obtain ⟨μ, hμ, hμpos, hμzero⟩ := hmul x hx
-  have hax := hcoef x (fun _ hi ↦ hi) hdet μ hμ hμzero
-  have hposnear : ∀ᶠ y in 𝓝 x, ∀ i : J, 0 < a y i := by
+  obtain ⟨μ, hμ, hμpos, hμzero⟩ := hmul
+  have hax := hcoef w₀ (fun _ hi ↦ hi) hdet μ hμ hμzero
+  have hposnear : ∀ᶠ y in 𝓝 w₀, ∀ i : J, 0 < a y i := by
     apply eventually_all.mpr
     intro i
-    have hi : 0 < a x i := by rw [hax]; exact hμpos i i.2
+    have hi : 0 < a w₀ i := by rw [hax]; exact hμpos i i.2
     exact (ha i).eventually (lt_mem_nhds hi)
-  filter_upwards [hsub, hdnear, hposnear] with y hyJ hyd hypos
+  have hfst : Tendsto (Prod.fst : E × E → E) (𝓝 w₀) (𝓝 x) :=
+    continuous_fst.continuousAt
+  have hsub' : ∀ᶠ y : E × E in 𝓝 w₀, activeConstraintSet c y.1 ⊆ J :=
+    hfst.eventually hsub
+  filter_upwards [hsub', hdnear, hposnear] with y hyJ hyd hypos
   intro hy
   refine Set.Subset.antisymm hyJ ?_
   intro i hi
-  obtain ⟨ν, hν, _, hνzero⟩ := hmul y hy
+  obtain ⟨ν, hν, hνzero⟩ := hy
   have haν := hcoef y hyJ hyd ν hν hνzero
   have hi' := hypos ⟨i, hi⟩
   rw [haν] at hi'
   exact not_not.mp fun hn ↦ hi'.ne' (hνzero i hn)
+
+/-- Active-set identification along convergent primal and represented normal
+sequences, provided the coefficients are eventually supported on the active constraints. -/
+theorem eventually_activeConstraintSet_eq_of_tendsto [Fintype ι] {α : Type*}
+    {l : Filter α} {u v : α → E} {c : ι → E → ℝ} {n : ι → E → E}
+    {g : E → E} {x : E}
+    (hc : ∀ i, Continuous (c i)) (hn : ∀ i, Continuous (n i))
+    (hind : LinearIndependent ℝ (fun i : activeConstraintSet c x ↦ n i x))
+    (hmul : HasStrictActiveMultipliers c n g x)
+    (hu : Tendsto u l (𝓝 x)) (hv : Tendsto v l (𝓝 (g x)))
+    (hrep : ∀ᶠ k in l, ∃ μ : ι → ℝ, v k = ∑ i, μ i • n i (u k) ∧
+      ∀ i ∉ activeConstraintSet c (u k), μ i = 0) :
+    ∀ᶠ k in l, activeConstraintSet c (u k) = activeConstraintSet c x := by
+  filter_upwards [(hu.prodMk_nhds hv).eventually
+    (eventually_activeConstraintSet_eq_of_normal_representation hc hn hind hmul), hrep]
+    with k hnear hrep
+  exact hnear hrep
+
+/-- The active set is locally constant relative to a set of strictly
+complementary stationary points with independent active normals. -/
+theorem eventually_activeConstraintSet_eq [Fintype ι] {S : Set E}
+    {c : ι → E → ℝ} {n : ι → E → E} {g : E → E} {x : E}
+    (hx : x ∈ S) (hc : ∀ i, Continuous (c i)) (hn : ∀ i, Continuous (n i))
+    (hg : Continuous g)
+    (hind : LinearIndependent ℝ (fun i : activeConstraintSet c x ↦ n i x))
+    (hmul : ∀ y ∈ S, HasStrictActiveMultipliers c n g y) :
+    ∀ᶠ y in 𝓝 x, y ∈ S → activeConstraintSet c y = activeConstraintSet c x := by
+  have hpair : Tendsto (fun y ↦ (y, g y)) (𝓝 x) (𝓝 (x, g x)) :=
+    continuousAt_id.prodMk hg.continuousAt
+  filter_upwards [hpair.eventually
+    (eventually_activeConstraintSet_eq_of_normal_representation hc hn hind (hmul x hx))]
+    with y hy hyS
+  obtain ⟨μ, hstat, _, hzero⟩ := hmul y hyS
+  exact hy ⟨μ, hstat, hzero⟩
 
 private theorem activeConstraintSet_continuousOn [Fintype ι]
     [TopologicalSpace (Set ι)] [DiscreteTopology (Set ι)] {S : Set E}
@@ -349,13 +393,13 @@ open Optimization ConvexAnalysis in
 /-- Lemma 12.3.6. For an already reindexed subsequence, the projected gradients
 tend to zero when the nearby feasible points have the component's active set.
 The outward normals generate supporting directions at those feasible points. -/
-theorem lemma_12_3_6 [Fintype ι] [CompleteSpace E] {C K S : Set E}
+private theorem projectedGradient_tendsto_zero_of_eventually_active [Fintype ι] [CompleteSpace E] {C K S : Set E}
     {c : ι → E → ℝ} {n : ι → E → E} {g : E → E}
     {x u : ℕ → E} {A : Set ι}
     (hK : IsCompact K) (hx : ∀ k, x k ∈ K)
     (hlim : ∀ z (j : ℕ → ℕ), StrictMono j → Tendsto (x ∘ j) atTop (𝓝 z) → z ∈ S)
     (hclose : Tendsto (fun k ↦ u k - x k) atTop (𝓝 0))
-    (hu : ∀ k, u k ∈ C) (hAu : ∀ k, activeConstraintSet c (u k) = A)
+    (hu : ∀ k, u k ∈ C) (hAu : ∀ᶠ k in atTop, activeConstraintSet c (u k) = A)
     (hAS : ∀ z ∈ S, activeConstraintSet c z = A)
     (hstat : ∀ z ∈ S, HasStrictActiveMultipliers c n g z)
     (hg : Continuous g) (hn : ∀ i, Continuous (n i))
@@ -381,7 +425,7 @@ theorem lemma_12_3_6 [Fintype ι] [CompleteSpace E] {C K S : Set E}
     continuous_const.smul (hn a).neg
   have hwz : w z = -g z := by
     simp only [w, smul_neg, Finset.sum_neg_distrib, ← hμ]
-  have hwmem (k : ℕ) : w (u (q k)) ∈ normalDirections C (u (q k)) := by
+  have hwmem (k : ℕ) (hk : activeConstraintSet c (u (q k)) = A) : w (u (q k)) ∈ normalDirections C (u (q k)) := by
     apply mem_normalDirections.mpr
     intro y hy
     change ⟪∑ a, μ a • (-n a (u (q k))), y - u (q k)⟫ ≤ 0
@@ -391,11 +435,11 @@ theorem lemma_12_3_6 [Fintype ι] [CompleteSpace E] {C K S : Set E}
     rw [real_inner_smul_left]
     by_cases ha : a ∈ activeConstraintSet c z
     · have hau : a ∈ activeConstraintSet c (u (q k)) := by
-        rwa [hAu, ← hAS z hz]
+        rwa [hk, ← hAS z hz]
       exact mul_nonpos_of_nonneg_of_nonpos (hpos a ha).le
         (mem_normalDirections.mp (hnormal _ (hu _) a hau) y hy)
     · rw [hzero a ha, zero_mul]
-  have hbound (k : ℕ) :
+  have hbound (k : ℕ) (hk : activeConstraintSet c (u (q k)) = A) :
       ‖bestApprox (tangentDirections C (u (q k))) (-g (x (q k)))‖ ≤
         ‖-g (x (q k)) - w (u (q k))‖ := by
     let T := tangentDirections C (u (q k))
@@ -405,7 +449,7 @@ theorem lemma_12_3_6 [Fintype ι] [CompleteSpace E] {C K S : Set E}
     have hproj : bestApprox T (w (u (q k))) = 0 := by
       apply (bestApprox_eq_iff ⟨0, hTzero⟩ hTclosed hTconvex).2
       refine ⟨hTzero, fun y hy ↦ ?_⟩
-      simpa only [sub_zero, innerₗ_apply_apply] using (mem_polarCone.mp hy) _ (hwmem k)
+      simpa only [sub_zero, innerₗ_apply_apply] using (mem_polarCone.mp hy) _ (hwmem k hk)
     simpa only [hproj, sub_zero] using
       norm_bestApprox_sub_bestApprox_le ⟨0, hTzero⟩ hTclosed hTconvex
         (-g (x (q k))) (w (u (q k)))
@@ -416,9 +460,45 @@ theorem lemma_12_3_6 [Fintype ι] [CompleteSpace E] {C K S : Set E}
   have ht : Tendsto (fun k ↦ ‖-g (x (q k)) - w (u (q k))‖) atTop (𝓝 0) := by
     simpa only [hwz, sub_self, norm_zero] using (hgq.neg.sub hwq).norm
   have he := ht.eventually (gt_mem_nhds hε)
-  obtain ⟨k, hk⟩ := he.exists
+  obtain ⟨k, hk, hak⟩ := (he.and (hq.tendsto_atTop.eventually hAu)).exists
   exact (not_lt_of_ge (hjbad (i k))) (by
     rw [dist_zero_right]
-    exact (hbound k).trans_lt hk)
+    exact (hbound k hak).trans_lt hk)
+
+open Optimization ConvexAnalysis in
+/-- Lemma 12.3.6. For an already reindexed subsequence, the projected gradients
+tend to zero when the nearby feasible points have the component's active set.
+The outward normals generate supporting directions at those feasible points. -/
+theorem lemma_12_3_6 [Fintype ι] [CompleteSpace E] {C K S : Set E}
+    {c : ι → E → ℝ} {n : ι → E → E} {g : E → E}
+    {x u : ℕ → E} {A : Set ι}
+    (hK : IsCompact K) (hx : ∀ k, x k ∈ K)
+    (hlim : ∀ z (j : ℕ → ℕ), StrictMono j → Tendsto (x ∘ j) atTop (𝓝 z) → z ∈ S)
+    (hclose : Tendsto (fun k ↦ u k - x k) atTop (𝓝 0))
+    (hu : ∀ k, u k ∈ C) (hAu : ∀ k, activeConstraintSet c (u k) = A)
+    (hAS : ∀ z ∈ S, activeConstraintSet c z = A)
+    (hstat : ∀ z ∈ S, HasStrictActiveMultipliers c n g z)
+    (hg : Continuous g) (hn : ∀ i, Continuous (n i))
+    (hnormal : ∀ y ∈ C, ∀ i ∈ activeConstraintSet c y, -n i y ∈ normalDirections C y) :
+    Tendsto (fun k ↦ bestApprox (tangentDirections C (u k)) (-g (x k))) atTop (𝓝 0) :=
+  projectedGradient_tendsto_zero_of_eventually_active hK hx hlim hclose hu
+    (Eventually.of_forall hAu) hAS hstat hg hn hnormal
+
+open Optimization ConvexAnalysis in
+/-- Corollary 12.3.9 on a component with an eventually identified active set. -/
+theorem corollary_12_3_9_of_eventually_active [Fintype ι] [CompleteSpace E]
+    {C K S : Set E} {c : ι → E → ℝ} {n : ι → E → E} {g : E → E}
+    {x : ℕ → E} {A : Set ι}
+    (hK : IsCompact K) (hx : ∀ k, x k ∈ K)
+    (hlim : ∀ z (j : ℕ → ℕ), StrictMono j → Tendsto (x ∘ j) atTop (𝓝 z) → z ∈ S)
+    (hfeas : ∀ k, x k ∈ C) (hA : ∀ᶠ k in atTop, activeConstraintSet c (x k) = A)
+    (hAS : ∀ z ∈ S, activeConstraintSet c z = A)
+    (hstat : ∀ z ∈ S, HasStrictActiveMultipliers c n g z)
+    (hg : Continuous g) (hn : ∀ i, Continuous (n i))
+    (hnormal : ∀ y ∈ C, ∀ i ∈ activeConstraintSet c y, -n i y ∈ normalDirections C y) :
+    Tendsto (fun k ↦ bestApprox (tangentDirections C (x k)) (-g (x k))) atTop (𝓝 0) := by
+  apply projectedGradient_tendsto_zero_of_eventually_active hK hx hlim _ hfeas
+    hA hAS hstat hg hn hnormal
+  simpa only [sub_self] using (tendsto_const_nhds : Tendsto (fun _ : ℕ ↦ (0 : E)) atTop (𝓝 0))
 
 end ConnGouldToint.Chapter12

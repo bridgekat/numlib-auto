@@ -37,8 +37,8 @@ the minimum value and upper hemicontinuity of the optimizer correspondence.
 Separate examples show why the printed continuity claims need these changes.
 The normal and positive tangent cones in Theorem 3.2.10 are continuous on
 fixed active faces in the bounded-section sense. Theorem 3.2.7 has the
-locally unique fixed-active KKT branch, with strict-local-minimizer
-continuation and mixed active-set persistence still open.
+locally unique strict-local-minimizer branch with mixed active-set persistence.
+The proof assumes an explicit smooth active KKT residual and its block derivative.
 Theorem 3.2.15 uses local Lipschitz outer functions and a strict Clarke
 descent direction for an active constraint. A boundary example shows why
 the printed outer-domain conditions are insufficient.
@@ -65,7 +65,10 @@ the limiting point. Section 6.6 proves the eigenpoint decrease and the
 second-order convergence results. Lemma 6.6.6 treats a rejected trial by
 following the unchanged iterate to its first successful trial and bounding
 the radius at that trial. Theorem 6.6.4 uses uniform objective Hessian
-variation on small trial segments. For Theorem 8.1.8, uniform norm equivalence alone
+variation on small trial segments. Theorem 8.1.4 takes first-order convergence
+as an input. In Theorem 8.1.5, local persistence of negative model curvature
+is assumed for the scaled-curvature liminf. The objective-curvature conclusion
+holds without that extra hypothesis. For Theorem 8.1.8, uniform norm equivalence alone
 does not imply AN.3. A scaling counterexample and a fixed-norm version with Lipschitz
 gradients along the iterates are formalized. Theorem 8.1.9 uses a steepest
 direction in the trust-region norm. The Euclidean ray can fail the claimed
@@ -127,6 +130,13 @@ At zero predicted decrease the two tests can give different answers.
 The radius lower bound compares the fit tolerances directly and uses the
 sum of the element curvature bounds. Theorem 10.2.6 requires the uniform
 norm comparison from AN.1.
+Section 10.3 embeds integer-indexed line search in the exact trust-region
+model and verifies the gradient-angle and positive-curvature CG estimates.
+Theorem 10.3.4 requires Euclidean ball geometry. A diamond gives a
+counterexample under norm comparison alone.
+Section 10.4 uses augmented predicted decrease for the corrected step ratio.
+Section 10.6 uses a vanishing tolerance schedule and an eventual curvature
+margin for the second-order dynamic accuracy test.
 
 Chapter 11 covers Clarke steepest descent using the support identity proved in (3.1.4).
 The nonsmooth radius update caps the expansion lower bound in (11.1.16) at the
@@ -137,6 +147,13 @@ or Corollary 11.1.4. The corrected results require a uniform one-sided first-ord
 model estimate near a nonstationary point.
 Lemmas 11.2.2 and 11.2.3 also require uniform control of the normalized error. A compact
 parameter counterexample shows that pointwise agreement alone permits small-radius rejections.
+Section 11.3 proves convergence for nonmonotone and composite correction
+steps under uniform normalized agreement and an explicit Euclidean step bound.
+Section 11.4 derives the Clarke support formulas for clipped residuals and
+the active-gradient convex hull for a finite affine maximum.
+Section 11.5 establishes uniform Taylor model accuracy from quadratic
+remainder bounds. A scalar example shows why the modeled residual must
+also lie in the outer function’s Lipschitz domain.
 
 
 
@@ -150,6 +167,8 @@ A critical starting point can be returned before computing the initial trial
 parameter. The generalized Cauchy decrease includes the tangent stopping test.
 Lemma 12.3.1 uses local constancy to cover connected sets. Lemma 12.3.6
 approximates the negative gradient by normal directions at nearby points.
+The perturbation result identifies the active set from nearby supported normal
+representations. Corollary 12.3.9 assumes eventual identification.
 The local comparison in the proof of Theorem 12.3.4 uses the relaxed
 feasible set and a shifted displacement. A half-line example shows why
 the comparison cannot give the full-feasible bound from the trial

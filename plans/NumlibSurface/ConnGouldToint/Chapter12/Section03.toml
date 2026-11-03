@@ -39,3 +39,15 @@ source = "Conn–Gould–Toint, corrected relaxed comparison in (12.3.15)–(12.
 [[node]]
 id = "missing_active_local_criticality_counterexample"
 source = "Counterexample to the pointwise comparison in the proof of Theorem 12.3.4"
+
+[[node]]
+id = "eventually_activeConstraintSet_eq_of_normal_representation"
+source = "Conn–Gould–Toint, active-set perturbation near a strictly complementary point"
+
+[[node]]
+id = "eventually_activeConstraintSet_eq_of_tendsto"
+source = "Conn–Gould–Toint, sequential active-set identification from normal representations"
+
+[[node]]
+id = "corollary_12_3_9_of_eventually_active"
+source = "Conn–Gould–Toint, Corollary 12.3.9 under eventual active-set identification"
