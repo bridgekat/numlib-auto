@@ -53,7 +53,9 @@ A counterexample disproves equality with the derivative of the composite in gene
 Chapter 4 covers structured systems and projections. The Woodbury formula requires the
 middle inverse. The Cholesky conversion uses L D^(1/2), the row space is the range of Aᵀ,
 and uniqueness in the reduced quadratic problem requires positive-definite curvature.
-For (4.4.8), an augmented-system solution yields the weighted projection.
+Equation (4.4.8) characterizes the weighted projection through the
+augmented system. For (4.4.14), feasibility, stationarity and reduced
+positive semidefiniteness characterize minimizers.
 
 Chapter 5 covers CG and PCG estimates, Krylov growth, and normal-equation residuals.
 The CG bounds are expressed in product form to include exact initial iterates.

@@ -31,3 +31,7 @@ source = "Conn, Gould and Toint, Trust-Region Methods, (4.3.1)"
 [[node]]
 id = "relative_solution_error_4_3_4"
 source = "Conn, Gould and Toint, Trust-Region Methods, (4.3.4)"
+
+[[node]]
+id = "cholesky_unique_up_to_column_signs_4_3_5"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.3.5)"

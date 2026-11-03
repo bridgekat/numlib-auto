@@ -110,6 +110,53 @@ theorem cholesky_4_3_5 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) :
   simpa [conjTranspose_eq_transpose_of_trivial, transpose_transpose] using
     (Matrix.isCholesky_cholesky hA).conjTranspose_mul_self.symm
 
+
+/-- **(4.3.5)** Every lower triangular Cholesky factor is obtained from the
+positive-diagonal factor by changing the signs of its columns. -/
+theorem cholesky_unique_up_to_column_signs_4_3_5 {A L : Matrix (Fin n) (Fin n) ℝ}
+    (hA : A.PosDef) (hL : L.IsLowerTriangular) (he : L * Lᵀ = A) :
+    ∃ s : Fin n → ℝ, (∀ i, s i = 1 ∨ s i = -1) ∧
+      L = Matrix.cholesky A * Matrix.diagonal s := by
+  have hdet : L.det ≠ 0 := by
+    intro hz
+    have ha := (Matrix.isUnit_iff_isUnit_det A).1 hA.isUnit
+    rw [← he, Matrix.det_mul, hz, zero_mul] at ha
+    exact not_isUnit_zero ha
+  have hn (i : Fin n) : L i i ≠ 0 := by
+    rw [Matrix.det_of_isLowerTriangular L hL, Finset.prod_ne_zero_iff] at hdet
+    exact hdet i (Finset.mem_univ i)
+  let s (i : Fin n) : ℝ := if 0 < L i i then 1 else -1
+  let S := Matrix.diagonal s
+  have hS : S * S = 1 := by
+    rw [show S = Matrix.diagonal s from rfl, Matrix.diagonal_mul_diagonal, ← Matrix.diagonal_one]
+    congr 1
+    funext i
+    by_cases h : 0 < L i i <;> simp [s, h]
+  have hSt : Sᵀ = S := Matrix.diagonal_transpose s
+  have hLS : (L * S).IsLowerTriangular := by
+    intro i j hij
+    simp [S, Matrix.mul_diagonal, hL hij]
+  have hpos (i : Fin n) : 0 < (L * S) i i := by
+    rw [show S = Matrix.diagonal s from rfl, Matrix.mul_diagonal]
+    by_cases hi : 0 < L i i
+    · simp [s, hi]
+    · have hneg : L i i < 0 := lt_of_le_of_ne (le_of_not_gt hi) (hn i)
+      simpa [s, hi] using neg_pos.mpr hneg
+  have hfac : (L * S) * (L * S)ᵀ = A := by
+    rw [Matrix.transpose_mul, hSt, Matrix.mul_assoc, ← Matrix.mul_assoc S S, hS, one_mul, he]
+  have hNorm : Matrix.IsCholesky A (L * S)ᵀ := by
+    refine ⟨?_, fun i ↦ hpos i, ?_⟩
+    · intro i j hij
+      exact hLS hij
+    · simpa only [conjTranspose_eq_transpose_of_trivial, transpose_transpose] using hfac
+  have heq : L * S = Matrix.cholesky A := by
+    have hT := congrArg Matrix.transpose (hNorm.unique (Matrix.isCholesky_cholesky hA))
+    simpa only [transpose_transpose, conjTranspose_eq_transpose_of_trivial] using hT
+  refine ⟨s, fun i ↦ ?_, ?_⟩
+  · by_cases h : 0 < L i i <;> simp [s, h]
+  · change L = Matrix.cholesky A * S
+    rw [← heq, Matrix.mul_assoc, hS, mul_one]
+
 /-- In the conversion after (4.3.5), the diagonal square root multiplies the unit
 lower triangular factor on the right, giving `Lᴄ = Lᴸ D^(1/2)`. -/
 theorem cholesky_of_ldl (L : Matrix (Fin n) (Fin n) ℝ) (d : Fin n → ℝ)

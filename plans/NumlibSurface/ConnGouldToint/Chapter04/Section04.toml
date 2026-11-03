@@ -67,3 +67,23 @@ source = "Conn, Gould and Toint, Trust-Region Methods, following (4.4.14), uniqu
 [[node]]
 id = "weighted_projection_of_system_4_4_8"
 source = "Conn, Gould and Toint, Trust-Region Methods, (4.4.7)–(4.4.8)"
+
+[[node]]
+id = "quadratic_minimum_4_4_14_iff"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.4.8) and (4.4.14)"
+
+[[node]]
+id = "weighted_projection_4_4_8_iff"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.4.7)–(4.4.8)"
+
+[[node]]
+id = "projection_range_system_4_4_9"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.4.8)–(4.4.9)"
+
+[[node]]
+id = "normal_equations_consistent_4_4_3"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.4.3)"
+
+[[node]]
+id = "normal_equations_unique_4_4_3"
+source = "Conn, Gould and Toint, Trust-Region Methods, (4.4.3)"
