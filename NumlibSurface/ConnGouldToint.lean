@@ -12,6 +12,7 @@ import NumlibSurface.ConnGouldToint.Chapter12
 import NumlibSurface.ConnGouldToint.Chapter13
 import NumlibSurface.ConnGouldToint.Chapter14
 import NumlibSurface.ConnGouldToint.Chapter16
+import NumlibSurface.ConnGouldToint.Chapter17
 
 /-!
 # Conn–Gould–Toint, *Trust-Region Methods*
@@ -93,4 +94,9 @@ both derivatives in the stationarity condition are evaluated at the feasible poi
 Chapter 16 covers the uniform least-squares Hessian bound, exact minimization of the scalar
 epigraph merit function, and the Fischer–Burmeister residual formulation of complementarity.
 Equation (16.2.24) gives a real minimum value. The argmin is the singleton containing that value.
+
+Chapter 17 covers parameter and initial-radius choices. In (17.1.3), the factor
+1 − η₂ multiplies the common value and slope only. In (17.2.2), the radius is
+the ray parameter multiplied by the gradient norm. Both discrepancies are in print.
+
 -/

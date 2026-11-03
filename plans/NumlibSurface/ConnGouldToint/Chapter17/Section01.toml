@@ -1,0 +1,28 @@
+namespace = "ConnGouldToint.Chapter17"
+
+[[node]]
+id = "recommendedAcceptance"
+source = "Conn–Gould–Toint, (17.1.1)"
+
+[[node]]
+id = "recommendedRadiusFactors"
+source = "Conn–Gould–Toint, (17.1.2)"
+
+[[node]]
+id = "quadraticRayInterpolant"
+
+[[node]]
+id = "interpolatedRadiusFactor"
+source = "Conn–Gould–Toint, corrected (17.1.3)"
+
+[[node]]
+id = "interpolatedRadiusFactor_hits_ratio"
+source = "Conn–Gould–Toint, corrected (17.1.3)"
+
+[[node]]
+id = "printedInterpolation_counterexample"
+source = "Conn–Gould–Toint, counterexample to printed (17.1.3)"
+
+[[node]]
+id = "practicalRadiusUpdate"
+source = "Conn–Gould–Toint, (17.1.4)"

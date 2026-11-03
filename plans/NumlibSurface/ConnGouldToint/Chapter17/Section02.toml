@@ -1,0 +1,28 @@
+namespace = "ConnGouldToint.Chapter17"
+
+[[node]]
+id = "initialRadiusChoices"
+source = "Conn–Gould–Toint, (17.2.1)"
+
+[[node]]
+id = "cauchyRayParameter"
+source = "Conn–Gould–Toint, printed right-hand side of (17.2.2)"
+
+[[node]]
+id = "cauchyInitialRadius"
+source = "Conn–Gould–Toint, corrected (17.2.2)"
+
+[[node]]
+id = "cauchyInitialRadius_spec"
+source = "Conn–Gould–Toint, corrected (17.2.2)"
+
+[[node]]
+id = "initialProbeDisplacement"
+source = "Conn–Gould–Toint, (17.2.3)"
+
+[[node]]
+id = "norm_initialProbeDisplacement"
+
+[[node]]
+id = "initialProbeRatio"
+source = "Conn–Gould–Toint, (17.2.4)"
