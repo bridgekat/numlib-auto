@@ -30,6 +30,7 @@ source = "Conn–Gould–Toint, (7.7.14) (diagonal Hessian)"
 
 [[node]]
 id = "diagonalOperator_symm"
+desc = "A real diagonal operator is symmetric."
 source = "Conn–Gould–Toint, (7.7.14) (symmetry of the diagonal Hessian)"
 
 [[node]]
