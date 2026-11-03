@@ -1,0 +1,29 @@
+namespace = "ConnGouldToint.Chapter13"
+
+[[node]]
+id = "affineScalingPrimalNorm"
+source = "Conn–Gould–Toint, Dikin norm preceding Algorithm 13.11.1"
+
+[[node]]
+id = "affineScalingGradientNorm"
+source = "Conn–Gould–Toint, (13.11.3)"
+
+[[node]]
+id = "AffineScalingRun"
+source = "Conn–Gould–Toint, Algorithm 13.11.1"
+
+[[node]]
+id = "affineScaling_trial_positive"
+source = "Conn–Gould–Toint, feasibility from the radius cap in Algorithm 13.11.1"
+
+[[node]]
+id = "AffineScalingRun.iterate_positive"
+source = "Conn–Gould–Toint, strict feasibility of Algorithm 13.11.1"
+
+[[node]]
+id = "theorem_13_11_1_of_uniform_estimates"
+source = "Conn–Gould–Toint, (13.11.3) from the uniform scalar estimates used in Theorem 13.11.1"
+
+[[node]]
+id = "theorem_13_11_1"
+source = "Conn–Gould–Toint, Theorem 13.11.1"

@@ -1,0 +1,25 @@
+namespace = "ConnGouldToint.Chapter13"
+
+[[node]]
+id = "AffineOrthantBarrierTrial"
+source = "Conn–Gould–Toint, Algorithm 13.10.1, corrected feasibility test"
+
+[[node]]
+id = "affineBarrier_hyperplane_distance"
+source = "Conn–Gould–Toint, (13.10.10)–(13.10.13)"
+
+[[node]]
+id = "affineBarrierAmbientDistance"
+source = "Conn–Gould–Toint, ambient distance in (13.10.8)"
+
+[[node]]
+id = "affineBarrierSliceDistance"
+source = "Conn–Gould–Toint, relative distance in (13.10.8)"
+
+[[node]]
+id = "lemma_13_10_1"
+source = "Conn–Gould–Toint, Lemma 13.10.1"
+
+[[node]]
+id = "theorem_13_10_2"
+source = "Conn–Gould–Toint, Theorem 13.10.2"

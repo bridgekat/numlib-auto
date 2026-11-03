@@ -1,0 +1,29 @@
+namespace = "ConnGouldToint.Chapter13"
+
+[[node]]
+id = "barrierMetricQuadratic"
+source = "Conn–Gould–Toint, (13.7.2)–(13.7.3)"
+
+[[node]]
+id = "theorem_13_7_1"
+source = "Conn–Gould–Toint, Theorem 13.7.1"
+
+[[node]]
+id = "ScaledBarrierDualTest"
+source = "Conn–Gould–Toint, (13.7.9)–(13.7.11)"
+
+[[node]]
+id = "ScaledBarrierHessianTest"
+source = "Conn–Gould–Toint, (13.7.12)–(13.7.13)"
+
+[[node]]
+id = "theorem_13_7_2"
+source = "Conn–Gould–Toint, Theorem 13.7.2"
+
+[[node]]
+id = "theorem_13_7_3"
+source = "Conn–Gould–Toint, Theorem 13.7.3, corrected gradient tolerance"
+
+[[node]]
+id = "theorem_13_7_3_counterexample"
+source = "Conn–Gould–Toint, counterexample to the printed omission of a gradient tolerance rate"

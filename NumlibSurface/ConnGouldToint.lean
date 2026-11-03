@@ -180,6 +180,16 @@ primal coordinates. The full inner-algorithm limit argument remains open.
 The safeguard analysis in Theorem 13.6.4 uses arbitrarily late successful
 iterations to derive AA.8 from vanishing steps. Its proof bounds the
 projection error directly without requiring the projection to become inactive.
+The corrected primal scaling theorem in Section 13.7 retains the
+gradient-tolerance rate from the primal-dual theorem. A one-dimensional
+quadratic example shows why vanishing scaled tolerances alone are insufficient.
+Section 13.9 interprets complementarity as a vector residual and takes the
+Hessian infimum over unit directions, as in the proof. Complementarity alone
+controls the barrier curvature on the free rows of the Jacobian.
+Section 13.10 compares the affine-slice and ambient clearances in
+projected-normal coordinates, with an explicit feasibility check.
+Section 13.11 states the scaled gradient convergence theorem with the
+uniform scaled-curvature bound expressed directly.
 Section 13.12 covers first-order and weak second-order stationarity under affine scaling.
 The corrected Cauchy decrease in Theorem 13.12.3 includes a fraction-to-boundary cap.
 A one-dimensional example violates the printed bound for every positive criticality cap.
