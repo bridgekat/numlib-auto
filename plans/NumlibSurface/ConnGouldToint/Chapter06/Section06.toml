@@ -1,0 +1,93 @@
+namespace = "ConnGouldToint.Chapter06"
+
+[[node]]
+id = "eigenTrialTime"
+source = "Conn–Gould–Toint, (6.6.8)"
+
+[[node]]
+id = "EigenTrialAccepted"
+source = "Conn–Gould–Toint, (6.6.9)"
+
+[[node]]
+id = "theorem_6_6_1"
+source = "Conn–Gould–Toint, Theorem 6.6.1 and (6.6.3)–(6.6.5)"
+
+[[node]]
+id = "theorem_6_6_2_of_taylor_bound"
+source = "Conn–Gould–Toint, Theorem 6.6.2 with its ray Taylor estimate"
+
+[[node]]
+id = "theorem_6_6_2"
+source = "Conn–Gould–Toint, Theorem 6.6.2 and (6.6.11)–(6.6.12)"
+
+[[node]]
+id = "HasNegativeCurvatureDecrease"
+source = "Conn–Gould–Toint, AA.2 in Section 6.6.3"
+
+[[node]]
+id = "theorem_6_6_3"
+source = "Conn–Gould–Toint, Theorem 6.6.3"
+
+[[node]]
+id = "negativeCurvatureDecrease_lower_bound"
+source = "Conn–Gould–Toint, (6.6.21) and (6.6.28)"
+
+[[node]]
+id = "smallRadiusModelAgreement"
+source = "Conn–Gould–Toint, uniform trial error used in Theorem 6.6.4"
+
+[[node]]
+id = "smallRadiusModelAgreement_of_hessians"
+source = "Conn–Gould–Toint, Lemma 6.5.3 and the small-radius estimate in Theorem 6.6.4"
+
+[[node]]
+id = "theorem_6_6_4"
+source = "Conn–Gould–Toint, Theorem 6.6.4 in its frequent lower-bound form"
+
+[[node]]
+id = "theorem_6_6_5"
+source = "Conn–Gould–Toint, Theorem 6.6.5"
+
+[[node]]
+id = "lemma_6_6_6_successful"
+source = "Conn–Gould–Toint, Lemma 6.6.6 restricted to successful iterates as in its proof"
+
+[[node]]
+id = "theorem_6_6_7"
+source = "Conn–Gould–Toint, Theorem 6.6.7"
+
+[[node]]
+id = "HasForcedRadiusExpansion"
+source = "Conn–Gould–Toint, AA.3 preceding Theorem 6.6.8"
+
+[[node]]
+id = "theorem_6_6_8"
+source = "Conn–Gould–Toint, Theorem 6.6.8"
+
+[[node]]
+id = "lemma_6_6_6"
+source = "Conn–Gould–Toint, Lemma 6.6.6 and (6.6.24)–(6.6.25)"
+
+[[node]]
+id = "smallRadiusModelAgreement_of_uniformHessians"
+source = "Conn–Gould–Toint, AM.6 and Hessian uniform continuity used in Theorem 6.6.4"
+
+[[node]]
+id = "leastUnitCurvature"
+source = "Conn–Gould–Toint, least Hessian curvature in (6.6.20)"
+
+[[node]]
+id = "abs_sub_leastUnitCurvature_le"
+source = "Conn–Gould–Toint, spectral comparison from AM.5 used in Theorem 6.6.4"
+
+[[node]]
+id = "leastUnitCurvature_nonneg_iff"
+source = "Conn–Gould–Toint, second-order criticality in Theorem 6.6.5"
+
+[[node]]
+id = "theorem_6_6_5_of_hessians"
+source = "Conn–Gould–Toint, Theorems 6.6.4–6.6.5 for the objective and model Hessians"
+
+[[node]]
+id = "theorem_6_6_1_quadraticModel"
+source = "Conn–Gould–Toint, Theorem 6.6.1 for the model (6.1.7) and scaled radius"

@@ -73,7 +73,9 @@ def HessianVariationVanishes (m : ℕ → E → ℝ) (x s : ℕ → E) : Prop :=
   ∀ ε > (0 : ℝ), ∀ᶠ k in atTop, ∀ t ∈ Icc (0 : ℝ) 1,
     ‖fderiv ℝ (fderiv ℝ (m k)) (x k + t • s k) - fderiv ℝ (fderiv ℝ (m k)) (x k)‖ ≤ ε
 
-private theorem abs_model_error_le {f m : E → ℝ} {x s : E} {B : ℝ}
+/-- Matching values and first derivatives give a quadratic model error bound
+from the Hessian mismatch along the full trial segment. -/
+theorem abs_model_error_le {f m : E → ℝ} {x s : E} {B : ℝ}
     (hf : ContDiff ℝ 2 f) (hval : f x = m x) (hgrad : fderiv ℝ f x = fderiv ℝ m x)
     (hm : ∀ z ∈ segment ℝ x (x + s), DifferentiableAt ℝ m z)
     (hDm : ∀ z ∈ segment ℝ x (x + s), DifferentiableAt ℝ (fderiv ℝ m) z)

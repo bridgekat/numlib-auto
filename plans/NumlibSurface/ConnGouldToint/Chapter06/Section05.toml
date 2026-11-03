@@ -30,3 +30,7 @@ source = "Conn–Gould–Toint, corrected Theorem 6.5.5"
 [[node]]
 id = "lemma_6_5_3_4_counterexample"
 source = "Counterexample to Conn–Gould–Toint, Lemmas 6.5.3–4"
+
+[[node]]
+id = "abs_model_error_le"
+source = "Conn–Gould–Toint, model error estimate in Lemma 6.5.3"

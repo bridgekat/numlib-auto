@@ -51,7 +51,11 @@ and dual-norm estimates. In the proof of Theorem 6.4.3 the explicit radius lower
 also includes the initial radius. In Section 6.5, the corrected ratio estimates
 assume uniform Hessian control on the trial segments. Theorem 6.5.5 also
 assumes local model curvature along those segments to keep the iterates near
-the limiting point. For Theorem 8.1.8, uniform norm equivalence alone
+the limiting point. Section 6.6 proves the eigenpoint decrease and the
+second-order convergence results. Lemma 6.6.6 treats a rejected trial by
+following the unchanged iterate to its first successful trial and bounding
+the radius at that trial. Theorem 6.6.4 uses uniform objective Hessian
+variation on small trial segments. For Theorem 8.1.8, uniform norm equivalence alone
 does not imply AN.3. A scaling counterexample and a fixed-norm version with Lipschitz
 gradients along the iterates are formalized.
 
