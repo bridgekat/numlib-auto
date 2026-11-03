@@ -29,6 +29,9 @@ Chapter 3 covers Taylor estimates, unconstrained optimality, and convergence rat
 definitions use the successor error to the limit, correcting the printed successive difference.
 Theorem 3.3.2 includes the Kantorovich ball condition. A small correction can otherwise
 take the first step outside the domain.
+The Clarke composite rule in Corollary 3.2.13 uses the outer support bound.
+A counterexample disproves equality with the derivative of the composite in general.
+
 
 Chapter 4 covers structured systems and projections. The Woodbury formula requires the
 middle inverse. The Cholesky conversion uses L D^(1/2), the row space is the range of Aᵀ,

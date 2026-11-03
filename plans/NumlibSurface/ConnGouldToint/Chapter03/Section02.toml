@@ -15,3 +15,43 @@ source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.2"
 [[node]]
 id = "theorem_3_2_3"
 source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.3"
+
+[[node]]
+id = "AC2"
+source = "Conn, Gould and Toint, Trust-Region Methods, Assumption AC.2"
+
+[[node]]
+id = "theorem_3_2_9"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.9"
+
+[[node]]
+id = "AC7"
+source = "Conn, Gould and Toint, Trust-Region Methods, Assumption AC.7"
+
+[[node]]
+id = "theorem_3_2_12"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.12"
+
+[[node]]
+id = "corollary_3_2_13"
+source = "Conn, Gould and Toint, Trust-Region Methods, Corollary 3.2.13"
+
+[[node]]
+id = "ActiveLinearizedConeMatches"
+source = "Conn, Gould and Toint, Trust-Region Methods, AO.1 for inequalities"
+
+[[node]]
+id = "theorem_3_2_10_normalCone"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.10, normal-cone formula"
+
+[[node]]
+id = "isClosed_normalCone_graph"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.10, normal-cone closed graph"
+
+[[node]]
+id = "continuous_normal_selection_on_active_face"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.10, normal-cone inner continuity"
+
+[[node]]
+id = "clarke_composite_equality_counterexample"
+source = "Conn, Gould and Toint, Trust-Region Methods, Corollary 3.2.13, equality counterexample"

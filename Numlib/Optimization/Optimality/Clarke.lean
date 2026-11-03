@@ -77,6 +77,39 @@ theorem abs_clarkeDerivative_le {f : E → ℝ} {x : E} {U : Set E} {L : ℝ≥0
   obtain ⟨p, hp, hp'⟩ := (hlow.and ha').exists
   exact hp.trans hp'
 
+/-- An eventual lower bound along any convergent path of base points is a lower
+bound for the Clarke directional derivative. -/
+theorem le_clarkeDerivative_of_eventually_path_quotient_ge
+    {f : E → ℝ} {x d : E} {U : Set E} {L : ℝ≥0} {a : ℝ} {y : ℝ → E}
+    (hU : U ∈ 𝓝 x) (hL : LipschitzOnWith L f U)
+    (hy : Tendsto y (𝓝[>] (0 : ℝ)) (𝓝 x))
+    (ha : ∀ᶠ t in 𝓝[>] (0 : ℝ), a ≤ (f (y t + t • d) - f (y t)) / t) :
+    a ≤ clarkeDerivative f x d := by
+  have ht : Tendsto (fun t : ℝ => (y t, t)) (𝓝[>] (0 : ℝ)) (clarkeFilter x) :=
+    hy.prodMk tendsto_id
+  have hF : ∃ᶠ p in clarkeFilter x, a ≤ clarkeQuotient f d p :=
+    ht.frequently ha.frequently
+  exact le_limsup_of_frequently_le hF
+    ⟨_, (eventually_abs_clarkeQuotient_le hU hL d).mono fun _ hp => (abs_le.1 hp).2⟩
+
+/-- An eventual lower bound for fixed-base directional quotients is a lower bound
+for the Clarke directional derivative. -/
+theorem le_clarkeDerivative_of_eventually_base_quotient_ge
+    {f : E → ℝ} {x d : E} {U : Set E} {L : ℝ≥0} {a : ℝ}
+    (hU : U ∈ 𝓝 x) (hL : LipschitzOnWith L f U)
+    (ha : ∀ᶠ t in 𝓝[>] (0 : ℝ), a ≤ (f (x + t • d) - f x) / t) :
+    a ≤ clarkeDerivative f x d :=
+  le_clarkeDerivative_of_eventually_path_quotient_ge hU hL tendsto_const_nhds ha
+
+/-- The Clarke directional derivative of a constant is zero. -/
+theorem clarkeDerivative_const (a : ℝ) (x d : E) :
+    clarkeDerivative (fun _ => a) x d = 0 := by
+  have hq : clarkeQuotient (fun _ => a) d = fun _ => 0 := by
+    funext p
+    simp [clarkeQuotient]
+  rw [clarkeDerivative, hq]
+  exact limsup_const (f := clarkeFilter x) 0
+
 /-- A Clarke directional derivative of a locally Lipschitz function is subadditive. -/
 theorem clarkeDerivative_add_le {f : E → ℝ} {x : E} {U : Set E} {L : ℝ≥0}
     (hU : U ∈ 𝓝 x) (hL : LipschitzOnWith L f U) (d e : E) :
