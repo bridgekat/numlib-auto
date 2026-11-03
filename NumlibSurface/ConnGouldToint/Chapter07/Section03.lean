@@ -439,6 +439,17 @@ noncomputable def moreSorensenSafeguardedStep (g : E) (H : E →L[ℝ] E)
     let lo' := max (max lo x) b
     (lo', hi, moreSorensenTrial θ lo' hi)
 
+/-- Iterate the multiplier update with an estimate supplied from each
+state. The state is the lower endpoint, upper endpoint and trial
+multiplier. This orbit is used while the algorithm has not stopped. -/
+noncomputable def moreSorensenSafeguardedIterates (g : E) (H : E →L[ℝ] E)
+    (pole Δ θ : ℝ) (estimate : ℕ → (ℝ × ℝ × ℝ) → ℝ)
+    (initial : ℝ × ℝ × ℝ) : ℕ → ℝ × ℝ × ℝ
+  | 0 => initial
+  | k + 1 =>
+    let state := moreSorensenSafeguardedIterates g H pole Δ θ estimate initial k
+    moreSorensenSafeguardedStep g H pole Δ θ state.1 state.2.1 state.2.2 (estimate k state)
+
 /-- From a positive secular value the safeguarded update either enters the
 Newton interval or strengthens the lower endpoint with the failed candidate.
 The supplied lower bound may be used in either branch. -/
@@ -474,6 +485,52 @@ theorem moreSorensenSafeguardedStep_zero_gradient {pole Δ θ lo hi x b : ℝ}
       (max lo b, x, moreSorensenTrial θ (max lo b) x) := by
   simp [moreSorensenSafeguardedStep, hx]
 
+private theorem isBracketRun_of_safeguarded_updates {pole r θ : ℝ}
+    {lo hi x b e : ℕ → ℝ}
+    (hθ : θ ∈ Ioo 0 1) (hlo : 0 ≤ lo 0) (hlr : lo 0 ≤ r) (hrh : r ≤ hi 0)
+    (hx0 : x 0 ∈ Icc (lo 0) (hi 0)) (hpr : pole ≤ r)
+    (hb : ∀ k, b k ≤ pole) (he : ∀ k, r < x k → e k ≤ pole)
+    (hnever : ∀ k, x k ∉ Ioc pole r)
+    (hleft : ∀ k, x k ≤ pole →
+      lo (k + 1) = max (max (lo k) (x k)) (b k) ∧ hi (k + 1) = hi k ∧
+      x (k + 1) = moreSorensenTrial θ (max (max (lo k) (x k)) (b k)) (hi k))
+    (hright : ∀ k, r < x k →
+      lo (k + 1) = max (lo k) (e k) ∧ hi (k + 1) = x k ∧
+      x (k + 1) = moreSorensenTrial θ (max (lo k) (e k)) (x k)) :
+    IsBracketRun pole r θ θ lo hi x := by
+  have hθ' : θ ∈ Icc (0 : ℝ) 1 := ⟨hθ.1.le, hθ.2.le⟩
+  have hinv (k : ℕ) :
+      0 ≤ lo k ∧ lo k ≤ r ∧ r ≤ hi k ∧ x k ∈ Icc (lo k) (hi k) := by
+    induction k with
+    | zero => exact ⟨hlo, hlr, hrh, hx0⟩
+    | succ k ih =>
+      rcases le_or_gt (x k) pole with hx | hx
+      · obtain ⟨hl, hu, ht⟩ := hleft k hx
+        rw [hl, hu, ht]
+        have h0 : 0 ≤ max (max (lo k) (x k)) (b k) :=
+          ih.1.trans ((le_max_left _ _).trans (le_max_left _ _))
+        have hp := max_le (max_le ih.2.1 (hx.trans hpr)) ((hb k).trans hpr)
+        exact ⟨h0, hp, ih.2.2.1,
+          bracketEstimate_mem_Icc h0 (hp.trans ih.2.2.1) (by simp) hθ'⟩
+      · have hxr : r < x k := lt_of_not_ge fun hr => hnever k ⟨hx, hr⟩
+        obtain ⟨hl, hu, ht⟩ := hright k hxr
+        rw [hl, hu, ht]
+        have h0 := ih.1.trans (le_max_left _ (e k))
+        have hp := max_le ih.2.1 ((he k hxr).trans hpr)
+        exact ⟨h0, hp, hxr.le, bracketEstimate_mem_Icc h0 (hp.trans hxr.le) (by simp) hθ'⟩
+  refine ⟨hlo, hlr, hrh, ?_, ?_, ?_⟩
+  · exact fun k hk => (hnever k hk).elim
+  · intro k hx
+    obtain ⟨hl, hu, ht⟩ := hleft k hx
+    exact ⟨hu, Or.inr ⟨b k, hb k, hl⟩, θ, ⟨le_rfl, le_rfl⟩, 1, by simp,
+      by rw [hl, hu, ht]⟩
+  · intro k hx
+    obtain ⟨hl, hu, ht⟩ := hright k hx
+    refine ⟨hu.trans (min_eq_right (hinv k).2.2.2.2).symm, Or.inr ⟨e k, he k hx, hl⟩,
+      θ, ⟨le_rfl, le_rfl⟩, θ, ⟨le_rfl, le_rfl⟩, le_rfl, 1, by simp, 1, by simp, le_rfl, ?_⟩
+    rw [hl, hu, ht]
+    exact ⟨le_rfl, le_rfl⟩
+
 omit [FiniteDimensional ℝ E] in
 /-- Repeating the zero-gradient safeguard gives a hard bracketing run when
 the pole is nonnegative. Certified pivot or curvature estimates may tighten
@@ -493,40 +550,50 @@ theorem moreSorensen_zero_gradient_run {pole Δ θ : ℝ} {lo hi x b : ℕ → �
       lo (k + 1) = max (lo k) (b k) ∧ hi (k + 1) = x k ∧
       x (k + 1) = moreSorensenTrial θ (max (lo k) (b k)) (x k) := by
     simpa only [moreSorensenSafeguardedStep_zero_gradient hx, Prod.mk.injEq] using hrec k
-  have hθ' : θ ∈ Icc (0 : ℝ) 1 := ⟨hθ.1.le, hθ.2.le⟩
-  have hinv (k : ℕ) :
-      0 ≤ lo k ∧ lo k ≤ pole ∧ pole ≤ hi k ∧ x k ∈ Icc (lo k) (hi k) := by
-    induction k with
-    | zero => exact ⟨hlo, hlp, hph, hx0⟩
-    | succ k ih =>
-      rcases le_or_gt (x k) pole with hx | hx
-      · obtain ⟨hl, hu, ht⟩ := hleft k hx
-        rw [hl, hu, ht]
-        have h0 : 0 ≤ max (max (lo k) (x k)) (b k) :=
-          ih.1.trans ((le_max_left _ _).trans (le_max_left _ _))
-        have hp := max_le (max_le ih.2.1 hx) (hb k)
-        exact ⟨h0, hp, ih.2.2.1,
-          bracketEstimate_mem_Icc h0 (hp.trans ih.2.2.1) (by simp) hθ'⟩
-      · obtain ⟨hl, hu, ht⟩ := hright k hx
-        rw [hl, hu, ht]
-        have h0 := ih.1.trans (le_max_left _ (b k))
-        have hp := max_le ih.2.1 (hb k)
-        exact ⟨h0, hp, hx.le, bracketEstimate_mem_Icc h0 (hp.trans hx.le) (by simp) hθ'⟩
-  have hrun : IsBracketRun pole pole θ θ lo hi x := by
-    refine ⟨hlo, hlp, hph, ?_, ?_, ?_⟩
-    · exact fun k hk => (hk.1.not_ge hk.2).elim
-    · intro k hx
-      obtain ⟨hl, hu, ht⟩ := hleft k hx
-      exact ⟨hu, Or.inr ⟨b k, hb k, hl⟩, θ, ⟨le_rfl, le_rfl⟩, 1, by simp,
-        by rw [hl, hu, ht]⟩
-    · intro k hx
-      obtain ⟨hl, hu, ht⟩ := hright k hx
-      refine ⟨hu.trans (min_eq_right (hinv k).2.2.2.2).symm, Or.inr ⟨b k, hb k, hl⟩,
-        θ, ⟨le_rfl, le_rfl⟩, θ, ⟨le_rfl, le_rfl⟩, le_rfl, 1, by simp, 1, by simp, le_rfl, ?_⟩
-      rw [hl, hu, ht]
-      exact ⟨le_rfl, le_rfl⟩
-  exact ⟨hrun, (hrun.tendsto_bracket_of_never_mem le_rfl hθ.1 hθ.2
-    (fun _ hk => hk.1.not_ge hk.2)).2.2⟩
+  have hnever (k : ℕ) : x k ∉ Ioc pole pole := fun hk => hk.1.not_ge hk.2
+  have hrun := isBracketRun_of_safeguarded_updates hθ hlo hlp hph hx0 le_rfl hb
+    (fun k _ => hb k) hnever hleft hright
+  exact ⟨hrun, (hrun.tendsto_bracket_of_never_mem le_rfl hθ.1 hθ.2 hnever).2.2⟩
+
+/-- If the actual nonzero-gradient multiplier recurrence never reaches the
+Newton interval, each successful-factorization trial must also reject its
+Newton candidate. The remaining updates form a contracting bracket run. -/
+theorem moreSorensen_nonzero_bracket_run (hg : g ≠ 0)
+    {Δ r θ : ℝ} {sM : E} {lo hi x b : ℕ → ℝ} (hΔ : 0 < Δ) (hθ : θ ∈ Ioo 0 1)
+    (hsM : ‖sM‖ ≤ Δ) (hmul : IsTrustRegionMultiplier g H Δ sM r)
+    (hlo : 0 ≤ lo 0) (hlr : lo 0 ≤ r) (hrh : r ≤ hi 0) (hx0 : x 0 ∈ Icc (lo 0) (hi 0))
+    (hb : ∀ k, b k ≤ -leftmost hH)
+    (hpos : ∀ y, r < y → 0 < phi g H Δ y)
+    (hnever : ∀ k, x k ∉ Ioc (-leftmost hH) r)
+    (hrec : ∀ k, (lo (k + 1), hi (k + 1), x (k + 1)) =
+      moreSorensenSafeguardedStep g H (-leftmost hH) Δ θ (lo k) (hi k) (x k) (b k)) :
+    IsBracketRun (-leftmost hH) r θ θ lo hi x ∧
+      ∀ k, r < x k → moreSorensenNewtonStep g H Δ (x k) ≤ -leftmost hH := by
+  have hpr : -leftmost hH ≤ r := neg_leftmost_le_shiftThreshold.trans
+    (shiftThreshold_le_of_isPositive (hH := hH) hmul.nonneg hmul.isPositive)
+  have hleft (k : ℕ) (hx : x k ≤ -leftmost hH) :
+      lo (k + 1) = max (max (lo k) (x k)) (b k) ∧ hi (k + 1) = hi k ∧
+      x (k + 1) = moreSorensenTrial θ (max (max (lo k) (x k)) (b k)) (hi k) := by
+    simpa only [moreSorensenSafeguardedStep, ite_eq_right (not_lt.mpr hx),
+      Prod.mk.injEq] using hrec k
+  let N := moreSorensenNewtonStep g H Δ
+  have hfail (k : ℕ) (hx : r < x k) : N (x k) ≤ -leftmost hH := by
+    by_contra! hsuccess
+    have hx' := hpr.trans_lt hx
+    have hc := (lemma_7_3_3 hg hΔ hsM hmul hx' (hpos _ hx)).2.1
+    have hn : x (k + 1) = N (x k) := by
+      have he := congrArg (fun t : ℝ × ℝ × ℝ => t.2.2) (hrec k)
+      simpa only [N, moreSorensenSafeguardedStep, ite_eq_left hx',
+        ite_eq_right (norm_ne_zero_iff.mpr hg), ite_eq_left (hpos _ hx), ite_eq_left hsuccess] using he
+    exact hnever (k + 1) ⟨hn ▸ hsuccess, hn ▸ hc⟩
+  have hright (k : ℕ) (hx : r < x k) :
+      lo (k + 1) = max (lo k) (max (b k) (N (x k))) ∧ hi (k + 1) = x k ∧
+      x (k + 1) = moreSorensenTrial θ (max (lo k) (max (b k) (N (x k)))) (x k) := by
+    simpa only [N, moreSorensenSafeguardedStep, ite_eq_left (hpr.trans_lt hx),
+      ite_eq_right (norm_ne_zero_iff.mpr hg), ite_eq_left (hpos _ hx),
+      ite_eq_right (not_lt.mpr (hfail k hx)), Prod.mk.injEq, max_assoc] using hrec k
+  exact ⟨isBracketRun_of_safeguarded_updates hθ hlo hlr hrh hx0 hpr hb
+    (fun k hk => max_le (hb k) (hfail k hk)) hnever hleft hright, hfail⟩
 
 /-- The spectral bounds (7.3.18) on the multiplier of a boundary solution. -/
 theorem multiplier_bounds_of_boundary {μ Δ : ℝ} {s : E} (hΔ : 0 < Δ)
@@ -601,6 +668,89 @@ theorem moreSorensen_easy_bracket_then_newton (hg : g ≠ 0) {Δ r θ : ℝ}
       (shiftThreshold_nonneg.trans hr.le) hroot hx hbelow
     exact Or.inr ⟨h.1, h.2.1⟩
   · exact Or.inl hkr
+
+/-- The nonzero-gradient recurrence in the easy boundary case enters the
+Newton interval in finite time. The actual tail then consists of Newton
+iterates and has quadratic order, including finite exact arrival. -/
+theorem moreSorensen_easy_safeguarded_run (hg : g ≠ 0)
+    {Δ r θ : ℝ} {lo hi x b : ℕ → ℝ} (hΔ : 0 < Δ) (hθ : θ ∈ Ioo 0 1)
+    (hr : -leftmost hH < r) (hroot : secular g H r = Δ ^ 2)
+    (hlo : 0 ≤ lo 0) (hlr : lo 0 ≤ r) (hrh : r ≤ hi 0) (hx0 : x 0 ∈ Icc (lo 0) (hi 0))
+    (hb : ∀ k, b k ≤ -leftmost hH)
+    (hrec : ∀ k, (lo (k + 1), hi (k + 1), x (k + 1)) =
+      moreSorensenSafeguardedStep g H (-leftmost hH) Δ θ (lo k) (hi k) (x k) (b k)) :
+    ConvergesWithOrder x r 2 ∧
+      Tendsto (fun k => shiftedStep g H (x k)) atTop (𝓝 (shiftedStep g H r)) ∧
+      IsMinOn (quadModel g H) (Metric.closedBall 0 Δ) (shiftedStep g H r) ∧
+      ∃ k, x k ∈ Ioc (-leftmost hH) r ∧
+        ∀ j, x (j + k) = (moreSorensenNewtonStep g H Δ)^[j] (x k) := by
+  have hr₀ := hlo.trans hlr
+  have hnorm : ‖shiftedStep g H r‖ = Δ := by
+    change ‖shiftedStep g H r‖ ^ 2 = Δ ^ 2 at hroot
+    nlinarith [norm_nonneg (shiftedStep g H r)]
+  have hmul : IsTrustRegionMultiplier g H Δ (shiftedStep g H r) r :=
+    ⟨hr₀, (step_spec hr).1, isPositive_add_smul_of_le hr.le, by simp [hnorm]⟩
+  have hφ := phi_root hΔ hroot
+  have hmono := (trSecular_shape (hH := hH) hg Δ (β := -1 / 2) (by norm_num)).2.1
+  have hpos (y : ℝ) (hy : r < y) : 0 < phi g H Δ y := hφ ▸ hmono hr (hr.trans hy) hy
+  let N := moreSorensenNewtonStep g H Δ
+  have hfix : N r = r := by simp [N, moreSorensenNewtonStep, Newton.scalarStep, hφ]
+  have hentry : ∃ k, x k ∈ Ioc (-leftmost hH) r := by
+    by_contra! hnever
+    obtain ⟨hrun, hfail⟩ := moreSorensen_nonzero_bracket_run hg hΔ hθ hnorm.le hmul hlo hlr
+      hrh hx0 hb hpos hnever hrec
+    have hxlim := (hrun.tendsto_bracket_of_never_mem hr.le hθ.1 hθ.2 hnever).2.2
+    have hsmooth : ContDiffOn ℝ 2 (phi g H Δ) (Ioi (-leftmost hH)) :=
+      (contDiffOn_secular_rpow (hH := hH) hg _).sub contDiffOn_const
+    have hdiff := hsmooth.contDiffAt (isOpen_Ioi.mem_nhds hr)
+    have hd := (trSecular_shape (hH := hH) hg Δ (β := -1 / 2) (by norm_num)).2.2 r hr
+    have hcder : ContinuousAt (deriv (phi g H Δ)) r :=
+      (hdiff.of_le (by norm_num)).continuousAt_deriv
+    have hcN : ContinuousAt N r := continuousAt_id.sub (hdiff.continuousAt.div hcder hd.ne')
+    have hNlim : Tendsto (fun k => N (x k)) atTop (𝓝 r) := hfix ▸ hcN.tendsto.comp hxlim
+    obtain ⟨j, hj, hjN⟩ := ((hxlim.eventually (eventually_gt_nhds hr)).and
+      (hNlim.eventually (eventually_gt_nhds hr))).exists
+    have hxr : r < x j := lt_of_not_ge fun hx => hnever j ⟨hj, hx⟩
+    exact hjN.not_ge (hfail j hxr)
+  obtain ⟨k, hk⟩ := hentry
+  let y := fun j : ℕ => N^[j] (x k)
+  have hy : (∀ j, -leftmost hH < y j ∧ phi g H Δ (y j) ≤ 0) ∧
+      ConvergesWithOrder y r 2 := by
+    rcases hk.2.lt_or_eq with hlt | heq
+    · have hneg : phi g H Δ (x k) < 0 := hφ ▸ hmono hk.1 hr hlt
+      have h := lemma_7_3_2 hg hΔ hr hroot hk.1 hneg
+      exact ⟨h.1, h.2.2.2.2⟩
+    · have hconst (j : ℕ) : y j = r := by
+        simp [y, heq, Function.iterate_fixed hfix]
+      refine ⟨fun j => by rw [hconst j, hφ]; exact ⟨hr, le_rfl⟩, ?_⟩
+      rw [show y = fun _ => r from funext hconst]
+      exact ⟨tendsto_const_nhds, 1, one_pos, Eventually.of_forall fun _ => by simp⟩
+  have htail (j : ℕ) : x (j + k) = y j := by
+    induction j with
+    | zero => simp [y]
+    | succ j ih =>
+      have hs := congrArg (fun t : ℝ × ℝ × ℝ => t.2.2) (hrec (j + k))
+      rw [ih] at hs
+      have hup : x (j + k + 1) = N (y j) := by
+        simpa only [N, moreSorensenSafeguardedStep, ite_eq_left (hy.1 j).1,
+          ite_eq_right (norm_ne_zero_iff.mpr hg), ite_eq_right (not_lt.mpr (hy.1 j).2)] using hs
+      rw [show j + 1 + k = j + k + 1 by omega, hup]
+      exact (Function.iterate_succ_apply' N j (x k)).symm
+  have hxlim : Tendsto x atTop (𝓝 r) :=
+    (tendsto_add_atTop_iff_nat k).mp (by simpa only [htail] using hy.2.1)
+  have horder : ConvergesWithOrder x r 2 := by
+    obtain ⟨C, hC, hCev⟩ := hy.2.2
+    obtain ⟨m, hm⟩ := eventually_atTop.mp hCev
+    refine ⟨hxlim, C, hC, eventually_atTop.mpr ⟨m + k, fun i hi => ?_⟩⟩
+    have he := hm (i - k) (by omega)
+    rw [← htail, ← htail, show i - k + 1 + k = i + 1 by omega,
+      show i - k + k = i by omega] at he
+    exact he
+  have hfun : stepDeriv g H 0 = shiftedStep g H := funext stepDeriv_zero
+  have hcont : ContinuousAt (shiftedStep g H) r := by
+    rw [← hfun]
+    exact (hasDerivAt_stepDeriv (g := g) hr 0).continuousAt
+  exact ⟨horder, hcont.tendsto.comp hxlim, hmul.isMinOn hH, k, hk, htail⟩
 
 /-- The finite interior branch of Theorem 7.3.4: a feasible unshifted solve
 with a positive definite Hessian is already a model minimizer. -/
@@ -758,6 +908,116 @@ theorem moreSorensen_hard_bracketing_subsequence {θ : ℝ} {lo hi lam : ℕ →
     ∃ j : ℕ → ℕ, Tendsto j atTop atTop ∧ ∀ k, -leftmost hH < lam (j k) :=
   exists_seq_forall_of_frequently (hrun.frequently_gt_of_eq rfl hhi hθ.1 hθ.2)
 
+/-- In the hard case every trial above the pole has positive secular
+value, and its Newton candidate fails the factorization test. Thus the
+actual multiplier recurrence stays in the contracting bracketing phase. -/
+theorem moreSorensen_hard_safeguarded_run (hg : g ≠ 0)
+    {Δ θ : ℝ} {sM : E} {lo hi x b : ℕ → ℝ} (hΔ : 0 < Δ) (hθ : θ ∈ Ioo 0 1)
+    (hsM : ‖sM‖ ≤ Δ) (hmul : IsTrustRegionMultiplier g H Δ sM (-leftmost hH))
+    (hlo : 0 ≤ lo 0) (hlr : lo 0 ≤ -leftmost hH) (hrh : -leftmost hH ≤ hi 0)
+    (hx0 : x 0 ∈ Icc (lo 0) (hi 0)) (hb : ∀ k, b k ≤ -leftmost hH)
+    (hrec : ∀ k, (lo (k + 1), hi (k + 1), x (k + 1)) =
+      moreSorensenSafeguardedStep g H (-leftmost hH) Δ θ (lo k) (hi k) (x k) (b k)) :
+    IsBracketRun (-leftmost hH) (-leftmost hH) θ θ lo hi x ∧
+      Tendsto x atTop (𝓝 (-leftmost hH)) := by
+  have hpos (y : ℝ) (hy : -leftmost hH < y) : 0 < phi g H Δ y := by
+    have hsq := (secular_lt_norm_sq_of_shifted (hH := hH) hg le_rfl hmul.shifted hy).trans_le
+      (pow_le_pow_left₀ (norm_nonneg sM) hsM 2)
+    have hnorm : ‖shiftedStep g H y‖ < Δ :=
+      (pow_lt_pow_iff_left₀ (norm_nonneg _) hΔ.le two_ne_zero).mp hsq
+    have hnpos : 0 < ‖shiftedStep g H y‖ := by
+      have hp := secular_pos (hH := hH) hg hy
+      rw [secular] at hp
+      exact norm_pos_iff.2 fun h => by simp [h] at hp
+    rw [phi_eq_inv_norm_sub_inv]
+    exact sub_pos.mpr (one_div_lt_one_div_of_lt hnpos hnorm)
+  have hnever (k : ℕ) : x k ∉ Ioc (-leftmost hH) (-leftmost hH) := fun hk => hk.1.not_ge hk.2
+  obtain ⟨hrun, -⟩ := moreSorensen_nonzero_bracket_run hg hΔ hθ hsM hmul hlo hlr hrh hx0
+    hb hpos hnever hrec
+  exact ⟨hrun, (hrun.tendsto_bracket_of_never_mem le_rfl hθ.1 hθ.2 hnever).2.2⟩
+
+/-- The multiplier alternatives of Theorem 7.3.4 for nonzero gradient.
+An unshifted solve can stop immediately, including a singular positive
+semidefinite solve. For a positive multiplier, the actual recurrence has
+a quadratic Newton tail in the easy case or converges to the pole in the
+hard case. Hard-case vector conclusions are given separately. -/
+theorem theorem_7_3_4_nonzero_gradient (hg : g ≠ 0)
+    {Δ r θ : ℝ} {sM : E} {lo hi x b : ℕ → ℝ} (hΔ : 0 < Δ) (hθ : θ ∈ Ioo 0 1)
+    (hsM : ‖sM‖ ≤ Δ) (hmul : IsTrustRegionMultiplier g H Δ sM r)
+    (hlo : 0 ≤ lo 0) (hlr : lo 0 ≤ r) (hrh : r ≤ hi 0)
+    (hx0 : x 0 ∈ Icc (lo 0) (hi 0)) (hb : ∀ k, b k ≤ -leftmost hH)
+    (hrec : ∀ k, (lo (k + 1), hi (k + 1), x (k + 1)) =
+      moreSorensenSafeguardedStep g H (-leftmost hH) Δ θ (lo k) (hi k) (x k) (b k)) :
+    (r = 0 ∧ H (particular hH g 0) = -g ∧
+      particular hH g 0 ∈ Metric.closedBall 0 Δ ∧
+      IsMinOn (quadModel g H) (Metric.closedBall 0 Δ) (particular hH g 0)) ∨
+    (0 < r ∧ -leftmost hH < r ∧ ConvergesWithOrder x r 2 ∧
+      Tendsto (fun k => shiftedStep g H (x k)) atTop (𝓝 sM)) ∨
+    (0 < r ∧ r = -leftmost hH ∧ IsBracketRun r r θ θ lo hi x ∧ Tendsto x atTop (𝓝 r)) := by
+  have hpr : -leftmost hH ≤ r := neg_leftmost_le_shiftThreshold.trans
+    (shiftThreshold_le_of_isPositive (hH := hH) hmul.nonneg hmul.isPositive)
+  rcases hmul.nonneg.eq_or_lt with hz | hr
+  · subst r
+    obtain ⟨hgker, -, -, hn, -⟩ := particular_add_of_shifted (hH := hH) hmul.shifted
+    have hsolve : H (particular hH g 0) = -g := by
+      simpa using ((particular_spec (hH := hH) (g := g) 0).2.1 hgker).1
+    exact Or.inl ⟨rfl, hsolve, moreSorensen_interior_solution_of_unshifted_solve
+      hpr hsolve (hn.trans hsM)⟩
+  rcases hpr.lt_or_eq with hp | hp
+  · have hstep : sM = shiftedStep g H r := (step_spec hp).2 sM hmul.shifted
+    have hn := hmul.eq_zero_or_norm_eq.resolve_left hr.ne'
+    have hroot : secular g H r = Δ ^ 2 := by
+      change ‖shiftedStep g H r‖ ^ 2 = Δ ^ 2
+      rw [← hstep, hn]
+    obtain ⟨horder, ht, -, -⟩ := moreSorensen_easy_safeguarded_run hg hΔ hθ hp hroot hlo hlr
+      hrh hx0 hb hrec
+    exact Or.inr (Or.inl ⟨hr, hp, horder, by simpa only [hstep] using ht⟩)
+  · subst r
+    exact Or.inr (Or.inr ⟨hr, rfl,
+      moreSorensen_hard_safeguarded_run hg hΔ hθ hsM hmul hlo hlr hrh hx0 hb hrec⟩)
+
+/-- Along the successful factorizations of the actual hard-case recurrence,
+boundary corrections with vanishing shifted direction curvature attain
+the optimal model value in the limit. Any limit of corrected steps is
+a minimizer. Both roots of the boundary equation are allowed. -/
+theorem moreSorensen_hard_safeguarded_corrections (hg : g ≠ 0)
+    {Δ θ : ℝ} {sM : E} {lo hi x b α : ℕ → ℝ} {u : ℕ → E}
+    (hΔ : 0 < Δ) (hθ : θ ∈ Ioo 0 1)
+    (hsM : ‖sM‖ ≤ Δ) (hmul : IsTrustRegionMultiplier g H Δ sM (-leftmost hH))
+    (hlo : 0 ≤ lo 0) (hlr : lo 0 ≤ -leftmost hH) (hhi : -leftmost hH < hi 0)
+    (hx0 : x 0 ∈ Icc (lo 0) (hi 0)) (hb : ∀ k, b k ≤ -leftmost hH)
+    (hrec : ∀ k, (lo (k + 1), hi (k + 1), x (k + 1)) =
+      moreSorensenSafeguardedStep g H (-leftmost hH) Δ θ (lo k) (hi k) (x k) (b k))
+    (hu : ∀ k, -leftmost hH < x k → ‖u k‖ = 1)
+    (hboundary : ∀ k, -leftmost hH < x k → ‖shiftedStep g H (x k) + α k • u k‖ = Δ)
+    (hcurv : Tendsto (fun k => ⟪u k, (H + x k • (1 : E →L[ℝ] E)) (u k)⟫)
+      (atTop ⊓ 𝓟 {k | -leftmost hH < x k}) (𝓝 0)) :
+    Tendsto x atTop (𝓝 (-leftmost hH)) ∧
+      (∃ j : ℕ → ℕ, Tendsto j atTop atTop ∧ ∀ k, -leftmost hH < x (j k)) ∧
+      ∀ (j : ℕ → ℕ), Tendsto j atTop atTop → (∀ k, -leftmost hH < x (j k)) →
+        let s := fun k => shiftedStep g H (x (j k)) + α (j k) • u (j k)
+        Tendsto (fun k => quadModel g H (s k)) atTop (𝓝 (quadModel g H sM)) ∧
+          (∀ (l : ℕ → ℕ) (w : E), Tendsto l atTop atTop → Tendsto (s ∘ l) atTop (𝓝 w) →
+            w ∈ Metric.closedBall 0 Δ ∧ IsMinOn (quadModel g H) (Metric.closedBall 0 Δ) w) ∧
+          ((∀ w ∈ Metric.closedBall 0 Δ,
+            IsMinOn (quadModel g H) (Metric.closedBall 0 Δ) w → w = sM) →
+            Tendsto s atTop (𝓝 sM)) := by
+  obtain ⟨hrun, hxlim⟩ := moreSorensen_hard_safeguarded_run hg hΔ hθ hsM hmul hlo hlr hhi.le
+    hx0 hb hrec
+  refine ⟨hxlim, moreSorensen_hard_bracketing_subsequence hθ hrun hhi, fun j hj hjp => ?_⟩
+  have hraw (k : ℕ) : ‖shiftedStep g H (x (j k))‖ ≤ Δ := by
+    have hs := (secular_lt_norm_sq_of_shifted (hH := hH) hg le_rfl hmul.shifted (hjp k)).le
+    exact (pow_le_pow_iff_left₀ (norm_nonneg _) hΔ.le two_ne_zero).mp
+      (hs.trans (pow_le_pow_left₀ (norm_nonneg sM) hsM 2))
+  have hj' : Tendsto j atTop (atTop ⊓ 𝓟 {k | -leftmost hH < x k}) :=
+    tendsto_inf.2 ⟨hj, tendsto_principal.mpr (Eventually.of_forall hjp)⟩
+  have hvc := moreSorensen_hard_correction_curvature_tendsto (x ∘ j) (α ∘ j) (u ∘ j)
+    hjp hraw (fun k => hu (j k) (hjp k)) (fun k => hboundary (j k) (hjp k)) (hcurv.comp hj')
+  have hmodel := moreSorensen_hard_model_convergence (hH := hH) hsM (hmul.isMinOn hH)
+    (x ∘ j) (fun k => α (j k) • u (j k)) (fun k => hmul.nonneg.trans (hjp k).le)
+    hjp (fun k => hboundary (j k) (hjp k)) hvc
+  exact hmodel
+
 /-- A fixed root of the boundary equation in Step 3b(iii) of Algorithm 7.3.4
 for a unit correction direction. Fixing the root makes the correction continuous. -/
 noncomputable def moreSorensenBoundaryCoefficient (Δ : ℝ) (s u : E) : ℝ :=
@@ -780,6 +1040,39 @@ theorem norm_add_boundaryCorrection {Δ : ℝ} {s u : E} (hs : ‖s‖ ≤ Δ) (
   have hΔ := (norm_nonneg s).trans hs
   simpa only [abs_of_nonneg (norm_nonneg _), abs_of_nonneg hΔ] using
     (sq_eq_sq_iff_abs_eq_abs _ _).mp heq
+
+omit [FiniteDimensional ℝ E] in
+/-- A strict interior raw step orthogonal to its unit correction direction
+has two distinct boundary corrections with the same model value. The rule
+to minimize the model over the two roots therefore needs a tie convention
+to select a single step. -/
+theorem moreSorensen_boundary_correction_tie {Δ μ : ℝ} {s u : E}
+    (hH' : (H : E →ₗ[ℝ] E).IsSymmetric)
+    (hs : (H + μ • (1 : E →L[ℝ] E)) s = -g) (hraw : ‖s‖ < Δ)
+    (hu : ‖u‖ = 1) (hortho : ⟪s, u⟫ = 0) :
+    ∃ α : ℝ, 0 < α ∧ ‖s + α • u‖ = Δ ∧ ‖s - α • u‖ = Δ ∧
+      s + α • u ≠ s - α • u ∧ quadModel g H (s + α • u) = quadModel g H (s - α • u) := by
+  let α := √(Δ ^ 2 - ‖s‖ ^ 2)
+  have hα : 0 < α := Real.sqrt_pos.2 (sub_pos.mpr (pow_lt_pow_left₀ hraw (norm_nonneg s) two_ne_zero))
+  have hp : ‖s + α • u‖ = Δ := by
+    simpa [moreSorensenBoundaryCoefficient, hortho, α] using norm_add_boundaryCorrection hraw.le hu
+  have hm : ‖s - α • u‖ = Δ := by
+    simpa [moreSorensenBoundaryCoefficient, hortho, α, sub_eq_add_neg, smul_neg] using
+      norm_add_boundaryCorrection (u := -u) hraw.le (by simpa using hu)
+  have hne : s + α • u ≠ s - α • u := by
+    intro he
+    have hu' : u ≠ 0 := by intro hz; simp [hz] at hu
+    have hh := congrArg (fun v => v - s) he
+    simp only [add_sub_cancel_left, show ∀ v : E, s - v - s = -v by intro v; abel] at hh
+    have hzero : (2 * α) • u = 0 := by
+      rw [two_mul, add_smul]
+      exact eq_neg_iff_add_eq_zero.mp hh
+    exact hu' ((smul_eq_zero.mp hzero).resolve_left (mul_pos two_pos hα).ne')
+  have heqp := quadModel_eq_of_shifted_comparison hH' hs (s + α • u)
+  have heqm := quadModel_eq_of_shifted_comparison hH' hs (s - α • u)
+  rw [add_sub_cancel_left, hp] at heqp
+  rw [show s - α • u - s = -(α • u) by abel, hm, map_neg, inner_neg_neg] at heqm
+  exact ⟨α, hα, hp, hm, hne, heqp.trans heqm.symm⟩
 
 /-- A corrected hard-phase version of Theorem 7.3.4. Safeguarding converges to the
 pole. On the positive-definite subsequence, using a fixed unit leftmost eigenvector

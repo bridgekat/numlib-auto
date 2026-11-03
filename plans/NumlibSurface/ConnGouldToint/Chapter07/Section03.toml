@@ -143,3 +143,31 @@ source = "Conn–Gould–Toint, Theorem 7.3.4 (zero-gradient solution and multip
 [[node]]
 id = "moreSorensen_zero_gradient_run"
 source = "Conn–Gould–Toint, Theorem 7.3.4 (multiplier convergence of the zero-gradient safeguarding recurrence)"
+
+[[node]]
+id = "moreSorensen_nonzero_bracket_run"
+source = "Conn–Gould–Toint, Algorithm 7.3.4 (indefinite safeguarding before Newton entry)"
+
+[[node]]
+id = "moreSorensen_easy_safeguarded_run"
+source = "Conn–Gould–Toint, Theorem 7.3.4 (actual multiplier recurrence and the easy Newton tail)"
+
+[[node]]
+id = "moreSorensen_hard_safeguarded_run"
+source = "Conn–Gould–Toint, Theorem 7.3.4 (actual multiplier recurrence in the hard case)"
+
+[[node]]
+id = "moreSorensen_hard_safeguarded_corrections"
+source = "Conn–Gould–Toint, Theorem 7.3.4 (corrected hard-case step conclusion for varying directions)"
+
+[[node]]
+id = "theorem_7_3_4_nonzero_gradient"
+source = "Conn–Gould–Toint, Theorem 7.3.4 (unshifted check, easy Newton recurrence, hard bracketing recurrence)"
+
+[[node]]
+id = "moreSorensenSafeguardedIterates"
+source = "Conn–Gould–Toint, Algorithm 7.3.4 (multiplier orbit before applying stopping tests)"
+
+[[node]]
+id = "moreSorensen_boundary_correction_tie"
+source = "Conn–Gould–Toint, Algorithm 7.3.4 Step 3b(iii) (the two boundary roots can tie)"

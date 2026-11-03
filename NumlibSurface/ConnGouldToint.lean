@@ -96,8 +96,12 @@ rank-one counterexample shows failure of the printed signed rule. The
 nonzero-gradient Newton and fallback updates are verified with a supplied
 lower bound. The failed-pivot equation holds on the leading principal block,
 which still gives a full-matrix Rayleigh lower bound. The zero-gradient
-multiplier and feasible interior stopping results are verified. The complete
-nonzero-gradient safeguarded run remains open.
+multiplier and feasible interior stopping results are verified. The nonzero-gradient
+recurrence includes the easy Newton and hard bracketing phases. Certified
+hard directions give convergence of model values and minimizing cluster
+points. Distinct hard-case corrections can tie in the model comparison.
+Factorization execution and automatic transport of direction certificates
+are separate from the safeguarded recurrence.
 Weighted subproblems use the M-inner product or the explicit coordinate transformation.
 The nonnegative index in Lemma 7.5.8 is k. Theorem 7.5.9 covers stationary
 stops and both positive- and zero-curvature boundary stops for convex
