@@ -70,8 +70,10 @@ Weighted subproblems use the M-inner product or the explicit coordinate transfor
 In Algorithm 9.1.1, the selected trial can reset the reference while the original
 trial still triggers contraction. A bounded-below quadratic example makes every
 iteration successful and every current model invalid, with radii tending to zero.
-The corrected Theorems 9.2.1–2 retain the current radius on invalid low-ratio
-iterations and contract only after model validity has been certified.
+The corrected convergence analysis retains the current radius on invalid low-ratio
+iterations and contracts only after model validity has been certified.
+The subsequence conclusion of Theorem 9.2.5 uses infinitely many successful
+iterations and compact containment. The limit-inferior conclusion needs neither.
 Theorem 9.1.1 requires a positive ball radius. A radius-zero counterexample shows that
 validity at the center alone gives no gradient bound. Theorem 9.3.1 also needs
 a positive radius. Centered Taylor differences give the Hessian estimate even

@@ -31,3 +31,33 @@ source = "Conn–Gould–Toint, radius convergence argument in Theorem 9.2.2"
 [[node]]
 id = "theorem_9_2_2"
 source = "Conn–Gould–Toint, corrected Theorem 9.2.2"
+
+[[node]]
+id = "ConditionalRadiusRun.radius_and_ref_pos"
+
+[[node]]
+id = "ConditionalRadiusRun.tail_radius_floor"
+
+[[node]]
+id = "theorem_9_2_3"
+source = "Conn–Gould–Toint, corrected Theorem 9.2.3"
+
+[[node]]
+id = "theorem_9_2_5"
+source = "Conn–Gould–Toint, corrected Theorem 9.2.5 (liminf conclusion)"
+
+[[node]]
+id = "theorem_9_2_5_exists_critical_subseq"
+source = "Conn–Gould–Toint, Theorem 9.2.5 (subsequence conclusion under compactness)"
+
+[[node]]
+id = "theorem_9_2_6"
+source = "Conn–Gould–Toint, corrected Theorem 9.2.6"
+
+[[node]]
+id = "norm_fderiv_le_of_accepted_criticality"
+source = "Conn–Gould–Toint, consequence of (9.2.8)"
+
+[[node]]
+id = "frequently_successful_small_gradient"
+source = "Conn–Gould–Toint, successful-iterate part of Theorem 9.2.5"

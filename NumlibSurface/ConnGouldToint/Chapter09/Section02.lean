@@ -1,5 +1,6 @@
 import NumlibSurface.ConnGouldToint.Chapter09.Section01
 import Mathlib.Topology.Algebra.Order.LiminfLimsup
+import Mathlib.Topology.Order.MonotoneConvergence
 import Mathlib.Analysis.SpecificLimits.Basic
 
 /-! # First-order criticality transfer -/
@@ -72,23 +73,46 @@ theorem conditionalRatio_ge_eta_of_small_valid_radius {f m : E → ℝ} {x trial
   apply (le_div_iff₀ hp).mpr
   linarith [(abs_le.mp herror).1]
 
-/-- Corrected Theorem 9.2.1. A low raw ratio can contract the radius only
-after model validity has been certified. A low-ratio invalid iteration
-keeps its current radius. The lower bound
-includes the initial radius. -/
-theorem theorem_9_2_1 {η₀ η₁ γ₁ γ₂ : ℝ}
-    (run : ConditionalRadiusRun η₀ η₁ γ₁ γ₂ False) {t : ℝ}
+/-- The corrected update preserves positivity of the radius and the reference. -/
+theorem ConditionalRadiusRun.radius_and_ref_pos {η₀ η₁ γ₁ γ₂ : ℝ}
+    (run : ConditionalRadiusRun η₀ η₁ γ₁ γ₂ False) (hγ : 0 < γ₁) :
+    ∀ k, 0 < run.ref k ∧ 0 < run.radius k := by
+  intro k
+  induction k with
+  | zero =>
+    rw [run.initial_ref]
+    exact ⟨run.initial_pos, run.initial_pos⟩
+  | succ k ih =>
+    have href : 0 < run.ref (k + 1) := by
+      by_cases h : η₀ ≤ run.selected k ∨ run.valid k
+      · rw [run.ref_reset k h]
+        exact ih.2
+      · rw [run.ref_keep k h]
+        exact ih.1
+    refine ⟨href, ?_⟩
+    by_cases hr : η₁ ≤ run.raw k
+    · exact href.trans_le (run.high_update k hr)
+    · by_cases hv : run.valid k
+      · exact (mul_pos hγ href).trans_le
+          (run.low_update k (lt_of_not_ge hr) (Or.inl hv)).1
+      · rw [run.invalid_update k (lt_of_not_ge hr) hv not_false]
+        exact ih.2
+
+/-- A radius floor on a tail where valid small-radius trials are accepted. -/
+theorem ConditionalRadiusRun.tail_radius_floor {η₀ η₁ γ₁ γ₂ : ℝ}
+    (run : ConditionalRadiusRun η₀ η₁ γ₁ γ₂ False) (N : ℕ) {t : ℝ}
     (ht : 0 < t) (hγ : 0 < γ₁)
-    (hsmall : ∀ k, run.valid k → run.radius k ≤ t → η₁ ≤ run.raw k) :
-    ∃ r > 0, ∀ k, r < run.radius k := by
-  let b := min (run.radius 0) (γ₁ * t)
-  have hb : 0 < b := lt_min run.initial_pos (mul_pos hγ ht)
-  have hinv (k : ℕ) : b ≤ run.ref k ∧ b ≤ run.radius k := by
-    induction k with
-    | zero =>
-      rw [run.initial_ref]
-      exact ⟨min_le_left _ _, min_le_left _ _⟩
-    | succ k ih =>
+    (hsmall : ∀ k ≥ N, run.valid k → run.radius k ≤ t → η₁ ≤ run.raw k) :
+    ∃ r > 0, ∀ k ≥ N, r < run.radius k := by
+  let b := min (min (run.ref N) (run.radius N)) (γ₁ * t)
+  obtain ⟨href₀, hrad₀⟩ := run.radius_and_ref_pos hγ N
+  have hb : 0 < b := lt_min (lt_min href₀ hrad₀) (mul_pos hγ ht)
+  have hinv (k : ℕ) (hk : N ≤ k) : b ≤ run.ref k ∧ b ≤ run.radius k := by
+    induction k, hk using Nat.le_induction with
+    | base =>
+      exact ⟨(min_le_left _ _).trans (min_le_left _ _),
+        (min_le_left _ _).trans (min_le_right _ _)⟩
+    | succ k hk ih =>
       have href : b ≤ run.ref (k + 1) := by
         by_cases h : η₀ ≤ run.selected k ∨ run.valid k
         · rw [run.ref_reset k h]
@@ -100,14 +124,25 @@ theorem theorem_9_2_1 {η₀ η₁ γ₁ γ₂ : ℝ}
       · exact href.trans (run.high_update k hr)
       · have hr' := lt_of_not_ge hr
         by_cases hv : run.valid k
-        · have hlarge : t < run.radius k := lt_of_not_ge fun h ↦ hr (hsmall k hv h)
+        · have hlarge : t < run.radius k := lt_of_not_ge fun h ↦ hr (hsmall k hk hv h)
           have hl := (run.low_update k hr' (Or.inl hv)).1
           rw [run.ref_reset k (Or.inr hv)] at hl
           exact (min_le_right _ _).trans
             ((mul_le_mul_of_nonneg_left hlarge.le hγ.le).trans hl)
         · rw [run.invalid_update k hr' hv not_false]
           exact ih.2
-  exact ⟨b / 2, by positivity, fun k ↦ (half_lt_self hb).trans_le (hinv k).2⟩
+  exact ⟨b / 2, by positivity, fun k hk ↦ (half_lt_self hb).trans_le (hinv k hk).2⟩
+
+/-- Corrected Theorem 9.2.1. A low raw ratio can contract the radius only
+after model validity has been certified. A low-ratio invalid iteration
+keeps its current radius. The lower bound includes the initial radius. -/
+theorem theorem_9_2_1 {η₀ η₁ γ₁ γ₂ : ℝ}
+    (run : ConditionalRadiusRun η₀ η₁ γ₁ γ₂ False) {t : ℝ}
+    (ht : 0 < t) (hγ : 0 < γ₁)
+    (hsmall : ∀ k, run.valid k → run.radius k ≤ t → η₁ ≤ run.raw k) :
+    ∃ r > 0, ∀ k, r < run.radius k := by
+  obtain ⟨r, hr, h⟩ := run.tail_radius_floor 0 ht hγ (fun k _ ↦ hsmall k)
+  exact ⟨r, hr, fun k ↦ h k (Nat.zero_le k)⟩
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] in
 /-- The model-bound form of the corrected Theorem 9.2.1. A common upper
@@ -124,34 +159,14 @@ theorem theorem_9_2_1_of_model_bounds {f : E → ℝ} {m : ℕ → E → ℝ} {x
       |f (x k) - m k (x k)| ≤ C * (run.radius k) ^ 2 ∧
       |f (trial k) - m k (trial k)| ≤ C * (run.radius k) ^ 2) :
     ∃ r > 0, ∀ k, r < run.radius k := by
-  have hpos (k : ℕ) : 0 < run.ref k ∧ 0 < run.radius k := by
-    induction k with
-    | zero =>
-      rw [run.initial_ref]
-      exact ⟨run.initial_pos, run.initial_pos⟩
-    | succ k ih =>
-      have href : 0 < run.ref (k + 1) := by
-        by_cases h : η₀ ≤ run.selected k ∨ run.valid k
-        · rw [run.ref_reset k h]
-          exact ih.2
-        · rw [run.ref_keep k h]
-          exact ih.1
-      refine ⟨href, ?_⟩
-      by_cases hr : η₁ ≤ run.raw k
-      · exact href.trans_le (run.high_update k hr)
-      · by_cases hv : run.valid k
-        · exact (mul_pos hγ href).trans_le
-            (run.low_update k (lt_of_not_ge hr) (Or.inl hv)).1
-        · rw [run.invalid_update k (lt_of_not_ge hr) hv not_false]
-          exact ih.2
   let t := κ * amin * (1 - η₁) / β
   have hη : 0 < 1 - η₁ := sub_pos.mpr hη₁
   have ht : 0 < t := by dsimp [t]; positivity
   apply theorem_9_2_1 run ht hγ
   intro k hv hs
   rw [hraw k]
-  refine conditionalRatio_ge_eta_of_small_valid_radius (hpos k).2 (ha.trans_le (hgrad k))
-    hβ hκ hκ₁ hη₀ hη₁ hC ?_ (hdec k) (herr k hv).1 (herr k hv).2
+  refine conditionalRatio_ge_eta_of_small_valid_radius (run.radius_and_ref_pos hγ k).2
+    (ha.trans_le (hgrad k)) hβ hκ hκ₁ hη₀ hη₁ hC ?_ (hdec k) (herr k hv).1 (herr k hv).2
   exact hs.trans (div_le_div_of_nonneg_right
     (mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left (hgrad k) hκ.le) hη.le) hβ.le)
 
@@ -176,6 +191,7 @@ theorem theorem_9_2_1_quadratic_counterexample :
         ¬run.valid k ∧ modelValidOnBall f f (x k) Δ 1 ∧
         chosen ∈ Metric.closedBall (x k) Δ ∧ IsMinOn f {x k, chosen} chosen ∧
         ‖fderiv ℝ (m k) (x k)‖ = 1 ∧
+        2 ≤ ‖fderiv ℝ f (x k)‖ ∧
         (1 / 2 : ℝ) * min 1 Δ ≤ m k (x k) - m k trial) ∧
       Tendsto run.radius atTop (𝓝 0) := by
   dsimp only
@@ -255,16 +271,20 @@ theorem theorem_9_2_1_quadratic_counterexample :
       · exact le_rfl
     have hd : ‖fderiv ℝ (m k) (x k)‖ = 1 := by
       rw [← norm_deriv_eq_norm_fderiv, (hdm k (x k)).deriv, norm_one]
-    change _ ∧ _ ∧ _ ∧ _ ∧ (False ↔ _) ∧ ¬False ∧ _ ∧ _ ∧ _ ∧ _ ∧ _
+    change _ ∧ _ ∧ _ ∧ _ ∧ (False ↔ _) ∧ ¬False ∧ _ ∧ _ ∧ _ ∧ _ ∧ _ ∧ _
     refine ⟨?_, ?_, by change -(2 + 3 * Δ k) < 1 / 2; linarith,
       by change 1 / 4 ≤ 1 + 3 * Δ k / 4; linarith,
-      ⟨False.elim, hbad⟩, not_false, ?_, hc, hmin, hd, ?_⟩
+      ⟨False.elim, hbad⟩, not_false, ?_, hc, hmin, hd, ?_, ?_⟩
     · change -(2 + 3 * Δ k) = (f (x k) - f (x k - Δ k)) / _
       rw [hmdec, hraw, mul_div_cancel_right₀ _ hp.ne']
     · change 1 + 3 * Δ k / 4 = (f (x k) - f (x (k + 1))) / _
       rw [hmdec, hchosen, mul_div_cancel_right₀ _ hp.ne']
     · intro z _
       simp [sq_nonneg]
+    · rw [← norm_deriv_eq_norm_fderiv, hdf, Real.norm_eq_abs]
+      have hxk : x k ≤ 1 := by dsimp [x]; linarith
+      rw [abs_of_nonpos (by linarith : 2 * (x k - 2) ≤ 0)]
+      linarith
     · rw [hmdec, min_eq_right (hle k)]
       linarith
   · exact tendsto_pow_atTop_nhds_zero_of_lt_one (by norm_num) (by norm_num)
@@ -387,6 +407,120 @@ theorem theorem_9_2_2 {f : E → ℝ} (hf : ContDiff ℝ 2 f) {m : ℕ → E →
       (herr _ (Metric.mem_closedBall_self hδ.le)) (herr _ (hvalid k hv).2)
   exact (not_le_of_gt (hlow k hk)) hgood
 
+private theorem liminf_eq_zero_of_frequently_lt {a : ℕ → ℝ}
+    (ha : ∀ k, 0 ≤ a k) (hf : ∀ ε > 0, ∃ᶠ k in atTop, a k < ε) :
+    liminf a atTop = 0 := by
+  have hb : (atTop : Filter ℕ).IsBoundedUnder (· ≥ ·) a :=
+    ⟨0, show ∀ᶠ k in atTop, 0 ≤ a k from Eventually.of_forall ha⟩
+  have hc : (atTop : Filter ℕ).IsCoboundedUnder (· ≥ ·) a := by
+    refine ⟨1, fun b h ↦ ?_⟩
+    obtain ⟨k, hk, hbk⟩ := ((hf 1 zero_lt_one).and_eventually h).exists
+    exact hbk.trans hk.le
+  refine le_antisymm ?_ (le_liminf_of_le hc (Eventually.of_forall ha))
+  by_contra! hp
+  have hlim := liminf_le_of_frequently_le ((hf _ (half_pos hp)).mono fun _ h ↦ h.le) hb
+  linarith
+
+omit [NormedAddCommGroup E] [NormedSpace ℝ E] in
+/-- Corrected Theorem 9.2.3 for Algorithm 9.1.1 with the validity-gated radius
+update. On a tail with model gradients bounded below, valid small-radius
+trials are accepted. The resulting radius floor rules out both infinitely
+many uniformly productive steps and an infinite rejected tail. -/
+theorem theorem_9_2_3 {f : E → ℝ} {m : ℕ → E → ℝ} {x trial : ℕ → E}
+    {η₀ η₁ γ₁ γ₂ κ C β : ℝ} (run : ConditionalRadiusRun η₀ η₁ γ₁ γ₂ False)
+    (a : ℕ → ℝ) (ha : ∀ k, 0 ≤ a k) (hη₀ : 0 < η₀) (hη : η₀ ≤ η₁)
+    (hη₁ : η₁ < 1) (hγ₁ : 0 < γ₁) (hγ₂ : 0 < γ₂) (hγ₂' : γ₂ < 1)
+    (hβ : 0 < β) (hκ : 0 < κ) (hκ₁ : κ ≤ 1) (hC : 2 * C ≤ β)
+    (hraw : ∀ k, run.raw k = selectedTrialRatio f (m k) (x k) (trial k) (trial k))
+    (hdec : ∀ k, κ * a k * min (a k / β) (run.radius k) ≤ m k (x k) - m k (trial k))
+    (herr : ∀ k, run.valid k →
+      |f (x k) - m k (x k)| ≤ C * (run.radius k) ^ 2 ∧
+      |f (trial k) - m k (trial k)| ≤ C * (run.radius k) ^ 2)
+    (haccept : ∀ k, η₁ ≤ run.raw k → η₀ ≤ run.selected k)
+    (hprogress : ∀ k, η₀ ≤ run.selected k →
+      η₀ * (m k (x k) - m k (trial k)) ≤ f (x k) - f (x (k + 1)))
+    (hstay : ∀ k, run.selected k < η₀ → x (k + 1) = x k)
+    (hcertify : ∀ n, (∀ k ≥ n, run.selected k < η₀) → ∃ k ≥ n, run.valid k)
+    (hlower : BddBelow (Set.range f)) :
+    liminf a atTop = 0 ∧ ∀ ε > 0, ∃ᶠ k in atTop, a k < ε := by
+  have hpos (k : ℕ) := (run.radius_and_ref_pos hγ₁ k).2
+  have hfreq (ε : ℝ) (hε : 0 < ε) : ∃ᶠ k in atTop, a k < ε := by
+    by_contra! hbad
+    obtain ⟨N, hN⟩ := eventually_atTop.mp hbad
+    let t := κ * ε * (1 - η₁) / β
+    have hη' : 0 < 1 - η₁ := sub_pos.mpr hη₁
+    have ht : 0 < t := by dsimp [t]; positivity
+    have hsmall (k : ℕ) (hk : N ≤ k) (hv : run.valid k) (hs : run.radius k ≤ t) :
+        η₁ ≤ run.raw k := by
+      rw [hraw k]
+      refine conditionalRatio_ge_eta_of_small_valid_radius (hpos k) (hε.trans_le (hN k hk))
+        hβ hκ hκ₁ (hη₀.le.trans hη) hη₁ hC ?_ (hdec k) (herr k hv).1 (herr k hv).2
+      exact hs.trans (div_le_div_of_nonneg_right
+        (mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left (hN k hk) hκ.le) hη'.le) hβ.le)
+    obtain ⟨r, hr, hfloor⟩ := run.tail_radius_floor N ht hγ₁ hsmall
+    let c := η₀ * (κ * ε * min (ε / β) r)
+    have hc : 0 < c := by
+      exact mul_pos hη₀ (mul_pos (mul_pos hκ hε) (lt_min (div_pos hε hβ) hr))
+    have hpred (k : ℕ) (hk : N ≤ k) :
+        κ * ε * min (ε / β) r ≤ m k (x k) - m k (trial k) := by
+      apply le_trans _ (hdec k)
+      have hm : min (ε / β) r ≤ min (a k / β) (run.radius k) :=
+        min_le_min (div_le_div_of_nonneg_right (hN k hk) hβ.le) (hfloor k hk).le
+      exact mul_le_mul (mul_le_mul_of_nonneg_left (hN k hk) hκ.le) hm
+        (le_min (div_nonneg hε.le hβ.le) hr.le) (mul_nonneg hκ.le (ha k))
+    let v (k : ℕ) := f (x k)
+    have hmono : Antitone v := by
+      apply antitone_nat_of_succ_le
+      intro k
+      by_cases hs : η₀ ≤ run.selected k
+      · have hnonneg : 0 ≤ m k (x k) - m k (trial k) :=
+          (mul_nonneg (mul_nonneg hκ.le (ha k))
+            (le_min (div_nonneg (ha k) hβ.le) (hpos k).le)).trans (hdec k)
+        exact sub_nonneg.mp ((mul_nonneg hη₀.le hnonneg).trans (hprogress k hs))
+      · change f (x (k + 1)) ≤ f (x k)
+        rw [hstay k (lt_of_not_ge hs)]
+    have hb : BddBelow (Set.range v) := hlower.mono (Set.range_comp_subset_range x f)
+    have hlim := tendsto_atTop_ciInf hmono hb
+    have hdiff : Tendsto (fun k ↦ v k - v (k + 1)) atTop (𝓝 0) := by
+      simpa only [Function.comp_apply, sub_self] using
+        hlim.sub (hlim.comp (tendsto_add_atTop_nat 1))
+    obtain ⟨J, hJ⟩ := eventually_atTop.mp (hdiff.eventually (gt_mem_nhds hc))
+    let M := max J N
+    have hstop (k : ℕ) (hk : M ≤ k) : run.selected k < η₀ := by
+      apply lt_of_not_ge
+      intro hs
+      have hp := hpred k ((le_max_right _ _).trans hk)
+      have hle := (mul_le_mul_of_nonneg_left hp hη₀.le).trans (hprogress k hs)
+      exact (not_le_of_gt (hJ k ((le_max_left _ _).trans hk))) hle
+    have hlow (k : ℕ) (hk : M ≤ k) : run.raw k < η₁ :=
+      lt_of_not_ge fun h ↦ (not_le_of_gt (hstop k hk)) (haccept k h)
+    have hvalid (j : ℕ) (hj : M ≤ j) : ∃ k ≥ j, run.valid k :=
+      hcertify j (fun k hk ↦ hstop k (hj.trans hk))
+    obtain ⟨k, hk, _, hs⟩ := run.exists_valid_small_radius M hγ₂ hγ₂' hpos hlow hvalid hr
+    exact (not_lt_of_ge (hfloor k ((le_max_right _ _).trans hk)).le) hs
+  exact ⟨liminf_eq_zero_of_frequently_lt ha hfreq, hfreq⟩
+
+/-- Equation (9.2.8) and its triangle-inequality consequence at one
+accepted criticality test. -/
+theorem norm_fderiv_le_of_accepted_criticality {f m : E → ℝ} (hf : ContDiff ℝ 2 f)
+    (hm : Differentiable ℝ m) (hDm : Differentiable ℝ (fderiv ℝ m)) {x : E}
+    {δ κ Bf Bm μ : ℝ} (hδ : 0 < δ) (hκ : 0 < κ) (hBf : 0 ≤ Bf) (hBm : 0 ≤ Bm)
+    (hF : ∀ z, ‖fderiv ℝ (fderiv ℝ f) z‖ ≤ Bf)
+    (hM : ∀ z, ‖fderiv ℝ (fderiv ℝ m) z‖ ≤ Bm)
+    (hvalid : modelValidOnBall f m x δ κ) (hcap : δ ≤ μ * ‖fderiv ℝ m x‖) :
+    ‖fderiv ℝ f x‖ ≤ (1 + (2 * κ + (Bf + Bm) / 2) * μ) * ‖fderiv ℝ m x‖ := by
+  let C := 2 * κ + (Bf + Bm) / 2
+  have hC : 0 ≤ C := by dsimp [C]; positivity
+  have he := theorem_9_1_1 hf hm hDm hδ hκ hBf hBm hF hM hvalid
+  let a := fderiv ℝ f x
+  let b := fderiv ℝ m x
+  change ‖a‖ ≤ (1 + C * μ) * ‖b‖
+  calc
+    ‖a‖ ≤ ‖a - b‖ + ‖b‖ := by simpa only [sub_add_cancel] using norm_add_le (a - b) b
+    _ ≤ C * δ + ‖b‖ := add_le_add he le_rfl
+    _ ≤ C * (μ * ‖b‖) + ‖b‖ := add_le_add (mul_le_mul_of_nonneg_left hcap hC) le_rfl
+    _ = _ := by ring
+
 /-- Lemma 9.2.4, with the eventual accepted-model condition of Step 1 made explicit.
 The sequences may already be restricted to the subsequence in (9.2.6). -/
 theorem lemma_9_2_4 {f : E → ℝ} (hf : ContDiff ℝ 2 f) {m : ℕ → E → ℝ}
@@ -400,21 +534,202 @@ theorem lemma_9_2_4 {f : E → ℝ} (hf : ContDiff ℝ 2 f) {m : ℕ → E → �
     (hg : Tendsto (fun k ↦ ‖fderiv ℝ (m k) (x k)‖) atTop (𝓝 0)) :
     Tendsto (fun k ↦ ‖fderiv ℝ f (x k)‖) atTop (𝓝 0) := by
   let C := 2 * κ + (Bf + Bm) / 2
-  have hC : 0 ≤ C := by dsimp [C]; positivity
   have hlim : Tendsto (fun k ↦ (1 + C * μ) * ‖fderiv ℝ (m k) (x k)‖) atTop (𝓝 0) := by
     simpa only [mul_zero] using tendsto_const_nhds.mul hg (f := fun _ ↦ 1 + C * μ)
   refine squeeze_zero' (Eventually.of_forall fun _ ↦ norm_nonneg _) ?_ hlim
   filter_upwards [hvalid] with k hk
-  have he := theorem_9_1_1 hf (hm k) (hDm k) hk.1 hκ hBf hBm hF (hM k) hk.2.2
-  let a := fderiv ℝ f (x k)
-  let b := fderiv ℝ (m k) (x k)
-  have hab : ‖a‖ ≤ ‖a - b‖ + ‖b‖ := by
-    simpa only [sub_add_cancel] using norm_add_le (a - b) b
-  change ‖a‖ ≤ (1 + C * μ) * ‖b‖
-  calc
-    ‖a‖ ≤ ‖a - b‖ + ‖b‖ := hab
-    _ ≤ C * δ k + ‖b‖ := add_le_add he le_rfl
-    _ ≤ C * (μ * ‖b‖) + ‖b‖ := add_le_add (mul_le_mul_of_nonneg_left hk.2.1 hC) le_rfl
-    _ = _ := by ring
+  exact norm_fderiv_le_of_accepted_criticality hf (hm k) (hDm k) hk.1 hκ hBf hBm
+    hF (hM k) hk.2.2 hk.2.1
+
+/-- The liminf conclusion of Theorem 9.2.5. The accepted-model test is
+needed only at sufficiently small model gradients, as in Step 1. -/
+theorem theorem_9_2_5 {f : E → ℝ} (hf : ContDiff ℝ 2 f) {m : ℕ → E → ℝ}
+    (hm : ∀ k, Differentiable ℝ (m k)) (hDm : ∀ k, Differentiable ℝ (fderiv ℝ (m k)))
+    {x : ℕ → E} {δ : ℕ → ℝ} {κ Bf Bm μ εc : ℝ} (hκ : 0 < κ) (hεc : 0 < εc)
+    (hBf : 0 ≤ Bf) (hBm : 0 ≤ Bm) (hμ : 0 ≤ μ)
+    (hF : ∀ z, ‖fderiv ℝ (fderiv ℝ f) z‖ ≤ Bf)
+    (hM : ∀ k z, ‖fderiv ℝ (fderiv ℝ (m k)) z‖ ≤ Bm)
+    (hvalid : ∀ k, ‖fderiv ℝ (m k) (x k)‖ ≤ εc →
+      0 < δ k ∧ δ k ≤ μ * ‖fderiv ℝ (m k) (x k)‖ ∧ modelValidOnBall f (m k) (x k) (δ k) κ)
+    (hg : ∀ ε > 0, ∃ᶠ k in atTop, ‖fderiv ℝ (m k) (x k)‖ < ε) :
+    liminf (fun k ↦ ‖fderiv ℝ f (x k)‖) atTop = 0 ∧
+      ∀ ε > 0, ∃ᶠ k in atTop, ‖fderiv ℝ f (x k)‖ < ε := by
+  let C := 2 * κ + (Bf + Bm) / 2
+  have hC : 0 ≤ C := by dsimp [C]; positivity
+  have hK : 0 < 1 + C * μ := by positivity
+  have hfreq (ε : ℝ) (hε : 0 < ε) : ∃ᶠ k in atTop, ‖fderiv ℝ f (x k)‖ < ε := by
+    refine (hg _ (lt_min hεc (div_pos hε hK))).mono fun k hk ↦ ?_
+    have hv := hvalid k ((lt_of_lt_of_le hk (min_le_left _ _)).le)
+    have he := norm_fderiv_le_of_accepted_criticality hf (hm k) (hDm k) hv.1 hκ hBf hBm
+      hF (hM k) hv.2.2 hv.2.1
+    apply he.trans_lt
+    have hk' := (lt_div_iff₀ hK).mp (hk.trans_le (min_le_right _ _))
+    simpa only [C, mul_comm] using hk'
+  exact ⟨liminf_eq_zero_of_frequently_lt (fun _ ↦ norm_nonneg _) hfreq, hfreq⟩
+
+omit [NormedAddCommGroup E] [NormedSpace ℝ E] in
+/-- An unsuccessful iterate stays fixed until the next successful iteration.
+If successes are infinite, small gradient norms therefore occur frequently
+also among successful iterations. -/
+theorem frequently_successful_small_gradient {x : ℕ → E} {u : E → ℝ} {S : Set ℕ}
+    (hS : ∃ᶠ k in atTop, k ∈ S) (hstay : ∀ k ∉ S, x (k + 1) = x k)
+    (hfreq : ∀ ε > 0, ∃ᶠ k in atTop, u (x k) < ε) :
+    ∀ ε > 0, ∃ᶠ k in atTop, k ∈ S ∧ u (x k) < ε := by
+  classical
+  intro ε hε
+  apply frequently_atTop.mpr
+  intro N
+  obtain ⟨k, hk, hsmall⟩ := frequently_atTop.mp (hfreq ε hε) N
+  have hex : ∃ j, k ≤ j ∧ j ∈ S := frequently_atTop.mp hS k
+  let j := Nat.find hex
+  have hj : k ≤ j ∧ j ∈ S := Nat.find_spec hex
+  have hx (i : ℕ) (hi : k ≤ i) : i ≤ j → x i = x k := by
+    induction i, hi using Nat.le_induction with
+    | base => intro _; rfl
+    | succ i hi ih =>
+      intro hij
+      have hlt : i < j := Nat.lt_of_succ_le hij
+      have hn : i ∉ S := fun hs ↦ Nat.find_min hex hlt ⟨hi, hs⟩
+      rw [hstay i hn, ih hlt.le]
+  exact ⟨j, hk.trans hj.1, hj.2, by simpa only [hx j hj.1 le_rfl] using hsmall⟩
+
+/-- Compact containment of the successful iterates gives an actual convergent
+subsequence in Theorem 9.2.5, provided that successful small-gradient
+iterations occur frequently. -/
+theorem theorem_9_2_5_exists_critical_subseq {f : E → ℝ} (hf : ContDiff ℝ 1 f)
+    {x : ℕ → E} {K : Set E} {S : Set ℕ} (hK : IsCompact K) (hx : ∀ k ∈ S, x k ∈ K)
+    (hfreq : ∀ ε > 0, ∃ᶠ k in atTop, k ∈ S ∧ ‖fderiv ℝ f (x k)‖ < ε) :
+    ∃ z ∈ K, ∃ j : ℕ → ℕ, StrictMono j ∧ (∀ n, j n ∈ S) ∧
+      Tendsto (x ∘ j) atTop (𝓝 z) ∧ fderiv ℝ f z = 0 := by
+  obtain ⟨j, hj, hjS⟩ := extraction_forall_of_frequently fun n : ℕ ↦
+    hfreq (1 / ((n : ℝ) + 1)) (by positivity)
+  have hja : Tendsto (fun n ↦ ‖fderiv ℝ f (x (j n))‖) atTop (𝓝 0) :=
+    squeeze_zero (fun _ ↦ norm_nonneg _) (fun n ↦ (hjS n).2.le)
+      (tendsto_one_div_add_atTop_nhds_zero_nat (𝕜 := ℝ))
+  obtain ⟨z, hz, i, hi, hzi⟩ := hK.isSeqCompact (fun n ↦ hx (j n) (hjS n).1)
+  have hgrad : Continuous (fun y ↦ ‖fderiv ℝ f y‖) := (hf.continuous_fderiv (by norm_num)).norm
+  have hn : ‖fderiv ℝ f z‖ = 0 :=
+    tendsto_nhds_unique (hgrad.continuousAt.tendsto.comp hzi) (hja.comp hi.tendsto_atTop)
+  exact ⟨z, hz, j ∘ i, hj.comp hi, fun n ↦ (hjS (i n)).1, hzi, norm_eq_zero.mp hn⟩
+
+/-- Corrected Theorem 9.2.6. The criticality test supplies the comparison
+between the objective and model gradients when the model gradient is small.
+Combined with valid selected steps and the small-gradient subsequence, the
+objective gradient norms tend to zero along the full run. -/
+theorem theorem_9_2_6 {f : E → ℝ} {x : ℕ → E} {a pred Δ : ℕ → ℝ} {S : Set ℕ}
+    {η κ β εc A L K : ℝ} (hη : 0 < η) (hκ : 0 < κ) (hβ : 0 < β)
+    (hεc : 0 < εc) (hA : 0 < A) (hL : 0 ≤ L) (hK : 0 ≤ K)
+    (ha : ∀ k, 0 ≤ a k) (hΔ : ∀ k, 0 < Δ k)
+    (hcompare : ∀ k, a k ≤ εc → ‖fderiv ℝ f (x k)‖ ≤ A * a k)
+    (hgrad : ∀ y z, ‖fderiv ℝ f y - fderiv ℝ f z‖ ≤ L * ‖y - z‖)
+    (hdec : ∀ k, κ * a k * min (a k / β) (Δ k) ≤ pred k)
+    (hprogress : ∀ k ∈ S, η * pred k ≤ f (x k) - f (x (k + 1)))
+    (hstep : ∀ k ∈ S, ‖x k - x (k + 1)‖ ≤ K * Δ k)
+    (hstay : ∀ k ∉ S, x (k + 1) = x k)
+    (hlower : BddBelow (Set.range f))
+    (hfreq : ∀ ε > 0, ∃ᶠ k in atTop, ‖fderiv ℝ f (x k)‖ < ε) :
+    Tendsto (fun k ↦ ‖fderiv ℝ f (x k)‖) atTop (𝓝 0) ∧
+      ∀ z (j : ℕ → ℕ), Tendsto j atTop atTop → Tendsto (x ∘ j) atTop (𝓝 z) →
+        fderiv ℝ f z = 0 := by
+  classical
+  let u (k : ℕ) := ‖fderiv ℝ f (x k)‖
+  let v (k : ℕ) := f (x k)
+  have hmono : Antitone v := by
+    apply antitone_nat_of_succ_le
+    intro k
+    by_cases hs : k ∈ S
+    · have hp : 0 ≤ pred k :=
+        (mul_nonneg (mul_nonneg hκ.le (ha k))
+          (le_min (div_nonneg (ha k) hβ.le) (hΔ k).le)).trans (hdec k)
+      exact sub_nonneg.mp ((mul_nonneg hη.le hp).trans (hprogress k hs))
+    · change f (x (k + 1)) ≤ f (x k)
+      rw [hstay k hs]
+  have hb : BddBelow (Set.range v) := hlower.mono (Set.range_comp_subset_range x f)
+  have hlim := tendsto_atTop_ciInf hmono hb
+  have hdiff : Tendsto (fun k ↦ v k - v (k + 1)) atTop (𝓝 0) := by
+    simpa only [Function.comp_apply, sub_self] using hlim.sub (hlim.comp (tendsto_add_atTop_nat 1))
+  have htail : Tendsto (fun k ↦ v k - ⨅ i, v i) atTop (𝓝 0) := by
+    simpa only [sub_self] using hlim.sub_const (⨅ i, v i)
+  have hLK : 0 ≤ L * K := mul_nonneg hL hK
+  have hLK₁ : 0 < L * K + 1 := by positivity
+  have hu : Tendsto u atTop (𝓝 0) := by
+    apply Metric.tendsto_atTop.mpr
+    intro ε hε
+    let e := ε / 2
+    let b := min εc (e / A)
+    let c := η * (κ * b)
+    have he : 0 < e := half_pos hε
+    have hb₀ : 0 < b := lt_min hεc (div_pos he hA)
+    have hc : 0 < c := mul_pos hη (mul_pos hκ hb₀)
+    obtain ⟨N, hN⟩ := eventually_atTop.mp
+      (hdiff.eventually (gt_mem_nhds (mul_pos hc (div_pos hb₀ hβ))))
+    obtain ⟨J, hJ⟩ := eventually_atTop.mp
+      (htail.eventually (gt_mem_nhds (div_pos (mul_pos hc he) hLK₁)))
+    have hlocal (k : ℕ) (hk : N ≤ k) (hhigh : e ≤ u k) :
+        c * (u k - u (k + 1)) ≤ (L * K) * (v k - v (k + 1)) := by
+      by_cases hs : k ∈ S
+      · have hab : b ≤ a k := by
+          by_cases hsmall : a k ≤ εc
+          · exact (min_le_right _ _).trans ((div_le_iff₀ hA).mpr
+              (by simpa only [mul_comm] using hhigh.trans (hcompare k hsmall)))
+          · exact (min_le_left _ _).trans (le_of_lt (lt_of_not_ge hsmall))
+        have hm : κ * b * min (b / β) (Δ k) ≤ pred k :=
+          (mul_le_mul (mul_le_mul_of_nonneg_left hab hκ.le)
+            (min_le_min (div_le_div_of_nonneg_right hab hβ.le) le_rfl)
+            (le_min (div_nonneg hb₀.le hβ.le) (hΔ k).le)
+            (mul_nonneg hκ.le (ha k))).trans (hdec k)
+        have hdrop : c * min (b / β) (Δ k) ≤ v k - v (k + 1) := by
+          simpa only [c, mul_assoc] using
+            (mul_le_mul_of_nonneg_left hm hη.le).trans (hprogress k hs)
+        have hrad : Δ k ≤ b / β := by
+          by_contra! hn
+          rw [min_eq_left hn.le] at hdrop
+          exact (hN k hk).not_ge hdrop
+        rw [min_eq_right hrad] at hdrop
+        have hnorm : u k - u (k + 1) ≤ (L * K) * Δ k := calc
+          _ ≤ ‖fderiv ℝ f (x k) - fderiv ℝ f (x (k + 1))‖ := norm_sub_norm_le _ _
+          _ ≤ L * ‖x k - x (k + 1)‖ := hgrad _ _
+          _ ≤ L * (K * Δ k) := mul_le_mul_of_nonneg_left (hstep k hs) hL
+          _ = _ := by ring
+        calc
+          _ ≤ c * ((L * K) * Δ k) := mul_le_mul_of_nonneg_left hnorm hc.le
+          _ = (L * K) * (c * Δ k) := by ring
+          _ ≤ _ := mul_le_mul_of_nonneg_left hdrop hLK
+      · simp only [u, v, hstay k hs, sub_self, mul_zero, le_refl]
+    refine ⟨max N J, fun k hk ↦ ?_⟩
+    have hkN := (le_max_left N J).trans hk
+    have hkJ := (le_max_right N J).trans hk
+    change dist (u k) 0 < ε
+    rw [Real.dist_eq, sub_zero, abs_of_nonneg (norm_nonneg _)]
+    by_contra! hhigh
+    have hExists : ∃ j, k ≤ j ∧ u j < e := frequently_atTop.mp (hfreq e he) k
+    let j := Nat.find hExists
+    have hj : k ≤ j ∧ u j < e := Nat.find_spec hExists
+    have htel (i : ℕ) (hi : k ≤ i) : i ≤ j →
+        c * (u k - u i) ≤ (L * K) * (v k - v i) := by
+      induction i, hi using Nat.le_induction with
+      | base => simp
+      | succ i hi ih =>
+        intro hij
+        have hbelow : i < j := Nat.lt_of_succ_le hij
+        have hui : e ≤ u i := le_of_not_gt fun hu ↦ (Nat.find_min hExists hbelow) ⟨hi, hu⟩
+        linarith only [ih hbelow.le, hlocal i (hkN.trans hi) hui]
+    have hgap : e < u k - u j := by dsimp [e] at hj ⊢; linarith [hj.2]
+    have hlast : (L * K) * (v k - v j) < c * e := calc
+      _ ≤ (L * K + 1) * (v k - v j) :=
+        mul_le_mul_of_nonneg_right (by linarith) (sub_nonneg.mpr (hmono hj.1))
+      _ ≤ (L * K + 1) * (v k - ⨅ i, v i) :=
+        mul_le_mul_of_nonneg_left (sub_le_sub_left (ciInf_le hb j) _) hLK₁.le
+      _ < _ := by
+        simpa only [mul_comm (L * K + 1)] using (lt_div_iff₀ hLK₁).mp (hJ k hkJ)
+    exact (not_lt_of_ge (htel j hj.1 le_rfl))
+      (hlast.trans (mul_lt_mul_of_pos_left hgap hc))
+  refine ⟨hu, fun z j hj hxj ↦ ?_⟩
+  have hcont : Continuous (fderiv ℝ f) := by
+    refine (LipschitzWith.of_dist_le_mul (K := ⟨L, hL⟩) fun y z ↦ ?_).continuous
+    rw [dist_eq_norm, dist_eq_norm]
+    exact hgrad y z
+  have hn := tendsto_nhds_unique (hcont.norm.continuousAt.tendsto.comp hxj) (hu.comp hj)
+  exact norm_eq_zero.mp hn
 
 end ConnGouldToint.Chapter09
