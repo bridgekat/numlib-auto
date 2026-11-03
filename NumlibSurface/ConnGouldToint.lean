@@ -167,7 +167,8 @@ argument in Theorem 15.4.6 uses the very-successful update. The corrected
 coefficient in Lemma 15.4.9 stays positive for every nonnegative model bound.
 Theorem 15.4.10 includes the Cauchy coefficient in the radius threshold and
 the initial tail radius in the floor. Theorem 15.4.11 makes the required
-uniform control of accepted-step variation explicit.
+uniform control of accepted-step variation explicit. The two cases in (15.4.140)
+give a common lower bound using the smaller coefficient.
 
 Chapter 16 covers the uniform least-squares Hessian bound, exact minimization of the scalar
 epigraph merit function, and the Fischer–Burmeister residual formulation of complementarity.

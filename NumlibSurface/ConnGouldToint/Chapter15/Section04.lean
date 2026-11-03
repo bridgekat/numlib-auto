@@ -1,4 +1,5 @@
 import Numlib.Analysis.Calculus.Taylor
+import Mathlib.Analysis.InnerProductSpace.Adjoint
 import Mathlib.Analysis.SpecificLimits.Basic
 import NumlibSurface.ConnGouldToint.Chapter06.Section03
 import Mathlib.Topology.Algebra.Order.LiminfLimsup
@@ -191,51 +192,52 @@ theorem lemma_15_4_3 [CompleteSpace E] {f : E → ℝ} {c : E → F} {x s : E}
     _ = _ := by ring
 
 omit [InnerProductSpace ℝ E] [NormedSpace ℝ F] in
-/-- Lemma 15.4.4. At a fixed iterate, the feasible case uses a nonzero
-reduced gradient and a bounded penalty. The infeasible case uses the
-penalty-weighted normal decrease, so the penalty need not be bounded above. -/
-theorem lemma_15_4_4 (f : E → ℝ) (c : E → F) (x : E)
+private theorem sqp_acceptance_of_linear_decrease (f : E → ℝ) (c : E → F) (x : E)
     (s : ℝ → E) (m : ℝ → E → ℝ) (σ : ℝ → ℝ)
     {η C σmin : ℝ} (hη : η < 1) (hC : 0 ≤ C) (hmin : 0 < σmin)
     (hσ : ∀ r > 0, σmin ≤ σ r)
     (hcenter : ∀ r > 0, m r 0 = sqpMerit f c (σ r) x)
     (herr : ∀ r > 0, |sqpMerit f c (σ r) (x + s r) - m r (s r)| ≤
       C * (1 + σ r) * r ^ 2)
-    (hcase :
-      (c x = 0 ∧ ∃ G R β ξ κ S : ℝ,
-        0 < G ∧ 0 < R ∧ 0 < β ∧ 0 < ξ ∧ 0 < κ ∧ 0 ≤ S ∧
-        ∀ r > 0, σ r ≤ S ∧ κ * G * min (ξ * r / R) (G / β) ≤ m r 0 - m r (s r)) ∨
-      (c x ≠ 0 ∧ ∃ ν b : ℝ, 0 < ν ∧ 0 < b ∧
-        ∀ r > 0, ν * σ r * min ‖c x‖ (b * r) ≤ m r 0 - m r (s r))) :
+    (hdec : ∃ a > 0, ∃ b > 0, ∀ r ∈ Set.Ioc (0 : ℝ) b,
+      a * (1 + σ r) * r ≤ m r 0 - m r (s r)) :
     ∃ r₀ > 0, ∀ r ∈ Set.Ioc (0 : ℝ) r₀,
       η ≤ Optimization.reductionRatio (sqpMerit f c (σ r)) x (s r) (m r 0 - m r (s r)) := by
-  suffices ∃ a > 0, ∃ b > 0, ∀ r ∈ Set.Ioc (0 : ℝ) b,
-      a * (1 + σ r) * r ≤ m r 0 - m r (s r) by
-    obtain ⟨a, ha, b, hb, hlin⟩ := this
-    let r₀ := min b ((1 - η) * a / (C + 1))
-    refine ⟨r₀, lt_min hb (by positivity), ?_⟩
-    intro r hr
-    have hrb : r ∈ Set.Ioc (0 : ℝ) b := ⟨hr.1, hr.2.trans (min_le_left _ _)⟩
-    have hd := hlin r hrb
-    have hp : 0 < m r 0 - m r (s r) :=
-      (mul_pos (mul_pos ha (by linarith [hσ r hr.1])) hr.1).trans_le hd
-    have hsmall := (le_div_iff₀ (by positivity : 0 < C + 1)).mp
-      (hr.2.trans (min_le_right _ _))
-    have hcr : C * r ≤ (1 - η) * a := by
-      linarith only [hsmall, hr.1]
-    have hσ' : 0 ≤ 1 + σ r := by linarith [hσ r hr.1]
-    have he : |sqpMerit f c (σ r) (x + s r) -
-        (sqpMerit f c (σ r) x - (m r 0 - m r (s r)))| ≤
-        (1 - η) * (m r 0 - m r (s r)) := by
-      rw [← hcenter r hr.1, sub_sub_cancel]
-      refine (herr r hr.1).trans ?_
-      have hscale := mul_le_mul_of_nonneg_right hcr (mul_nonneg hσ' hr.1.le)
-      have hpred := mul_le_mul_of_nonneg_left hd (sub_nonneg.mpr hη.le)
-      nlinarith only [hscale, hpred]
-    have h := Optimization.le_reductionRatio_of_abs_sub_le hp he
-    linarith only [h]
-  rcases hcase with ⟨_, G, R, β, ξ, κ, S, hG, hR, hβ, hξ, hκ, hS, hdec⟩ |
-    ⟨hc, ν, b, hν, hb, hdec⟩
+  obtain ⟨a, ha, b, hb, hlin⟩ := hdec
+  let r₀ := min b ((1 - η) * a / (C + 1))
+  refine ⟨r₀, lt_min hb (by positivity), ?_⟩
+  intro r hr
+  have hrb : r ∈ Set.Ioc (0 : ℝ) b := ⟨hr.1, hr.2.trans (min_le_left _ _)⟩
+  have hd := hlin r hrb
+  have hp : 0 < m r 0 - m r (s r) :=
+    (mul_pos (mul_pos ha (by linarith [hσ r hr.1])) hr.1).trans_le hd
+  have hsmall := (le_div_iff₀ (by positivity : 0 < C + 1)).mp
+    (hr.2.trans (min_le_right _ _))
+  have hcr : C * r ≤ (1 - η) * a := by
+    linarith only [hsmall, hr.1]
+  have hσ' : 0 ≤ 1 + σ r := by linarith [hσ r hr.1]
+  have he : |sqpMerit f c (σ r) (x + s r) -
+      (sqpMerit f c (σ r) x - (m r 0 - m r (s r)))| ≤
+      (1 - η) * (m r 0 - m r (s r)) := by
+    rw [← hcenter r hr.1, sub_sub_cancel]
+    refine (herr r hr.1).trans ?_
+    have hscale := mul_le_mul_of_nonneg_right hcr (mul_nonneg hσ' hr.1.le)
+    have hpred := mul_le_mul_of_nonneg_left hd (sub_nonneg.mpr hη.le)
+    nlinarith only [hscale, hpred]
+  have h := Optimization.le_reductionRatio_of_abs_sub_le hp he
+  linarith only [h]
+
+private theorem sqp_linear_decrease {σ d : ℝ → ℝ} {σmin : ℝ}
+    (hmin : 0 < σmin) (hσ : ∀ r > 0, σmin ≤ σ r)
+    (hcase :
+      (∃ G R β ξ κ S : ℝ,
+        0 < G ∧ 0 < R ∧ 0 < β ∧ 0 < ξ ∧ 0 < κ ∧ 0 ≤ S ∧
+        ∀ r > 0, σ r ≤ S ∧ κ * G * min (ξ * r / R) (G / β) ≤ d r) ∨
+      (∃ T ν b : ℝ, 0 < T ∧ 0 < ν ∧ 0 < b ∧
+        ∀ r > 0, ν * σ r * min T (b * r) ≤ d r)) :
+    ∃ a > 0, ∃ b > 0, ∀ r ∈ Set.Ioc (0 : ℝ) b, a * (1 + σ r) * r ≤ d r := by
+  rcases hcase with ⟨G, R, β, ξ, κ, S, hG, hR, hβ, hξ, hκ, hS, hdec⟩ |
+    ⟨T, ν, b, hT, hν, hb, hdec⟩
   · let a := κ * G * ξ / (R * (1 + S))
     let b := (G / β) * R / ξ
     have ha : 0 < a := by dsimp [a]; positivity
@@ -255,9 +257,9 @@ theorem lemma_15_4_4 (f : E → ℝ) (c : E → F) (x : E)
         field_simp
       _ ≤ _ := hdrop
   · let a := ν * b * (σmin / (1 + σmin))
-    refine ⟨a, by dsimp [a]; positivity, ‖c x‖ / b,
-      div_pos (norm_pos_iff.mpr hc) hb, fun r hr => ?_⟩
-    have hm : b * r ≤ ‖c x‖ := by
+    refine ⟨a, by dsimp [a]; positivity, T / b,
+      div_pos hT hb, fun r hr => ?_⟩
+    have hm : b * r ≤ T := by
       rw [mul_comm]
       exact (le_div_iff₀ hb).mp hr.2
     have hσr := hσ r hr.1
@@ -273,6 +275,31 @@ theorem lemma_15_4_4 (f : E → ℝ) (c : E → F) (x : E)
         mul_le_mul_of_nonneg_left hfrac (by positivity [hr.1])
       _ = ν * σ r * (b * r) := by ring
       _ ≤ _ := hdrop
+
+omit [InnerProductSpace ℝ E] [NormedSpace ℝ F] in
+/-- Lemma 15.4.4. At a fixed iterate, the feasible case uses a nonzero
+reduced gradient and a bounded penalty. The infeasible case uses the
+penalty-weighted normal decrease, so the penalty need not be bounded above. -/
+theorem lemma_15_4_4 (f : E → ℝ) (c : E → F) (x : E)
+    (s : ℝ → E) (m : ℝ → E → ℝ) (σ : ℝ → ℝ)
+    {η C σmin : ℝ} (hη : η < 1) (hC : 0 ≤ C) (hmin : 0 < σmin)
+    (hσ : ∀ r > 0, σmin ≤ σ r)
+    (hcenter : ∀ r > 0, m r 0 = sqpMerit f c (σ r) x)
+    (herr : ∀ r > 0, |sqpMerit f c (σ r) (x + s r) - m r (s r)| ≤
+      C * (1 + σ r) * r ^ 2)
+    (hcase :
+      (c x = 0 ∧ ∃ G R β ξ κ S : ℝ,
+        0 < G ∧ 0 < R ∧ 0 < β ∧ 0 < ξ ∧ 0 < κ ∧ 0 ≤ S ∧
+        ∀ r > 0, σ r ≤ S ∧ κ * G * min (ξ * r / R) (G / β) ≤ m r 0 - m r (s r)) ∨
+      (c x ≠ 0 ∧ ∃ ν b : ℝ, 0 < ν ∧ 0 < b ∧
+        ∀ r > 0, ν * σ r * min ‖c x‖ (b * r) ≤ m r 0 - m r (s r))) :
+    ∃ r₀ > 0, ∀ r ∈ Set.Ioc (0 : ℝ) r₀,
+      η ≤ Optimization.reductionRatio (sqpMerit f c (σ r)) x (s r) (m r 0 - m r (s r)) := by
+  apply sqp_acceptance_of_linear_decrease f c x s m σ hη hC hmin hσ hcenter herr
+  apply sqp_linear_decrease hmin hσ
+  rcases hcase with ⟨_, h⟩ | ⟨hc, ν, b, hν, hb, h⟩
+  · exact Or.inl h
+  · exact Or.inr ⟨‖c x‖, ν, b, norm_pos_iff.mpr hc, hν, hb, h⟩
 
 /-- The normalized merit of Section 15.4.1.4. -/
 noncomputable def sqpNormalizedMerit (f : E → ℝ) (c : E → F) (fmin σ : ℝ) (x : E) : ℝ :=
@@ -442,6 +469,103 @@ private theorem tendsto_zero_of_relaxed_steps {u v Δ : ℕ → ℝ} {S : Set �
   exact (not_lt_of_ge (htel j hj.1 le_rfl)) (hupper.trans hlow)
 
 omit [InnerProductSpace ℝ E] [NormedSpace ℝ F] in
+private theorem sqp_tendsto_zero_of_normal_decrease (f : E → ℝ) (c : E → F) (x s : ℕ → E) (σ d Δ u : ℕ → ℝ)
+    (S : Set ℕ) {fmin σmin η η₂ C L γ γ₂ : ℝ}
+    (hη : 0 < η) (hη₂ : η ≤ η₂) (hη₂' : η₂ < 1) (hC : 0 ≤ C)
+    (hL : 0 ≤ L) (hσmin : 0 < σmin) (hγ : 0 < γ) (hγ₂ : 0 ≤ γ₂) (hγ₂' : γ₂ < 1)
+    (hf : ∀ k, fmin ≤ f (x k)) (hσ : ∀ k, σmin ≤ σ k) (hσmono : Monotone σ)
+    (hΔ : ∀ k, 0 < Δ k) (hu : ∀ k, 0 ≤ u k)
+    (hratio : ∀ k, k ∈ S ↔ η ≤ Optimization.reductionRatio
+      (sqpMerit f c (σ k)) (x k) (s k) (d k))
+    (hd_nonneg : ∀ k, 0 ≤ d k)
+    (hpred : ∀ ε > 0, ∃ p > 0, ∃ b > 0, ∃ e > 0, ∀ k, ε ≤ u k →
+      p * (1 + σ k) * min e (b * Δ k) ≤ d k)
+    (herr : ∀ k, |sqpMerit f c (σ k) (x k + s k) -
+      (sqpMerit f c (σ k) (x k) - d k)| ≤ C * (1 + σ k) * (Δ k) ^ 2)
+    (hnext : ∀ k, γ * Δ k ≤ Δ (k + 1))
+    (hacc : ∀ k ∈ S, x (k + 1) = x k + s k)
+    (hvery : ∀ k, η₂ ≤ Optimization.reductionRatio
+      (sqpMerit f c (σ k)) (x k) (s k) (d k) → Δ k ≤ Δ (k + 1))
+    (hrej : ∀ k ∉ S, x (k + 1) = x k ∧ Δ (k + 1) ≤ γ₂ * Δ k)
+    (hmove : ∀ k ∈ S, u k - u (k + 1) ≤ L * Δ k)
+    (hstay : ∀ k ∉ S, u (k + 1) = u k) :
+    Filter.Tendsto u Filter.atTop (nhds 0) := by
+  let v (k : ℕ) := sqpNormalizedMerit f c fmin (σ k) (x k)
+  have hσpos (k : ℕ) := hσmin.trans_le (hσ k)
+  have hexpand (r : ℝ) (hr : r ≠ 0) (z : E) :
+      sqpNormalizedMerit f c fmin r z = (f z - fmin) / r + ‖c z‖ := by
+    unfold sqpNormalizedMerit sqpMerit
+    field_simp
+    ring
+  have hcompare (k : ℕ) : v (k + 1) ≤ sqpNormalizedMerit f c fmin (σ k) (x (k + 1)) := by
+    simp only [v, hexpand _ (hσpos _).ne']
+    exact add_le_add
+      (div_le_div_of_nonneg_left (sub_nonneg.mpr (hf _)) (hσpos _) (hσmono (Nat.le_succ _)))
+      le_rfl
+  have hdrop (k : ℕ) (hk : k ∈ S) : η * (d k / σ k) ≤ v k - v (k + 1) := by
+    have hpos : 0 < d k := by
+      by_contra! hz
+      have hzero := le_antisymm hz (hd_nonneg k)
+      have hbad := (hratio k).mp hk
+      simp [Optimization.reductionRatio, hzero, not_le_of_gt hη] at hbad
+    have hactual := (le_div_iff₀ hpos).mp ((hratio k).mp hk)
+    change η * d k ≤ sqpMerit f c (σ k) (x k) -
+      sqpMerit f c (σ k) (x k + s k) at hactual
+    rw [← hacc k hk] at hactual
+    have hnorm : sqpNormalizedMerit f c fmin (σ k) (x (k + 1)) ≤ v k - η * (d k / σ k) := by
+      dsimp [v, sqpNormalizedMerit]
+      rw [← mul_div_assoc, ← sub_div]
+      exact (div_le_div_iff_of_pos_right (hσpos k)).mpr (by linarith)
+    linarith only [(hcompare k).trans hnorm]
+  have hmono : Antitone v := antitone_nat_of_succ_le fun k => by
+    by_cases hk : k ∈ S
+    · have h := hdrop k hk
+      have hn := mul_nonneg hη.le (div_nonneg (hd_nonneg k) (hσpos k).le)
+      linarith
+    · have h := hcompare k
+      rwa [(hrej k hk).1] at h
+  have hcontrol : HasRelaxedProgress u v Δ S := by
+    intro ε hε
+    obtain ⟨p, hp, b, hb, e, he, hdecrease⟩ := hpred ε hε
+    let r := min (e / b) ((1 - η₂) * p * b / (C + 1))
+    refine ⟨η * p, b, e, r, 0, mul_pos hη hp, hb, he,
+      lt_min (div_pos he hb) (by positivity), fun k _ hk => ⟨?_, ?_⟩⟩
+    · intro hr
+      have hm : b * Δ k ≤ e := by
+        have hh := (le_div_iff₀ hb).mp (hr.trans (min_le_left _ _))
+        simpa only [mul_comm] using hh
+      have hd := hdecrease k hk
+      rw [min_eq_right hm] at hd
+      have hs : 0 < 1 + σ k := by positivity [hσpos k]
+      have hpos := (mul_pos (mul_pos hp hs) (mul_pos hb (hΔ k))).trans_le hd
+      have hCΔ : C * Δ k ≤ (1 - η₂) * p * b := by
+        have hh := (le_div_iff₀ (by positivity : 0 < C + 1)).mp (hr.trans (min_le_right _ _))
+        linarith only [hh, hΔ k]
+      have hbound := mul_le_mul_of_nonneg_right hCΔ (mul_nonneg hs.le (hΔ k).le)
+      have hbound' := mul_le_mul_of_nonneg_left hd (sub_nonneg.mpr hη₂'.le)
+      have hv : η₂ ≤ Optimization.reductionRatio
+          (sqpMerit f c (σ k)) (x k) (s k) (d k) := by
+        have h := Optimization.le_reductionRatio_of_abs_sub_le hpos
+          ((herr k).trans (by nlinarith only [hbound, hbound']))
+        linarith only [h]
+      exact ⟨(hratio k).mpr (hη₂.trans hv), hvery k hv⟩
+    · intro hS
+      have hd : p * min e (b * Δ k) ≤ d k / σ k := by
+        apply (le_div_iff₀ (hσpos k)).mpr
+        have hh := mul_le_mul_of_nonneg_right
+          (show σ k ≤ 1 + σ k by linarith)
+          (mul_nonneg hp.le (le_min he.le (mul_nonneg hb.le (hΔ k).le)))
+        nlinarith only [hh, hdecrease k hk]
+      rw [mul_assoc]
+      exact (mul_le_mul_of_nonneg_left hd hη.le).trans (hdrop k hS)
+  refine tendsto_zero_of_relaxed_steps hL hγ hγ₂ hγ₂'
+    hu ?_ hΔ hmono hnext (fun k hk => ⟨(hrej k hk).2, hstay k hk⟩) hmove hcontrol
+  intro k
+  rw [show v k = sqpNormalizedMerit f c fmin (σ k) (x k) from rfl,
+    hexpand _ (hσpos k).ne']
+  exact add_nonneg (div_nonneg (sub_nonneg.mpr (hf k)) (hσpos k).le) (norm_nonneg _)
+
+omit [InnerProductSpace ℝ E] [NormedSpace ℝ F] in
 /-- Theorem 15.4.6 for the relaxed-linearization run. The model lower bound
 combines (15.4.7) and Lemma 15.4.1. The uniform quadratic error bound is
 the second inequality of Lemma 15.4.3. The variation bound on constraints
@@ -464,108 +588,34 @@ theorem theorem_15_4_6 (f : E → ℝ) (c : E → F) (x s : ℕ → E) (σ d Δ 
     (hrej : ∀ k ∉ S, x (k + 1) = x k ∧ Δ (k + 1) ≤ γ₂ * Δ k)
     (hmove : ∀ k ∈ S, ‖c (x k + s k) - c (x k)‖ ≤ L * Δ k) :
     Filter.Tendsto (fun k => c (x k)) Filter.atTop (nhds 0) := by
-  let u (k : ℕ) := ‖c (x k)‖
-  let v (k : ℕ) := sqpNormalizedMerit f c fmin (σ k) (x k)
-  let p := ν * (σmin / (1 + σmin))
-  have hp : 0 < p := by dsimp [p]; positivity
-  have hσpos (k : ℕ) := hσmin.trans_le (hσ k)
-  have hfrac (k : ℕ) : p * (1 + σ k) ≤ ν * σ k := by
+  rw [tendsto_zero_iff_norm_tendsto_zero]
+  refine sqp_tendsto_zero_of_normal_decrease f c x s σ d Δ (fun k => ‖c (x k)‖) S
+    hη hη₂ hη₂' hC hL hσmin hγ hγ₂ hγ₂' hf hσ hσmono hΔ
+    (fun k => norm_nonneg _) hratio ?_ ?_ herr hnext hacc hvery hrej ?_ ?_
+  · intro k
+    exact (mul_nonneg (mul_nonneg hν.le (hσmin.le.trans (hσ k)))
+      (le_min (norm_nonneg _) (mul_nonneg hb.le (hΔ k).le))).trans (hpred k)
+  · intro ε hε
+    let p := ν * (σmin / (1 + σmin))
+    refine ⟨p, by dsimp [p]; positivity, b, hb, ε, hε, fun k hk => ?_⟩
     have hh : σmin / (1 + σmin) * (1 + σ k) ≤ σ k := by
       rw [div_mul_eq_mul_div]
       apply (div_le_iff₀ (by positivity : 0 < 1 + σmin)).mpr
       linarith only [hσ k]
-    rw [show p * (1 + σ k) = ν * (σmin / (1 + σmin) * (1 + σ k)) by dsimp [p]; ring]
-    exact mul_le_mul_of_nonneg_left hh hν.le
-  have hdecrease (k : ℕ) : p * (1 + σ k) * min (u k) (b * Δ k) ≤ d k :=
-    (mul_le_mul_of_nonneg_right (hfrac k)
-      (le_min (norm_nonneg _) (mul_nonneg hb.le (hΔ k).le))).trans (hpred k)
-  have hexpand (r : ℝ) (hr : r ≠ 0) (z : E) :
-      sqpNormalizedMerit f c fmin r z = (f z - fmin) / r + ‖c z‖ := by
-    unfold sqpNormalizedMerit sqpMerit
-    field_simp
-    ring
-  have hcompare (k : ℕ) : v (k + 1) ≤ sqpNormalizedMerit f c fmin (σ k) (x (k + 1)) := by
-    simp only [v, hexpand _ (hσpos _).ne']
-    exact add_le_add
-      (div_le_div_of_nonneg_left (sub_nonneg.mpr (hf _)) (hσpos _) (hσmono (Nat.le_succ _)))
-      le_rfl
-  have hdrop (k : ℕ) (hk : k ∈ S) : η * p * min (u k) (b * Δ k) ≤ v k - v (k + 1) := by
-    have hge : 0 ≤ d k := (mul_nonneg (mul_nonneg hp.le (by positivity [hσpos k]))
-      (le_min (norm_nonneg _) (mul_nonneg hb.le (hΔ k).le))).trans (hdecrease k)
-    have hpos : 0 < d k := by
-      by_contra! hz
-      have hzero := le_antisymm hz hge
-      have hbad := (hratio k).mp hk
-      simp [Optimization.reductionRatio, hzero, not_le_of_gt hη] at hbad
-    have hactual := (le_div_iff₀ hpos).mp ((hratio k).mp hk)
-    change η * d k ≤ sqpMerit f c (σ k) (x k) -
-      sqpMerit f c (σ k) (x k + s k) at hactual
-    rw [← hacc k hk] at hactual
-    have hnorm : sqpNormalizedMerit f c fmin (σ k) (x (k + 1)) ≤ v k - η * (d k / σ k) := by
-      dsimp [v, sqpNormalizedMerit]
-      rw [← mul_div_assoc, ← sub_div]
-      exact (div_le_div_iff_of_pos_right (hσpos k)).mpr (by linarith)
-    have hd : p * min (u k) (b * Δ k) ≤ d k / σ k := by
-      apply (le_div_iff₀ (hσpos k)).mpr
-      have hh := mul_le_mul_of_nonneg_right
-        (show σ k ≤ 1 + σ k by linarith)
-        (mul_nonneg hp.le (le_min (norm_nonneg (c (x k))) (mul_nonneg hb.le (hΔ k).le)))
-      nlinarith only [hh, hdecrease k]
-    have h := mul_le_mul_of_nonneg_left hd hη.le
-    linarith only [h, (hcompare k).trans hnorm]
-  have hmono : Antitone v := antitone_nat_of_succ_le fun k => by
-    by_cases hk : k ∈ S
-    · have h := hdrop k hk
-      have hn : 0 ≤ η * p * min (u k) (b * Δ k) := by
-        exact mul_nonneg (mul_nonneg hη.le hp.le)
-          (le_min (norm_nonneg _) (mul_nonneg hb.le (hΔ k).le))
-      linarith
-    · have h := hcompare k
-      rwa [(hrej k hk).1] at h
-  have hsmall (ε : ℝ) (hε : 0 < ε) :
-      ∃ r > 0, ∀ k, ε ≤ u k → Δ k ≤ r → k ∈ S ∧ Δ k ≤ Δ (k + 1) := by
-    let r := min (ε / b) ((1 - η₂) * p * b / (C + 1))
-    refine ⟨r, lt_min (div_pos hε hb) (by positivity), fun k hu hk => ?_⟩
-    have hm : b * Δ k ≤ u k := by
-      have hh := (le_div_iff₀ hb).mp (hk.trans (min_le_left _ _))
-      exact (by simpa only [mul_comm] using hh : b * Δ k ≤ ε).trans hu
-    have hd := hdecrease k
-    rw [min_eq_right hm] at hd
-    have hs : 0 < 1 + σ k := by positivity [hσpos k]
-    have hpos := (mul_pos (mul_pos hp hs) (mul_pos hb (hΔ k))).trans_le hd
-    have hCΔ : C * Δ k ≤ (1 - η₂) * p * b := by
-      have hh := (le_div_iff₀ (by positivity : 0 < C + 1)).mp (hk.trans (min_le_right _ _))
-      linarith only [hh, hΔ k]
-    have hbound := mul_le_mul_of_nonneg_right hCΔ (mul_nonneg hs.le (hΔ k).le)
-    have hbound' := mul_le_mul_of_nonneg_left hd (sub_nonneg.mpr hη₂'.le)
-    have hv : η₂ ≤ Optimization.reductionRatio
-        (sqpMerit f c (σ k)) (x k) (s k) (d k) := by
-      have h := Optimization.le_reductionRatio_of_abs_sub_le hpos
-        ((herr k).trans (by nlinarith only [hbound, hbound']))
-      linarith only [h]
-    exact ⟨(hratio k).mpr (hη₂.trans hv), hvery k hv⟩
-  have hcontrol : HasRelaxedProgress u v Δ S := by
-    intro ε hε
-    obtain ⟨r, hr, hs⟩ := hsmall ε hε
-    refine ⟨η * p, b, ε, r, 0, mul_pos hη hp, hb, hε, hr, fun k _ hk => ⟨hs k hk, ?_⟩⟩
-    intro hS
-    exact (mul_le_mul_of_nonneg_left (min_le_min_right _ hk) (mul_nonneg hη.le hp.le)).trans
-      (hdrop k hS)
-  rw [tendsto_zero_iff_norm_tendsto_zero]
-  refine tendsto_zero_of_relaxed_steps hL hγ hγ₂ hγ₂'
-    (fun k => norm_nonneg _) ?_ hΔ hmono hnext
-    (fun k hk => ⟨(hrej k hk).2, by simp only [(hrej k hk).1]⟩) ?_ hcontrol
-  · intro k
-    rw [show v k = sqpNormalizedMerit f c fmin (σ k) (x k) from rfl,
-      hexpand _ (hσpos k).ne']
-    exact add_nonneg (div_nonneg (sub_nonneg.mpr (hf k)) (hσpos k).le) (norm_nonneg _)
+    have hcoeff : p * (1 + σ k) ≤ ν * σ k := by
+      rw [show p * (1 + σ k) = ν * (σmin / (1 + σmin) * (1 + σ k)) by dsimp [p]; ring]
+      exact mul_le_mul_of_nonneg_left hh hν.le
+    exact (mul_le_mul hcoeff (min_le_min_right _ hk)
+      (le_min hε.le (mul_nonneg hb.le (hΔ k).le))
+      (mul_nonneg hν.le (hσmin.le.trans (hσ k)))).trans (hpred k)
   · intro k hk
-    change ‖c (x k)‖ - ‖c (x (k + 1))‖ ≤ _
     rw [hacc k hk]
     calc
       _ ≤ ‖c (x k) - c (x k + s k)‖ := norm_sub_norm_le _ _
       _ = ‖c (x k + s k) - c (x k)‖ := norm_sub_rev _ _
       _ ≤ _ := hmove k hk
+  · intro k hk
+    rw [(hrej k hk).1]
 
 /-- Lemma 15.4.7. The exact reduction identity gives the stronger coefficient
 1 / κ directly, regardless of which radius bound is active. -/
@@ -861,5 +911,156 @@ theorem theorem_15_4_11 {P : BTRParams} {u w v Δ d actual : ℕ → ℝ} {S : S
     run.u_nonneg run.merit_nonneg run.radius_pos run.merit_antitone run.radius_lower
     (fun k hk => ⟨run.radius_rejected k hk, hstay k hk⟩) hmove
     (tangentialProgress run hκ hb hβ hC hpert hpred herr)
+
+/-- Lemma 15.4.17. Squaring the residual preserves the Cauchy minimizer,
+so the quadratic Cauchy bound transfers to the unsquared normal model.
+The zero-residual case has zero decrease and uses the zero quotient. -/
+theorem lemma_15_4_17 [CompleteSpace E]
+    {Z : Type*} [NormedAddCommGroup Z] [InnerProductSpace ℝ Z] [CompleteSpace Z]
+    (c : Z) (A : E →L[ℝ] Z) {R : ℝ} (hR : 0 ≤ R) {n : E}
+    (hC : IsCauchyPoint (sqpNormalModel c A) (normSeminorm ℝ E) (A.adjoint c) R n) :
+    (1 / 2) * (‖A.adjoint c‖ / ‖c‖) *
+      min R (‖A.adjoint c‖ / quadraticCurvatureBound (A.adjoint.comp A)) ≤
+      sqpNormalModel c A 0 - sqpNormalModel c A n := by
+  let H := A.adjoint.comp A
+  let g := A.adjoint c
+  have hmodel (s : E) :
+      quadraticModel (‖c‖ ^ 2 / 2) g H.toLinearMap s = sqpNormalModel c A s ^ 2 / 2 := by
+    simp only [quadraticModel, g, H, ContinuousLinearMap.coe_coe, ContinuousLinearMap.comp_apply,
+      sqpNormalModel, ← real_inner_self_eq_norm_sq, inner_add_left, inner_add_right,
+      A.adjoint_inner_left, A.adjoint_inner_right]
+    rw [real_inner_comm (A s) c]
+    ring
+  have hCq : IsCauchyPoint (quadraticModel (‖c‖ ^ 2 / 2) g H.toLinearMap)
+      (normSeminorm ℝ E) g R n := by
+    refine ⟨isMinOn_iff.mpr (fun s hs => ?_), hC.2⟩
+    rw [hmodel, hmodel]
+    have hle := isMinOn_iff.mp hC.1 s hs
+    exact div_le_div_of_nonneg_right
+      (pow_le_pow_left₀ (norm_nonneg _) hle _) (by norm_num)
+  have hzero : (0 : E) ∈ cauchyArc (normSeminorm ℝ E) g R :=
+    ⟨0, le_rfl, by simp, by simpa using hR⟩
+  have hdec := isMinOn_iff.mp hC.1 0 hzero
+  simp only [sqpNormalModel, map_zero, add_zero] at hdec ⊢
+  by_cases hc : c = 0
+  · simp [hc] at hdec ⊢
+    exact hdec
+  have hcp : 0 < ‖c‖ := norm_pos_iff.mpr hc
+  by_cases hg : g = 0
+  · change (1 / 2) * (‖g‖ / ‖c‖) * _ ≤ _
+    simpa [hg] using sub_nonneg.mpr hdec
+  have hgn : 0 < ‖g‖ := norm_pos_iff.mpr hg
+  have hsq := theorem_6_3_1 (‖c‖ ^ 2 / 2) g H (normSeminorm ℝ E)
+    (fun v hv => norm_eq_zero.mp hv) hR hCq
+  have hratio : cauchyNormRatio (normSeminorm ℝ E) g = 1 := by
+    change ‖g‖ / ‖g‖ = 1
+    exact div_self hgn.ne'
+  rw [hmodel, hratio, one_mul, min_comm] at hsq
+  change (1 / 2) * (‖g‖ / ‖c‖) * min R (‖g‖ / quadraticCurvatureBound H) ≤ _
+  have hprod := mul_nonneg (sub_nonneg.mpr hdec) (sub_nonneg.mpr hdec)
+  unfold sqpNormalModel at hsq
+  apply (le_of_mul_le_mul_right _ hcp)
+  field_simp
+  nlinarith only [hsq, hprod]
+
+omit [InnerProductSpace ℝ E] [NormedSpace ℝ F] in
+/-- Lemma 15.4.18. At a fixed noncritical iterate, the normal or tangential
+Cauchy bound guarantees acceptance at small radii. The model error control
+is required along the trial segments. -/
+theorem lemma_15_4_18 (f : E → ℝ) (c : E → F) (x : E)
+    (s : ℝ → E) (m : ℝ → E → ℝ) (σ : ℝ → ℝ)
+    {η C σmin u v : ℝ} (hη : η < 1) (hC : 0 ≤ C) (hmin : 0 < σmin)
+    (hσ : ∀ r > 0, σmin ≤ σ r)
+    (hcenter : ∀ r > 0, m r 0 = sqpMerit f c (σ r) x)
+    (herr : ∀ r > 0, |sqpMerit f c (σ r) (x + s r) - m r (s r)| ≤
+      C * (1 + σ r) * r ^ 2)
+    (hcase :
+      (u = 0 ∧ 0 < v ∧ ∃ R β ξ κ S : ℝ,
+        0 < R ∧ 0 < β ∧ 0 < ξ ∧ 0 < κ ∧ 0 ≤ S ∧
+        ∀ r > 0, σ r ≤ S ∧ κ * v * min (ξ * r / R) (v / β) ≤ m r 0 - m r (s r)) ∨
+      (0 < u ∧ 0 < ‖c x‖ ∧ ∃ κ β ξ : ℝ, 0 < κ ∧ 0 < β ∧ 0 < ξ ∧
+        ∀ r > 0, κ * σ r * (u / ‖c x‖) * min (ξ * r) (u / β) ≤ m r 0 - m r (s r))) :
+    ∃ r₀ > 0, ∀ r ∈ Set.Ioc (0 : ℝ) r₀,
+      η ≤ Optimization.reductionRatio (sqpMerit f c (σ r)) x (s r) (m r 0 - m r (s r)) := by
+  apply sqp_acceptance_of_linear_decrease f c x s m σ hη hC hmin hσ hcenter herr
+  apply sqp_linear_decrease hmin hσ
+  rcases hcase with ⟨_, hv, R, β, ξ, κ, S, hR, hβ, hξ, hκ, hS, h⟩ |
+    ⟨hu, hc, κ, β, ξ, hκ, hβ, hξ, h⟩
+  · exact Or.inl ⟨v, R, β, ξ, κ, S, hv, hR, hβ, hξ, hκ, hS, h⟩
+  · refine Or.inr ⟨u / β, κ * (u / ‖c x‖), ξ, by positivity, by positivity, hξ,
+      fun r hr => ?_⟩
+    rw [min_comm]
+    simpa only [mul_right_comm κ (u / ‖c x‖) (σ r)] using h r hr
+
+omit [InnerProductSpace ℝ E] [NormedSpace ℝ F] in
+/-- Theorem 15.4.19. The normal criticality vector converges to zero under
+the bounded-residual Cauchy decrease estimate (15.4.133). The uniform
+trial error and accepted-step variation bounds make the regularity
+required by the convergence argument explicit. -/
+theorem theorem_15_4_19 (f : E → ℝ) (c : E → F) (a : E → E)
+    (x s : ℕ → E) (σ d Δ : ℕ → ℝ) (S : Set ℕ)
+    {fmin σmin η η₂ κ cmax β ξ C L γ γ₂ : ℝ}
+    (hη : 0 < η) (hη₂ : η ≤ η₂) (hη₂' : η₂ < 1)
+    (hκ : 0 < κ) (hcmax : 0 < cmax) (hβ : 0 < β) (hξ : 0 < ξ)
+    (hC : 0 ≤ C) (hL : 0 ≤ L) (hσmin : 0 < σmin)
+    (hγ : 0 < γ) (hγ₂ : 0 ≤ γ₂) (hγ₂' : γ₂ < 1)
+    (hf : ∀ k, fmin ≤ f (x k)) (hσ : ∀ k, σmin ≤ σ k) (hσmono : Monotone σ)
+    (hΔ : ∀ k, 0 < Δ k)
+    (hratio : ∀ k, k ∈ S ↔ η ≤ Optimization.reductionRatio
+      (sqpMerit f c (σ k)) (x k) (s k) (d k))
+    (hpred : ∀ k, κ * σ k * (‖a (x k)‖ / cmax) *
+      min (ξ * Δ k) (‖a (x k)‖ / β) ≤ d k)
+    (herr : ∀ k, |sqpMerit f c (σ k) (x k + s k) -
+      (sqpMerit f c (σ k) (x k) - d k)| ≤ C * (1 + σ k) * (Δ k) ^ 2)
+    (hnext : ∀ k, γ * Δ k ≤ Δ (k + 1))
+    (hacc : ∀ k ∈ S, x (k + 1) = x k + s k)
+    (hvery : ∀ k, η₂ ≤ Optimization.reductionRatio
+      (sqpMerit f c (σ k)) (x k) (s k) (d k) → Δ k ≤ Δ (k + 1))
+    (hrej : ∀ k ∉ S, x (k + 1) = x k ∧ Δ (k + 1) ≤ γ₂ * Δ k)
+    (hmove : ∀ k ∈ S, ‖a (x k)‖ - ‖a (x k + s k)‖ ≤ L * Δ k) :
+    Filter.Tendsto (fun k => a (x k)) Filter.atTop (nhds 0) := by
+  rw [tendsto_zero_iff_norm_tendsto_zero]
+  refine sqp_tendsto_zero_of_normal_decrease f c x s σ d Δ (fun k => ‖a (x k)‖) S
+    hη hη₂ hη₂' hC hL hσmin hγ hγ₂ hγ₂' hf hσ hσmono hΔ
+    (fun k => norm_nonneg _) hratio ?_ ?_ herr hnext hacc hvery hrej ?_ ?_
+  · intro k
+    have hs := hσmin.trans_le (hσ k)
+    exact (mul_nonneg (mul_nonneg (mul_nonneg hκ.le hs.le)
+      (div_nonneg (norm_nonneg _) hcmax.le)) (le_min (mul_nonneg hξ.le (hΔ k).le)
+      (div_nonneg (norm_nonneg _) hβ.le))).trans (hpred k)
+  · intro ε hε
+    let p := κ * (ε / cmax) * (σmin / (1 + σmin))
+    refine ⟨p, by dsimp [p]; positivity, ξ, hξ, ε / β, div_pos hε hβ, fun k hk => ?_⟩
+    have hs := hσmin.trans_le (hσ k)
+    have hh : σmin / (1 + σmin) * (1 + σ k) ≤ σ k := by
+      rw [div_mul_eq_mul_div]
+      apply (div_le_iff₀ (by positivity : 0 < 1 + σmin)).mpr
+      linarith only [hσ k]
+    have hcoeff : p * (1 + σ k) ≤ κ * σ k * (‖a (x k)‖ / cmax) := calc
+      _ = κ * (σmin / (1 + σmin) * (1 + σ k)) * (ε / cmax) := by dsimp [p]; ring
+      _ ≤ _ := mul_le_mul (mul_le_mul_of_nonneg_left hh hκ.le)
+        (div_le_div_of_nonneg_right hk hcmax.le) (div_nonneg hε.le hcmax.le) (by positivity)
+    rw [min_comm (ε / β)]
+    exact (mul_le_mul hcoeff (min_le_min_left _ (div_le_div_of_nonneg_right hk hβ.le))
+      (le_min (mul_nonneg hξ.le (hΔ k).le) (div_nonneg hε.le hβ.le)) (by positivity)).trans (hpred k)
+  · intro k hk
+    simpa only [hacc k hk] using hmove k hk
+  · intro k hk
+    rw [(hrej k hk).1]
+
+omit [InnerProductSpace ℝ E] [NormedSpace ℝ F] in
+/-- Corollary 15.4.20. The uniform lower singular-value bound in AA.14
+transfers normal criticality convergence to convergence of the residual. -/
+theorem corollary_15_4_20 (c : ℕ → F) (a : ℕ → E) {m : ℝ} (hm : 0 < m)
+    (hrank : ∀ k, m * ‖c k‖ ≤ ‖a k‖)
+    (hcrit : Filter.Tendsto a Filter.atTop (nhds 0)) :
+    Filter.Tendsto c Filter.atTop (nhds 0) := by
+  have ha : Filter.Tendsto (fun k => ‖a k‖) Filter.atTop (nhds 0) :=
+    tendsto_zero_iff_norm_tendsto_zero.mp hcrit
+  refine squeeze_zero_norm' (a := fun k => ‖a k‖ / m) ?_ ?_
+  · exact Filter.Eventually.of_forall (fun k => (le_div_iff₀ hm).mpr (by
+      rw [mul_comm]
+      exact hrank k))
+  · simpa only [zero_div] using ha.div_const m
 
 end ConnGouldToint.Chapter15

@@ -103,3 +103,19 @@ source = "Conn–Gould–Toint, Theorem 15.4.10 under uniform trial-segment cont
 [[node]]
 id = "theorem_15_4_11"
 source = "Conn–Gould–Toint, Theorem 15.4.11 under trial-segment and reduced-gradient control"
+
+[[node]]
+id = "lemma_15_4_17"
+source = "Conn–Gould–Toint, Lemma 15.4.17"
+
+[[node]]
+id = "lemma_15_4_18"
+source = "Conn–Gould–Toint, Lemma 15.4.18 with uniform trial-segment control"
+
+[[node]]
+id = "theorem_15_4_19"
+source = "Conn–Gould–Toint, Theorem 15.4.19 with uniform trial-segment control"
+
+[[node]]
+id = "corollary_15_4_20"
+source = "Conn–Gould–Toint, Corollary 15.4.20"
