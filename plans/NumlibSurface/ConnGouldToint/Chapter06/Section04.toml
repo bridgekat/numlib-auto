@@ -39,3 +39,11 @@ source = "Conn–Gould–Toint, (6.4.12)"
 [[node]]
 id = "btrRatio_ge_eta₂_of_small_radius_of_decrease"
 source = "Conn–Gould–Toint, common acceptance argument in Theorem 6.4.2 and Lemma 12.3.5"
+
+[[node]]
+id = "frequently_criticality_lt_of_model_decrease"
+source = "Conn–Gould–Toint, Section 8.1.2 and Section 12.2.2, small criticality for a general first-order measure"
+
+[[node]]
+id = "tendsto_criticality_zero_of_uniformContinuousOn"
+source = "Conn–Gould–Toint, Section 8.1.2 and Section 12.2.2, convergence of a uniformly continuous criticality measure"

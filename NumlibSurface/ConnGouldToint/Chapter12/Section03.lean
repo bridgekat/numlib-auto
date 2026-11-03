@@ -1,4 +1,5 @@
 import NumlibSurface.ConnGouldToint.Chapter12.Section02
+import Numlib.Analysis.Convex.RelativeInterior
 import NumlibSurface.ConnGouldToint.Chapter06.Section04
 import NumlibSurface.ConnGouldToint.Chapter03.Section02
 import Mathlib.Analysis.InnerProductSpace.GramMatrix
@@ -26,6 +27,97 @@ def HasStrictActiveMultipliers [Fintype ι] (c : ι → E → ℝ) (n : ι → E
   ∃ μ : ι → ℝ, g x = ∑ i, μ i • n i x ∧
     (∀ i ∈ activeConstraintSet c x, 0 < μ i) ∧
     ∀ i ∉ activeConstraintSet c x, μ i = 0
+
+open Optimization ConvexAnalysis in
+/-- The relative-interior condition AO.4b is equivalent to the existence of
+strictly positive multipliers on the active inequalities, under the tangent
+qualification. No independence is needed for this existence equivalence. -/
+theorem strictActiveMultipliers_iff_mem_relint_normalDirections [Fintype ι]
+    [CompleteSpace E] [FiniteDimensional ℝ E]
+    {C : Set E} {c : ι → E → ℝ} {g : E → E} {x : E}
+    (hC : Chapter03.AC2 C) (hset : Chapter03.AC7 C c) (hx : x ∈ C)
+    (hQ : Chapter03.ActiveLinearizedConeMatches C c x) :
+    HasStrictActiveMultipliers c (fun i ↦ gradient (c i)) g x ↔
+      -g x ∈ intrinsicInterior ℝ (normalDirections C x) := by
+  classical
+  let J := {i : ι // c i x = 0}
+  let A := Fintype.linearCombination ℝ (fun i : J ↦ -gradient (c i) x)
+  let orthant := Set.univ.pi (fun _ : J ↦ Set.Ici (0 : ℝ))
+  have horthant : Convex ℝ orthant := by
+    intro p hp q hq a b ha hb _
+    simp only [orthant, Set.mem_univ_pi, Set.mem_Ici] at hp hq ⊢
+    intro i
+    exact add_nonneg (mul_nonneg ha (hp i)) (mul_nonneg hb (hq i))
+  have hx' : ∀ i, 0 ≤ c i x := by rwa [hset] at hx
+  have hN : normalDirections C x = A '' orthant := by
+    ext y
+    rw [Chapter03.theorem_3_2_10_normalCone hC hset hx' hQ y]
+    simp only [Set.mem_image, orthant, Set.mem_univ_pi, Set.mem_Ici,
+      A, Fintype.linearCombination_apply]
+    rfl
+  rw [hN, horthant.relint_image A]
+  have hri : intrinsicInterior ℝ orthant = Set.univ.pi (fun _ : J ↦ Set.Ioi (0 : ℝ)) := by
+    dsimp only [orthant]
+    rw [Convex.relint_univ_pi _ (fun _ ↦ convex_Ici _)]
+    simp only [intrinsicInterior_Ici]
+  rw [hri]
+  simp only [Set.mem_image, Set.mem_univ_pi, Set.mem_Ioi, A, Fintype.linearCombination_apply,
+    smul_neg, Finset.sum_neg_distrib, neg_inj]
+  constructor
+  · rintro ⟨μ, hμ, hpos, hzero⟩
+    refine ⟨fun i : J ↦ μ i, fun i ↦ hpos _ i.2, ?_⟩
+    have hsumzero : (∑ i : {i // c i x ≠ 0}, μ i • gradient (c i) x) = 0 := by
+      apply Finset.sum_eq_zero
+      intro i _
+      rw [hzero i i.2, zero_smul]
+    have hsum := Fintype.sum_subtype_add_sum_subtype (fun i ↦ c i x = 0)
+      (fun i ↦ μ i • gradient (c i) x)
+    rw [hsumzero, add_zero] at hsum
+    exact hsum.trans hμ.symm
+  · rintro ⟨μ, hpos, hμ⟩
+    let m (i : ι) := if hi : c i x = 0 then μ ⟨i, hi⟩ else 0
+    have hsumzero : (∑ i : {i // c i x ≠ 0}, m i • gradient (c i) x) = 0 := by
+      apply Finset.sum_eq_zero
+      intro i _
+      simp [m, i.2]
+    have hsum : (∑ i : J, μ i • gradient (c i) x) = ∑ i, m i • gradient (c i) x := by
+      rw [← Fintype.sum_subtype_add_sum_subtype (fun i ↦ c i x = 0), hsumzero, add_zero]
+      apply Finset.sum_congr rfl
+      intro i _
+      simp [m, i.2]
+    refine ⟨m, hμ.symm.trans hsum, fun i hi ↦ ?_, fun i hi ↦ dite_eq_right hi⟩
+    change c i x = 0 at hi
+    simpa only [m, dite_eq_left hi] using hpos ⟨i, hi⟩
+
+/-- Independence of the active normals makes the supported coefficients in
+the stationarity representation unique. -/
+theorem activeCoefficients_unique [Fintype ι] {c : ι → E → ℝ} {n : ι → E → E}
+    {x : E} {μ ν : ι → ℝ}
+    (hind : LinearIndependent ℝ (fun i : activeConstraintSet c x ↦ n i x))
+    (hμ : ∀ i ∉ activeConstraintSet c x, μ i = 0)
+    (hν : ∀ i ∉ activeConstraintSet c x, ν i = 0)
+    (he : (∑ i, μ i • n i x) = ∑ i, ν i • n i x) : μ = ν := by
+  classical
+  let J := activeConstraintSet c x
+  have hsum (w : ι → ℝ) (hw : ∀ i ∉ J, w i = 0) :
+      (∑ i : J, w i • n i x) = ∑ i, w i • n i x := by
+    have hz : (∑ i : {i // i ∉ J}, w i • n i x) = 0 := by
+      apply Finset.sum_eq_zero
+      intro i _
+      rw [hw i i.2, zero_smul]
+    simpa only [hz, add_zero] using
+      Fintype.sum_subtype_add_sum_subtype (· ∈ J) (fun i ↦ w i • n i x)
+  have hj : LinearIndependent ℝ (fun i : J ↦ n i x) := hind
+  have hA := linearIndependent_iff_injective_fintypeLinearCombination.mp hj
+  have hr : (fun i : J ↦ μ i) = fun i : J ↦ ν i := by
+    apply hA
+    rw [Fintype.linearCombination_apply, Fintype.linearCombination_apply]
+    change (∑ i : J, μ i • n i x) = ∑ i : J, ν i • n i x
+    rw [hsum μ hμ, hsum ν hν, he]
+  funext i
+  by_cases hi : i ∈ J
+  · exact congrFun hr ⟨i, hi⟩
+  · rw [hμ i hi, hν i hi]
 
 omit [InnerProductSpace ℝ E] in
 private theorem eventually_activeConstraintSet_subset_of_tendsto [Fintype ι]
@@ -215,6 +307,20 @@ theorem activeLinearizedConeMatches_of_activeGradient_independent [Fintype ι]
       (fun i hi ↦ by
         rw [hactive] at hi
         exact neg_nonpos.mpr (hd i hi))
+
+open Optimization in
+/-- For smooth inequalities with independent active gradients, AO.4b in its
+geometric form supplies the strict active multipliers in (12.3.1). -/
+theorem strictActiveMultipliers_of_activeGradient_independent_of_mem_relint
+    [Fintype ι] [CompleteSpace E] [FiniteDimensional ℝ E]
+    {C : Set E} {c : ι → E → ℝ} {g : E → E} {x : E}
+    (hC : Chapter03.AC2 C) (hset : Chapter03.AC7 C c) (hx : x ∈ C)
+    (hc : ∀ i, HasStrictFDerivAt (c i) (fderiv ℝ (c i) x) x)
+    (hind : LinearIndependent ℝ (fun i : activeConstraintSet c x ↦ gradient (c i) x))
+    (hri : -g x ∈ intrinsicInterior ℝ (normalDirections C x)) :
+    HasStrictActiveMultipliers c (fun i ↦ gradient (c i)) g x :=
+  (strictActiveMultipliers_iff_mem_relint_normalDirections hC hset hx
+    (activeLinearizedConeMatches_of_activeGradient_independent hset hx hc hind)).mpr hri
 
 open Optimization in
 private theorem exists_activeCoefficients_of_neg_mem_normal

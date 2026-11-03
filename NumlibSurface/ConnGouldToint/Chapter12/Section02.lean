@@ -1,4 +1,5 @@
 import NumlibSurface.ConnGouldToint.Chapter12.Section01
+import NumlibSurface.ConnGouldToint.Chapter06.Section04
 import Numlib.Analysis.Calculus.Taylor
 import Mathlib.Topology.Order.MonotoneConvergence
 import Mathlib.Analysis.SpecificLimits.Basic
@@ -232,6 +233,139 @@ theorem cappedCriticality_decrease {C : Set E} {f : E → ℝ} {x : E}
   exact (mul_le_mul (mul_le_mul_of_nonneg_left hπ hκ) hmin
     (le_min (div_nonneg (le_min zero_le_one hχ) (by linarith)) hΔ)
     (mul_nonneg hκ hχ)).trans h
+
+open Chapter06 in
+/-- First-order convergence of the feasible Cauchy trust-region run in
+Section 12.2.2. The capped and uncapped feasible decreases both tend to zero,
+and each subsequential limit satisfies the convex first-order condition. -/
+theorem feasible_cauchy_run_firstOrder_convergence
+    {P : BTRParams} {C K : Set E} {f : E → ℝ}
+    {sufficient : ℕ → (E → ℝ) → E → E → Prop}
+    (run : BTRRun f P sufficient) (Q : GeneralizedCauchyParams)
+    (hclosed : IsClosed C) (hconv : Convex ℝ C) (hK : IsCompact K)
+    (hx : ∀ k, run.x k ∈ C) (hxK : ∀ k, run.x k ∈ K)
+    (hg : Continuous (gradient f)) (hstep : ∀ k, ‖run.s k‖ ≤ run.Δ k)
+    (u : ℕ → E) (β : ℕ → ℝ) {B a : ℝ} (hβ : ∀ k, 1 ≤ β k) (hβB : ∀ k, β k ≤ B)
+    (ha : a ∈ Set.Ioc (0 : ℝ) 1)
+    (htrial : ∀ k, IsApproxGeneralizedCauchyPoint Q C f (run.model k) (run.x k) (run.Δ k) (u k))
+    (hcmp : ∀ k, a * (run.model k (run.x k) - run.model k (u k)) ≤
+      run.model k (run.x k) - run.model k (run.x k + run.s k))
+    (hTaylor : ∀ k, run.model k (u k) -
+      (run.model k (run.x k) + ⟪gradient f (run.x k), u k - run.x k⟫) ≤
+        β k * ‖u k - run.x k‖ ^ 2 / 2)
+    (hval : ∀ k, f (run.x k) = run.model k (run.x k))
+    (herr : ∀ k, |f (run.x k + run.s k) - run.model k (run.x k + run.s k)| ≤ B * run.Δ k ^ 2)
+    (hlower : BddBelow (Set.range (f ∘ run.x))) :
+    Tendsto (cappedCriticality C f ∘ run.x) atTop (𝓝 0) ∧
+    Tendsto (fun k ↦ criticality C f (run.x k) 1) atTop (𝓝 0) ∧
+      ∀ z (j : ℕ → ℕ), Tendsto j atTop atTop → Tendsto (run.x ∘ j) atTop (𝓝 z) →
+        z ∈ C ∧ -gradient f z ∈ normalDirections C z := by
+  let κ := min (Q.upperSlope * Q.radiusFraction / 2) (2 * Q.upperSlope * (1 - Q.lowerSlope))
+  have hκpos : 0 < κ := lt_min (half_pos (mul_pos Q.upper_pos Q.fraction_pos))
+    (mul_pos (mul_pos (by norm_num : 0 < (2 : ℝ)) Q.upper_pos) (sub_pos.mpr Q.lower_lt_one))
+  have hκlt : κ < 1 := (min_le_left _ _).trans_lt (by
+    have hU := Q.slope_order.trans Q.lower_lt_one
+    have h := mul_le_mul_of_nonneg_left Q.fraction_lt_one.le Q.upper_pos.le
+    linarith only [hU, h])
+  have hc : ContinuousOn (fun x ↦ criticality C f x 1) C :=
+    continuousOn_linearDecrease_one hconv hg.neg.continuousOn
+  have hcap : ContinuousOn (cappedCriticality C f) C := ContinuousOn.inf' continuousOn_const hc
+  have huncap (x : E) (h : cappedCriticality C f x < 1) :
+      cappedCriticality C f x = criticality C f x 1 := by
+    apply min_eq_right
+    by_contra! hh
+    exact h.not_ge (min_eq_left hh.le).ge
+  have hdec (k : ℕ) : (a * κ) * cappedCriticality C f (run.x k) *
+      min (cappedCriticality C f (run.x k) / β k) (run.Δ k) ≤
+        run.model k (run.x k) - run.model k (run.x k + run.s k) := by
+    have h := theorem_12_2_2_of_taylor_bound Q hclosed hconv (hx k) (run.delta_pos k)
+      (zero_lt_one.trans_le (hβ k)) (htrial k) (hTaylor k)
+    have hcap := cappedCriticality_decrease (hx k) hκpos.le (hβ k) (run.delta_pos k).le h.2.1
+    simpa only [mul_assoc] using (mul_le_mul_of_nonneg_left hcap ha.1.le).trans (hcmp k)
+  have hπ : Tendsto (cappedCriticality C f ∘ run.x) atTop (𝓝 0) :=
+    tendsto_criticality_zero_of_uniformContinuousOn run (cappedCriticality C f) β (S := C ∩ K)
+      ⟨mul_pos ha.1 hκpos, (mul_le_of_le_one_left hκpos.le ha.2).trans_lt hκlt⟩
+      (fun k ↦ zero_lt_one.trans_le (hβ k)) hβB zero_le_one
+      (fun k ↦ by simpa only [one_mul] using hstep k) (fun k ↦ ⟨hx k, hxK k⟩)
+      ((hK.inter_left hclosed).uniformContinuousOn_of_continuous
+        (hcap.mono Set.inter_subset_left))
+      (fun k ↦ le_min zero_le_one (linearDecrease_nonneg (hx k) zero_le_one))
+      hval hdec herr hlower
+  have hχ : Tendsto (fun k ↦ criticality C f (run.x k) 1) atTop (𝓝 0) :=
+    hπ.congr' ((hπ.eventually (gt_mem_nhds zero_lt_one)).mono fun k hk ↦ huncap _ hk)
+  refine ⟨hπ, hχ, ?_⟩
+  intro z j hj hjz
+  have hz : z ∈ C := hclosed.mem_of_tendsto hjz (.of_forall fun k ↦ hx (j k))
+  have hzC : Tendsto (run.x ∘ j) atTop (𝓝[C] z) :=
+    tendsto_nhdsWithin_iff.mpr ⟨hjz, .of_forall fun k ↦ hx (j k)⟩
+  have hz0 : criticality C f z 1 = 0 :=
+    tendsto_nhds_unique ((hc z hz).tendsto.comp hzC) (hχ.comp hj)
+  exact ⟨hz, (linearDecrease_eq_zero_iff hconv hz).mp hz0⟩
+
+open Chapter06 in
+/-- In a feasible Cauchy run, the smooth objective and the model Hessian
+bounds on the trust-region balls imply the accuracy hypotheses of the
+first-order convergence theorem. -/
+theorem feasible_cauchy_run_firstOrder_convergence_of_hessian_bounds
+    {P : BTRParams} {C K : Set E} {f : E → ℝ}
+    {sufficient : ℕ → (E → ℝ) → E → E → Prop}
+    (run : BTRRun f P sufficient) (Q : GeneralizedCauchyParams)
+    (hclosed : IsClosed C) (hconv : Convex ℝ C) (hK : IsCompact K)
+    (hx : ∀ k, run.x k ∈ C) (hxK : ∀ k, run.x k ∈ K)
+    (hf : ContDiff ℝ 2 f) (hstep : ∀ k, ‖run.s k‖ ≤ run.Δ k)
+    (u : ℕ → E) (β : ℕ → ℝ) {B H a : ℝ}
+    (hβ : ∀ k, 1 ≤ β k) (hβB : ∀ k, β k ≤ B)
+    (ha : a ∈ Set.Ioc (0 : ℝ) 1)
+    (htrial : ∀ k, IsApproxGeneralizedCauchyPoint Q C f (run.model k) (run.x k) (run.Δ k) (u k))
+    (hcmp : ∀ k, a * (run.model k (run.x k) - run.model k (u k)) ≤
+      run.model k (run.x k) - run.model k (run.x k + run.s k))
+    (hval : ∀ k, f (run.x k) = run.model k (run.x k))
+    (hmatch : ∀ k, fderiv ℝ (run.model k) (run.x k) = fderiv ℝ f (run.x k))
+    (hF : ∀ y, ‖fderiv ℝ (fderiv ℝ f) y‖ ≤ H)
+    (hm : ∀ k, Differentiable ℝ (run.model k))
+    (hdm : ∀ k, Differentiable ℝ (fderiv ℝ (run.model k)))
+    (hM : ∀ k, ∀ y ∈ Metric.closedBall (run.x k) (run.Δ k),
+      ‖fderiv ℝ (fderiv ℝ (run.model k)) y‖ ≤ β k - 1) :
+    Tendsto (cappedCriticality C f ∘ run.x) atTop (𝓝 0) ∧
+    Tendsto (fun k ↦ criticality C f (run.x k) 1) atTop (𝓝 0) ∧
+      ∀ z (j : ℕ → ℕ), Tendsto j atTop atTop → Tendsto (run.x ∘ j) atTop (𝓝 z) →
+        z ∈ C ∧ -gradient f z ∈ normalDirections C z := by
+  have hf1 : ContDiff ℝ 1 f := hf.of_le (by norm_num)
+  have hg : Continuous (gradient f) :=
+    (InnerProductSpace.toDual ℝ E).symm.continuous.comp (hf1.continuous_fderiv one_ne_zero)
+  have hbelow : BddBelow (Set.range (f ∘ run.x)) :=
+    (hK.bddBelow_image hf.continuous.continuousOn).mono
+      (show Set.range (f ∘ run.x) ⊆ f '' K from fun _ ⟨k, hk⟩ ↦ ⟨run.x k, hxK k, hk⟩)
+  have hTaylor (k : ℕ) : run.model k (u k) -
+      (run.model k (run.x k) + ⟪gradient f (run.x k), u k - run.x k⟫) ≤
+        β k * ‖u k - run.x k‖ ^ 2 / 2 := by
+    obtain ⟨_, _, _, hball, _⟩ := htrial k
+    have hu : u k ∈ Metric.closedBall (run.x k) (run.Δ k) := by
+      simpa only [Metric.mem_closedBall, dist_eq_norm] using hball
+    have he : run.x k + (u k - run.x k) = u k := by abel
+    have h := norm_sub_firstOrder_le_of_hessian_bound (s := u k - run.x k)
+      (convex_closedBall (run.x k) (run.Δ k))
+      (Metric.mem_closedBall_self (run.delta_pos k).le) (he.symm ▸ hu) (fun y _ ↦ hm k y)
+      (fun y _ ↦ hdm k y) (fun y hy ↦ (hM k y hy).trans (sub_le_self _ zero_le_one))
+    rw [he, Real.norm_eq_abs, hmatch, ← toDual_gradient, InnerProductSpace.toDual_apply_apply] at h
+    exact (le_abs_self _).trans (h.trans_eq (by ring))
+  have herr (k : ℕ) : |f (run.x k + run.s k) - run.model k (run.x k + run.s k)| ≤
+      max H B * run.Δ k ^ 2 := by
+    let p := normSeminorm ℝ E
+    have hsep (v : E) (hv : p v = 0) : v = 0 := norm_eq_zero.mp (show ‖v‖ = 0 from hv)
+    have hm' (y : E) (hy : y ∈ p.closedBall (run.x k) (run.Δ k)) :
+        ‖fderiv ℝ (fderiv ℝ (run.model k)) y‖ ≤ β k - 1 := by
+      apply hM k y
+      rw [Seminorm.mem_closedBall] at hy
+      rwa [Metric.mem_closedBall, dist_eq_norm]
+    have h := (theorem_6_4_1 p hsep (run.delta_pos k).le (hβ k) (hstep k)
+      hf hF (fun y _ ↦ hm k y) (fun y _ ↦ hdm k y) hm' (hval k).symm (hmatch k)).2
+      1 zero_le_one (fun v ↦ by change ‖v‖ ≤ 1 * ‖v‖; rw [one_mul])
+    exact h.trans (by
+      simp only [uniformHessianConstant, one_pow, one_mul]
+      exact mul_le_mul_of_nonneg_right (max_le_max le_rfl (hβB k)) (sq_nonneg _))
+  exact feasible_cauchy_run_firstOrder_convergence run Q hclosed hconv hK hx hxK hg hstep
+    u β hβ (fun k ↦ (hβB k).trans (le_max_right _ _)) ha htrial hcmp hTaylor hval herr hbelow
 
 /-- The printed Theorem 12.2.1 needs a descent assumption on the model.
 With opposite gradients, every positive projected trial fails (12.2.1).

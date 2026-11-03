@@ -190,6 +190,11 @@ The corrected Theorem 12.2.1 uses model-gradient agreement at the base point.
 Opposite gradients can make every positive trial fail the upper decrease test.
 A critical starting point can be returned before computing the initial trial
 parameter. The generalized Cauchy decrease includes the tangent stopping test.
+The feasible run converges in both capped and uncapped criticality. The
+Hessian estimates supply model accuracy, and all cluster points satisfy
+the convex first-order condition.
+The relative-interior condition AO.4b yields positive active multipliers;
+active-gradient independence gives uniqueness.
 Lemma 12.3.1 uses local constancy to cover connected sets. Lemma 12.3.6
 approximates the negative gradient by normal directions at nearby points.
 The perturbation result identifies the active set from nearby supported normal

@@ -215,6 +215,83 @@ theorem theorem_6_4_4 {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ 
       (run.radius_update (n + j))).1
     exact (hfail j).not_ge (P.eta₁_le_eta₂.trans hs)
 
+/-- A trust-region decrease estimate expressed in a scalar criticality
+measure guarantees arbitrarily late small values. The measure need not be
+a norm or depend on the point continuously. -/
+theorem frequently_criticality_lt_of_model_decrease
+    {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
+    {P : BTRParams} {f : F → ℝ} {sufficient : ℕ → (F → ℝ) → F → F → Prop}
+    (run : BTRRun f P sufficient) (u β : ℕ → ℝ) {κ B ε : ℝ}
+    (hκ : κ ∈ Set.Ioo (0 : ℝ) 1) (hε : 0 < ε)
+    (hβ : ∀ k, 0 < β k) (hβB : ∀ k, β k ≤ B)
+    (hval : ∀ k, f (run.x k) = run.model k (run.x k))
+    (hdec : ∀ k, κ * u k * min (u k / β k) (run.Δ k) ≤
+      run.model k (run.x k) - run.model k (run.x k + run.s k))
+    (herr : ∀ k, |f (run.x k + run.s k) - run.model k (run.x k + run.s k)| ≤ B * run.Δ k ^ 2)
+    (hlower : BddBelow (Set.range (f ∘ run.x))) :
+    ∃ᶠ k in atTop, u k < ε := by
+  classical
+  by_contra! hn
+  obtain ⟨N, hN⟩ := eventually_atTop.mp hn
+  have hB : 0 < B := (hβ 0).trans_le (hβB 0)
+  let θ := κ * ε * (1 - P.η₂) / B
+  have hθ : 0 < θ := div_pos (mul_pos (mul_pos hκ.1 hε) (sub_pos.mpr P.eta₂_lt_one)) hB
+  let R := run.tail N
+  have hforce (k : ℕ) (hk : R.Δ k ≤ θ) : k ∈ R.verySuccessful := by
+    let j := N + k
+    have hu : ε ≤ u j := hN _ (Nat.le_add_right _ _)
+    have hθj : θ ≤ κ * u j * (1 - P.η₂) / B := by
+      dsimp only [θ]
+      exact div_le_div_of_nonneg_right
+        (mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left hu hκ.1.le)
+          (sub_nonneg.mpr P.eta₂_lt_one.le)) hB.le
+    exact btrRatio_ge_eta₂_of_small_radius_of_decrease (hβ j) (hβB j) (run.delta_pos j)
+      (hε.trans_le hu) hκ.1 hκ.2 (hval j) (hdec j) (herr j) (hk.trans hθj)
+  let r := min (R.Δ 0) (P.γ₁ * θ)
+  have hr : 0 < r := lt_min (R.delta_pos 0) (mul_pos P.gamma₁_pos hθ)
+  have hrad (k : ℕ) (hk : N ≤ k) : r ≤ run.Δ k := by
+    have hh := R.delta_lower_bound hforce (k - N)
+    change r ≤ run.Δ (N + (k - N)) at hh
+    simpa only [Nat.add_sub_of_le hk] using hh
+  let v := f ∘ run.x
+  have hv : Tendsto v atTop (𝓝 (⨅ k, v k)) := tendsto_atTop_ciInf run.objective_antitone hlower
+  have hdiff : Tendsto (fun k ↦ v k - v (k + 1)) atTop (𝓝 0) := by
+    simpa only [Function.comp_apply, sub_self] using hv.sub (hv.comp (tendsto_add_atTop_nat 1))
+  let d := P.η₁ * (κ * ε * min (ε / B) r)
+  have hd : 0 < d := mul_pos P.eta₁_pos
+    (mul_pos (mul_pos hκ.1 hε) (lt_min (div_pos hε hB) hr))
+  obtain ⟨J, hJ⟩ := eventually_atTop.mp (hdiff.eventually (gt_mem_nhds hd))
+  let M := max N J
+  have hrejected (k : ℕ) (hk : M ≤ k) : k ∉ run.successful := by
+    intro hs
+    have hkn := (le_max_left N J).trans hk
+    have hku := hN k hkn
+    have hq := div_le_div₀ (hε.le.trans hku) hku (hβ k) (hβB k)
+    have hmin := min_le_min hq (hrad k hkn)
+    have hp : κ * ε * min (ε / B) r ≤ run.model k (run.x k) - run.model k (run.x k + run.s k) :=
+      (mul_le_mul (mul_le_mul_of_nonneg_left hku hκ.1.le) hmin
+        (le_min (div_nonneg hε.le hB.le) hr.le)
+        (mul_nonneg hκ.1.le (hε.le.trans hku))).trans (hdec k)
+    have hdrop : d ≤ v k - v (k + 1) :=
+      (mul_le_mul_of_nonneg_left hp P.eta₁_pos.le).trans (run.objective_drop_of_successful hs)
+    exact (hJ k ((le_max_right N J).trans hk)).not_ge hdrop
+  have hγ : 0 < P.γ₂ := P.gamma₁_pos.trans_le P.gamma₁_le_gamma₂
+  have hgeom (n : ℕ) : run.Δ (M + n) ≤ P.γ₂ ^ n * run.Δ M := by
+    induction n with
+    | zero => simp
+    | succ n ih =>
+      have hrej := hrejected (M + n) (Nat.le_add_right _ _)
+      calc
+        run.Δ (M + (n + 1)) ≤ P.γ₂ * run.Δ (M + n) :=
+          (run.radius_update (M + n)).unsuccessful (lt_of_not_ge hrej) |>.2
+        _ ≤ P.γ₂ * (P.γ₂ ^ n * run.Δ M) := mul_le_mul_of_nonneg_left ih hγ.le
+        _ = _ := by rw [pow_succ]; ring
+  have hlim : Tendsto (fun n : ℕ ↦ P.γ₂ ^ n * run.Δ M) atTop (𝓝 0) := by
+    simpa only [zero_mul] using
+      (tendsto_pow_atTop_nhds_zero_of_lt_one hγ.le P.gamma₂_lt_one).mul_const (run.Δ M)
+  obtain ⟨n, hn⟩ := (hlim.eventually (gt_mem_nhds hr)).exists
+  exact hn.not_ge ((hrad _ ((le_max_left N J).trans (Nat.le_add_right M n))).trans (hgeom n))
+
 private theorem frequently_gradient_norm_lt {F : Type*} [NormedAddCommGroup F]
     [InnerProductSpace ℝ F] [CompleteSpace F] {P : BTRParams} {f : F → ℝ}
     {sufficient : ℕ → (F → ℝ) → F → F → Prop} (run : BTRRun f P sufficient)
@@ -225,53 +302,12 @@ private theorem frequently_gradient_norm_lt {F : Type*} [NormedAddCommGroup F]
     (herr : ∀ k, |f (run.x k + run.s k) - run.model k (run.x k + run.s k)| ≤
       C * (run.Δ k) ^ 2) (hlower : BddBelow (Set.range f)) :
     ∀ ε : ℝ, 0 < ε → ∃ᶠ k in atTop, ‖gradient f (run.x k)‖ < ε := by
-  let value (k : ℕ) := f (run.x k)
-  let g (k : ℕ) := gradient f (run.x k)
-  let pred (k : ℕ) := run.model k (run.x k) - run.model k (run.x k + run.s k)
-  have hsuccess (k : ℕ) (hk : k ∈ run.successful) :
-      P.η₁ * pred k ≤ value k - value (k + 1) :=
-    run.objective_drop_of_successful hk
-  have hmono : Antitone value := run.objective_antitone
-  have ht := tendsto_atTop_ciInf hmono
-    (hlower.mono (show Set.range value ⊆ Set.range f from fun _ ⟨k, hk⟩ ↦ ⟨run.x k, hk⟩))
-  have hdiff : Tendsto (fun k ↦ value k - value (k + 1)) atTop (𝓝 0) := by
-    simpa only [Function.comp_apply, sub_self] using ht.sub (ht.comp (tendsto_add_atTop_nat 1))
   intro ε hε
-  by_contra hn
-  have hev : ∀ᶠ k in atTop, ε ≤ ‖g k‖ := by
-    simpa only [Filter.Frequently, not_not, not_lt] using hn
-  obtain ⟨N, hN⟩ := eventually_atTop.mp hev
-  obtain ⟨r, hr, hrad⟩ := theorem_6_4_3 (run.tail N) (fun k ↦ g (N + k))
-    (fun k ↦ β (N + k)) hε (fun k ↦ hN _ (Nat.le_add_right N k))
-    (fun k ↦ hβ _) (fun k ↦ hβC _) (fun k ↦ hval _) (fun k ↦ hdec _)
-    (fun k ↦ herr _)
-  have hr' (k : ℕ) (hk : N ≤ k) : r ≤ run.Δ k := by
-    have h := hrad (k - N)
-    change r ≤ run.Δ (N + (k - N)) at h
-    simpa only [Nat.add_sub_of_le hk] using h
-  have hC : 0 < C := (hβ 0).trans_le (hβC 0)
-  have hκ : 0 < κ := (hdec 0).1.1
-  let a := P.η₁ * (κ * ε * min (ε / C) r)
-  have ha : 0 < a := mul_pos P.eta₁_pos (mul_pos (mul_pos hκ hε)
-    (lt_min (div_pos hε hC) hr))
-  obtain ⟨J, hJ⟩ := eventually_atTop.mp (hdiff.eventually (gt_mem_nhds ha))
-  have hfinite : run.successful.Finite := by
-    refine (Set.finite_le_nat (max N J)).subset fun k hk ↦ ?_
-    change k ≤ max N J
-    by_contra! hlarge
-    have hkN := (le_max_left N J).trans hlarge.le
-    have hkJ := (le_max_right N J).trans hlarge.le
-    have hquot : ε / C ≤ ‖g k‖ / β k :=
-      div_le_div₀ (norm_nonneg _) (hN _ hkN) (hβ k) (hβC k)
-    have hmin := min_le_min hquot (hr' k hkN)
-    have hpred : κ * ε * min (ε / C) r ≤ pred k :=
-      (mul_le_mul (mul_le_mul_of_nonneg_left (hN _ hkN) hκ.le) hmin
-        (le_min (div_nonneg hε.le hC.le) hr.le) (by positivity)).trans (hdec k).2
-    have hlowerStep := (mul_le_mul_of_nonneg_left hpred P.eta₁_pos.le).trans (hsuccess k hk)
-    exact (hJ _ hkJ).not_ge hlowerStep
-  obtain ⟨x, hx, hxg⟩ := theorem_6_4_4 run β hβ hβC hval hdec herr hfinite
-  obtain ⟨k, hk, hkg⟩ := (hx.and hev).exists
-  exact hε.not_ge (by simpa [g, hk, hxg] using hkg)
+  have hb : BddBelow (Set.range (f ∘ run.x)) :=
+    hlower.mono (show Set.range (f ∘ run.x) ⊆ Set.range f from
+      fun _ ⟨k, hk⟩ ↦ ⟨run.x k, hk⟩)
+  exact frequently_criticality_lt_of_model_decrease run (fun k ↦ ‖gradient f (run.x k)‖)
+    β (hdec 0).1 hε hβ hβC hval (fun k ↦ (hdec k).2) herr hb
 
 /-- Theorem 6.4.5. The gradient norms on a basic trust-region run have zero
 limit inferior when the objective is bounded below. -/
@@ -299,6 +335,107 @@ theorem theorem_6_4_5 {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ 
   have hlim := liminf_le_of_frequently_le ((hfreq _ (half_pos hp)).mono fun _ h ↦ h.le) hb
   linarith
 
+/-- A uniformly continuous first-order criticality measure tends to zero
+on a basic trust-region run. On excursions away from zero, the objective
+drop bounds the path length until the next small criticality value. -/
+theorem tendsto_criticality_zero_of_uniformContinuousOn
+    {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
+    {P : BTRParams} {f : F → ℝ} {sufficient : ℕ → (F → ℝ) → F → F → Prop}
+    (run : BTRRun f P sufficient) (u : F → ℝ) (β : ℕ → ℝ) {S : Set F} {κ B K : ℝ}
+    (hκ : κ ∈ Set.Ioo (0 : ℝ) 1) (hβ : ∀ k, 0 < β k) (hβB : ∀ k, β k ≤ B)
+    (hK : 0 ≤ K) (hstep : ∀ k, ‖run.s k‖ ≤ K * run.Δ k)
+    (hx : ∀ k, run.x k ∈ S) (hu : UniformContinuousOn u S) (hun : ∀ k, 0 ≤ u (run.x k))
+    (hval : ∀ k, f (run.x k) = run.model k (run.x k))
+    (hdec : ∀ k, κ * u (run.x k) * min (u (run.x k) / β k) (run.Δ k) ≤
+      run.model k (run.x k) - run.model k (run.x k + run.s k))
+    (herr : ∀ k, |f (run.x k + run.s k) - run.model k (run.x k + run.s k)| ≤ B * run.Δ k ^ 2)
+    (hlower : BddBelow (Set.range (f ∘ run.x))) :
+    Tendsto (u ∘ run.x) atTop (𝓝 0) := by
+  classical
+  let v := f ∘ run.x
+  let a := u ∘ run.x
+  have hv : Tendsto v atTop (𝓝 (⨅ k, v k)) := tendsto_atTop_ciInf run.objective_antitone hlower
+  have hdiff : Tendsto (fun k ↦ v k - v (k + 1)) atTop (𝓝 0) := by
+    simpa only [Function.comp_apply, sub_self] using hv.sub (hv.comp (tendsto_add_atTop_nat 1))
+  have htail : Tendsto (fun k ↦ v k - ⨅ j, v j) atTop (𝓝 0) := by
+    simpa only [sub_self] using hv.sub_const (⨅ j, v j)
+  apply Metric.tendsto_atTop.mpr
+  intro ε hε
+  let e := ε / 2
+  have he : 0 < e := half_pos hε
+  let c := P.η₁ * (κ * e)
+  have hc : 0 < c := mul_pos P.eta₁_pos (mul_pos hκ.1 he)
+  have hB : 0 < B := (hβ 0).trans_le (hβB 0)
+  obtain ⟨δ, hδ, hclose⟩ := Metric.uniformContinuousOn_iff.mp hu e he
+  obtain ⟨N, hN⟩ := eventually_atTop.mp
+    (hdiff.eventually (gt_mem_nhds (mul_pos hc (div_pos he hB))))
+  obtain ⟨J, hJ⟩ := eventually_atTop.mp
+    (htail.eventually (gt_mem_nhds (div_pos (mul_pos hc hδ) (by linarith : 0 < K + 1))))
+  have hlength (k : ℕ) (hk : N ≤ k) (hka : e ≤ a k) :
+      c * dist (run.x k) (run.x (k + 1)) ≤ K * (v k - v (k + 1)) := by
+    by_cases hs : k ∈ run.successful
+    · have hquot : e / B ≤ a k / β k := div_le_div₀ (hun k) hka (hβ k) (hβB k)
+      have hp : κ * e * min (e / B) (run.Δ k) ≤
+          run.model k (run.x k) - run.model k (run.x k + run.s k) :=
+        (mul_le_mul (mul_le_mul_of_nonneg_left hka hκ.1.le) (min_le_min hquot le_rfl)
+          (le_min (div_nonneg he.le hB.le) (run.delta_pos k).le)
+          (mul_nonneg hκ.1.le (hun k))).trans (hdec k)
+      have hdrop : c * min (e / B) (run.Δ k) ≤ v k - v (k + 1) := by
+        simpa only [c, v, Function.comp_apply, mul_assoc] using
+          (mul_le_mul_of_nonneg_left hp P.eta₁_pos.le).trans (run.objective_drop_of_successful hs)
+      have hrad : run.Δ k ≤ e / B := by
+        by_contra! hh
+        rw [min_eq_left hh.le] at hdrop
+        exact (hN k hk).not_ge hdrop
+      rw [min_eq_right hrad] at hdrop
+      have hupdate : run.x (k + 1) = run.x k + run.s k := by
+        rw [run.iterate_update, Optimization.acceptStep_of_le hs]
+      calc
+        _ = c * ‖run.s k‖ := by
+          rw [hupdate, dist_eq_norm, sub_add_cancel_left, norm_neg]
+        _ ≤ c * (K * run.Δ k) := mul_le_mul_of_nonneg_left (hstep k) hc.le
+        _ = K * (c * run.Δ k) := by ring
+        _ ≤ _ := mul_le_mul_of_nonneg_left hdrop hK
+    · simp only [v, Function.comp_apply, run.iterate_eq_of_unsuccessful hs, dist_self,
+        sub_self, mul_zero, le_rfl]
+  refine ⟨max N J, fun k hk ↦ ?_⟩
+  have hkN := (le_max_left N J).trans hk
+  have hkJ := (le_max_right N J).trans hk
+  change dist (a k) 0 < ε
+  rw [Real.dist_eq, sub_zero, abs_of_nonneg (show 0 ≤ a k from hun k)]
+  by_contra! hhigh
+  have hExists : ∃ j, k ≤ j ∧ a j < e :=
+    frequently_atTop.mp (frequently_criticality_lt_of_model_decrease run a β
+      hκ he hβ hβB hval hdec herr hlower) k
+  let j := Nat.find hExists
+  have hj : k ≤ j ∧ a j < e := Nat.find_spec hExists
+  have htel (i : ℕ) (hi : k ≤ i) : i ≤ j →
+      c * dist (run.x k) (run.x i) ≤ K * (v k - v i) := by
+    induction i, hi using Nat.le_induction with
+    | base => simp
+    | succ i hi ih =>
+      intro hij
+      have hbelow : i < j := Nat.lt_of_succ_le hij
+      have hai : e ≤ a i := le_of_not_gt fun hh ↦ (Nat.find_min hExists hbelow) ⟨hi, hh⟩
+      have htri := mul_le_mul_of_nonneg_left (dist_triangle (run.x k) (run.x i)
+        (run.x (i + 1))) hc.le
+      linarith only [htri, ih hbelow.le, hlength i (hkN.trans hi) hai]
+  have hvle : (⨅ i, v i) ≤ v j := ciInf_le hlower j
+  have hlast : K * (v k - v j) < c * δ := calc
+    _ ≤ (K + 1) * (v k - v j) :=
+      mul_le_mul_of_nonneg_right (by linarith) (sub_nonneg.mpr (run.objective_antitone hj.1))
+    _ ≤ (K + 1) * (v k - ⨅ i, v i) :=
+      mul_le_mul_of_nonneg_left (sub_le_sub_left hvle _) (by linarith)
+    _ < _ := by
+      have hh := (lt_div_iff₀ (by linarith : 0 < K + 1)).mp (hJ k hkJ)
+      rwa [mul_comm]
+  have hdist := lt_of_mul_lt_mul_left ((htel j hj.1 le_rfl).trans_lt hlast) hc.le
+  have hsmall := hclose _ (hx k) _ (hx j) hdist
+  rw [Real.dist_eq] at hsmall
+  have hgap : a k - a j < e := (le_abs_self _).trans_lt hsmall
+  dsimp only [e] at hgap hj
+  linarith only [hgap, hj.2, hhigh]
+
 /-- Theorem 6.4.6. With the norm comparison of AN.1 and the global Lipschitz bound
 on the objective gradient from AF.3, the whole gradient norm sequence tends to zero. -/
 theorem theorem_6_4_6 {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
@@ -313,103 +450,27 @@ theorem theorem_6_4_6 {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ 
     (hf : ContDiff ℝ 2 f) (hH : ∀ x, ‖fderiv ℝ (fderiv ℝ f) x‖ ≤ L) (hK : 0 ≤ K)
     (hnorm : ∀ k v, ‖v‖ ≤ K * run.p k v) :
     Tendsto (fun k ↦ ‖gradient f (run.x k)‖) atTop (𝓝 0) := by
-  have hL : 0 ≤ L := (norm_nonneg _).trans (hH 0)
+  have hL : 0 ≤ L := (norm_nonneg (fderiv ℝ (fderiv ℝ f) (0 : F))).trans (hH 0)
   have hDf : ContDiff ℝ 1 (fderiv ℝ f) := hf.fderiv_right (by norm_num)
   have hgrad (x y : F) : ‖gradient f x - gradient f y‖ ≤ L * ‖x - y‖ := by
     unfold gradient
     rw [← map_sub, LinearIsometryEquiv.norm_map]
     exact Convex.norm_image_sub_le_of_norm_fderiv_le (fun z _ ↦ hDf.differentiable (by norm_num) z)
       (fun z _ ↦ hH z) (convex_univ : Convex ℝ (Set.univ : Set F)) (Set.mem_univ y) (Set.mem_univ x)
-  let value (k : ℕ) := f (run.x k)
-  let u (k : ℕ) := ‖gradient f (run.x k)‖
-  have hbdd : BddBelow (Set.range value) :=
-    hlower.mono (show Set.range value ⊆ Set.range f from fun _ ⟨k, hk⟩ ↦ ⟨run.x k, hk⟩)
-  have ht : Tendsto value atTop (𝓝 (⨅ k, value k)) :=
-    tendsto_atTop_ciInf run.objective_antitone hbdd
-  have hdiff : Tendsto (fun k ↦ value k - value (k + 1)) atTop (𝓝 0) := by
-    simpa only [Function.comp_apply, sub_self] using ht.sub (ht.comp (tendsto_add_atTop_nat 1))
-  have htail : Tendsto (fun k ↦ value k - ⨅ j, value j) atTop (𝓝 0) := by
-    simpa only [sub_self] using ht.sub_const (⨅ j, value j)
-  rw [Metric.tendsto_atTop]
-  intro ε hε
-  let e := ε / 2
-  have he : 0 < e := half_pos hε
-  have hC : 0 < C := (hβ 0).trans_le (hβC 0)
-  have hκ : 0 < κ := (hdec 0).1.1
-  let c := P.η₁ * (κ * e)
-  have hc : 0 < c := mul_pos P.eta₁_pos (mul_pos hκ he)
-  have hLK : 0 ≤ L * K := mul_nonneg hL hK
-  have hLK₁ : 0 < L * K + 1 := by linarith
-  obtain ⟨N, hN⟩ := eventually_atTop.mp
-    (hdiff.eventually (gt_mem_nhds (mul_pos hc (div_pos he hC))))
-  obtain ⟨J, hJ⟩ := eventually_atTop.mp
-    (htail.eventually (gt_mem_nhds (div_pos (mul_pos hc he) hLK₁)))
-  have hstep (j : ℕ) (hj : N ≤ j) (hu : e ≤ u j) :
-      c * (u j - u (j + 1)) ≤ (L * K) * (value j - value (j + 1)) := by
-    by_cases hs : j ∈ run.successful
-    · have hquot : e / C ≤ u j / β j := div_le_div₀ (norm_nonneg _) hu (hβ j) (hβC j)
-      have hm := min_le_min hquot (le_refl (run.Δ j))
-      have hmod : κ * e * min (e / C) (run.Δ j) ≤
-          run.model j (run.x j) - run.model j (run.x j + run.s j) :=
-        (mul_le_mul (mul_le_mul_of_nonneg_left hu hκ.le) hm
-          (le_min (div_nonneg he.le hC.le) (run.delta_pos j).le) (by positivity)).trans (hdec j).2
-      have hdrop : c * min (e / C) (run.Δ j) ≤ value j - value (j + 1) := by
-        simpa only [c, mul_assoc] using
-          (mul_le_mul_of_nonneg_left hmod P.eta₁_pos.le).trans (run.objective_drop_of_successful hs)
-      have hrad : run.Δ j ≤ e / C := by
-        by_contra! hn
-        rw [min_eq_left hn.le] at hdrop
-        exact (hN j hj).not_ge hdrop
-      rw [min_eq_right hrad] at hdrop
-      have hratio : P.η₁ ≤ btrRatio f (run.model j) (run.x j) (run.s j) := hs
-      have hupdate : run.x (j + 1) = run.x j + run.s j := by
-        rw [run.iterate_update, Optimization.acceptStep_of_le hratio]
-      have hdist : ‖run.x j - run.x (j + 1)‖ ≤ K * run.Δ j := by
-        rw [hupdate, sub_add_cancel_left, norm_neg]
-        exact (hnorm j _).trans (mul_le_mul_of_nonneg_left
-          (by simpa [trustRegion] using run.feasible j) hK)
-      have hgradstep : u j - u (j + 1) ≤ (L * K) * run.Δ j := by
-        calc
-          _ ≤ ‖gradient f (run.x j) - gradient f (run.x (j + 1))‖ := norm_sub_norm_le _ _
-          _ ≤ L * ‖run.x j - run.x (j + 1)‖ := hgrad _ _
-          _ ≤ L * (K * run.Δ j) := mul_le_mul_of_nonneg_left hdist hL
-          _ = _ := by ring
-      calc
-        _ ≤ c * ((L * K) * run.Δ j) := mul_le_mul_of_nonneg_left hgradstep hc.le
-        _ = (L * K) * (c * run.Δ j) := by ring
-        _ ≤ _ := mul_le_mul_of_nonneg_left hdrop hLK
-    · simp only [value, u, run.iterate_eq_of_unsuccessful hs, sub_self, mul_zero, le_refl]
-  refine ⟨max N J, fun k hk ↦ ?_⟩
-  have hkN := (le_max_left N J).trans hk
-  have hkJ := (le_max_right N J).trans hk
-  change dist (u k) 0 < ε
-  rw [Real.dist_eq, sub_zero, abs_of_nonneg (norm_nonneg _)]
-  by_contra! hhigh
-  have hExists : ∃ j, k ≤ j ∧ u j < e := by
-    have hfreq := frequently_gradient_norm_lt run β hβ hβC hval hdec herr hlower e he
-    exact frequently_atTop.mp hfreq k
-  let j := Nat.find hExists
-  have hj : k ≤ j ∧ u j < e := Nat.find_spec hExists
-  have htel (i : ℕ) (hi : k ≤ i) : i ≤ j →
-      c * (u k - u i) ≤ (L * K) * (value k - value i) := by
-    induction i, hi using Nat.le_induction with
-    | base => simp
-    | succ i hi ih =>
-      intro hij
-      have hbelow : i < j := Nat.lt_of_succ_le hij
-      have hui : e ≤ u i := le_of_not_gt fun hu ↦ (Nat.find_min hExists hbelow) ⟨hi, hu⟩
-      linarith only [ih hbelow.le, hstep i (hkN.trans hi) hui]
-  have hgap : e < u k - u j := by dsimp [e] at hj ⊢; linarith [hj.2]
-  have htailBound : value k - ⨅ i, value i < c * e / (L * K + 1) := hJ k hkJ
-  have hvle : (⨅ i, value i) ≤ value j := ciInf_le hbdd j
-  have hdval : 0 ≤ value k - value j := sub_nonneg.mpr (run.objective_antitone hj.1)
-  have hlast : (L * K) * (value k - value j) < c * e := calc
-    _ ≤ (L * K + 1) * (value k - value j) := by gcongr; linarith
-    _ ≤ (L * K + 1) * (value k - ⨅ i, value i) :=
-      mul_le_mul_of_nonneg_left (sub_le_sub_left hvle _) hLK₁.le
-    _ < _ := by
-      have hh := (lt_div_iff₀ hLK₁).mp htailBound
-      rwa [mul_comm]
-  exact hlast.not_ge ((mul_le_mul_of_nonneg_left hgap.le hc.le).trans (htel j hj.1 le_rfl))
+  have hu : LipschitzWith ⟨L, hL⟩ (fun x ↦ ‖gradient f x‖) := by
+    apply LipschitzWith.of_dist_le_mul
+    intro x y
+    rw [Real.dist_eq, dist_eq_norm]
+    exact (abs_norm_sub_norm_le _ _).trans (hgrad x y)
+  have hstep (k : ℕ) : ‖run.s k‖ ≤ K * run.Δ k :=
+    (hnorm k _).trans (mul_le_mul_of_nonneg_left
+      (by simpa [trustRegion] using run.feasible k) hK)
+  have hbelow : BddBelow (Set.range (f ∘ run.x)) :=
+    hlower.mono (show Set.range (f ∘ run.x) ⊆ Set.range f from
+      fun _ ⟨k, hk⟩ ↦ ⟨run.x k, hk⟩)
+  exact tendsto_criticality_zero_of_uniformContinuousOn run
+    (fun x ↦ ‖gradient f x‖) β (hdec 0).1 hβ hβC hK hstep
+    (fun _ ↦ Set.mem_univ _) hu.uniformContinuous.uniformContinuousOn
+    (fun _ ↦ norm_nonneg _) hval (fun k ↦ (hdec k).2) herr hbelow
 
 end ConnGouldToint.Chapter06

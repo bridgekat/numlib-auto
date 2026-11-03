@@ -63,3 +63,11 @@ source = "Conn–Gould–Toint, corrected finite termination in Theorem 12.2.1"
 [[node]]
 id = "isApproxGeneralizedCauchyPoint_of_normal"
 source = "Conn–Gould–Toint, critical-point guard for Algorithm 12.2.2"
+
+[[node]]
+id = "feasible_cauchy_run_firstOrder_convergence"
+source = "Conn–Gould–Toint, Algorithm 12.2.1 and first-order convergence in Section 12.2.2"
+
+[[node]]
+id = "feasible_cauchy_run_firstOrder_convergence_of_hessian_bounds"
+source = "Conn–Gould–Toint, Algorithm 12.2.1 and Section 12.2.2 under the Hessian and model matching assumptions"
