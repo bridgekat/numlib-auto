@@ -1,0 +1,13 @@
+namespace = "ConnGouldToint.Chapter16"
+
+[[node]]
+id = "leastSquaresObjective"
+source = "Conn–Gould–Toint, (16.1.4)"
+
+[[node]]
+id = "gaussNewtonResidual"
+source = "Conn–Gould–Toint, (16.1.6)"
+
+[[node]]
+id = "theorem_16_1_1"
+source = "Conn–Gould–Toint, Theorem 16.1.1"
