@@ -17,6 +17,19 @@ def scaledObjective (f : E → ℝ) (x : E) (S : E ≃ₗ[ℝ] E) (w : E) : ℝ 
 noncomputable def scaledTrustNorm (S : E ≃ₗ[ℝ] E) : Seminorm ℝ E :=
   (normSeminorm ℝ E).comp S.symm.toLinearMap
 
+/-- The scaled trust region (6.7.8) is the image of the ambient ball
+under the scaling map. -/
+theorem scaledTrustRegion_eq_image (S : E ≃ₗ[ℝ] E) (Δ : ℝ) :
+    {s | scaledTrustNorm S s ≤ Δ} = S '' Metric.closedBall (0 : E) Δ := by
+  ext s
+  change ‖S.symm s‖ ≤ Δ ↔ _
+  constructor
+  · intro h
+    exact ⟨S.symm s, by simpa [Metric.mem_closedBall, dist_zero_right] using h,
+      S.apply_symm_apply s⟩
+  · rintro ⟨w, hw, rfl⟩
+    simpa only [LinearEquiv.symm_apply_apply, Metric.mem_closedBall, dist_zero_right] using hw
+
 /-- The two squared norm formulas in (6.7.9). -/
 theorem scaledTrustNorm_sq [CompleteSpace E] (S : E ≃L[ℝ] E) (s : E) :
     scaledTrustNorm S.toLinearEquiv s ^ 2 = ⟪S.symm s, S.symm s⟫ ∧

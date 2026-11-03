@@ -10,6 +10,45 @@ namespace ConnGouldToint.Chapter08
 
 variable {E : Type*} [NormedAddCommGroup E]
 
+section CurvatureEnvelope
+
+variable [NormedSpace ℝ E]
+
+/-- Hessian norm values on the model regions through iteration `k`. -/
+def modelHessianNormsThrough (m : ℕ → E → ℝ) (R : ℕ → Set E) (k : ℕ) : Set ℝ :=
+  {a | ∃ j ≤ k, ∃ z ∈ R j, a = ‖fderiv ℝ (fderiv ℝ (m j)) z‖}
+
+/-- The running model curvature (8.4.9). Taking a supremum also
+covers bounded Hessians on regions where a maximum is not attained. -/
+noncomputable def runningModelCurvature (m : ℕ → E → ℝ) (R : ℕ → Set E) (k : ℕ) : ℝ :=
+  1 + sSup (modelHessianNormsThrough m R k)
+
+/-- The running curvature is nondecreasing, at least one, and bounds
+all Hessian norms used up to the current iteration. -/
+theorem runningModelCurvature_spec (m : ℕ → E → ℝ) (R : ℕ → Set E)
+    (hne : (R 0).Nonempty) (hb : ∀ k, BddAbove (modelHessianNormsThrough m R k)) :
+    Monotone (runningModelCurvature m R) ∧
+      (∀ k, 1 ≤ runningModelCurvature m R k) ∧
+      ∀ k j, j ≤ k → ∀ z ∈ R j, ‖fderiv ℝ (fderiv ℝ (m j)) z‖ ≤ runningModelCurvature m R k := by
+  obtain ⟨z, hz⟩ := hne
+  have hm (k : ℕ) : ‖fderiv ℝ (fderiv ℝ (m 0)) z‖ ∈ modelHessianNormsThrough m R k :=
+    ⟨0, Nat.zero_le _, z, hz, rfl⟩
+  refine ⟨?_, ?_, ?_⟩
+  · intro j k hj
+    unfold runningModelCurvature
+    apply add_le_add_right
+    apply csSup_le_csSup (hb k) ⟨_, hm j⟩
+    rintro _ ⟨i, hi, y, hy, rfl⟩
+    exact ⟨i, hi.trans hj, y, hy, rfl⟩
+  · intro k
+    have h := (norm_nonneg (fderiv ℝ (fderiv ℝ (m 0)) z)).trans (le_csSup (hb k) (hm k))
+    exact le_add_of_nonneg_right h
+  · intro k j hj y hy
+    refine (le_csSup (hb k) ⟨j, hj, y, hy, rfl⟩).trans ?_
+    exact le_add_of_nonneg_left zero_le_one
+
+end CurvatureEnvelope
+
 /-- Lemma 8.4.1. Relative error smaller than one makes convergence of either
 gradient sequence to zero equivalent to convergence of the other. The index
 set may already be restricted to a subsequence. -/

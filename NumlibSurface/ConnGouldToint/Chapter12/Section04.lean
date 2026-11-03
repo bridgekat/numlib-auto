@@ -1,4 +1,5 @@
 import Numlib.Optimization.Constrained
+import NumlibSurface.ConnGouldToint.Chapter03.Section01
 import NumlibSurface.ConnGouldToint.Chapter12.Section03
 import NumlibSurface.ConnGouldToint.Chapter06.Section06
 
@@ -81,6 +82,19 @@ theorem fderiv_faceLagrangianModel_eq_tangent {C : Set E} {m f : E → ℝ}
   rw [Finset.sum_neg_distrib]
   simp only [real_inner_smul_left] at h
   linarith only [h]
+
+/-- Equation (12.4.1) uses the normal projection to identify the multiplier
+term. The tangent component then follows from Moreau's decomposition. -/
+theorem fderiv_faceLagrangianModel_eq_tangent_of_normal_projection {C : Set E}
+    {m f : E → ℝ} {c : ι → E → ℝ} {y : ι → ℝ} {x : E}
+    (hm : DifferentiableAt ℝ m x) (hc : ∀ i, DifferentiableAt ℝ (c i) x)
+    (hmatch : fderiv ℝ m x = fderiv ℝ f x)
+    (hnormal : bestApprox (normalDirections C x) (-gradient f x) =
+      -∑ i, y i • gradient (c i) x) (v : E) :
+    fderiv ℝ (faceLagrangianModel m c y) x v =
+      -⟪bestApprox (tangentDirections C x) (-gradient f x), v⟫ :=
+  fderiv_faceLagrangianModel_eq_tangent hm hc hmatch hnormal
+    (Chapter03.moreau_normal_tangent C x (-gradient f x)).1.symm v
 
 /-- Lemma 12.4.1. On a fixed face the endpoint values of the model are those
 of its Lagrangian. The first-order identity is (12.4.1), obtained from the

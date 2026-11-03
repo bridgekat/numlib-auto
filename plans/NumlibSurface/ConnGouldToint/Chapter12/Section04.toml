@@ -67,3 +67,7 @@ source = "Conn–Gould–Toint, (12.4.16) with the relative frontier and extende
 [[node]]
 id = "activeFaceBoundaryDistance_pos"
 source = "Conn–Gould–Toint, positivity in (12.4.16)"
+
+[[node]]
+id = "fderiv_faceLagrangianModel_eq_tangent_of_normal_projection"
+source = "Conn–Gould–Toint, (12.4.1) from the Moreau decomposition (3.1.7)"

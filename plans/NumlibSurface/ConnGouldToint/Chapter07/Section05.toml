@@ -22,7 +22,7 @@ source = "Conn–Gould–Toint, Section 7.5.2, interpolated CG path"
 
 [[node]]
 id = "cgPathCoefficient"
-source = "Conn–Gould–Toint, (7.5.17)"
+source = "Conn–Gould–Toint, (7.5.17) and (7.5.21) applied to the shifted operator"
 
 [[node]]
 id = "cgPath_eq_segment"

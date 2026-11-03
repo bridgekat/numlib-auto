@@ -27,3 +27,7 @@ source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.1.6"
 [[node]]
 id = "clarkeDerivative_isGreatest"
 source = "Conn–Gould–Toint, (3.1.4)"
+
+[[node]]
+id = "moreau_normal_tangent"
+source = "Conn–Gould–Toint, Moreau decomposition (3.1.7)"
