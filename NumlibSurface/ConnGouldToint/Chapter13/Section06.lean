@@ -527,4 +527,236 @@ theorem primalDual_safeguard_stalled_counterexample :
     norm_num
   exact one_ne_zero (tendsto_nhds_unique tendsto_const_nhds h')
 
+section EscapeExample
+
+open Metric
+
+private def escapeBump : ContDiffBump (0 : ℝ) := ⟨1, 2, by norm_num, by norm_num⟩
+
+private noncomputable def escapeTail (x : ℝ) : ℝ := Real.log x + x⁻¹
+
+/-- A globally smooth extension of `log x + 1 / x` outside the radius-two ball. -/
+noncomputable def primalDualEscapeObjective (x : ℝ) : ℝ := (1 - escapeBump x) * escapeTail x
+
+private theorem escape_eq_zero {x : ℝ} (hx : |x| < 1) :
+    primalDualEscapeObjective =ᶠ[𝓝 x] fun _ ↦ 0 := by
+  have hx' : x ∈ ball (0 : ℝ) 1 := by simpa [Real.dist_eq] using hx
+  filter_upwards [isOpen_ball.mem_nhds hx'] with y hy
+  simp [primalDualEscapeObjective, escapeBump.one_of_mem_closedBall (ball_subset_closedBall hy)]
+
+private theorem escape_eq_tail {x : ℝ} (hx : 2 < |x|) :
+    primalDualEscapeObjective =ᶠ[𝓝 x] escapeTail := by
+  have hx' : x ∈ (closedBall (0 : ℝ) 2)ᶜ := by simpa [Real.dist_eq] using hx.not_ge
+  filter_upwards [isClosed_closedBall.isOpen_compl.mem_nhds hx'] with y hy
+  have hby : escapeBump y = 0 :=
+    escapeBump.zero_of_le_dist (le_of_not_ge (show y ∉ closedBall (0 : ℝ) 2 from hy))
+  simp [primalDualEscapeObjective, hby]
+
+private theorem escape_contDiff : ContDiff ℝ 2 primalDualEscapeObjective := by
+  rw [contDiff_iff_contDiffAt]
+  intro x
+  by_cases hx : x = 0
+  · subst x
+    exact contDiffAt_const.congr_of_eventuallyEq (escape_eq_zero (x := 0) (by norm_num))
+  have ht : ContDiffAt ℝ 2 escapeTail x :=
+    (contDiffAt_id.log hx).add (contDiffAt_id.inv hx)
+  exact (contDiffAt_const.sub (escapeBump.contDiff (n := 2)).contDiffAt).mul ht
+
+private theorem escapeTail_deriv {x : ℝ} (hx : x ≠ 0) :
+    deriv escapeTail x = x⁻¹ - (x ^ 2)⁻¹ := by
+  have h := (Real.hasDerivAt_log hx).add ((hasDerivAt_id x).inv hx)
+  have he := h.deriv
+  change deriv escapeTail x = _ at he
+  simpa [div_eq_mul_inv, sub_eq_add_neg] using he
+
+private theorem escapeTail_deriv_deriv {x : ℝ} (hx : x ≠ 0) :
+    deriv (deriv escapeTail) x = -(x ^ 2)⁻¹ + 2 * (x ^ 3)⁻¹ := by
+  have he : deriv escapeTail =ᶠ[𝓝 x] fun y ↦ y⁻¹ - (y ^ 2)⁻¹ := by
+    filter_upwards [isOpen_ne.mem_nhds hx] with y hy
+    exact escapeTail_deriv hy
+  rw [he.deriv_eq]
+  have h := ((hasDerivAt_id x).inv hx).sub (((hasDerivAt_id x).pow 2).inv (pow_ne_zero _ hx))
+  have hh := h.deriv
+  change deriv (fun y : ℝ ↦ y⁻¹ - (y ^ 2)⁻¹) x = _ at hh
+  rw [hh]
+  simp only [id_eq, Pi.pow_apply]
+  field_simp [hx]
+  ring
+
+private theorem escape_deriv {x : ℝ} (hx : 2 < |x|) :
+    deriv primalDualEscapeObjective x = x⁻¹ - (x ^ 2)⁻¹ := by
+  rw [(escape_eq_tail hx).deriv_eq, escapeTail_deriv]
+  exact abs_pos.mp (zero_lt_two.trans hx)
+
+private theorem escape_deriv_deriv {x : ℝ} (hx : 2 < |x|) :
+    deriv (deriv primalDualEscapeObjective) x = -(x ^ 2)⁻¹ + 2 * (x ^ 3)⁻¹ := by
+  have he : deriv primalDualEscapeObjective =ᶠ[𝓝 x] deriv escapeTail := by
+    filter_upwards [continuous_abs.continuousAt.eventually (lt_mem_nhds hx)] with y hy
+    exact (escape_eq_tail hy).deriv_eq
+  rw [he.deriv_eq]
+  exact escapeTail_deriv_deriv (abs_pos.mp (zero_lt_two.trans hx))
+
+private theorem escape_hessian_bounded :
+    ∃ B : ℝ, ∀ x, |deriv (deriv primalDualEscapeObjective) x| ≤ B := by
+  have hcont : Continuous (deriv (deriv primalDualEscapeObjective)) :=
+    ((escape_contDiff.deriv' (n := 1)).deriv' (n := 0)).continuous
+  obtain ⟨B, hB⟩ := (isCompact_closedBall (0 : ℝ) 2).exists_bound_of_continuousOn hcont.continuousOn
+  refine ⟨max B 3, fun x ↦ ?_⟩
+  by_cases hx : |x| ≤ 2
+  · exact (by simpa [Real.norm_eq_abs] using hB x (show x ∈ closedBall (0 : ℝ) 2 by
+        simpa [Real.dist_eq] using hx) : _ ≤ B).trans (le_max_left _ _)
+  · have hp : 2 < |x| := lt_of_not_ge hx
+    rw [escape_deriv_deriv hp]
+    have habs : |-(x ^ 2)⁻¹ + 2 * (x ^ 3)⁻¹| ≤ |-(x ^ 2)⁻¹| + |2 * (x ^ 3)⁻¹| := by
+      simpa only [Real.norm_eq_abs] using norm_add_le (-(x ^ 2)⁻¹) (2 * (x ^ 3)⁻¹)
+    have hsum : |-(x ^ 2)⁻¹| + |2 * (x ^ 3)⁻¹| ≤ 3 := by
+      simp only [abs_neg, abs_inv, abs_pow, abs_mul, abs_of_nonneg (show (0 : ℝ) ≤ 2 by norm_num)]
+      have h1 : (|x| ^ 2)⁻¹ ≤ 1 := inv_le_one_of_one_le₀ (one_le_pow₀ (by linarith))
+      have h2 : (|x| ^ 3)⁻¹ ≤ 1 := inv_le_one_of_one_le₀ (one_le_pow₀ (by linarith))
+      linarith
+    exact habs.trans (hsum.trans (le_max_right B 3))
+
+private theorem escape_barrier_bounded :
+    BddBelow ((fun x : ℝ ↦ primalDualEscapeObjective x - Real.log x) '' Ioi 0) := by
+  let φ := fun x : ℝ ↦ primalDualEscapeObjective x - Real.log x
+  have hc : ContinuousOn φ (Icc (1 / 2 : ℝ) 3) :=
+    escape_contDiff.continuous.continuousOn.sub (fun x hx ↦
+      (Real.continuousAt_log (show x ≠ 0 from ne_of_gt (by linarith [hx.1]))).continuousWithinAt)
+  obtain ⟨B, hB⟩ := isCompact_Icc.bddBelow_image hc
+  refine ⟨min B 0, ?_⟩
+  rintro _ ⟨x, hx, rfl⟩
+  have hx0 : 0 < x := hx
+  by_cases h1 : x < 1 / 2
+  · have he := (escape_eq_zero (x := x) (by rw [abs_of_pos hx0]; linarith)).eq_of_nhds
+    change min B 0 ≤ primalDualEscapeObjective x - Real.log x
+    rw [he]
+    exact (min_le_right _ _).trans (by linarith [Real.log_nonpos hx0.le (by linarith : x ≤ 1)])
+  by_cases h3 : x ≤ 3
+  · exact (min_le_left _ _).trans (hB ⟨x, ⟨le_of_not_gt h1, h3⟩, rfl⟩)
+  · have he := (escape_eq_tail (x := x) (by rw [abs_of_pos hx0]; linarith)).eq_of_nhds
+    change min B 0 ≤ primalDualEscapeObjective x - Real.log x
+    rw [he, escapeTail, add_sub_cancel_left]
+    exact (min_le_right _ _).trans (inv_nonneg.mpr hx0.le)
+
+private theorem escape_barrier_uniform_lower_bound :
+    ∃ B : ℝ, ∀ μ ∈ Ioc (0 : ℝ) 1, ∀ x > 0,
+      B ≤ primalDualEscapeObjective x - μ * Real.log x := by
+  obtain ⟨B, hB⟩ := escape_barrier_bounded
+  obtain ⟨A, hA⟩ := (isCompact_Icc (α := ℝ) (a := 0) (b := 1)).bddBelow_image
+    escape_contDiff.continuous.continuousOn
+  refine ⟨min A B, fun μ hμ x hx ↦ ?_⟩
+  by_cases hx1 : 1 ≤ x
+  · have hh := hB ⟨x, hx, rfl⟩
+    change B ≤ primalDualEscapeObjective x - Real.log x at hh
+    exact (min_le_right _ _).trans (hh.trans (by
+      have hm := mul_le_of_le_one_left (Real.log_nonneg hx1) hμ.2
+      linarith))
+  · have hh := hA ⟨x, ⟨hx.le, le_of_not_ge hx1⟩, rfl⟩
+    exact (min_le_left _ _).trans (hh.trans (by
+      have hm := mul_nonpos_of_nonneg_of_nonpos hμ.1.le (Real.log_nonpos hx.le (le_of_not_ge hx1))
+      linarith))
+
+/-- One-dimensional all-successful specialization of Algorithm 13.6.1
+with fixed unit radius, unit steps, fraction one half, and `μ = 1`.
+The objective model is its exact quadratic Taylor model at each iterate.
+The curvature in the model includes the corrected positive dual term. -/
+structure ScalarPrimalDualEscapeRun (f : ℝ → ℝ) (x z : ℕ → ℝ) : Prop where
+  primal_pos : ∀ j, 0 < x j
+  dual_pos : ∀ j, 0 < z j
+  update : ∀ j, x (j + 1) = x j + 1
+  fractional_clearance : ∀ j, (1 / 2 : ℝ) * x j ≤ x (j + 1)
+  positive_curvature : ∀ j, 0 ≤ deriv (deriv f) (x j) + z j / x j
+  decrease : ∀ j,
+    let g := deriv f (x j) - (x j)⁻¹
+    let h := deriv (deriv f) (x j) + z j / x j
+    (1 / 8 : ℝ) * (|g| * min (|g| / (1 + |h|)) 1) ≤ -g - h / 2
+  very_successful : ∀ j,
+    let g := deriv f (x j) - (x j)⁻¹
+    let h := deriv (deriv f) (x j) + z j / x j
+    0 < -g - h / 2 ∧ -g - h / 2 ≤
+      (f (x j) - Real.log (x j)) - (f (x (j + 1)) - Real.log (x (j + 1)))
+
+/-- In the unbounded run the exact Taylor objective models satisfy the
+center matching and curvature conditions, AA.7 and AA.8 hold, and every
+ratio is at least one. The unit complementarity error nevertheless
+prevents finite stopping at tolerance one half. -/
+theorem theorem_13_6_2_unbounded_run_counterexample :
+    ∃ x z : ℕ → ℝ,
+      ContDiff ℝ 2 primalDualEscapeObjective ∧
+      (∃ B : ℝ, ∀ x, |deriv (deriv primalDualEscapeObjective) x| ≤ B) ∧
+      (∃ B : ℝ, ∀ μ ∈ Ioc (0 : ℝ) 1, ∀ x > 0,
+        B ≤ primalDualEscapeObjective x - μ * Real.log x) ∧
+      ScalarPrimalDualEscapeRun primalDualEscapeObjective x z ∧
+      Tendsto x atTop atTop ∧
+      (∀ j, z j ≤ 2 * max (x j)⁻¹ 1) ∧
+      Tendsto (fun j ↦ deriv primalDualEscapeObjective (x j) - (x j)⁻¹) atTop (𝓝 0) ∧
+      Tendsto (fun j ↦ z j - (x j)⁻¹) atTop (𝓝 0) ∧
+      (∀ j, ¬ |x j * z j - 1| ≤ (1 / 2 : ℝ)) := by
+  let x (j : ℕ) := (j : ℝ) + 3
+  let z (j : ℕ) := 2 / x j
+  have hx (j : ℕ) : 3 ≤ x j := by dsimp [x]; linarith [Nat.cast_nonneg (α := ℝ) j]
+  have hxp (j : ℕ) : 0 < x j := by linarith [hx j]
+  have hx2 (j : ℕ) : 2 < |x j| := by rw [abs_of_pos (hxp j)]; linarith [hx j]
+  have hxadd (j : ℕ) : x (j + 1) = x j + 1 := by simp [x, Nat.cast_add]; ring
+  have hz (j : ℕ) : 0 < z j := div_pos zero_lt_two (hxp j)
+  have hg (j : ℕ) : deriv primalDualEscapeObjective (x j) - (x j)⁻¹ = -((x j) ^ 2)⁻¹ := by
+    rw [escape_deriv (hx2 j)]
+    ring
+  have hh (j : ℕ) : deriv (deriv primalDualEscapeObjective) (x j) + z j / x j =
+      ((x j) ^ 2)⁻¹ + 2 * ((x j) ^ 3)⁻¹ := by
+    rw [escape_deriv_deriv (hx2 j)]
+    unfold z
+    field_simp [(hxp j).ne']
+    ring
+  have hphi (j : ℕ) : primalDualEscapeObjective (x j) - Real.log (x j) = (x j)⁻¹ := by
+    rw [(escape_eq_tail (hx2 j)).eq_of_nhds, escapeTail, add_sub_cancel_left]
+  refine ⟨x, z, escape_contDiff, escape_hessian_bounded, escape_barrier_uniform_lower_bound,
+    ⟨hxp, hz, hxadd, ?_, ?_, ?_, ?_⟩,
+    tendsto_atTop_add_const_right _ 3 tendsto_natCast_atTop_atTop, ?_, ?_, ?_, ?_⟩
+  · intro j
+    rw [hxadd]
+    linarith [hx j]
+  · intro j
+    rw [hh]
+    positivity
+  · intro j
+    dsimp only
+    rw [hg, hh, abs_neg, abs_of_nonneg (by positivity : 0 ≤ ((x j) ^ 2)⁻¹)]
+    apply (mul_le_mul_of_nonneg_left (mul_le_mul_of_nonneg_left (min_le_right _ _)
+      (by positivity)) (by norm_num)).trans
+    have hp := hxp j
+    field_simp [hp.ne']
+    nlinarith [hx j]
+  · intro j
+    dsimp only
+    rw [hg, hh, hphi j, hphi (j + 1), hxadd]
+    have hp := hxp j
+    have hpa : 0 < x j + 1 := by positivity
+    constructor
+    · field_simp [hp.ne']
+      nlinarith [hx j]
+    · field_simp [hp.ne', hpa.ne']
+      nlinarith [hx j, sq_nonneg (x j)]
+  · intro j
+    unfold z
+    rw [div_eq_mul_inv]
+    exact mul_le_mul_of_nonneg_left (le_max_left _ _) zero_lt_two.le
+  · have ht : Tendsto (fun j ↦ (x j)⁻¹) atTop (𝓝 0) := by
+      have ht := (tendsto_one_div_add_atTop_nhds_zero_nat (𝕜 := ℝ)).comp
+        (tendsto_add_atTop_nat 2)
+      simpa [x, Function.comp_def, Nat.cast_add, add_assoc, one_div, show (2 : ℝ) + 1 = 3 by norm_num] using ht
+    simpa only [hg, ← inv_pow, zero_pow (by decide : (2 : ℕ) ≠ 0), neg_zero] using (ht.pow 2).neg
+  · have ht : Tendsto (fun j ↦ (x j)⁻¹) atTop (𝓝 0) := by
+      have ht := (tendsto_one_div_add_atTop_nhds_zero_nat (𝕜 := ℝ)).comp
+        (tendsto_add_atTop_nat 2)
+      simpa [x, Function.comp_def, Nat.cast_add, add_assoc, one_div, show (2 : ℝ) + 1 = 3 by norm_num] using ht
+    have he (j : ℕ) : z j - (x j)⁻¹ = (x j)⁻¹ := by unfold z; rw [div_eq_mul_inv]; ring
+    simpa only [he] using ht
+  · intro j
+    unfold z
+    rw [mul_div_cancel₀ _ (hxp j).ne']
+    norm_num
+
+end EscapeExample
+
 end ConnGouldToint.Chapter13

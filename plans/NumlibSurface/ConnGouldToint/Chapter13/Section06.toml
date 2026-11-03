@@ -91,3 +91,15 @@ source = "Conn–Gould–Toint, AA.8 in Theorem 13.6.4, corrected late-success h
 [[node]]
 id = "primalDual_safeguard_stalled_counterexample"
 source = "Conn–Gould–Toint, counterexample to transferring the accepted-iteration limit without late successes"
+
+[[node]]
+id = "primalDualEscapeObjective"
+source = "Conn–Gould–Toint, smooth objective for the unbounded inner-run counterexample to Theorem 13.6.2"
+
+[[node]]
+id = "ScalarPrimalDualEscapeRun"
+source = "Conn–Gould–Toint, scalar fixed-parameter run conditions in Algorithm 13.6.1"
+
+[[node]]
+id = "theorem_13_6_2_unbounded_run_counterexample"
+source = "Conn–Gould–Toint, counterexample to the uncorrected finite stopping theorem"

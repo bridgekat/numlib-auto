@@ -195,7 +195,10 @@ In Algorithm 13.6.1 the quadratic barrier model term has a positive sign
 and the trial point must be feasible. Explicit scalar examples show why
 the printed sign and unsigned distance test need these corrections.
 Theorem 13.6.2 derives finite stopping from the inner limits with bounded
-primal coordinates. The full inner-algorithm limit argument remains open.
+primal coordinates. An explicit all-successful scalar run with globally
+smooth objective and uniformly bounded Hessian has unbounded primal
+coordinates and never satisfies the complementarity test. The full inner
+limit argument under the corrected assumptions remains open.
 The safeguard analysis in Theorem 13.6.4 uses arbitrarily late successful
 iterations to derive AA.8 from vanishing steps. Its proof bounds the
 projection error directly without requiring the projection to become inactive.
