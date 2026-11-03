@@ -123,3 +123,11 @@ source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.7"
 [[node]]
 id = "activeKKTLinearization_apply"
 source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.7"
+
+[[node]]
+id = "theorem_3_2_7_strict_minimizer_branch"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.7"
+
+[[node]]
+id = "ActiveDual"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.7"
