@@ -191,9 +191,10 @@ the comparison cannot give the full-feasible bound from the trial
 conditions alone. A uniform tangent-gradient gap gives linear-in-radius
 model decrease and forces very successful misidentified trials. Theorem
 12.3.8 then proves eventual identification of both iterates and Cauchy points
-for compact runs with vanishing radii, including runs with several limit
-components. The bounded-positive-trial-time
-version also allows nonvanishing radii. Vanishing successive displacements
+for compact runs with vanishing Cauchy and trial displacements, including
+runs with several limit components. The radius need only vanish on
+misidentified trials. The bounded-positive-trial-time version also allows
+nonvanishing radii for convergent runs. Vanishing successive displacements
 force a common active set across the compact limit set. An interval run
 with alternating radii refutes eventual Cauchy-point identification in the
 printed Theorem 12.3.8. Identification of the iterates in general compact
