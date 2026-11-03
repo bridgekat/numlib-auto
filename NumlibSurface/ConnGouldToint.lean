@@ -57,6 +57,10 @@ Chapter 10 covers cumulative model decrease for the nonmonotone acceptance rule.
 The reference schedule in (10.1.2) requires strict decrease only when the reference changes.
 
 Chapter 11 covers Clarke steepest descent using the support identity proved in (3.1.4).
+Pointwise smooth model matching does not give the uniform decrease in Lemma 11.1.3
+or Corollary 11.1.4. The corrected results require a uniform one-sided first-order
+model estimate near a nonstationary point.
+
 
 Section 12.1 covers box projection, the projected-gradient path, and the criticality measure.
 In (12.1.3), the radial formula applies outside the closed ball. Points inside project to

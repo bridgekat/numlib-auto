@@ -3,6 +3,8 @@ import Numlib.Analysis.Convex.Duality.InnerPairing
 import Mathlib.Topology.Algebra.Order.LiminfLimsup
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Analysis.InnerProductSpace.Basic
+import Mathlib.Analysis.Calculus.FDeriv.Defs
+import Mathlib.Tactic.Linarith
 import Mathlib.Analysis.Normed.Module.FiniteDimension
 import Mathlib.Order.LiminfLimsup
 import Mathlib.Order.Filter.Prod
@@ -165,6 +167,61 @@ theorem lipschitzWith_clarkeDerivative {f : E → ℝ} {x : E} {U : Set E} {L : 
     have hb := (le_abs_self _).trans (abs_clarkeDerivative_le hU hL (v - w))
     linarith
   exact ⟨h d e, by rw [norm_sub_rev d e]; exact h e d⟩
+
+/-- For a fixed direction, an upper bound strictly above the Clarke derivative
+at a locally Lipschitz point bounds the derivative throughout a neighborhood. -/
+theorem eventually_clarkeDerivative_le_of_lt {f : E → ℝ} {x d : E} {U : Set E}
+    {L : ℝ≥0} (hU : U ∈ 𝓝 x) (hL : LipschitzOnWith L f U) {a : ℝ}
+    (ha : clarkeDerivative f x d < a) : ∀ᶠ y in 𝓝 x, clarkeDerivative f y d ≤ a := by
+  have hb : (clarkeFilter x).IsBoundedUnder (· ≤ ·) (clarkeQuotient f d) :=
+    ⟨_, (eventually_abs_clarkeQuotient_le hU hL d).mono fun _ h ↦ (abs_le.mp h).2⟩
+  obtain ⟨pa, hp, pb, hpb, hq⟩ := eventually_prod_iff.mp (eventually_lt_of_limsup_lt ha hb)
+  obtain ⟨V, hVU, hV, hxV⟩ := _root_.mem_nhds_iff.mp (hp.and hU)
+  filter_upwards [hV.mem_nhds hxV] with y hy
+  have hVy : ∀ᶠ z in 𝓝 y, z ∈ V := hV.mem_nhds hy
+  have hp' : ∀ᶠ z in 𝓝 y, pa z := hVy.mono fun z hz ↦ (hVU hz).1
+  have hUy : U ∈ 𝓝 y := hVy.mono fun z hz ↦ (hVU hz).2
+  have hl : (clarkeFilter y).IsBoundedUnder (· ≥ ·) (clarkeQuotient f d) :=
+    ⟨_, (eventually_abs_clarkeQuotient_le hUy hL d).mono fun _ h ↦ (abs_le.mp h).1⟩
+  apply limsup_le_of_le hl.isCoboundedUnder_le
+  apply eventually_prod_iff.mpr
+  refine ⟨pa, hp', pb, hpb, ?_⟩
+  intro z hz t ht
+  exact (hq hz ht).le
+
+/-- At a strictly differentiable point the Clarke derivative is the derivative
+applied to the direction. -/
+theorem clarkeDerivative_eq_of_hasStrictFDerivAt {f : E → ℝ} {x : E} {A : E →L[ℝ] ℝ}
+    (h : HasStrictFDerivAt f A x) (d : E) : clarkeDerivative f x d = A d := by
+  apply Filter.Tendsto.limsup_eq
+  rw [Metric.tendsto_nhds]
+  intro ε hε
+  let η := ε / (‖d‖ + 1)
+  have hη : 0 < η := div_pos hε (by positivity)
+  have hη' : η * ‖d‖ < ε := by
+    have hprod : η * (‖d‖ + 1) = ε := div_mul_cancel₀ _ (by positivity)
+    linarith
+  have hy : Tendsto Prod.fst (clarkeFilter x) (𝓝 x) := tendsto_fst
+  have ht : Tendsto Prod.snd (clarkeFilter x) (𝓝[>] (0 : ℝ)) := tendsto_snd
+  have hy' : Tendsto (fun p : E × ℝ ↦ p.1 + p.2 • d) (clarkeFilter x) (𝓝 x) :=
+    tendsto_fst.comp (tendsto_clarkeShift x d)
+  have hprod : Tendsto (fun p : E × ℝ ↦ (p.1 + p.2 • d, p.1)) (clarkeFilter x)
+      (𝓝 (x, x)) := hy'.prodMk_nhds hy
+  filter_upwards [hprod.eventually (h.isLittleO.def hη),
+    ht.eventually (self_mem_nhdsWithin : Set.Ioi (0 : ℝ) ∈ 𝓝[>] 0)] with p hp htp
+  change 0 < p.2 at htp
+  change ‖f (p.1 + p.2 • d) - f p.1 - A (p.1 + p.2 • d - p.1)‖ ≤
+    η * ‖p.1 + p.2 • d - p.1‖ at hp
+  rw [add_sub_cancel_left, norm_smul, Real.norm_eq_abs, Real.norm_eq_abs, abs_of_pos htp] at hp
+  rw [Real.dist_eq, clarkeQuotient, show
+    (f (p.1 + p.2 • d) - f p.1) / p.2 - A d =
+      (f (p.1 + p.2 • d) - f p.1 - A (p.2 • d)) / p.2 by
+        rw [map_smul, smul_eq_mul]
+        field_simp]
+  rw [abs_div, abs_of_pos htp]
+  refine ((div_le_iff₀ htp).2 ?_).trans_lt hη'
+  convert hp using 1
+  ring
 
 /-- The Clarke subdifferential consists of the vectors dominated by the directional
 derivative in every direction. -/

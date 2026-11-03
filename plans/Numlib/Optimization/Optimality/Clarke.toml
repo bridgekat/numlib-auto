@@ -34,3 +34,10 @@ id = "lipschitzWith_clarkeDerivative"
 [[node]]
 id = "hasClarkeSupport_of_lipschitzOnWith"
 source = "Conn–Gould–Toint, (3.1.4)"
+
+[[node]]
+id = "eventually_clarkeDerivative_le_of_lt"
+
+[[node]]
+id = "clarkeDerivative_eq_of_hasStrictFDerivAt"
+source = "Conn–Gould–Toint, Section 3.1.4"
