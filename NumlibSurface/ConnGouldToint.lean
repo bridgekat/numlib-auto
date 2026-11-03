@@ -67,7 +67,9 @@ following the unchanged iterate to its first successful trial and bounding
 the radius at that trial. Theorem 6.6.4 uses uniform objective Hessian
 variation on small trial segments. For Theorem 8.1.8, uniform norm equivalence alone
 does not imply AN.3. A scaling counterexample and a fixed-norm version with Lipschitz
-gradients along the iterates are formalized. The radius bound in Theorem 8.4.4
+gradients along the iterates are formalized. Theorem 8.1.9 uses a steepest
+direction in the trust-region norm. The Euclidean ray can fail the claimed
+decrease, as the checked counterexample shows. The radius bound in Theorem 8.4.4
 includes the scaled initial radius. Theorem 8.4.8 uses eventual model convexity
 on trial segments throughout a neighborhood of the limit. Section 8.5 makes
 the center agreement and outer derivative bounds explicit, and gives a
