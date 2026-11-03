@@ -1,0 +1,17 @@
+namespace = "ConnGouldToint.Chapter11"
+
+[[node]]
+id = "radius_floor_of_local_expansion"
+source = "Conn–Gould–Toint, Lemma 11.2.4 and radius estimates in Theorems 11.3.1–2"
+
+[[node]]
+id = "theorem_11_3_1"
+source = "Conn–Gould–Toint, Theorem 11.3.1 with cumulative nonmonotone acceptance"
+
+[[node]]
+id = "NonsmoothCorrectionRun"
+source = "Conn–Gould–Toint, Algorithm 11.3.1 and (11.3.4)–(11.3.5)"
+
+[[node]]
+id = "theorem_11_3_2"
+source = "Conn–Gould–Toint, Theorem 11.3.2"

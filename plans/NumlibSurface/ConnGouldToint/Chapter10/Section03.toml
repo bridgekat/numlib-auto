@@ -1,0 +1,49 @@
+namespace = "ConnGouldToint.Chapter10"
+
+[[node]]
+id = "theorem_10_3_2"
+source = "Conn–Gould–Toint, Theorem 10.3.2 with two-sided norm comparison"
+
+[[node]]
+id = "theorem_10_3_3"
+source = "Conn–Gould–Toint, Theorem 10.3.3"
+
+[[node]]
+id = "theorem_10_3_4"
+source = "Conn–Gould–Toint, corrected Theorem 10.3.4 for Euclidean trust regions"
+
+[[node]]
+id = "theorem_10_3_4_general_norm_counterexample"
+source = "Counterexample to the general-norm form of Conn–Gould–Toint, Theorem 10.3.4"
+
+[[node]]
+id = "doubleLineSearch_first_order_decrease"
+source = "Conn–Gould–Toint, (10.3.1) and first-order line-search decrease in Theorem 10.3.1"
+
+[[node]]
+id = "doubleLineSearch_negative_curvature_decrease"
+source = "Conn–Gould–Toint, negative-curvature line-search decrease in Theorem 10.3.1"
+
+[[node]]
+id = "exactModelBTRRun"
+source = "Conn–Gould–Toint, (10.3.4), exact-model representation of the double line search"
+
+[[node]]
+id = "theorem_10_3_1"
+source = "Conn–Gould–Toint, Theorem 10.3.1, first-order and negative-curvature convergence via exact BTR"
+
+[[node]]
+id = "exists_first_integer_lineSearch_trial"
+source = "Conn–Gould–Toint, uncapped line searches with possibly negative indices in Section 10.3.1"
+
+[[node]]
+id = "exists_doubleLineSearch_armijo_trial"
+source = "Conn–Gould–Toint, uncapped first-order line search in Algorithm 10.3.1"
+
+[[node]]
+id = "exists_doubleLineSearch_eigen_trial"
+source = "Conn–Gould–Toint, uncapped negative-curvature line search in Algorithm 10.3.1"
+
+[[node]]
+id = "theorem_10_3_1_local_convergence"
+source = "Conn–Gould–Toint, Theorem 10.3.1, local convex-model conclusions inherited from Chapter 6"

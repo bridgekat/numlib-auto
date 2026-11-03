@@ -1,0 +1,29 @@
+namespace = "ConnGouldToint.Chapter10"
+
+[[node]]
+id = "magicalStepDecrease"
+source = "Conn–Gould–Toint, (10.4.1)–(10.4.4)"
+
+[[node]]
+id = "magicalStepRatio"
+source = "Conn–Gould–Toint, (10.4.2)"
+
+[[node]]
+id = "MagicalStepRun"
+source = "Conn–Gould–Toint, Algorithm 10.4.1"
+
+[[node]]
+id = "magicalStepRatio_sub_one"
+source = "Conn–Gould–Toint, (10.4.3)–(10.4.5)"
+
+[[node]]
+id = "theorem_10_4_1"
+source = "Conn–Gould–Toint, corrected Theorem 10.4.1 using the augmented predicted decrease"
+
+[[node]]
+id = "theorem_10_4_2"
+source = "Conn–Gould–Toint, Theorem 10.4.2"
+
+[[node]]
+id = "theorem_10_4_3"
+source = "Conn–Gould–Toint, Theorem 10.4.3"

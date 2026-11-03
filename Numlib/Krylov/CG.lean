@@ -1134,7 +1134,7 @@ theorem inner_residual_eq_zero_of_pos_prefix (hAs : A.IsSymmetric) {k : ℕ}
 
 omit hA in
 /-- `⟪r_i, p_j⟫ = ‖r_j‖²` for `i ≤ j ≤ k` (`CG.inner_residual_direction_eq` localized). -/
-private theorem inner_residual_direction_eq' (hAs : A.IsSymmetric) {k : ℕ}
+theorem inner_residual_direction_eq_of_pos_prefix (hAs : A.IsSymmetric) {k : ℕ}
     (hpos : ∀ j < k, 0 < RCLike.re (inner 𝕜 (A (iterate A b x₀ j).p) (iterate A b x₀ j).p))
     {i j : ℕ} (hij : i ≤ j) (hjk : j ≤ k) :
     inner 𝕜 (iterate A b x₀ i).r (iterate A b x₀ j).p =
@@ -1162,14 +1162,15 @@ private theorem re_inner_direction_nonneg' (hAs : A.IsSymmetric) {k : ℕ}
     induction m with
     | zero =>
       intro _ n hn _
-      rw [direction_zero, inner_residual_direction_eq' b x₀ hAs hpos (Nat.zero_le n) hn,
+      rw [direction_zero,
+        inner_residual_direction_eq_of_pos_prefix b x₀ hAs hpos (Nat.zero_le n) hn,
         RCLike.ofReal_re]
       positivity
     | succ m ih =>
       intro hm n hn hmn
       rw [iterate_succ_p, inner_add_left, inner_smul_left, conj_beta, map_add,
-        inner_residual_direction_eq' b x₀ hAs hpos (show m + 1 ≤ n by omega) hn, RCLike.ofReal_re,
-        re_beta_mul b x₀]
+        inner_residual_direction_eq_of_pos_prefix b x₀ hAs hpos (show m + 1 ≤ n by omega) hn,
+        RCLike.ofReal_re, re_beta_mul b x₀]
       exact add_nonneg (by positivity)
         (mul_nonneg (re_beta_nonneg b x₀ m) (ih (by omega) n hn (by omega)))
   rcases le_total i j with h | h

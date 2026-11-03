@@ -133,3 +133,7 @@ id = "re_inner_sub_iterate_direction_nonneg_of_pos_prefix"
 
 [[node]]
 id = "eq_zero_of_apply_eq_zero_of_mem_subspace_of_pos_prefix"
+
+[[node]]
+id = "inner_residual_direction_eq_of_pos_prefix"
+source = "Conn–Gould–Toint, Theorem 10.3.3, CG identity on a positive-curvature prefix"

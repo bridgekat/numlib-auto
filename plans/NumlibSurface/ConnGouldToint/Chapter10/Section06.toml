@@ -1,0 +1,17 @@
+namespace = "ConnGouldToint.Chapter10"
+
+[[node]]
+id = "HasDecreaseAccuracy"
+source = "Conn–Gould–Toint, (10.6.2)"
+
+[[node]]
+id = "actual_decrease_of_accurate_ratio"
+source = "Conn–Gould–Toint, true objective decrease after (10.6.2)"
+
+[[node]]
+id = "lemma_10_6_1"
+source = "Conn–Gould–Toint, Lemma 10.6.1 with a vanishing refinement schedule"
+
+[[node]]
+id = "lemma_10_6_1_of_geometric_refinement"
+source = "Conn–Gould–Toint, finite accuracy-refinement loop in Algorithm 10.6.1"

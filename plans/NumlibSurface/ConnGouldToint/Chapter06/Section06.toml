@@ -95,3 +95,7 @@ source = "Conn–Gould–Toint, Theorem 6.6.1 for the model (6.1.7) and scaled r
 [[node]]
 id = "exists_first_eigenTrial_of_small_length"
 source = "Conn–Gould–Toint, geometric backtrack estimates in Theorems 6.6.2 and 12.4.6"
+
+[[node]]
+id = "continuous_leastUnitCurvature"
+source = "Conn–Gould–Toint, continuous Hessian curvature used in Theorems 6.6.5 and 10.3.1"

@@ -809,7 +809,8 @@ theorem leastUnitCurvature_nonneg_iff [Nontrivial E] (H : E →L[ℝ] E →L[ℝ
   · intro h
     exact le_ciInf fun u ↦ h u
 
-private theorem continuous_leastUnitCurvature [Nontrivial E] :
+/-- Least unit curvature is continuous in the Hessian operator norm. -/
+theorem continuous_leastUnitCurvature [Nontrivial E] :
     Continuous (leastUnitCurvature (E := E)) := by
   have h : LipschitzWith 1 (leastUnitCurvature (E := E)) := by
     apply LipschitzWith.of_dist_le_mul

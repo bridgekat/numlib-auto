@@ -37,6 +37,41 @@ noncomputable def nonmonotoneRatio (S : Set ℕ) (f trial d : ℕ → ℝ) (r k 
   max ((f r - trial k) / ((∑ i ∈ Finset.Ico r k, acceptedDecrease S d i) + d k))
     ((f k - trial k) / d k)
 
+/-- The nonmonotone acceptance rule accounts for every accepted model
+decrease along the historical reference intervals. -/
+theorem accepted_predicted_sum_le (S : Set ℕ) (f trial d : ℕ → ℝ) (r : ℕ → ℕ)
+    {η : ℝ} (hr : ∀ k, r k ≤ k) (hd : ∀ k, 0 < d k)
+    (hs : ∀ k ∈ S, η ≤ nonmonotoneRatio S f trial d (r k) k)
+    (haccept : ∀ k ∈ S, f (k + 1) = trial k)
+    (hreject : ∀ k ∉ S, f (k + 1) = f k) (k : ℕ) :
+    η * (∑ i ∈ Finset.range (k + 1), acceptedDecrease S d i) ≤ f 0 - f (k + 1) := by
+  classical
+  have hpos (a j : ℕ) :
+      0 < (∑ i ∈ Finset.Ico a j, acceptedDecrease S d i) + d j := by
+    apply add_pos_of_nonneg_of_pos _ (hd j)
+    apply Finset.sum_nonneg
+    intro i _
+    by_cases hi : i ∈ S
+    · simpa [acceptedDecrease, hi] using (hd i).le
+    · simp [acceptedDecrease, hi]
+  have hstep (j : ℕ) : ∃ a ≤ j,
+      (∑ i ∈ Finset.Ico a (j + 1), η * acceptedDecrease S d i) ≤ f a - f (j + 1) := by
+    by_cases hj : j ∈ S
+    · have h := hs j hj
+      rw [nonmonotoneRatio, le_max_iff] at h
+      rcases h with hh | hc
+      · refine ⟨r j, hr j, ?_⟩
+        rw [← Finset.mul_sum, Finset.sum_Ico_succ_top (hr j), acceptedDecrease,
+          ite_eq_left hj, haccept j hj]
+        exact (le_div_iff₀ (hpos (r j) j)).mp hh
+      · refine ⟨j, le_rfl, ?_⟩
+        simpa [Nat.Ico_succ_singleton, acceptedDecrease, hj, haccept j hj] using
+          (le_div_iff₀ (hd j)).mp hc
+    · refine ⟨j, le_rfl, ?_⟩
+      simp [Nat.Ico_succ_singleton, acceptedDecrease, hj, hreject j hj]
+  have h := Optimization.reference_decrease_sum f (fun i ↦ η * acceptedDecrease S d i) hstep (k + 1)
+  rwa [← Finset.mul_sum] at h
+
 /-- Lemma 10.1.1. Under the model decrease condition AA.1, the nonmonotone
 acceptance rule yields a bound on the sum of decreases over successful iterations.
 Here `f` and `trial` are the objective values at the iterates and trial points,
@@ -50,42 +85,15 @@ theorem lemma_10_1_1 (S : Set ℕ) (f trial d g β Δ : ℕ → ℝ) (r : ℕ �
     η * κ * (∑ i ∈ Finset.range (k + 1),
       acceptedDecrease S (fun j ↦ g j * min (g j / β j) (Δ j)) i) ≤ f 0 - f (k + 1) := by
   classical
-  let c (i : ℕ) := acceptedDecrease S (fun j ↦ g j * min (g j / β j) (Δ j)) i
-  have hcost (i : ℕ) : κ * c i ≤ acceptedDecrease S d i := by
+  have hcost (i : ℕ) :
+      κ * acceptedDecrease S (fun j ↦ g j * min (g j / β j) (Δ j)) i ≤
+        acceptedDecrease S d i := by
     by_cases hi : i ∈ S
-    · simpa [c, acceptedDecrease, hi] using haa i
-    · simp [c, acceptedDecrease, hi]
-  have hpos (a j : ℕ) :
-      0 < (∑ i ∈ Finset.Ico a j, acceptedDecrease S d i) + d j := by
-    apply add_pos_of_nonneg_of_pos _ (hd j)
-    apply Finset.sum_nonneg
-    intro i _
-    by_cases hi : i ∈ S
-    · simpa [acceptedDecrease, hi] using (hd i).le
+    · simpa [acceptedDecrease, hi] using haa i
     · simp [acceptedDecrease, hi]
-  have hsum (a j : ℕ) :
-      (∑ i ∈ Finset.Ico a j, η * κ * c i) ≤
-        η * (∑ i ∈ Finset.Ico a j, acceptedDecrease S d i) := by
-    rw [Finset.mul_sum]
-    exact Finset.sum_le_sum fun i _ ↦ by
-      rw [mul_assoc]
-      exact mul_le_mul_of_nonneg_left (hcost i) hη.le
-  have hstep (j : ℕ) : ∃ a ≤ j,
-      (∑ i ∈ Finset.Ico a (j + 1), η * κ * c i) ≤ f a - f (j + 1) := by
-    by_cases hj : j ∈ S
-    · have h := hs j hj
-      rw [nonmonotoneRatio, le_max_iff] at h
-      rcases h with hh | hc
-      · refine ⟨r j, hr j, (hsum (r j) (j + 1)).trans ?_⟩
-        rw [Finset.sum_Ico_succ_top (hr j), acceptedDecrease, ite_eq_left hj, haccept j hj]
-        exact (le_div_iff₀ (hpos (r j) j)).1 hh
-      · refine ⟨j, le_rfl, (hsum j (j + 1)).trans ?_⟩
-        simpa [Nat.Ico_succ_singleton, acceptedDecrease, hj, haccept j hj] using
-          (le_div_iff₀ (hd j)).1 hc
-    · refine ⟨j, le_rfl, ?_⟩
-      simp [Nat.Ico_succ_singleton, c, acceptedDecrease, hj, hreject j hj]
-  have h := Optimization.reference_decrease_sum f (fun i ↦ η * κ * c i) hstep (k + 1)
-  rwa [← Finset.mul_sum] at h
+  rw [mul_assoc, Finset.mul_sum]
+  exact (mul_le_mul_of_nonneg_left (Finset.sum_le_sum (fun i _ ↦ hcost i)) hη.le).trans
+    (accepted_predicted_sum_le S f trial d r hr hd hs haccept hreject k)
 
 open Chapter06 in
 /-- Theorem 10.1.2. The nonmonotone ratio dominates the current reduction ratio,

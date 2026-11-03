@@ -1,0 +1,49 @@
+namespace = "ConnGouldToint.Chapter11"
+
+[[node]]
+id = "clipResidualPlus"
+source = "Conn–Gould–Toint, (11.4.1)–(11.4.2)"
+
+[[node]]
+id = "MonotoneResidualSeminorm"
+source = "Conn–Gould–Toint, monotonicity condition (11.4.2)–(11.4.5)"
+
+[[node]]
+id = "residualPlus"
+source = "Conn–Gould–Toint, (11.4.2)"
+
+[[node]]
+id = "residualMinus"
+source = "Conn–Gould–Toint, (11.4.3)"
+
+[[node]]
+id = "residualDualBall"
+source = "Conn–Gould–Toint, dual unit ball in (11.4.5)"
+
+[[node]]
+id = "theorem_11_4_1"
+source = "Conn–Gould–Toint, Theorem 11.4.1"
+
+[[node]]
+id = "corollary_11_4_2"
+source = "Conn–Gould–Toint, Corollary 11.4.2"
+
+[[node]]
+id = "polyhedralResidual"
+source = "Conn–Gould–Toint, (11.4.4)"
+
+[[node]]
+id = "polyhedralActiveSet"
+source = "Conn–Gould–Toint, active affine terms in (11.4.13)"
+
+[[node]]
+id = "theorem_11_4_3"
+source = "Conn–Gould–Toint, Theorem 11.4.3"
+
+[[node]]
+id = "residualPlus_dualNorm_eq_one"
+source = "Conn–Gould–Toint, dual norm attainment in Theorem 11.4.1"
+
+[[node]]
+id = "residualMinus_dualNorm_eq_one"
+source = "Conn–Gould–Toint, dual norm attainment in Corollary 11.4.2"
