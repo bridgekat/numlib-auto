@@ -129,7 +129,9 @@ theorem leastSquaresMultiplier_isMinOn {A : G →L[ℝ] F}
   rw [norm_add_sq_real, horth, mul_zero, add_zero]
   exact le_add_of_nonneg_right (sq_nonneg _)
 
-private theorem leastSquaresMultiplier_contDiffAt {A : G → G →L[ℝ] F} {g : G → G} {x : G}
+/-- The least-squares multiplier is continuously differentiable near a point
+where the constraint Gram operator is invertible. -/
+theorem leastSquaresMultiplier_contDiffAt {A : G → G →L[ℝ] F} {g : G → G} {x : G}
     (hA : ContDiffAt ℝ 1 A x) (hg : ContDiffAt ℝ 1 g x)
     (hu : IsUnit (multiplierGram (A x))) :
     ContDiffAt ℝ 1 (fun z ↦ leastSquaresMultiplier (A z) (g z)) x := by
@@ -406,7 +408,8 @@ private theorem hasFDerivAt_penaltyKKTResidual {f : G → ℝ} {c : G → F}
       (hc.differentiable (by norm_num) x) y
   simpa only [penaltyKKTJacobian, hg] using hh
 
-private theorem surjective_of_penaltyKKTJacobian_isUnit {f : G → ℝ} {c : G → F}
+/-- A nonsingular equality KKT Jacobian has a surjective constraint block. -/
+theorem surjective_of_penaltyKKTJacobian_isUnit {f : G → ℝ} {c : G → F}
     {z : G × F} (hK : IsUnit (penaltyKKTJacobian f c z)) :
     Function.Surjective (fderiv ℝ c z.1) := by
   intro b

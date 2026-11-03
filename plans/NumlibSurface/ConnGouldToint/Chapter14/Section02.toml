@@ -83,3 +83,11 @@ source = "Conn–Gould–Toint, quantitative form of Lemma 14.2.2(iv)"
 [[node]]
 id = "gradient_lagrangian_eq"
 source = "Conn–Gould–Toint, fixed-multiplier Lagrangian gradient"
+
+[[node]]
+id = "surjective_of_penaltyKKTJacobian_isUnit"
+source = "Conn–Gould–Toint, implication of AO.3b for the constraint block of (14.2.28)"
+
+[[node]]
+id = "leastSquaresMultiplier_contDiffAt"
+source = "Conn–Gould–Toint, differentiability of the estimate in (14.2.8) under AW.1"

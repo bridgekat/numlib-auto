@@ -1,0 +1,53 @@
+namespace = "ConnGouldToint.Chapter14"
+
+[[node]]
+id = "AugmentedLagrangianRun"
+source = "Conn–Gould–Toint, Algorithms 14.4.1 and 14.4.3, shared run data and (14.4.4)–(14.4.6)"
+
+[[node]]
+id = "AugmentedLagrangianRun.IsBasic"
+source = "Conn–Gould–Toint, Algorithm 14.4.1, (14.4.7)–(14.4.9)"
+
+[[node]]
+id = "AugmentedLagrangianRun.IsAlternative"
+source = "Conn–Gould–Toint, Algorithm 14.4.3 and (14.4.28)–(14.4.29)"
+
+[[node]]
+id = "AugmentedLagrangianRun.HasToleranceUpdates"
+source = "Conn–Gould–Toint, Algorithm 14.4.2"
+
+[[node]]
+id = "AugmentedLagrangianRun.HasReductionBudget"
+source = "Conn–Gould–Toint, AA.9"
+
+[[node]]
+id = "AugmentedLagrangianRun.EventuallyKeepsPenalty"
+source = "Conn–Gould–Toint, AA.10"
+
+[[node]]
+id = "lemma_14_4_1"
+source = "Conn–Gould–Toint, Lemma 14.4.1"
+
+[[node]]
+id = "theorem_14_4_2"
+source = "Conn–Gould–Toint, Theorem 14.4.2 with the AA.9 premise used in its proof"
+
+[[node]]
+id = "lemma_14_4_4"
+source = "Conn–Gould–Toint, Lemma 14.4.4"
+
+[[node]]
+id = "theorem_14_4_5"
+source = "Conn–Gould–Toint, Theorem 14.4.5"
+
+[[node]]
+id = "corollary_14_4_6"
+source = "Conn–Gould–Toint, Corollary 14.4.6 and (14.4.32)–(14.4.33)"
+
+[[node]]
+id = "theorem_14_4_3"
+source = "Conn–Gould–Toint, Theorem 14.4.3"
+
+[[node]]
+id = "theorem_14_4_7"
+source = "Conn–Gould–Toint, Theorem 14.4.7"

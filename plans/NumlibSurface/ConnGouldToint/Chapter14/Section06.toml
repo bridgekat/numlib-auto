@@ -1,0 +1,25 @@
+namespace = "ConnGouldToint.Chapter14"
+
+[[node]]
+id = "smoothExactPenalty"
+source = "Conn–Gould–Toint, (14.6.2), smooth least-squares multiplier penalty"
+
+[[node]]
+id = "theorem_14_6_1_quadratic_test"
+source = "Conn–Gould–Toint, Theorem 14.6.1, positive-definiteness equivalence at the feasible Hessian"
+
+[[node]]
+id = "fderiv_smoothExactPenalty_at_feasible"
+source = "Conn–Gould–Toint, (14.6.6)"
+
+[[node]]
+id = "fderiv_gradient_smoothExactPenalty_at_feasible"
+source = "Conn–Gould–Toint, (14.6.4) at a feasible point"
+
+[[node]]
+id = "theorem_14_6_1"
+source = "Conn–Gould–Toint, Theorem 14.6.1"
+
+[[node]]
+id = "gradient_smoothExactPenalty_eq"
+source = "Conn–Gould–Toint, (14.6.3)"

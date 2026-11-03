@@ -1,0 +1,21 @@
+namespace = "ConnGouldToint.Chapter14"
+
+[[node]]
+id = "nonsmoothExactPenalty"
+source = "Conn–Gould–Toint, (14.5.1), distance to the feasible residual set"
+
+[[node]]
+id = "theorem_14_5_1"
+source = "Conn–Gould–Toint, corrected Theorem 14.5.1, strict-parameter second-order equivalence"
+
+[[node]]
+id = "theorem_14_5_1_threshold_counterexample"
+source = "Conn–Gould–Toint, counterexample to Theorem 14.5.1 at the nonstrict threshold (14.5.2)"
+
+[[node]]
+id = "theorem_14_5_2"
+source = "Conn–Gould–Toint, corrected Theorem 14.5.2 with surjective constraint derivative"
+
+[[node]]
+id = "theorem_14_5_2_redundant_constraint_counterexample"
+source = "Conn–Gould–Toint, counterexample to Theorem 14.5.2 with a nonunique multiplier"
