@@ -1,0 +1,17 @@
+namespace = "ConnGouldToint.Chapter13"
+
+[[node]]
+id = "logBarrierObjective"
+source = "Conn–Gould–Toint, (13.1.1)"
+
+[[node]]
+id = "logBarrier"
+source = "Conn–Gould–Toint, (13.1.2)"
+
+[[node]]
+id = "logBarrier_boundary_divergence"
+source = "Conn–Gould–Toint, corrected AC.8 for the logarithmic barrier"
+
+[[node]]
+id = "logBarrier_unbounded_boundary_counterexample"
+source = "Conn–Gould–Toint, counterexample to the claim that (13.1.2) satisfies AC.8"

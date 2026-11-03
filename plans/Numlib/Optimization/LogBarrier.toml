@@ -1,0 +1,13 @@
+namespace = "Optimization"
+
+[[node]]
+id = "logBarrier"
+
+[[node]]
+id = "nonnegativeOrthant"
+
+[[node]]
+id = "mem_frontier_nonnegativeOrthant"
+
+[[node]]
+id = "tendsto_logBarrier_of_bounded_of_infDist_frontier"

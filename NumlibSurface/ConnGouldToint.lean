@@ -9,6 +9,7 @@ import NumlibSurface.ConnGouldToint.Chapter09
 import NumlibSurface.ConnGouldToint.Chapter10
 import NumlibSurface.ConnGouldToint.Chapter11
 import NumlibSurface.ConnGouldToint.Chapter12
+import NumlibSurface.ConnGouldToint.Chapter13
 import NumlibSurface.ConnGouldToint.Chapter14
 import NumlibSurface.ConnGouldToint.Chapter16
 
@@ -65,6 +66,9 @@ model estimate near a nonstationary point.
 Section 12.1 covers box projection, the projected-gradient path, and the criticality measure.
 In (12.1.3), the radial formula applies outside the closed ball. Points inside project to
 themselves.
+
+Chapter 13 covers the logarithmic barrier. AC.8 holds for uniformly bounded positive paths.
+On an unbounded approach to the boundary, a growing coordinate can cancel a vanishing one.
 
 Chapter 14 covers the quadratic penalty and first-order multiplier estimate. In (14.2.3),
 both derivatives in the stationarity condition are evaluated at the feasible point.
