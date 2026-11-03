@@ -88,6 +88,8 @@ On an unbounded approach to the boundary, a growing coordinate can cancel a vani
 The log-barrier Hessian is diagonal and uniformly bounded away from the boundary.
 The quadratic model uses the exact second-order Taylor data.
 Section 13.12 covers first-order and weak second-order stationarity under affine scaling.
+The corrected Cauchy decrease in Theorem 13.12.3 includes a fraction-to-boundary cap.
+A one-dimensional example violates the printed bound for every positive criticality cap.
 
 
 

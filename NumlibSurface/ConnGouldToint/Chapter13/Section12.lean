@@ -1,3 +1,5 @@
+import Mathlib.Analysis.InnerProductSpace.PiL2
+import Numlib.Optimization.LogBarrier
 import Mathlib.LinearAlgebra.Matrix.PosDef
 import Mathlib.Analysis.Real.Sqrt
 import Mathlib.Tactic.Ring
@@ -11,7 +13,7 @@ represented by their Euclidean coordinates. The scaled correction is the positiv
 gradient diagonal, which is defined even where the scaling matrix is singular.
 -/
 
-open Matrix
+open Matrix Metric
 open scoped BigOperators
 
 namespace ConnGouldToint.Chapter13
@@ -303,6 +305,326 @@ theorem theorem_13_12_2 {x g : ι → ℝ} (hx : ∀ i, 0 ≤ x i) {H : Matrix �
       rw [scale_apply_of_firstOrder hx hg, hi, Real.sqrt_zero, zero_mul]
     · exact Finset.sum_nonneg fun i _ ↦ mul_nonneg (le_max_right _ _) (sq_nonneg _)
 
+/-- The Euclidean norm of the scaled gradient. -/
+noncomputable def scaledGradientNorm (x g : ι → ℝ) : ℝ :=
+  ‖WithLp.toLp 2 (scaledGradient x g)‖
+
+/-- Euclidean distance to the frontier of the nonnegative orthant,
+with the vectors written in their coordinates. -/
+noncomputable def orthantBoundaryDistance (x : ι → ℝ) : ℝ :=
+  sInf ((fun y : ι → ℝ ↦ ‖WithLp.toLp 2 (x - y)‖) ''
+    frontier (Optimization.nonnegativeOrthant ι))
+
+omit [DecidableEq ι] in
+private theorem orthantBoundaryDistance_le_coordinate {x : ι → ℝ}
+    (hx : ∀ i, 0 < x i) (i : ι) : orthantBoundaryDistance x ≤ x i := by
+  classical
+  let y := Function.update x i 0
+  have hy : y ∈ frontier (Optimization.nonnegativeOrthant ι) := by
+    refine Optimization.mem_frontier_nonnegativeOrthant.mpr ⟨fun j ↦ ?_, i, by simp [y]⟩
+    by_cases h : j = i
+    · simp [y, h]
+    · simpa [y, Function.update_of_ne h] using (hx j).le
+  have hb : BddBelow ((fun z : ι → ℝ ↦ ‖WithLp.toLp 2 (x - z)‖) ''
+      frontier (Optimization.nonnegativeOrthant ι)) :=
+    ⟨0, by rintro _ ⟨z, _, rfl⟩; exact norm_nonneg _⟩
+  have hsq : ‖WithLp.toLp 2 (x - y)‖ ^ 2 = (x i) ^ 2 := by
+    rw [EuclideanSpace.real_norm_sq_eq, Finset.sum_eq_single i]
+    · simp [y]
+    · intro j _ hj
+      simp [y, Function.update_of_ne hj]
+    · simp
+  have hn := (sq_le_sq₀ (norm_nonneg _) (hx i).le).mp hsq.le
+  exact (csInf_le hb ⟨y, hy, rfl⟩).trans hn
+
+/-- The feasible times on the scaled Cauchy ray, as printed in (13.12.11).
+At an interior point the scaled norm of the original ray direction is
+the Euclidean norm of the scaled gradient. -/
+def scaledCauchyTimes (x g : ι → ℝ) (Δ σ : ℝ) : Set ℝ :=
+  {t | 0 ≤ t ∧ t * scaledGradientNorm x g ≤ Δ ∧
+    σ * orthantBoundaryDistance x ≤
+      orthantBoundaryDistance (x - t • ((scalingMatrix x g * scalingMatrix x g) *ᵥ g))}
+
+/-- A minimizing feasible time along the constrained scaled Cauchy ray. -/
+def IsScaledCauchyTime (c : ℝ) (x g : ι → ℝ) (H : Matrix ι ι ℝ) (Δ σ tC : ℝ) : Prop :=
+  tC ∈ scaledCauchyTimes x g Δ σ ∧
+    IsMinOn (fun t : ℝ ↦ unscaledModel c x g H
+      ((-t) • ((scalingMatrix x g * scalingMatrix x g) *ᵥ g)))
+      (scaledCauchyTimes x g Δ σ) tC
+
+private theorem scaledGradientNorm_sq (x g : ι → ℝ) :
+    scaledGradientNorm x g ^ 2 = scaledGradient x g ⬝ᵥ scaledGradient x g := by
+  rw [scaledGradientNorm, EuclideanSpace.real_norm_sq_eq]
+  unfold dotProduct
+  simp only [pow_two]
+
+/-- The model along the scaled Cauchy ray. The curvature is that of the
+corrected scaled model, including the positive gradient diagonal. -/
+theorem unscaledModel_along_scaledRay (c : ℝ) {x g : ι → ℝ} (hx : ∀ i, 0 < x i)
+    (H : Matrix ι ι ℝ) (t : ℝ) :
+    unscaledModel c x g H ((-t) • ((scalingMatrix x g * scalingMatrix x g) *ᵥ g)) =
+      c - t * scaledGradientNorm x g ^ 2 +
+        (1 / 2) * t ^ 2 * (scaledGradient x g ⬝ᵥ (scaledHessian x g H *ᵥ scaledGradient x g)) := by
+  have hscale : scalingMatrix x g *ᵥ ((-t) • scaledGradient x g) =
+      (-t) • ((scalingMatrix x g * scalingMatrix x g) *ᵥ g) := by
+    rw [Matrix.mulVec_smul, scaledGradient, Matrix.mulVec_mulVec]
+  rw [← hscale, ← scaledModel_eq_unscaledModel c hx, scaledModel, affineQuadraticModel]
+  simp only [Matrix.mulVec_smul, dotProduct_smul, smul_dotProduct, smul_eq_mul,
+    ← scaledGradientNorm_sq]
+  ring
+
+private theorem scaledCauchyTimes_of_cap [Nonempty ι] {x g : ι → ℝ}
+    (hx : ∀ i, 0 < x i) {Δ σ t κ : ℝ} (hσ₀ : 0 < σ) (hσ : σ ≤ 1)
+    (hκ : 0 < κ) (hg : ∀ i, g i ≤ κ) (ht : 0 ≤ t)
+    (hΔ : t * scaledGradientNorm x g ≤ Δ) (hcap : t ≤ (1 - σ) / κ) :
+    t ∈ scaledCauchyTimes x g Δ σ := by
+  refine ⟨ht, hΔ, ?_⟩
+  let C := Optimization.nonnegativeOrthant ι
+  let y := x - t • ((scalingMatrix x g * scalingMatrix x g) *ᵥ g)
+  change σ * orthantBoundaryDistance x ≤ orthantBoundaryDistance y
+  obtain ⟨i⟩ := ‹Nonempty ι›
+  have hfront : (frontier C).Nonempty :=
+    ⟨0, Optimization.mem_frontier_nonnegativeOrthant.mpr ⟨fun _ ↦ le_rfl, i, rfl⟩⟩
+  apply le_csInf (hfront.image (fun z : ι → ℝ ↦ ‖WithLp.toLp 2 (y - z)‖))
+  rintro _ ⟨z, hz, rfl⟩
+  obtain ⟨_, j, hj⟩ := Optimization.mem_frontier_nonnegativeOrthant.mp hz
+  have hjlow : σ * x j ≤ y j :=
+    scaledRay_coordinate_lower_bound (fun i ↦ (hx i).le) ht hσ hκ hg hcap j
+  have hypos := (mul_pos hσ₀ (hx j)).trans_le hjlow
+  calc
+    σ * orthantBoundaryDistance x ≤ σ * x j :=
+      mul_le_mul_of_nonneg_left (orthantBoundaryDistance_le_coordinate hx j) hσ₀.le
+    _ ≤ y j := hjlow
+    _ = ‖(WithLp.toLp 2 (y - z) : EuclideanSpace ℝ ι) j‖ := by
+      simp [hj, Real.norm_eq_abs, abs_of_pos hypos]
+    _ ≤ ‖WithLp.toLp 2 (y - z)‖ := PiLp.norm_apply_le _ _
+
+/-- Corrected Theorem 13.12.3. The fraction-to-boundary cap controls the ray
+parameter, so it enters the minimum in the step-length bound before multiplying
+by the squared scaled gradient norm. The curvature hypothesis is the upper
+bound along the ray supplied by (8.1.22). -/
+theorem theorem_13_12_3 [Nonempty ι] (c : ℝ) {x g : ι → ℝ} (hx : ∀ i, 0 < x i)
+    (H : Matrix ι ι ℝ) {Δ σ κ β tC : ℝ} (hΔ : 0 ≤ Δ) (hσ₀ : 0 < σ) (hσ : σ < 1)
+    (hκ : 0 < κ) (hg : ∀ i, g i ≤ κ) (hβ : 0 < β)
+    (hcurv : scaledGradient x g ⬝ᵥ (scaledHessian x g H *ᵥ scaledGradient x g) ≤
+      β * scaledGradientNorm x g ^ 2)
+    (hmin : IsScaledCauchyTime c x g H Δ σ tC) :
+    (1 / 2) * scaledGradientNorm x g ^ 2 *
+      min (1 / β) (min (Δ / scaledGradientNorm x g) ((1 - σ) / κ)) ≤
+      c - unscaledModel c x g H ((-tC) • ((scalingMatrix x g * scalingMatrix x g) *ᵥ g)) := by
+  let n := scaledGradientNorm x g
+  let t := min (1 / β) (min (Δ / n) ((1 - σ) / κ))
+  have hn : 0 ≤ n := norm_nonneg _
+  have ht : 0 ≤ t := le_min (div_nonneg zero_le_one hβ.le)
+    (le_min (div_nonneg hΔ hn) (div_nonneg (sub_nonneg.mpr hσ.le) hκ.le))
+  have htβ : t * β ≤ 1 := (le_div_iff₀ hβ).mp (min_le_left _ _)
+  have htΔ : t * n ≤ Δ := by
+    rcases hn.eq_or_lt with hn₀ | hn'
+    · simpa [← hn₀] using hΔ
+    · exact (le_div_iff₀ hn').mp ((min_le_right _ _).trans (min_le_left _ _))
+  have hcap : t ≤ (1 - σ) / κ := (min_le_right _ _).trans (min_le_right _ _)
+  have hfeas := scaledCauchyTimes_of_cap hx hσ₀ hσ.le hκ hg ht htΔ hcap
+  have hcmp := isMinOn_iff.mp hmin.2 t hfeas
+  change unscaledModel c x g H ((-tC) • ((scalingMatrix x g * scalingMatrix x g) *ᵥ g)) ≤
+    unscaledModel c x g H ((-t) • ((scalingMatrix x g * scalingMatrix x g) *ᵥ g)) at hcmp
+  rw [unscaledModel_along_scaledRay c hx H t] at hcmp
+  have hq : t ^ 2 * (scaledGradient x g ⬝ᵥ (scaledHessian x g H *ᵥ scaledGradient x g)) ≤
+      t * n ^ 2 := calc
+    _ ≤ t ^ 2 * (β * n ^ 2) := mul_le_mul_of_nonneg_left hcurv (sq_nonneg t)
+    _ = (t * β) * (t * n ^ 2) := by ring
+    _ ≤ 1 * (t * n ^ 2) := mul_le_mul_of_nonneg_right htβ (mul_nonneg ht (sq_nonneg _))
+    _ = _ := one_mul _
+  change (1 / 2) * n ^ 2 * t ≤ _
+  change _ ≤ c - t * n ^ 2 +
+    (1 / 2) * t ^ 2 * (scaledGradient x g ⬝ᵥ (scaledHessian x g H *ᵥ scaledGradient x g)) at hcmp
+  nlinarith only [hcmp, hq]
+
 end Finite
+
+/-! ### Counterexample to the literal Cauchy bound -/
+
+/-- In one dimension, with unit gradient and zero objective-model Hessian,
+the corrected unscaled model at a positive base point has curvature `1/x`. -/
+noncomputable def scalarColemanLiModel (x s : ℝ) : ℝ :=
+  s + (1 / 2) * (1 / x) * s ^ 2
+
+/-- The scalar example is the original-coordinate Coleman–Li model for
+a unit gradient and zero objective-model Hessian. -/
+theorem scalarColemanLiModel_eq_unscaledModel {x : ℝ} (hx : 0 < x) (s : ℝ) :
+    scalarColemanLiModel x s =
+      unscaledModel 0 (fun _ : Fin 1 ↦ x) (fun _ ↦ 1) 0 (fun _ ↦ s) := by
+  simp [scalarColemanLiModel, unscaledModel, affineQuadraticModel, unscaledCorrection,
+    scalingVector, abs_of_pos hx, dotProduct, Matrix.mulVec_diagonal]
+  ring
+
+/-- The scaled gradient in the scalar example has Euclidean norm `√x`. -/
+theorem scalarColemanLiGradientNorm {x : ℝ} (hx : 0 < x) :
+    scaledGradientNorm (fun _ : Fin 1 ↦ x) (fun _ ↦ 1) = Real.sqrt x := by
+  have h : scaledGradient (fun _ : Fin 1 ↦ x) (fun _ ↦ 1) = fun _ ↦ Real.sqrt x := by
+    funext i
+    simp [scaledGradient, scalingMatrix, Matrix.mulVec_diagonal, scalingVector, abs_of_pos hx]
+  rw [scaledGradientNorm, h, EuclideanSpace.norm_eq]
+  simp
+
+/-- The scaled norm of the scalar ray direction is the square root of the
+positive base point. -/
+theorem scalarColemanLiRayNorm {x : ℝ} (hx : 0 < x) :
+    |x / Real.sqrt x| = Real.sqrt x := by
+  have hs := Real.sqrt_pos.mpr hx
+  rw [abs_of_nonneg (div_nonneg hx.le hs.le), div_eq_iff hs.ne']
+  nlinarith [Real.sq_sqrt hx.le]
+
+/-- The printed curvature bound (8.1.22) is two in this example: the
+scaled correction has scalar curvature one. -/
+theorem scalarColemanLiCurvature {x : ℝ} (hx : 0 < x) :
+    1 + |Real.sqrt x * (1 / x) * Real.sqrt x| = 2 := by
+  have h : Real.sqrt x * (1 / x) * Real.sqrt x = 1 := by
+    field_simp [hx.ne']
+    rw [Real.sq_sqrt hx.le]
+  rw [h, abs_one]
+  norm_num
+
+/-- The fraction-to-boundary condition from (13.12.11) in one dimension.
+The boundary of the nonnegative half-line is the singleton zero. -/
+def scalarColemanLiTimes (x : ℝ) : Set ℝ :=
+  {t | 0 ≤ t ∧ t * Real.sqrt x ≤ 1 ∧
+    (9 / 10) * infDist x (frontier (Set.Ici (0 : ℝ))) ≤
+      infDist (x - t * x) (frontier (Set.Ici (0 : ℝ)))}
+
+private theorem scalarColemanLiTimes_iff {x t : ℝ} (hx : 0 < x) :
+    t ∈ scalarColemanLiTimes x ↔
+      0 ≤ t ∧ t * Real.sqrt x ≤ 1 ∧ (9 / 10 : ℝ) ≤ |1 - t| := by
+  change (0 ≤ t ∧ t * Real.sqrt x ≤ 1 ∧
+    (9 / 10) * infDist x (frontier (Set.Ici (0 : ℝ))) ≤
+      infDist (x - t * x) (frontier (Set.Ici (0 : ℝ)))) ↔ _
+  rw [frontier_Ici, infDist_singleton, infDist_singleton, Real.dist_eq, Real.dist_eq,
+    sub_zero, sub_zero, abs_of_pos hx, show x - t * x = (1 - t) * x by ring,
+    abs_mul, abs_of_pos hx, mul_le_mul_iff_of_pos_right hx]
+
+private theorem orthantBoundaryDistance_fin_one (x : ℝ) :
+    orthantBoundaryDistance (fun _ : Fin 1 ↦ x) = |x| := by
+  have hfront : frontier (Optimization.nonnegativeOrthant (Fin 1)) = {0} := by
+    ext z
+    simp only [Optimization.mem_frontier_nonnegativeOrthant, Set.mem_singleton_iff]
+    constructor
+    · rintro ⟨_, i, hi⟩
+      funext j
+      rw [Subsingleton.elim j i, hi, Pi.zero_apply]
+    · rintro rfl
+      exact ⟨fun _ ↦ le_rfl, 0, rfl⟩
+  rw [orthantBoundaryDistance, hfront, Set.image_singleton, csInf_singleton,
+    EuclideanSpace.norm_eq]
+  simp [Real.norm_eq_abs, Real.sqrt_sq_eq_abs]
+
+private theorem scaledResidual_fin_one {x : ℝ} (hx : 0 < x) :
+    (scalingMatrix (fun _ : Fin 1 ↦ x) (fun _ ↦ 1) *
+      scalingMatrix (fun _ : Fin 1 ↦ x) (fun _ ↦ 1)) *ᵥ (fun _ ↦ 1) =
+    fun _ ↦ x := by
+  funext i
+  rw [scaledResidual_apply]
+  norm_num [abs_of_pos hx]
+
+/-- The scalar feasible times are exactly the times of (13.12.11) for the
+one-coordinate matrix model at radius one and boundary fraction nine tenths. -/
+theorem scalarColemanLiTimes_eq_scaledCauchyTimes {x : ℝ} (hx : 0 < x) :
+    scalarColemanLiTimes x =
+      scaledCauchyTimes (fun _ : Fin 1 ↦ x) (fun _ ↦ 1) 1 (9 / 10) := by
+  ext t
+  change (0 ≤ t ∧ t * Real.sqrt x ≤ 1 ∧
+    (9 / 10) * infDist x (frontier (Set.Ici (0 : ℝ))) ≤
+      infDist (x - t * x) (frontier (Set.Ici (0 : ℝ)))) ↔
+    (0 ≤ t ∧ t * scaledGradientNorm (fun _ : Fin 1 ↦ x) (fun _ ↦ 1) ≤ 1 ∧
+      (9 / 10) * orthantBoundaryDistance (fun _ : Fin 1 ↦ x) ≤
+        orthantBoundaryDistance ((fun _ : Fin 1 ↦ x) - t •
+          ((scalingMatrix (fun _ : Fin 1 ↦ x) (fun _ ↦ 1) *
+            scalingMatrix (fun _ : Fin 1 ↦ x) (fun _ ↦ 1)) *ᵥ (fun _ ↦ 1))))
+  rw [scaledResidual_fin_one hx, scalarColemanLiGradientNorm hx]
+  have hvec : ((fun _ : Fin 1 ↦ x) - t • (fun _ : Fin 1 ↦ x)) =
+      fun _ ↦ x - t * x := by
+    funext i
+    rfl
+  rw [hvec, orthantBoundaryDistance_fin_one, orthantBoundaryDistance_fin_one, frontier_Ici,
+    infDist_singleton, infDist_singleton, Real.dist_eq, Real.dist_eq, sub_zero, sub_zero]
+
+private theorem scalarColemanLiModel_onRay {x : ℝ} (hx : 0 < x) (t : ℝ) :
+    scalarColemanLiModel x (-t * x) = -(x * (t - t ^ 2 / 2)) := by
+  unfold scalarColemanLiModel
+  field_simp [hx.ne']
+  ring
+
+/-- For any proposed positive criticality cap in the literal Theorem 13.12.3,
+there is a strictly interior scalar base point with a constrained scaled
+Cauchy minimizer that violates the claimed decrease. The trust-region radius
+and upper gradient bound are both one, and the boundary fraction is nine tenths. -/
+theorem theorem_13_12_3_counterexample (κmsd : ℝ) (hκ : 0 < κmsd) :
+    ∃ x t : ℝ, 0 < x ∧ t ∈ scalarColemanLiTimes x ∧ 0 < x - t * x ∧
+      IsMinOn (fun u ↦ scalarColemanLiModel x (-u * x)) (scalarColemanLiTimes x) t ∧
+      scalarColemanLiModel x 0 - scalarColemanLiModel x (-t * x) <
+        (1 / 2) * min (Real.sqrt x) κmsd * min (min (Real.sqrt x) κmsd / 2) 1 := by
+  let a := min 1 κmsd
+  have ha : 0 < a := lt_min zero_lt_one hκ
+  let x := a ^ 2
+  have hx : 0 < x := pow_pos ha _
+  have hsqrt : Real.sqrt x = a := Real.sqrt_sq ha.le
+  have ha₁ : a ≤ 1 := min_le_left _ _
+  have haκ : a ≤ κmsd := min_le_right _ _
+  refine ⟨x, 1 / 10, hx, ?_, by linarith, ?_, ?_⟩
+  · rw [scalarColemanLiTimes_iff hx, hsqrt]
+    norm_num
+    linarith
+  · apply isMinOn_iff.mpr
+    intro u hu
+    rw [scalarColemanLiModel_onRay hx, scalarColemanLiModel_onRay hx]
+    have hd := ((scalarColemanLiTimes_iff hx).mp hu).2.2
+    have hs : (9 / 10 : ℝ) ^ 2 ≤ (1 - u) ^ 2 := by
+      rw [← sq_abs (1 - u)]
+      exact pow_le_pow_left₀ (by norm_num) hd _
+    have hb : u - u ^ 2 / 2 ≤ 19 / 200 := by nlinarith
+    have hc := mul_le_mul_of_nonneg_left hb hx.le
+    nlinarith only [hc]
+  · rw [scalarColemanLiModel_onRay hx, hsqrt, min_eq_left haκ,
+      min_eq_left (show a / 2 ≤ 1 by linarith)]
+    simp only [scalarColemanLiModel, zero_pow (by norm_num : 2 ≠ 0), mul_zero, add_zero, zero_sub,
+      neg_neg]
+    dsimp [x] at hx ⊢
+    nlinarith only [hx]
+
+/-- The counterexample in the matrix notation of (13.12.7)–(13.12.11).
+Here `xv` is strictly positive, `gv` is the unit gradient, and the uncorrected
+objective-model Hessian is zero. The curvature bound is two by
+`scalarColemanLiCurvature`. -/
+theorem theorem_13_12_3_matrix_counterexample (κmsd : ℝ) (hκ : 0 < κmsd) :
+    ∃ x t : ℝ, 0 < x ∧
+      let xv : Fin 1 → ℝ := fun _ ↦ x
+      let gv : Fin 1 → ℝ := fun _ ↦ 1
+      let π := min (scaledGradientNorm xv gv) κmsd
+      IsScaledCauchyTime 0 xv gv 0 1 (9 / 10) t ∧
+        unscaledModel 0 xv gv 0 0 -
+          unscaledModel 0 xv gv 0 ((-t) • ((scalingMatrix xv gv * scalingMatrix xv gv) *ᵥ gv)) <
+        (1 / 2) * π * min (π / 2) 1 := by
+  obtain ⟨x, t, hx, ht, _, hm, hlt⟩ := theorem_13_12_3_counterexample κmsd hκ
+  let xv : Fin 1 → ℝ := fun _ ↦ x
+  let gv : Fin 1 → ℝ := fun _ ↦ 1
+  have hray (u : ℝ) : unscaledModel 0 xv gv 0
+      ((-u) • ((scalingMatrix xv gv * scalingMatrix xv gv) *ᵥ gv)) =
+        scalarColemanLiModel x (-u * x) := by
+    rw [show (scalingMatrix xv gv * scalingMatrix xv gv) *ᵥ gv = xv from scaledResidual_fin_one hx]
+    exact (scalarColemanLiModel_eq_unscaledModel hx (-u * x)).symm
+  have htimes : scalarColemanLiTimes x = scaledCauchyTimes xv gv 1 (9 / 10) :=
+    scalarColemanLiTimes_eq_scaledCauchyTimes hx
+  refine ⟨x, t, hx, ⟨htimes ▸ ht, ?_⟩, ?_⟩
+  · apply isMinOn_iff.mpr
+    intro u hu
+    change unscaledModel 0 xv gv 0
+        ((-t) • ((scalingMatrix xv gv * scalingMatrix xv gv) *ᵥ gv)) ≤
+      unscaledModel 0 xv gv 0 ((-u) • ((scalingMatrix xv gv * scalingMatrix xv gv) *ᵥ gv))
+    rw [hray t, hray u]
+    exact isMinOn_iff.mp hm u (htimes.symm ▸ hu)
+  · change unscaledModel 0 xv gv 0 0 -
+        unscaledModel 0 xv gv 0 ((-t) • ((scalingMatrix xv gv * scalingMatrix xv gv) *ᵥ gv)) <
+      (1 / 2) * min (scaledGradientNorm xv gv) κmsd *
+        min (min (scaledGradientNorm xv gv) κmsd / 2) 1
+    rw [hray, show scaledGradientNorm xv gv = Real.sqrt x from scalarColemanLiGradientNorm hx]
+    exact (scalarColemanLiModel_eq_unscaledModel hx 0) ▸ hlt
 
 end ConnGouldToint.Chapter13

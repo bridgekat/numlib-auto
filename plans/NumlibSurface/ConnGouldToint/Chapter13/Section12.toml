@@ -60,3 +60,54 @@ id = "OrthantWeakSecondOrder"
 
 [[node]]
 id = "scaling_unscaledCorrection"
+
+[[node]]
+id = "scaledGradientNorm"
+
+[[node]]
+id = "scaledCauchyTimes"
+source = "Conn–Gould–Toint, (13.12.11)"
+
+[[node]]
+id = "unscaledModel_along_scaledRay"
+source = "Conn–Gould–Toint, corrected (13.12.12)"
+
+[[node]]
+id = "theorem_13_12_3"
+source = "Conn–Gould–Toint, corrected Theorem 13.12.3"
+
+[[node]]
+id = "scalarColemanLiModel"
+
+[[node]]
+id = "scalarColemanLiCurvature"
+
+[[node]]
+id = "theorem_13_12_3_counterexample"
+source = "Counterexample to Conn–Gould–Toint, Theorem 13.12.3"
+
+[[node]]
+id = "orthantBoundaryDistance"
+
+[[node]]
+id = "scalarColemanLiTimes"
+
+[[node]]
+id = "IsScaledCauchyTime"
+source = "Conn–Gould–Toint, (13.12.11)"
+
+[[node]]
+id = "scalarColemanLiModel_eq_unscaledModel"
+
+[[node]]
+id = "scalarColemanLiRayNorm"
+
+[[node]]
+id = "scalarColemanLiGradientNorm"
+
+[[node]]
+id = "scalarColemanLiTimes_eq_scaledCauchyTimes"
+
+[[node]]
+id = "theorem_13_12_3_matrix_counterexample"
+source = "Counterexample to Conn–Gould–Toint, Theorem 13.12.3"
