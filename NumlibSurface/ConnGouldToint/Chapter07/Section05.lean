@@ -105,7 +105,8 @@ theorem theorem_7_5_14 {n : ℕ} {T : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
       exact heq
     have hdot := dotProduct_transpose_mulVec A h v
     rw [hsymm.eq, hv, hh, dotProduct_zero, dotProduct_single] at hdot
-    exact (mul_ne_zero (hT.apply_zero_ne_zero_of_isSymm hS hev hv₀ (Nat.succ_pos _)) (neg_ne_zero.mpr hγ)) hdot.symm
+    have hfirst := hT.apply_zero_ne_zero_of_isSymm hS hev hv₀ (Nat.succ_pos _)
+    exact (mul_ne_zero hfirst (neg_ne_zero.mpr hγ)) hdot.symm
   refine (hpos.posDef_iff_mulVec_injective).mpr fun u v huv => sub_eq_zero.mp ?_
   exact hker (u - v) (by rw [mulVec_sub, huv, sub_self])
 

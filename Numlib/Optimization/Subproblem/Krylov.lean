@@ -207,7 +207,8 @@ theorem isMinOn_closedBall_of_isMinOn_invariant_subspace
   have hr0 : r = 0 := inner_self_eq_zero.mp (hgal r hr)
   have hshift : (H + μ • (1 : E →L[ℝ] E)) s = -g := by
     rw [← add_eq_zero_iff_eq_neg]
-    simpa [r, add_apply, smul_apply, one_apply_eq_self, add_comm, add_left_comm, add_assoc] using hr0
+    simpa [r, add_apply, smul_apply, one_apply_eq_self, add_comm, add_left_comm, add_assoc]
+      using hr0
   obtain ⟨v, hv, hvg⟩ := heasy
   let p := K.orthogonalProjectionOnto v
   have hp₀ : p ≠ 0 := by

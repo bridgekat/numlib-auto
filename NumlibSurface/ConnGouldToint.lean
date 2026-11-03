@@ -48,7 +48,8 @@ Chapter 10 covers cumulative model decrease for the nonmonotone acceptance rule.
 The reference schedule in (10.1.2) requires strict decrease only when the reference changes.
 
 Section 12.1 covers box projection, the projected-gradient path, and the criticality measure.
-In (12.1.3), the radial formula applies outside the closed ball. Points inside project to themselves.
+In (12.1.3), the radial formula applies outside the closed ball. Points inside project to
+themselves.
 
 Chapter 14 covers the quadratic penalty and first-order multiplier estimate. In (14.2.3),
 both derivatives in the stationarity condition are evaluated at the feasible point.

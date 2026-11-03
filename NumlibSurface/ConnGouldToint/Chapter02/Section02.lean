@@ -40,7 +40,8 @@ noncomputable def symmetricAbs {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsHermit
 and a nonnegative, decreasing diagonal. -/
 theorem singular_value_decomposition_2_2_4 (A : Matrix (Fin m) (Fin n) ℝ) :
     ∃ U ∈ Matrix.unitaryGroup (Fin m) ℝ, ∃ V ∈ Matrix.unitaryGroup (Fin n) ℝ,
-      ∃ σ : ℕ → ℝ, Antitone σ ∧ (∀ i, 0 ≤ σ i) ∧ A = U * (Matrix.rectDiagonal σ : Matrix (Fin m) (Fin n) ℝ) * Vᵀ := by
+      ∃ σ : ℕ → ℝ, Antitone σ ∧ (∀ i, 0 ≤ σ i) ∧
+        A = U * (Matrix.rectDiagonal σ : Matrix (Fin m) (Fin n) ℝ) * Vᵀ := by
   obtain ⟨U, σ, V, h⟩ := A.exists_isSVD
   exact ⟨U, h.mem_unitaryGroup_left, V, h.mem_unitaryGroup_right, σ, h.antitone, h.nonneg,
     by simpa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] using h.eq_mul_mul_star⟩

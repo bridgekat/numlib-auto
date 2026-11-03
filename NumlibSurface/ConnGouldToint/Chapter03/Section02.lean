@@ -76,7 +76,8 @@ theorem theorem_3_2_3 [FiniteDimensional ℝ E] {f : E → ℝ} (hf : AF1 f)
   have hstat := theorem_3_2_1 (hf.of_le (by norm_num)) hymin
   have hy' : x + d = y := by dsimp [d]; abel
   rw [(hd t).deriv] at he
-  simp [g, hy', hstat, hx] at he
+  simp only [g, one_smul, zero_smul, add_zero, hy', hstat, hx,
+    zero_apply, sub_zero, zero_div] at he
   exact hdiag.ne' (by simpa [H, iteratedFDeriv_two_apply] using he)
 
 end ConnGouldToint.Chapter03

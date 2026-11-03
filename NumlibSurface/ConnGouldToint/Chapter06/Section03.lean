@@ -1,3 +1,4 @@
+import Mathlib.Analysis.Calculus.Gradient.Basic
 import Mathlib.Analysis.Normed.Operator.Basic
 import Mathlib.Order.Filter.Extr
 import Mathlib.Tactic.Positivity
@@ -83,5 +84,26 @@ theorem theorem_6_3_1 (c : ℝ) (g : E) (H : E →L[ℝ] E) (p : Seminorm ℝ E)
     c - quadraticModel c g H.toLinearMap s
   rw [← hlength]
   nlinarith only [hmin, hquad]
+
+/-- AA.1. The decrease of the model is at least a prescribed positive fraction
+of the Cauchy decrease benchmark (6.3.27). -/
+def HasSufficientModelDecrease (m : E → ℝ) (x s g : E) (β Δ κ : ℝ) : Prop :=
+  κ ∈ Set.Ioo (0 : ℝ) 1 ∧ κ * ‖g‖ * min (‖g‖ / β) Δ ≤ m x - m (x + s)
+
+variable [CompleteSpace E]
+
+/-- Theorem 6.3.4. A step satisfying AA.1 strictly reduces the model and is nonzero
+at a noncritical point when the model and objective gradients agree (AM.3). -/
+theorem theorem_6_3_4 {f m : E → ℝ} {x s : E} {β Δ κ : ℝ} (hβ : 0 < β) (hΔ : 0 < Δ)
+    (hmatch : gradient m x = gradient f x) (hg : gradient f x ≠ 0)
+    (hdec : HasSufficientModelDecrease m x s (gradient m x) β Δ κ) :
+    m (x + s) < m x ∧ s ≠ 0 := by
+  have hgn : 0 < ‖gradient m x‖ := by
+    rw [hmatch]
+    exact norm_pos_iff.mpr hg
+  have hpos : 0 < κ * ‖gradient m x‖ * min (‖gradient m x‖ / β) Δ :=
+    mul_pos (mul_pos hdec.1.1 hgn) (lt_min (div_pos hgn hβ) hΔ)
+  have hlt := sub_pos.mp (hpos.trans_le hdec.2)
+  exact ⟨hlt, fun hz ↦ by simp [hz] at hlt⟩
 
 end ConnGouldToint.Chapter06
