@@ -226,8 +226,9 @@ Theorem 13.12.5 gives positive decrease at the eigenpoint, with a feasibility ca
 covering every coordinate that decreases along the chosen ray.
 Theorem 13.12.4 proves scaled gradient convergence for the corrected run.
 Theorem 13.12.6 transfers vanishing scaled model curvature error to weak
-second-order stationarity on the active face. The version-two run must
-still supply the curvature error bound.
+second-order stationarity on the active face. For the version-two run,
+forced expansion gives the same conclusion under scaled gradient convergence
+and uniform small-radius agreement for the uncorrected model.
 
 
 

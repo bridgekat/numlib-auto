@@ -107,3 +107,7 @@ source = "Conn–Gould–Toint, local curvature argument in Theorems 6.6.7 and 8
 [[node]]
 id = "not_negative_curvature_near_limit_of_forced_expansion"
 source = "Conn–Gould–Toint, local curvature argument in Theorems 6.6.8 and 8.1.5"
+
+[[node]]
+id = "false_of_local_radius_expansion"
+source = "Conn–Gould–Toint, local forced-expansion argument of Theorems 6.6.8 and 13.12.6"

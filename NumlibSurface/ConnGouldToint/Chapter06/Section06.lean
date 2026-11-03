@@ -624,21 +624,22 @@ def HasForcedRadiusExpansion (run : BTRRun f P sufficient) (γ₃ γ₄ cap : �
   1 < γ₃ ∧ γ₃ ≤ γ₄ ∧ 0 < cap ∧ ∀ k ∈ run.verySuccessful, run.Δ k ≤ cap →
     γ₃ * run.Δ k ≤ run.Δ (k + 1) ∧ run.Δ (k + 1) ≤ γ₄ * run.Δ k
 
-/-- Forced radius expansion precludes a limit near which late models are uniformly negative. -/
-theorem not_negative_curvature_near_limit_of_forced_expansion (run : BTRRun f P sufficient) {z : E}
-    {j : ℕ → ℕ} (hj : StrictMono j) (hz : Tendsto (run.x ∘ j) atTop (𝓝 z))
-    {τ : ℕ → ℝ} {a κ K : ℝ} (ha : 0 < a) (hκ : 0 < κ) (hK : 0 < K)
-    (hval : ∀ k, f (run.x k) = run.model k (run.x k))
-    (hlower : BddBelow (range f)) (herr : smallRadiusModelAgreement run)
-    (hstep : ∀ k, ‖run.s k‖ ≤ K * run.Δ k)
-    (hsecond : ∀ k, HasNegativeCurvatureDecrease (run.model k) (run.x k) (run.s k)
-      (τ k) (run.Δ k) κ)
-    {γ₃ γ₄ cap : ℝ} (hexpand : HasForcedRadiusExpansion run γ₃ γ₄ cap)
-    (hlocal : ∃ r > (0 : ℝ), ∀ᶠ k in atTop, dist (run.x k) z < r → τ k ≤ -a) :
+omit [NormedSpace ℝ E] in
+/-- A local neighborhood cannot simultaneously force acceptance at small
+radii, uniformly small radii on accepted trials, and geometric expansion. -/
+theorem false_of_local_radius_expansion {x : ℕ → E} {Δ : ℕ → ℝ} {S : Set ℕ}
+    {z : E} {j : ℕ → ℕ} (hj : StrictMono j) (hz : Tendsto (x ∘ j) atTop (𝓝 z))
+    {γ γ₃ γ₄ cap K r δ : ℝ} (hγ : 0 < γ) (hγ₁ : γ < 1)
+    (hγ₃ : 1 < γ₃) (hγ₄ : γ₃ ≤ γ₄) (hcap : 0 < cap)
+    (hK : 0 < K) (hr : 0 < r) (hδ : 0 < δ) (hΔ : ∀ k, 0 < Δ k)
+    (hstay : ∀ k ∉ S, x (k + 1) = x k)
+    (hshrink : ∀ k ∉ S, Δ (k + 1) ≤ γ * Δ k)
+    (hstep : ∀ k ∈ S, dist (x (k + 1)) (x k) ≤ K * Δ k)
+    (hvery : ∀ᶠ k in atTop, dist (x k) z < r → Δ k ≤ δ → k ∈ S)
+    (hgrow : ∀ᶠ k in atTop, dist (x k) z < r → Δ k ≤ δ → Δ k ≤ cap →
+      γ₃ * Δ k ≤ Δ (k + 1) ∧ Δ (k + 1) ≤ γ₄ * Δ k)
+    (hsmall : ∀ ε > 0, ∀ᶠ k in atTop, dist (x k) z < r → k ∈ S → Δ k < ε) :
     False := by
-  obtain ⟨r, hr, hnear⟩ := hlocal
-  obtain ⟨δ, hδ, hvery⟩ := eventually_small_radius_very_successful run hval herr hκ ha hsecond
-  obtain ⟨hγ₃, hγ₄, hcap, hgrow⟩ := hexpand
   have hγ₄' : 0 < γ₄ := zero_lt_one.trans (hγ₃.trans_le hγ₄)
   let C := K / (γ₃ - 1)
   have hC : 0 < C := div_pos hK (sub_pos.mpr hγ₃)
@@ -654,63 +655,111 @@ theorem not_negative_curvature_near_limit_of_forced_expansion (run : BTRRun f P 
     have hh := (min_le_right cap _).trans (min_le_right (δ / γ₄) (r / (2 * (C + K))))
     have he := (le_div_iff₀ (show 0 < 2 * (C + K) by positivity)).mp hh
     linarith only [he]
-  obtain ⟨N, hN⟩ := eventually_atTop.mp
-    ((hnear.and hvery).and (lemma_6_6_6_successful run hlower hκ ha hsecond ε hε))
+  obtain ⟨N, hN⟩ := eventually_atTop.mp (hvery.and ((hsmall ε hε).and hgrow))
   obtain ⟨i, hi, hiz⟩ := ((hj.tendsto_atTop.eventually_ge_atTop N).and
     (hz.eventually (Metric.ball_mem_nhds z (half_pos hr)))).exists
-  have hzi : dist (run.x (j i)) z < r / 2 := hiz
-  obtain ⟨k, hk, hxk, hks⟩ := exists_successful_at_same_iterate run (j i) hδ (by
-    intro n hn hn' hrad
-    have hnN := hi.trans hn
-    have hd : dist (run.x n) z < r := by rw [hn']; linarith
-    exact run.verySuccessful_subset_successful
-      ((hN n hnN).1.2 ((hN n hnN).1.1 hd) hrad))
-  have hzk : dist (run.x k) z < r / 2 := by rwa [hxk]
+  have hzi : dist (x (j i)) z < r / 2 := hiz
+  have hex : ∃ n, j i + n ∈ S := by
+    by_contra! hn
+    have hx (n : ℕ) : x (j i + n) = x (j i) := by
+      induction n with
+      | zero => simp
+      | succ n ih => exact (hstay _ (hn n)).trans ih
+    have hp (n : ℕ) : Δ (j i + n) ≤ γ ^ n * Δ (j i) := by
+      induction n with
+      | zero => simp
+      | succ n ih =>
+        have hh := (hshrink _ (hn n)).trans (mul_le_mul_of_nonneg_left ih hγ.le)
+        simpa only [pow_succ, mul_assoc, mul_left_comm, Nat.add_assoc] using hh
+    have ht : Tendsto (fun n : ℕ => γ ^ n * Δ (j i)) atTop (𝓝 0) := by
+      simpa using (tendsto_pow_atTop_nhds_zero_of_lt_one hγ.le hγ₁).mul_const (Δ (j i))
+    obtain ⟨n, hnδ⟩ := (ht.eventually_lt_const hδ).exists
+    apply hn n
+    exact (hN _ (hi.trans (Nat.le_add_right _ _))).1 (by rw [hx]; linarith)
+      ((hp n).trans hnδ.le)
+  classical
+  let n := Nat.find hex
+  let k := j i + n
+  have hk : j i ≤ k := Nat.le_add_right _ _
+  have hks : k ∈ S := Nat.find_spec hex
+  have hstay' (m : ℕ) (hm : m ≤ n) : x (j i + m) = x (j i) := by
+    induction m with
+    | zero => simp
+    | succ m ih =>
+      exact (hstay _ (Nat.find_min hex (by omega))).trans (ih (by omega))
+  have hxk : x k = x (j i) := hstay' n le_rfl
+  have hzk : dist (x k) z < r / 2 := by rwa [hxk]
   have hkN := hi.trans hk
-  have hinv (n : ℕ) : k + n ∈ run.successful ∧ run.Δ (k + n) < ε ∧
-      dist (run.x (k + n)) z ≤ dist (run.x k) z + C * (run.Δ (k + n) - run.Δ k) ∧
-      γ₃ ^ n * run.Δ k ≤ run.Δ (k + n) := by
+  have hinv (n : ℕ) : k + n ∈ S ∧ Δ (k + n) < ε ∧
+      dist (x (k + n)) z ≤ dist (x k) z + C * (Δ (k + n) - Δ k) ∧
+      γ₃ ^ n * Δ k ≤ Δ (k + n) := by
     induction n with
     | zero =>
       simp only [sub_self, mul_zero, add_zero, pow_zero, one_mul]
-      exact ⟨hks, (hN _ hkN).2 hks ((hN _ hkN).1.1 (by linarith)), le_rfl, le_rfl⟩
+      exact ⟨hks, (hN _ hkN).2.1 (by linarith) hks, le_rfl, le_rfl⟩
     | succ n ih =>
       obtain ⟨hs, hrad, hdist, hgeom⟩ := ih
       let m := k + n
       have hmn := hkN.trans (Nat.le_add_right k n)
       have hmn' := hmn.trans (Nat.le_succ m)
-      have hd : dist (run.x m) z < r := by
+      have hd : dist (x m) z < r := by
         have hCε := mul_lt_mul_of_pos_left hrad hC
         have hKε : 0 ≤ K * ε := mul_nonneg hK.le hε.le
-        have hbase : 0 ≤ C * run.Δ k := mul_nonneg hC.le (run.delta_pos k).le
+        have hbase : 0 ≤ C * Δ k := mul_nonneg hC.le (hΔ k).le
         linarith only [hdist, hCε, hKε, hbase, hεr, hzk]
-      have hτ := (hN _ hmn).1.1 hd
-      have hradδ : run.Δ m ≤ δ := hrad.le.trans ((le_mul_of_one_le_left hε.le
+      have hradδ : Δ m ≤ δ := hrad.le.trans ((le_mul_of_one_le_left hε.le
         (hγ₃.le.trans hγ₄)).trans hεδ)
-      have hvs := (hN _ hmn).1.2 hτ hradδ
-      obtain ⟨hg, hg'⟩ := hgrow m hvs (hrad.le.trans hεcap)
-      have hstep' := (iterate_dist_le_of_successful run hs).trans (hstep m)
-      have hdist' := dist_triangle (run.x (m + 1)) (run.x m) z
-      have hmove : dist (run.x (m + 1)) z < r := by
+      obtain ⟨hg, hg'⟩ := (hN _ hmn).2.2 hd hradδ (hrad.le.trans hεcap)
+      have hstep' := hstep m hs
+      have hdist' := dist_triangle (x (m + 1)) (x m) z
+      have hmove : dist (x (m + 1)) z < r := by
         have hCe := mul_lt_mul_of_pos_left hrad hC
         have hKe := mul_lt_mul_of_pos_left hrad hK
-        have hbase : 0 ≤ C * run.Δ k := mul_nonneg hC.le (run.delta_pos k).le
+        have hbase : 0 ≤ C * Δ k := mul_nonneg hC.le (hΔ k).le
         linarith only [hdist, hdist', hstep', hCe, hKe, hbase, hεr, hzk]
-      have hrad' : run.Δ (m + 1) ≤ δ := hg'.trans
+      have hrad' : Δ (m + 1) ≤ δ := hg'.trans
         ((mul_le_mul_of_nonneg_left hrad.le hγ₄'.le).trans hεδ)
-      have hτ' := (hN _ hmn').1.1 hmove
-      have hs' := run.verySuccessful_subset_successful ((hN _ hmn').1.2 hτ' hrad')
+      have hs' := (hN _ hmn').1 hmove hrad'
       rw [Nat.add_succ]
-      refine ⟨hs', (hN _ hmn').2 hs' hτ', ?_, ?_⟩
+      refine ⟨hs', (hN _ hmn').2.1 hmove hs', ?_, ?_⟩
       · have hgrowth := mul_le_mul_of_nonneg_left hg hC.le
         linarith only [hdist, hdist', hstep', hgrowth,
-          congrArg (fun a : ℝ ↦ a * run.Δ m) hCK]
+          congrArg (fun a : ℝ ↦ a * Δ m) hCK]
       · rw [pow_succ, mul_comm (γ₃ ^ n), mul_assoc]
         exact (mul_le_mul_of_nonneg_left hgeom (zero_lt_one.trans hγ₃).le).trans hg
-  have ht : Tendsto (fun n : ℕ ↦ γ₃ ^ n * run.Δ k) atTop atTop :=
-    (tendsto_pow_atTop_atTop_of_one_lt hγ₃).atTop_mul_const (run.delta_pos k)
+  have ht : Tendsto (fun n : ℕ ↦ γ₃ ^ n * Δ k) atTop atTop :=
+    (tendsto_pow_atTop_atTop_of_one_lt hγ₃).atTop_mul_const (hΔ k)
   obtain ⟨n, hn⟩ := (ht.eventually_ge_atTop ε).exists
   exact (hinv n).2.1.not_ge (hn.trans (hinv n).2.2.2)
+
+
+/-- Forced radius expansion precludes a limit near which late models are uniformly negative. -/
+theorem not_negative_curvature_near_limit_of_forced_expansion (run : BTRRun f P sufficient) {z : E}
+    {j : ℕ → ℕ} (hj : StrictMono j) (hz : Tendsto (run.x ∘ j) atTop (𝓝 z))
+    {τ : ℕ → ℝ} {a κ K : ℝ} (ha : 0 < a) (hκ : 0 < κ) (hK : 0 < K)
+    (hval : ∀ k, f (run.x k) = run.model k (run.x k))
+    (hlower : BddBelow (range f)) (herr : smallRadiusModelAgreement run)
+    (hstep : ∀ k, ‖run.s k‖ ≤ K * run.Δ k)
+    (hsecond : ∀ k, HasNegativeCurvatureDecrease (run.model k) (run.x k) (run.s k)
+      (τ k) (run.Δ k) κ)
+    {γ₃ γ₄ cap : ℝ} (hexpand : HasForcedRadiusExpansion run γ₃ γ₄ cap)
+    (hlocal : ∃ r > (0 : ℝ), ∀ᶠ k in atTop, dist (run.x k) z < r → τ k ≤ -a) :
+    False := by
+  obtain ⟨r, hr, hnear⟩ := hlocal
+  obtain ⟨δ, hδ, hvery⟩ := eventually_small_radius_very_successful run hval herr hκ ha hsecond
+  obtain ⟨hγ₃, hγ₄, hcap, hgrow⟩ := hexpand
+  refine false_of_local_radius_expansion hj hz
+    (P.gamma₁_pos.trans_le P.gamma₁_le_gamma₂) P.gamma₂_lt_one hγ₃ hγ₄ hcap hK hr hδ
+    run.delta_pos (fun _ hk => run.iterate_eq_of_unsuccessful hk)
+    (fun k hk => ((run.radius_update k).unsuccessful (lt_of_not_ge hk)).2)
+    (fun k hk => (iterate_dist_le_of_successful run hk).trans (hstep k)) ?_ ?_ ?_
+  · filter_upwards [hnear, hvery] with k hn hv hr hd
+    exact run.verySuccessful_subset_successful (hv (hn hr) hd)
+  · filter_upwards [hnear, hvery] with k hn hv hr hd hc
+    exact hgrow k (hv (hn hr) hd) hc
+  · intro ε hε
+    filter_upwards [hnear, lemma_6_6_6_successful run hlower hκ ha hsecond ε hε] with k hn hs hr hk
+    exact hs hk (hn hr)
 
 /-- Theorem 6.6.8. With forced radius growth, all subsequential limits
 are second-order critical. Successive very successful trials near a

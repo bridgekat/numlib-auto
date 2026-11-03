@@ -1,4 +1,4 @@
-import NumlibSurface.ConnGouldToint.Chapter06.Section04
+import NumlibSurface.ConnGouldToint.Chapter06.Section06
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Analysis.CStarAlgebra.Matrix
 import Numlib.Optimization.LogBarrier
@@ -1116,6 +1116,165 @@ theorem theorem_13_12_4 [Nonempty ι]
     ((PiLp.continuous_ofLp _ _).continuousAt.tendsto.comp hjz)
     (hg.continuousAt.tendsto.comp hjz) (Eventually.of_forall fun k i => (hx (j k) i).le)
     (hz.comp hj)
+
+open ConnGouldToint.Chapter06 in
+/-- Version 2 of Theorem 13.12.6. The corrected ratio provides objective
+decrease and very successful acceptance from the uncorrected model error.
+Forced expansion then excludes a negative active-face direction at a
+subsequential limit. The first-order limit and the uniform small-radius
+uncorrected model agreement are explicit inputs. -/
+theorem theorem_13_12_6_version2
+    {P : BTRParams} (f : (ι → ℝ) → ℝ) (g : EuclideanSpace ℝ ι → (ι → ℝ))
+    (A : EuclideanSpace ℝ ι → Matrix ι ι ℝ) (H : ℕ → Matrix ι ι ℝ)
+    (x s : ℕ → EuclideanSpace ℝ ι) (Δ τ : ℕ → ℝ) {z : EuclideanSpace ℝ ι}
+    {j : ℕ → ℕ} (hj : StrictMono j) (hz : Tendsto (x ∘ j) atTop (𝓝 z))
+    (hg : ContinuousAt g z) (hA : ContinuousAt A z)
+    (hpos : ∀ k i, 0 < x k i)
+    (hfirst : Tendsto (fun k => scaledGradientNorm (WithLp.ofLp (x k)) (g (x k))) atTop (𝓝 0))
+    (hcons : ScaledHessianConsistency (fun k => WithLp.ofLp (x k))
+      (g ∘ x) (A ∘ x) H)
+    (hcurv : ∀ k w, τ k * ‖WithLp.toLp 2 w‖ ^ 2 ≤
+      w ⬝ᵥ (scaledHessian (WithLp.ofLp (x k)) (g (x k)) (H k) *ᵥ w))
+    {κ cap K γ₃ γ₄ capExpand : ℝ}
+    (hκ : 0 < κ) (hcap : 0 < cap) (hK : 0 < K)
+    (hγ₃ : 1 < γ₃) (hγ₄ : γ₃ ≤ γ₄) (hcapExpand : 0 < capExpand)
+    (hΔ : ∀ k, 0 < Δ k) (hstep : ∀ k, ‖s k‖ ≤ K * Δ k)
+    (hlower : BddBelow (Set.range f)) :
+    let y (k : ℕ) := WithLp.ofLp (x k)
+    let v (k : ℕ) := WithLp.ofLp (s k)
+    let pred (k : ℕ) := f (y k) - unscaledModel (f (y k)) (y k) (g (x k)) (H k) (v k)
+    let ρ (k : ℕ) := colemanLiAcceptanceRatio f (y k) (g (x k)) (v k) (H k)
+    (∀ k, 0 < pred k) →
+    (∀ k, τ k < 0 → κ * |τ k| * min (min (τ k ^ 2) (Δ k ^ 2)) (cap ^ 2) ≤ pred k) →
+    (∀ ε > 0, ∃ δ > 0, ∀ᶠ k in atTop, Δ k ≤ δ →
+      |affineQuadraticModel (f (y k)) (g (x k)) (H k) (v k) - f (y k + v k)| ≤ ε * Δ k ^ 2) →
+    (∀ k, x (k + 1) = if P.η₁ ≤ ρ k then x k + s k else x k) →
+    (∀ k, BTRRadiusUpdate P (ρ k) (Δ k) (Δ (k + 1))) →
+    (∀ k, P.η₂ ≤ ρ k → Δ k ≤ capExpand →
+      γ₃ * Δ k ≤ Δ (k + 1) ∧ Δ (k + 1) ≤ γ₄ * Δ k) →
+    OrthantWeakSecondOrder (WithLp.ofLp z) (g z) (A z) := by
+  dsimp only
+  intro hp hdec herr hupdate hrad hgrow
+  let y (k : ℕ) := WithLp.ofLp (x k)
+  let v (k : ℕ) := WithLp.ofLp (s k)
+  let pred (k : ℕ) := f (y k) - unscaledModel (f (y k)) (y k) (g (x k)) (H k) (v k)
+  let ρ (k : ℕ) := colemanLiAcceptanceRatio f (y k) (g (x k)) (v k) (H k)
+  let S := {k | P.η₁ ≤ ρ k}
+  let F (k : ℕ) := f (y k)
+  have hf : ∀ k ∈ S, P.η₁ * pred k ≤ F k - F (k + 1) := by
+    intro k hk
+    have hcorr : 0 ≤ v k ⬝ᵥ (unscaledCorrection (y k) (g (x k)) *ᵥ v k) := by
+      unfold unscaledCorrection dotProduct
+      apply Finset.sum_nonneg
+      intro i _
+      rw [Matrix.mulVec_diagonal]
+      rw [show v k i * (max (g (x k) i) 0 / |scalingVector (y k) (g (x k)) i| * v k i) =
+        (max (g (x k) i) 0 / |scalingVector (y k) (g (x k)) i|) * (v k i) ^ 2 by ring]
+      exact mul_nonneg (div_nonneg (le_max_right _ _) (abs_nonneg _)) (sq_nonneg _)
+    have hρ : P.η₁ ≤ ρ k := hk
+    have he : ρ k = (F k - f (y k + v k) - (1 / 2) *
+        (v k ⬝ᵥ (unscaledCorrection (y k) (g (x k)) *ᵥ v k))) / pred k := by
+      simp [ρ, pred, F, colemanLiAcceptanceRatio, unscaledModel, affineQuadraticModel]
+    rw [he] at hρ
+    have hh := (le_div_iff₀ (hp k)).mp hρ
+    have hxs : x (k + 1) = x k + s k := by rw [hupdate, ite_eq_left (show P.η₁ ≤ ρ k from hk)]
+    have hy : F (k + 1) = f (y k + v k) := by dsimp [F, y, v]; rw [hxs]; rfl
+    rw [hy]
+    linarith
+  have hstay (k : ℕ) (hk : k ∉ S) : x (k + 1) = x k := by
+    rw [hupdate, ite_eq_right (show ¬ P.η₁ ≤ ρ k from hk)]
+  have hmono : Antitone F := by
+    apply antitone_nat_of_succ_le
+    intro k
+    by_cases hk : k ∈ S
+    · exact sub_nonneg.mp ((mul_pos P.eta₁_pos (hp k)).le.trans (hf k hk))
+    · change f (WithLp.ofLp (x (k + 1))) ≤ f (WithLp.ofLp (x k))
+      rw [hstay k hk]
+  have hFlim := tendsto_atTop_ciInf hmono
+    (hlower.mono (show Set.range F ⊆ Set.range f from Set.range_comp_subset_range y f))
+  have hdrop : Tendsto (fun k => F k - F (k + 1)) atTop (𝓝 0) := by
+    simpa only [Function.comp_apply, sub_self] using hFlim.sub (hFlim.comp (tendsto_add_atTop_nat 1))
+  by_contra hnoncritical
+  have hlocal : ∃ a > 0, ∃ r > 0, ∀ᶠ k in atTop, dist (x k) z < r → τ k ≤ -a := by
+    by_contra hn
+    let e (n : ℕ) : ℝ := 1 / ((n : ℝ) + 1)
+    have hepos (n : ℕ) : 0 < e n := by dsimp [e]; positivity
+    have he : Tendsto e atTop (𝓝 0) := tendsto_one_div_add_atTop_nhds_zero_nat
+    have hfq (n : ℕ) : ∃ᶠ k in atTop, dist (x k) z < e n ∧ -e n < τ k := by
+      by_contra hbad
+      have hev : ∀ᶠ k in atTop, ¬(dist (x k) z < e n ∧ -e n < τ k) := by
+        simpa only [Filter.Frequently, not_not] using hbad
+      exact hn ⟨e n, hepos n, e n, hepos n, hev.mono fun k hk hd =>
+        not_lt.mp (fun ht => hk ⟨hd, ht⟩)⟩
+    obtain ⟨i, hi, hib⟩ := extraction_forall_of_frequently hfq
+    have hzi : Tendsto (x ∘ i) atTop (𝓝 z) := by
+      apply Metric.tendsto_atTop.mpr
+      intro ε hε
+      obtain ⟨N, hN⟩ := eventually_atTop.mp (he.eventually_lt_const hε)
+      exact ⟨N, fun k hk => (hib k).1.trans (hN k hk)⟩
+    have hco : ScaledHessianConsistency (y ∘ i) (g ∘ x ∘ i) (A ∘ x ∘ i) (H ∘ i) :=
+      fun _ => (hcons hfirst).comp hi.tendsto_atTop
+    have hzero := theorem_13_12_6
+      ((PiLp.continuous_ofLp _ _).continuousAt.tendsto.comp hzi) (hg.tendsto.comp hzi)
+      (hA.tendsto.comp hzi) (fun k => hpos (i k))
+      (hfirst.comp hi.tendsto_atTop) hco he (fun k => (hepos k).le) (fun k w =>
+        (mul_le_mul_of_nonneg_right (hib k).2.le (sq_nonneg _)).trans (hcurv (i k) w))
+    exact hnoncritical hzero
+  obtain ⟨a, ha, r, hr, hnear⟩ := hlocal
+  let c := min a cap
+  have hc : 0 < c := lt_min ha hcap
+  have hpred (k : ℕ) (hk : τ k ≤ -a) :
+      κ * a * min (c ^ 2) (Δ k ^ 2) ≤ pred k := by
+    have hτ := hk.trans_lt (neg_lt_zero.mpr ha)
+    have habs : a ≤ |τ k| := by rw [abs_of_neg hτ]; linarith
+    have hmin : min (c ^ 2) (Δ k ^ 2) ≤ min (min (τ k ^ 2) (Δ k ^ 2)) (cap ^ 2) := by
+      apply le_min
+      · apply min_le_min _ le_rfl
+        simpa only [sq_abs] using
+          pow_le_pow_left₀ hc.le ((min_le_left a cap).trans habs) 2
+      · exact (min_le_left _ _).trans (pow_le_pow_left₀ hc.le (min_le_right a cap) 2)
+    exact (mul_le_mul (mul_le_mul_of_nonneg_left habs hκ.le) hmin
+      (le_min (sq_nonneg _) (sq_nonneg _)) (mul_nonneg hκ.le (abs_nonneg _))).trans (hdec k hτ)
+  let margin := (1 - P.η₂) * (κ * a)
+  have hm : 0 < margin := mul_pos (sub_pos.mpr P.eta₂_lt_one) (mul_pos hκ ha)
+  obtain ⟨δ, hδ, herror⟩ := herr margin hm
+  have hvery : ∀ᶠ k in atTop, dist (x k) z < r → Δ k ≤ min δ c → P.η₂ ≤ ρ k := by
+    filter_upwards [hnear, herror] with k hn he hdist hsmall
+    have hlow := hpred k (hn hdist)
+    rw [min_eq_right (pow_le_pow_left₀ (hΔ k).le (hsmall.trans (min_le_right _ _)) 2)] at hlow
+    have heq := colemanLiAcceptanceRatio_sub_one f (y k) (g (x k)) (v k) (H k)
+      (by simpa [unscaledModel, affineQuadraticModel] using (hp k).ne')
+    have hupper := (neg_abs_le _).trans' (neg_le_neg (he (hsmall.trans (min_le_left _ _))))
+    have hb := mul_le_mul_of_nonneg_left hlow (sub_nonneg.mpr P.eta₂_lt_one.le)
+    have hquot : -(1 - P.η₂) ≤
+        (affineQuadraticModel (F k) (g (x k)) (H k) (v k) - f (y k + v k)) / pred k :=
+      (le_div_iff₀ (hp k)).mpr (by dsimp [margin] at hupper; nlinarith only [hupper, hb])
+    simp only [unscaledModel, affineQuadraticModel, Matrix.mulVec_zero, dotProduct_zero,
+      mul_zero, add_zero] at heq
+    change ρ k - 1 =
+      (affineQuadraticModel (F k) (g (x k)) (H k) (v k) - f (y k + v k)) / pred k at heq
+    rw [← heq] at hquot
+    linarith
+  have hsmall : ∀ ε > 0, ∀ᶠ k in atTop, dist (x k) z < r → k ∈ S → Δ k < ε := by
+    intro ε hε
+    let b := P.η₁ * (κ * a * min (c ^ 2) (ε ^ 2))
+    have hb : 0 < b := mul_pos P.eta₁_pos (mul_pos (mul_pos hκ ha)
+      (lt_min (sq_pos_of_pos hc) (sq_pos_of_pos hε)))
+    filter_upwards [hnear, hdrop.eventually_lt_const hb] with k hn hd hk hs
+    by_contra! hbad
+    have hlow := (mul_le_mul_of_nonneg_left (min_le_min le_rfl
+      (pow_le_pow_left₀ hε.le hbad 2)) (mul_nonneg hκ.le ha.le)).trans (hpred k (hn hk))
+    exact hd.not_ge ((mul_le_mul_of_nonneg_left hlow P.eta₁_pos.le).trans (hf k hs))
+  exact (false_of_local_radius_expansion hj hz
+    (P.gamma₁_pos.trans_le P.gamma₁_le_gamma₂) P.gamma₂_lt_one hγ₃ hγ₄ hcapExpand hK
+    hr (lt_min hδ hc) hΔ hstay
+    (fun k hk => ((hrad k).unsuccessful (lt_of_not_ge hk)).2)
+    (fun k hk => by
+      have he : x (k + 1) = x k + s k := by rw [hupdate, ite_eq_left (show P.η₁ ≤ ρ k from hk)]
+      rw [he, dist_eq_norm, add_sub_cancel_left]
+      exact hstep k)
+    (hvery.mono fun _ hk hr hd => P.eta₁_le_eta₂.trans (hk hr hd))
+    (hvery.mono fun k hk hr hd hc => hgrow k (hk hr hd) hc) hsmall).elim
 
 end Convergence
 

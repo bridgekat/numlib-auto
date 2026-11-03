@@ -168,3 +168,7 @@ source = "Conn–Gould–Toint, Theorem 13.12.4, Coleman–Li run with the corre
 [[node]]
 id = "colemanLi_curvature_transfer"
 source = "Conn–Gould–Toint, (13.12.25) and Theorem 13.12.6, quantitative scaled Hessian comparison"
+
+[[node]]
+id = "theorem_13_12_6_version2"
+source = "Conn–Gould–Toint, Theorem 13.12.6 for version-2 acceptance and forced expansion"
