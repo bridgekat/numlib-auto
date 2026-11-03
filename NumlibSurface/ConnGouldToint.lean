@@ -40,6 +40,9 @@ For (4.4.8), an augmented-system solution yields the weighted projection.
 
 Chapter 5 covers CG and PCG estimates, Krylov growth, and normal-equation residuals.
 The CG bounds are expressed in product form to include exact initial iterates.
+Lemma 5.1.5 needs nonzero residual pairings at the earlier directions as well as the last.
+The identity-Hessian counterexample shows what fails when an earlier line step is zero.
+
 
 Chapters 6 and 8 cover the basic trust-region iteration, Cauchy model decrease,
 and dual-norm estimates. In the proof of Theorem 6.4.3 the explicit radius lower bound
