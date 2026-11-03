@@ -336,11 +336,15 @@ argument in Theorem 15.4.6 uses the very-successful update. The corrected
 coefficient in Lemma 15.4.9 stays positive for every nonnegative model bound.
 Theorem 15.4.10 includes the Cauchy coefficient in the radius threshold and
 the initial tail radius in the floor. Theorem 15.4.11 makes the required
-uniform control of accepted-step variation explicit. The two cases in (15.4.140)
-give a common lower bound using the smaller coefficient. In (15.4.142),
+uniform control of accepted-step variation explicit. The two cases in (15.4.57) and (15.4.140)
+give common lower bounds using the smaller coefficient. The normal curvature
+bound in (15.4.131) uses a uniform Jacobian bound. In (15.4.142),
 the second entry of the minimum uses the reciprocal of the rank constant.
-Theorem 15.4.12 separates original-trial agreement from corrected accepted
-decrease. The local rate result uses eventual accepted-step conditions and
+The relaxed SQP variants use the original predicted decrease for both
+acceptance tests and enforce the norm cap before trying a structured
+correction. Algorithm 15.4.4 follows the boxed rule and adds AA.2d
+to Algorithm 15.4.3. Theorem 15.4.12 separates original-trial agreement
+from corrected accepted decrease. The local rate result uses eventual accepted-step conditions and
 multiplier convergence. Theorem 15.4.16 uses the maximum cluster curvature
 and requires the cluster set to control the tail, as relative compactness ensures.
 Theorems 15.4.22–25 treat the Byrd–Omojokun method with corrected steps.

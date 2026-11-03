@@ -1,0 +1,65 @@
+namespace = "ConnGouldToint.Chapter15"
+
+[[node]]
+id = "RelaxedSQPParams"
+source = "Conn–Gould–Toint, Algorithm 15.4.1 parameters"
+
+[[node]]
+id = "RelaxedSQPTrials"
+source = "Conn–Gould–Toint, Algorithm 15.4.1 Steps 1–2, AA.1g–AA.1i"
+
+[[node]]
+id = "RelaxedSQPRun"
+source = "Conn–Gould–Toint, Algorithm 15.4.1 Steps 3–4"
+
+[[node]]
+id = "relaxedSQPProbe"
+source = "Conn–Gould–Toint, Algorithms 15.4.2 and 15.4.3, corrected trial selection"
+
+[[node]]
+id = "relaxedSQPProbe_of_successful_original"
+source = "Conn–Gould–Toint, Algorithm 15.4.2 Step 3"
+
+[[node]]
+id = "RelaxedSQPCorrectedRun"
+source = "Conn–Gould–Toint, Algorithm 15.4.2"
+
+[[node]]
+id = "RelaxedSQPStructuredRun"
+source = "Conn–Gould–Toint, Algorithm 15.4.3, (15.4.79), (15.4.81), (15.4.82), (15.4.85), (15.4.94) and (15.4.95)"
+
+[[node]]
+id = "RelaxedSQPSecondOrderRun"
+source = "Conn–Gould–Toint, Algorithm 15.4.4 and AA.2d"
+
+[[node]]
+id = "RelaxedSQPCorrectedRun.probe"
+source = "Conn–Gould–Toint, the trial selected by Algorithm 15.4.2 Step 3"
+
+[[node]]
+id = "RelaxedSQPCorrectedRun.merit_drop_of_successful"
+source = "Conn–Gould–Toint, original prediction is used for the accepted merit decrease in Algorithm 15.4.2"
+
+[[node]]
+id = "RelaxedSQPStructuredRun.radius_eq_of_original_moderate"
+source = "Conn–Gould–Toint, the fixed-radius branch (15.4.95) of Algorithm 15.4.3"
+
+[[node]]
+id = "RelaxedSQPTrials.normal"
+source = "Conn–Gould–Toint, (15.4.9)"
+
+[[node]]
+id = "RelaxedSQPTrials.step"
+source = "Conn–Gould–Toint, Algorithm 15.4.1 composite step"
+
+[[node]]
+id = "RelaxedSQPTrials.penalty"
+source = "Conn–Gould–Toint, Algorithm 15.4.1 Step 2, with the zero normal-decrease case explicit"
+
+[[node]]
+id = "RelaxedSQPTrials.prediction"
+source = "Conn–Gould–Toint, Algorithm 15.4.1 Step 3 model decrease"
+
+[[node]]
+id = "RelaxedSQPTrials.ratio"
+source = "Conn–Gould–Toint, Algorithm 15.4.1 Step 3 and Algorithm 15.4.2 Step 3a"
