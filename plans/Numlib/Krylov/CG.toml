@@ -118,3 +118,18 @@ source = 'Golub–Van Loan, Matrix Computations, Equation (11.3.15)'
 [[node]]
 id = "inner_residual_eq_zero_of_pos_prefix"
 source = "Conn–Gould–Toint, Section 7.5.2"
+
+[[node]]
+id = "span_direction_eq_of_pos_prefix"
+
+[[node]]
+id = "isGalerkinIterate_of_pos_prefix"
+
+[[node]]
+id = "inner_residual_direction_self_of_pos_prefix"
+
+[[node]]
+id = "re_inner_sub_iterate_direction_nonneg_of_pos_prefix"
+
+[[node]]
+id = "eq_zero_of_apply_eq_zero_of_mem_subspace_of_pos_prefix"

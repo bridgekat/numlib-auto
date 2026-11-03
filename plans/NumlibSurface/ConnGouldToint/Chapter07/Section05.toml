@@ -85,6 +85,30 @@ id = "theorem_7_5_9_of_coercive"
 source = "Conn–Gould–Toint, Theorem 7.5.9 for positive-definite Hessians"
 
 [[node]]
+id = "steihaugRay"
+source = "Conn–Gould–Toint, Algorithm 7.5.1, terminal ray"
+
+[[node]]
+id = "steihaugRay_boundary_unique"
+source = "Conn–Gould–Toint, Algorithm 7.5.1, positive boundary root"
+
+[[node]]
+id = "steihaugRay_quadModel_of_nullCurvature"
+source = "Conn–Gould–Toint, Algorithm 7.5.1, zero-curvature terminal ray"
+
+[[node]]
+id = "IsSteihaugTointBoundaryStop"
+source = "Conn–Gould–Toint, Algorithm 7.5.1, boundary stopping rules"
+
+[[node]]
+id = "theorem_7_5_9"
+source = "Conn–Gould–Toint, Theorem 7.5.9 for convex models"
+
+[[node]]
+id = "exists_steihaugToint_stop"
+source = "Conn–Gould–Toint, Algorithm 7.5.1, exact termination"
+
+[[node]]
 id = "theorem_7_5_10"
 source = "Conn–Gould–Toint, Theorem 7.5.10"
 

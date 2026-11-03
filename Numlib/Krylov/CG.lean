@@ -496,21 +496,29 @@ theorem inner_residual_direction_eq {i j : ℕ} (h : i ≤ j) :
 
 /-! ### Spans and the Galerkin property -/
 
+omit hA in
+private theorem apply_direction_mem_dirSpan_of_alpha_ne_zero (i : ℕ)
+    (hα : alpha A (iterate A b x₀ i) ≠ 0) :
+    A (iterate A b x₀ i).p ∈ dirSpan A b x₀ (i + 2) := by
+  have h : A (iterate A b x₀ i).p = (alpha A (iterate A b x₀ i))⁻¹ •
+      ((iterate A b x₀ i).r - (iterate A b x₀ (i + 1)).r) := by
+    rw [← alpha_smul_apply_direction, smul_smul, inv_mul_cancel₀ hα, one_smul]
+  rw [h]
+  exact Submodule.smul_mem _ _ (Submodule.sub_mem _
+    (dirSpan_mono A b x₀ (by omega) (residual_mem_dirSpan A b x₀ i))
+    (residual_mem_dirSpan A b x₀ (i + 1)))
+
 private theorem apply_direction_mem_dirSpan (i : ℕ) :
     A (iterate A b x₀ i).p ∈ dirSpan A b x₀ (i + 2) := by
   by_cases hα : alpha A (iterate A b x₀ i) = 0
   · rw [apply_direction_eq_zero_of_alpha_eq_zero b x₀
       (fun h => eq_zero_of_inner_apply_self_eq_zero hA h) hα]
     exact Submodule.zero_mem _
-  · have h : A (iterate A b x₀ i).p = (alpha A (iterate A b x₀ i))⁻¹ •
-        ((iterate A b x₀ i).r - (iterate A b x₀ (i + 1)).r) := by
-      rw [← alpha_smul_apply_direction, smul_smul, inv_mul_cancel₀ hα, one_smul]
-    rw [h]
-    exact Submodule.smul_mem _ _ (Submodule.sub_mem _
-      (dirSpan_mono A b x₀ (by omega) (residual_mem_dirSpan A b x₀ i))
-      (dirSpan_mono A b x₀ (by omega) (residual_mem_dirSpan A b x₀ (i + 1))))
+  · exact apply_direction_mem_dirSpan_of_alpha_ne_zero b x₀ i hα
 
+omit hA in
 private theorem pow_apply_mem_dirSpan (k : ℕ)
+    (hstep : ∀ j < k, A (iterate A b x₀ j).p ∈ dirSpan A b x₀ (j + 2))
     (ih : subspace A (b - A x₀) k ≤ dirSpan A b x₀ k) :
     (A ^ k) (b - A x₀) ∈ dirSpan A b x₀ (k + 1) := by
   cases k with
@@ -525,21 +533,28 @@ private theorem pow_apply_mem_dirSpan (k : ℕ)
     have hcomap : dirSpan A b x₀ (j + 1) ≤ Submodule.comap A (dirSpan A b x₀ (j + 1 + 1)) := by
       rw [dirSpan, Submodule.span_le]
       rintro _ ⟨l, rfl⟩
-      exact dirSpan_mono A b x₀ (by omega) (apply_direction_mem_dirSpan b x₀ hA l)
+      exact dirSpan_mono A b x₀ (by omega) (hstep l l.isLt)
     rw [hpow]
     exact hcomap hmem
 
-private theorem subspace_le_dirSpan (k : ℕ) : subspace A (b - A x₀) k ≤ dirSpan A b x₀ k := by
+omit hA in
+private theorem subspace_le_dirSpan_of_apply (k : ℕ)
+    (hstep : ∀ j : ℕ, j + 1 < k → A (iterate A b x₀ j).p ∈ dirSpan A b x₀ (j + 2)) :
+    subspace A (b - A x₀) k ≤ dirSpan A b x₀ k := by
   induction k with
   | zero => rw [subspace_zero]; exact bot_le
   | succ k ih =>
+    have hprev := ih (fun j hj => hstep j (by omega))
     rw [subspace, Submodule.span_le, Set.range_subset_iff]
     intro i
     rcases Nat.lt_or_ge (i : ℕ) k with h | h
-    · exact dirSpan_mono A b x₀ (Nat.le_succ k) (ih (pow_apply_mem_subspace A _ h))
+    · exact dirSpan_mono A b x₀ (Nat.le_succ k) (hprev (pow_apply_mem_subspace A _ h))
     · have h' : (i : ℕ) = k := le_antisymm (Nat.lt_succ_iff.1 i.2) h
       rw [h']
-      exact pow_apply_mem_dirSpan b x₀ hA k ih
+      exact pow_apply_mem_dirSpan b x₀ k (fun j hj => hstep j (by omega)) hprev
+
+private theorem subspace_le_dirSpan (k : ℕ) : subspace A (b - A x₀) k ≤ dirSpan A b x₀ k :=
+  subspace_le_dirSpan_of_apply b x₀ k fun j _ => apply_direction_mem_dirSpan b x₀ hA j
 
 /-- `span {p_0, …, p_{k-1}} = 𝒦_k(A, r₀)`. -/
 theorem span_direction_eq (k : ℕ) :
@@ -1025,6 +1040,84 @@ private theorem invariant_le (hAs : A.IsSymmetric) {k : ℕ}
   exact absurd hj' (lt_irrefl 0)
 
 omit hA in
+/-- Directions through a positive-curvature prefix span the corresponding Krylov space. -/
+theorem span_direction_eq_of_pos_prefix {k : ℕ}
+    (hpos : ∀ j < k, 0 < RCLike.re (inner 𝕜 (A (iterate A b x₀ j).p) (iterate A b x₀ j).p)) :
+    Submodule.span 𝕜 (Set.range fun i : Fin (k + 1) => (iterate A b x₀ i).p) =
+      subspace A (b - A x₀) (k + 1) := by
+  refine le_antisymm (dirSpan_le_subspace A b x₀ _) (subspace_le_dirSpan_of_apply b x₀ _ ?_)
+  intro j hj
+  have hjk : j < k := by omega
+  have hp : (iterate A b x₀ j).p ≠ 0 := by
+    intro hz
+    simpa [hz] using hpos j hjk
+  have hden : inner 𝕜 (A (iterate A b x₀ j).p) (iterate A b x₀ j).p ≠ 0 := by
+    intro hz
+    simpa [hz] using hpos j hjk
+  have hα : alpha A (iterate A b x₀ j) ≠ 0 :=
+    div_ne_zero (inner_self_ne_zero.mpr
+      (fun hr => hp (direction_eq_zero_of_residual_eq_zero A b x₀ hr))) hden
+  exact apply_direction_mem_dirSpan_of_alpha_ne_zero b x₀ j hα
+
+omit hA in
+/-- CG is a Galerkin iterate after steps of positive directional curvature. -/
+theorem isGalerkinIterate_of_pos_prefix (hAs : A.IsSymmetric) {k : ℕ}
+    (hpos : ∀ j < k, 0 < RCLike.re (inner 𝕜 (A (iterate A b x₀ j).p) (iterate A b x₀ j).p)) :
+    IsGalerkinIterate A b x₀ k (iterate A b x₀ k).x := by
+  refine ⟨iterate_sub_mem b x₀ k, ?_⟩
+  rcases k with _ | k
+  · simp
+  rw [← residual_eq, ← span_direction_eq_of_pos_prefix b x₀ (k := k) (fun j hj =>
+    hpos j (by omega))]
+  refine Submodule.mem_orthogonal_span.2 ?_
+  rintro _ ⟨i, rfl⟩
+  rw [← inner_conj_symm, (invariant_le b x₀ hAs hpos le_rfl).rp i i.isLt, map_zero]
+
+omit hA in
+/-- The operator has trivial kernel on the Krylov subspace traversed by a positive-curvature
+CG prefix. -/
+theorem eq_zero_of_apply_eq_zero_of_mem_subspace_of_pos_prefix
+    (hAs : A.IsSymmetric) {k : ℕ}
+    (hpos : ∀ j < k, 0 < RCLike.re (inner 𝕜 (A (iterate A b x₀ j).p) (iterate A b x₀ j).p))
+    {x : E} (hx : x ∈ subspace A (b - A x₀) k) (hAx : A x = 0) : x = 0 := by
+  rcases k with _ | k
+  · simpa using hx
+  rw [← span_direction_eq_of_pos_prefix b x₀ (k := k) (fun j hj => hpos j (by omega))] at hx
+  obtain ⟨c, hc⟩ := (Submodule.mem_span_range_iff_exists_fun 𝕜).mp hx
+  let p (i : Fin (k + 1)) := (iterate A b x₀ i).p
+  change (∑ j, c j • p j) = x at hc
+  have hconj (i j : Fin (k + 1)) (hij : i ≠ j) : inner 𝕜 (A (p i)) (p j) = 0 := by
+    rcases lt_or_gt_of_ne hij with h | h
+    · have hh := (invariant_le b x₀ hAs hpos (show (j : ℕ) ≤ k + 1 by omega)).pp i h
+      change inner 𝕜 (A (p j)) (p i) = 0 at hh
+      rw [← inner_conj_symm, ← hAs, hh, map_zero]
+    · exact (invariant_le b x₀ hAs hpos (show (i : ℕ) ≤ k + 1 by omega)).pp j h
+  have hz (i : Fin (k + 1)) : c i = 0 := by
+    have hh : inner 𝕜 (A x) (p i) = 0 := by rw [hAx, inner_zero_left]
+    rw [← hc, map_sum, sum_inner, Finset.sum_eq_single i] at hh
+    · rw [map_smul, inner_smul_left] at hh
+      have hn : inner 𝕜 (A (p i)) (p i) ≠ 0 := by
+        intro he
+        have hp := hpos i i.isLt
+        change 0 < RCLike.re (inner 𝕜 (A (p i)) (p i)) at hp
+        simp [he] at hp
+      have hc0 := (mul_eq_zero.mp hh).resolve_right hn
+      exact (map_eq_zero_iff _ (starRingEnd 𝕜).injective).mp hc0
+    · intro j _ hji
+      rw [map_smul, inner_smul_left, hconj j i hji, mul_zero]
+    · simp
+  rw [← hc]
+  simp [hz]
+
+omit hA in
+/-- The residual at the end of a positive-curvature prefix has the usual diagonal inner product. -/
+theorem inner_residual_direction_self_of_pos_prefix (hAs : A.IsSymmetric) {k : ℕ}
+    (hpos : ∀ j < k, 0 < RCLike.re (inner 𝕜 (A (iterate A b x₀ j).p) (iterate A b x₀ j).p)) :
+    inner 𝕜 (iterate A b x₀ k).r (iterate A b x₀ k).p =
+      inner 𝕜 (iterate A b x₀ k).r (iterate A b x₀ k).r :=
+  (invariant_le b x₀ hAs hpos le_rfl).diag
+
+omit hA in
 /-- `⟪r_i, r_j⟫ = 0` for `i ≠ j` up to step `k` (`CG.inner_residual_eq_zero` localized). -/
 theorem inner_residual_eq_zero_of_pos_prefix (hAs : A.IsSymmetric) {k : ℕ}
     (hpos : ∀ j < k, 0 < RCLike.re (inner 𝕜 (A (iterate A b x₀ j).p) (iterate A b x₀ j).p))
@@ -1087,7 +1180,7 @@ private theorem re_inner_direction_nonneg' (hAs : A.IsSymmetric) {k : ℕ}
 omit hA in
 /-- `re ⟪x_m - x_l, p_j⟫ ≥ 0` up to step `k` (`CG.re_inner_sub_iterate_direction_nonneg` localized).
 -/
-private theorem re_inner_sub_iterate_direction_nonneg' (hAs : A.IsSymmetric) {k : ℕ}
+theorem re_inner_sub_iterate_direction_nonneg_of_pos_prefix (hAs : A.IsSymmetric) {k : ℕ}
     (hpos : ∀ j < k, 0 < RCLike.re (inner 𝕜 (A (iterate A b x₀ j).p) (iterate A b x₀ j).p))
     {l m : ℕ} (hlm : l ≤ m) (hm : m ≤ k) {j : ℕ} (hj : j ≤ k) :
     0 ≤ RCLike.re (inner 𝕜 ((iterate A b x₀ m).x - (iterate A b x₀ l).x)
@@ -1129,7 +1222,7 @@ theorem norm_iterate_lt_of_re_inner_apply_direction_pos (hAs : A.IsSymmetric) {k
   have hαne : alpha A (iterate A b 0 i) ≠ 0 := fun h => by
     rw [h, map_zero] at hαpos; exact lt_irrefl 0 hαpos
   have hxp : 0 ≤ RCLike.re (inner 𝕜 (iterate A b 0 i).x (iterate A b 0 i).p) := by
-    have h := re_inner_sub_iterate_direction_nonneg' b 0 hAs hpos (Nat.zero_le i)
+    have h := re_inner_sub_iterate_direction_nonneg_of_pos_prefix b 0 hAs hpos (Nat.zero_le i)
       (le_of_lt hi) (le_of_lt hi)
     rwa [show (iterate A b 0 0).x = 0 from rfl, sub_zero] at h
   have hcross : 0 ≤ RCLike.re (inner 𝕜 (iterate A b 0 i).x

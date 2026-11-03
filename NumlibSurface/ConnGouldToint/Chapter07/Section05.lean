@@ -1414,6 +1414,449 @@ theorem theorem_7_5_9_of_coercive [FiniteDimensional ℝ E] (H : E →L[ℝ] E)
     rw [← hy_eq]
     exact theorem_7_5_9_boundary H hHpos g k μ hp hsp hl hr hn' ht' htnorm
 
+
+private theorem cg_orthogonal_shift_coercive [FiniteDimensional ℝ E]
+    (H : E →L[ℝ] E) (hH : H.toLinearMap.IsPositive) (g : E) (n : ℕ)
+    (hpos : ∀ j < n, 0 < ⟪H (CG.iterate H.toLinearMap (-g) 0 j).p,
+      (CG.iterate H.toLinearMap (-g) 0 j).p⟫) {ε : ℝ} (hε : 0 < ε) :
+    let K := Krylov.subspace H.toLinearMap (-g) n
+    (H + ε • Kᗮ.starProjection).toLinearMap.IsSymmetricCoercive := by
+  let K := Krylov.subspace H.toLinearMap (-g) n
+  let P : E →L[ℝ] E := Kᗮ.starProjection
+  let B := H + ε • P
+  have hsym : B.toLinearMap.IsSymmetric :=
+    hH.isSymmetric.add (LinearMap.IsSymmetric.smul (by simp) Kᗮ.starProjection_isSymmetric)
+  refine ⟨hsym, (LinearMap.isCoercive_iff_forall_pos B.toLinearMap).mpr ?_⟩
+  intro x hx
+  have hHp := hH.inner_nonneg_left x
+  have hPp : 0 ≤ ⟪P x, x⟫ := Kᗮ.re_inner_starProjection_nonneg x
+  have hb : ⟪B x, x⟫ = ⟪H x, x⟫ + ε * ⟪P x, x⟫ := by
+    simp [B, inner_add_left, real_inner_smul_left]
+  change 0 < ⟪B x, x⟫
+  rw [hb]
+  refine lt_of_le_of_ne (add_nonneg hHp (mul_nonneg hε.le hPp)) ?_
+  intro hz
+  have hPprod := mul_nonneg hε.le hPp
+  change 0 ≤ ⟪H x, x⟫ at hHp
+  have hH0 : ⟪H x, x⟫ = 0 := by linarith
+  have hP0 : ⟪P x, x⟫ = 0 := by
+    have hh : ε * ⟪P x, x⟫ = 0 := by linarith
+    exact (mul_eq_zero.mp hh).resolve_left hε.ne'
+  have hPnorm : ‖Kᗮ.orthogonalProjectionOnto x‖ ^ 2 = 0 := by
+    rw [← Kᗮ.re_inner_starProjection_eq_normSq]
+    exact hP0
+  have hPx : P x = 0 := by
+    change Kᗮ.starProjection x = 0
+    rw [Submodule.starProjection_apply, norm_eq_zero.mp (sq_eq_zero_iff.mp hPnorm)]
+    rfl
+  have hxK : x ∈ K := by
+    simpa only [Submodule.orthogonal_orthogonal] using
+      (Submodule.starProjection_apply_eq_zero_iff Kᗮ).mp hPx
+  apply hx
+  apply CG.eq_zero_of_apply_eq_zero_of_mem_subspace_of_pos_prefix (-g) 0 hH.isSymmetric hpos
+  · simpa only [map_zero, sub_zero] using hxK
+  · exact hH.apply_eq_zero_of_inner_eq_zero hH0
+
+private theorem cg_iterates_eq_of_orthogonal_shift [FiniteDimensional ℝ E]
+    (H : E →L[ℝ] E) (g : E) (n : ℕ) (ε : ℝ) :
+    let K := Krylov.subspace H.toLinearMap (-g) n
+    let B := H + ε • Kᗮ.starProjection
+    ∀ i ≤ n, CG.iterate B.toLinearMap (-g) 0 i = CG.iterate H.toLinearMap (-g) 0 i := by
+  let K := Krylov.subspace H.toLinearMap (-g) n
+  let B := H + ε • Kᗮ.starProjection
+  change ∀ i ≤ n, CG.iterate B.toLinearMap (-g) 0 i = CG.iterate H.toLinearMap (-g) 0 i
+  intro i
+  induction i with
+  | zero => simp [CG.init]
+  | succ i ih =>
+    intro hi
+    have hi' := ih (Nat.le_of_succ_le hi)
+    have hp : (CG.iterate H.toLinearMap (-g) 0 i).p ∈ K := by
+      have h := CG.direction_mem_subspace (-g) 0 (A := H.toLinearMap) i
+      simp only [map_zero, sub_zero] at h
+      exact Krylov.subspace_mono _ _ hi h
+    let p := (CG.iterate H.toLinearMap (-g) 0 i).p
+    have hz : Kᗮ.starProjection p = 0 :=
+      (Submodule.starProjection_apply_eq_zero_iff Kᗮ).mpr (K.le_orthogonal_orthogonal hp)
+    have hBp : B.toLinearMap (CG.iterate H.toLinearMap (-g) 0 i).p =
+        H.toLinearMap (CG.iterate H.toLinearMap (-g) 0 i).p := by
+      change B p = H p
+      simp [B, hz]
+    rw [CG.iterate_succ, CG.iterate_succ, hi']
+    simp only [CG.step, CG.alpha, hBp]
+
+private theorem cg_index_lt_grade_of_coercive_residual [FiniteDimensional ℝ E]
+    (H : E →ₗ[ℝ] E) (hH : H.IsSymmetricCoercive) (g : E)
+    {j : ℕ} (hr : (CG.iterate H (-g) 0 j).r ≠ 0) : j < grade H (-g) := by
+  by_contra! h
+  apply hr
+  apply CG.residual_eq_zero_of_grade_le (-g) 0 hH
+  simpa only [map_zero, sub_zero] using h
+
+private theorem cg_half_decrease_of_path_coercive [FiniteDimensional ℝ E]
+    (B : E →L[ℝ] E) (hB : B.toLinearMap.IsSymmetricCoercive)
+    (g : E) {Δ : ℝ} (hΔ : 0 < Δ) {x y : E} (hy : ‖y‖ ≤ Δ)
+    {j : ℕ} (hj : j < grade B.toLinearMap (-g)) {t : ℝ}
+    (ht : t ∈ Set.Icc (j : ℝ) ((j : ℝ) + 1))
+    (hx : x = (CG.iterate B.toLinearMap (-g) 0 j).x +
+      (t - (j : ℝ)) • ((CG.iterate B.toLinearMap (-g) 0 (j + 1)).x -
+        (CG.iterate B.toLinearMap (-g) 0 j).x))
+    (hxΔ : ‖x‖ = Δ) :
+    Subproblem.quadModel g B x ≤ (1 / 2) * Subproblem.quadModel g B y := by
+  obtain ⟨z, hz, hmin⟩ := Subproblem.exists_isMinOn_closedBall g B hΔ.le
+  let k := grade B.toLinearMap (-g) - 1
+  have hkg : k + 1 = grade B.toLinearMap (-g) := by omega
+  have hjk : j ≤ k := by omega
+  have hxt : x = cgPath B.toLinearMap g k t :=
+    hx.trans (cgPath_eq_segment B.toLinearMap g hjk ht).symm
+  have ht' : t ∈ Set.Icc 0 ((k : ℝ) + 1) :=
+    ⟨(Nat.cast_nonneg j).trans ht.1, ht.2.trans (add_le_add (Nat.cast_le.mpr hjk) le_rfl)⟩
+  have h := theorem_7_5_9_of_coercive B hB g hΔ hz hmin
+    (Or.inr ⟨k, hkg, t, ht', hxt, hxΔ⟩)
+  have hym : y ∈ Metric.closedBall (0 : E) Δ := by simpa [Metric.mem_closedBall] using hy
+  have hzy := (isMinOn_iff.mp hmin) y hym
+  exact h.trans (mul_le_mul_of_nonneg_left hzy (by norm_num))
+
+private theorem quadModel_half_decrease_of_perturbations
+    (H P : E →L[ℝ] E) (g x y : E) {ε₀ : ℝ} (hε₀ : 0 < ε₀)
+    (hpert : ∀ ε, 0 < ε → ε ≤ ε₀ →
+      Subproblem.quadModel g (H + ε • P) x ≤ (1 / 2) * Subproblem.quadModel g (H + ε • P) y) :
+    Subproblem.quadModel g H x ≤ (1 / 2) * Subproblem.quadModel g H y := by
+  let C := |⟪y, P y⟫| + |⟪x, P x⟫| + 1
+  have hC : 0 < C := by dsimp [C]; positivity
+  have hmodel (ε : ℝ) (v : E) :
+      Subproblem.quadModel g (H + ε • P) v =
+        Subproblem.quadModel g H v + ε / 2 * ⟪v, P v⟫ := by
+    simp only [Subproblem.quadModel, add_apply, smul_apply,
+      inner_add_right, real_inner_smul_right]
+    ring
+  apply le_of_forall_pos_le_add
+  intro δ hδ
+  let ε := min ε₀ (δ / C)
+  have hε : 0 < ε := lt_min hε₀ (div_pos hδ hC)
+  have hh := hpert ε hε (min_le_left _ _)
+  rw [hmodel, hmodel] at hh
+  have heC : ε * C ≤ δ := (le_div_iff₀ hC).mp (min_le_right _ _)
+  have habsx := mul_le_mul_of_nonneg_left (neg_abs_le (⟪x, P x⟫)) hε.le
+  have habsy := mul_le_mul_of_nonneg_left (le_abs_self (⟪y, P y⟫)) hε.le
+  have hnx := mul_nonneg hε.le (abs_nonneg (⟪x, P x⟫))
+  have hny := mul_nonneg hε.le (abs_nonneg (⟪y, P y⟫))
+  dsimp [C] at heC
+  linarith [show ε * (|⟪y, P y⟫| + |⟪x, P x⟫| + 1) =
+    ε * |⟪y, P y⟫| + ε * |⟪x, P x⟫| + ε by ring]
+
+/-- The terminal ray in Algorithm 7.5.1, used when the direction has
+nonpositive curvature or its full step reaches the trust-region boundary. -/
+noncomputable def steihaugRay (H : E →ₗ[ℝ] E) (g : E) (k : ℕ) (σ : ℝ) : E :=
+  (CG.iterate H (-g) 0 k).x + σ • (CG.iterate H (-g) 0 k).p
+
+/-- On the terminal ray of Algorithm 7.5.1, the norm is strictly increasing
+in the nonnegative ray parameter. In particular the positive boundary
+intersection exists and is unique if the current iterate is interior. -/
+theorem steihaugRay_boundary_unique (H : E →ₗ[ℝ] E) (hH : H.IsSymmetric) (g : E)
+    {k : ℕ} (hpos : ∀ j < k, 0 < ⟪H (CG.iterate H (-g) 0 j).p, (CG.iterate H (-g) 0 j).p⟫)
+    (hr : (CG.iterate H (-g) 0 k).r ≠ 0) {Δ : ℝ}
+    (hΔ : ‖(CG.iterate H (-g) 0 k).x‖ < Δ) :
+    ∃! σ, 0 < σ ∧ ‖steihaugRay H g k σ‖ = Δ := by
+  let s := CG.iterate H (-g) 0 k
+  let F (σ : ℝ) := ‖steihaugRay H g k σ‖
+  have hp : s.p ≠ 0 := by
+    intro hp0
+    have h := CG.inner_residual_direction_self_of_pos_prefix (-g) 0 hH hpos
+    change ⟪s.r, s.p⟫ = ⟪s.r, s.r⟫ at h
+    rw [hp0, inner_zero_right] at h
+    exact hr (inner_self_eq_zero.mp h.symm)
+  have hpn : 0 < ‖s.p‖ := norm_pos_iff.mpr hp
+  have hxp : 0 ≤ ⟪s.x, s.p⟫ := by
+    have h := CG.re_inner_sub_iterate_direction_nonneg_of_pos_prefix (-g) 0 hH hpos
+      (Nat.zero_le k) le_rfl le_rfl
+    simpa only [CG.iterate_zero, CG.init_x, sub_zero, RCLike.re_to_real] using h
+  have hsq {σ : ℝ} (hσ : 0 ≤ σ) :
+      F σ ^ 2 = ‖s.x‖ ^ 2 + 2 * (σ * ⟪s.x, s.p⟫) + (σ * ‖s.p‖) ^ 2 := by
+    change ‖s.x + σ • s.p‖ ^ 2 = _
+    rw [norm_add_sq_real, real_inner_smul_right, norm_smul, Real.norm_of_nonneg hσ]
+  have hmono : StrictMonoOn F (Set.Ici 0) := by
+    intro σ hσ τ hτ hστ
+    apply (pow_lt_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).mp
+    rw [hsq hσ, hsq hτ]
+    have hp₁ := mul_lt_mul_of_pos_right hστ hpn
+    have hp₂ := (pow_lt_pow_iff_left₀ (mul_nonneg hσ hpn.le)
+      (mul_nonneg hτ hpn.le) two_ne_zero).mpr hp₁
+    have hp₃ := mul_le_mul_of_nonneg_right hστ.le hxp
+    linarith
+  let τ := (Δ + ‖s.x‖ + 1) / ‖s.p‖
+  have hΔ₀ : 0 < Δ := (norm_nonneg _).trans_lt hΔ
+  have hτ : 0 < τ := by dsimp [τ]; positivity
+  have htop : Δ < F τ := by
+    have hbound := norm_sub_le (s.x + τ • s.p) s.x
+    rw [add_sub_cancel_left, norm_smul, Real.norm_of_nonneg hτ.le] at hbound
+    have he : τ * ‖s.p‖ = Δ + ‖s.x‖ + 1 := div_mul_cancel₀ _ hpn.ne'
+    rw [he] at hbound
+    change Δ < ‖s.x + τ • s.p‖
+    linarith
+  have hf₀ : F 0 < Δ := by simpa [F, steihaugRay] using hΔ
+  have hc : Continuous F := by
+    change Continuous (fun σ : ℝ => ‖s.x + σ • s.p‖)
+    exact (continuous_const.add (continuous_id.smul continuous_const)).norm
+  obtain ⟨σ, hσ, he⟩ := intermediate_value_Icc hτ.le hc.continuousOn
+    (show Δ ∈ Set.Icc (F 0) (F τ) from ⟨hf₀.le, htop.le⟩)
+  have hσ₀ : 0 < σ := lt_of_le_of_ne hσ.1 fun h => hf₀.ne (h ▸ he)
+  exact ⟨σ, ⟨hσ₀, he⟩, fun η hη => hmono.injOn hη.1.le hσ₀.le (hη.2.trans he.symm)⟩
+
+/-- At the null-curvature stop of Algorithm 7.5.1, the convex quadratic
+decreases affinely along the terminal ray with slope minus the squared
+norm of the current residual. -/
+theorem steihaugRay_quadModel_of_nullCurvature (H : E →L[ℝ] E)
+    (hH : H.toLinearMap.IsPositive) (g : E) {k : ℕ}
+    (hpos : ∀ j < k, 0 < ⟪H (CG.iterate H.toLinearMap (-g) 0 j).p,
+      (CG.iterate H.toLinearMap (-g) 0 j).p⟫)
+    (hnull : ⟪H (CG.iterate H.toLinearMap (-g) 0 k).p,
+      (CG.iterate H.toLinearMap (-g) 0 k).p⟫ = 0) (σ : ℝ) :
+    Subproblem.quadModel g H (steihaugRay H.toLinearMap g k σ) =
+      Subproblem.quadModel g H (CG.iterate H.toLinearMap (-g) 0 k).x -
+        σ * ‖(CG.iterate H.toLinearMap (-g) 0 k).r‖ ^ 2 := by
+  let s := CG.iterate H.toLinearMap (-g) 0 k
+  have hp : H s.p = 0 := hH.apply_eq_zero_of_inner_eq_zero hnull
+  have hpx : ⟪s.p, H s.x⟫ = 0 := by
+    calc
+      _ = ⟪H s.p, s.x⟫ := (hH.isSymmetric s.p s.x).symm
+      _ = _ := by rw [hp, inner_zero_left]
+  have hdiag := CG.inner_residual_direction_self_of_pos_prefix (-g) 0 hH.isSymmetric hpos
+  change ⟪s.r, s.p⟫ = ⟪s.r, s.r⟫ at hdiag
+  have hr : s.r = -g - H s.x := CG.residual_eq H.toLinearMap (-g) 0 k
+  have hgp : ⟪g, s.p⟫ = -‖s.r‖ ^ 2 := by
+    rw [real_inner_self_eq_norm_sq, hr, inner_sub_left, inner_neg_left,
+      real_inner_comm s.p (H s.x), hpx, sub_zero] at hdiag
+    rw [← hr] at hdiag
+    linarith
+  change Subproblem.quadModel g H (s.x + σ • s.p) =
+    Subproblem.quadModel g H s.x - σ * ‖s.r‖ ^ 2
+  unfold Subproblem.quadModel
+  rw [map_add, map_smul, hp, smul_zero, add_zero, inner_add_right, inner_add_left,
+    real_inner_smul_right, real_inner_smul_left, hgp, hpx, mul_zero, add_zero]
+  ring
+
+/-- At a boundary stop in Algorithm 7.5.1 with the identity preconditioner,
+all preceding directions have positive curvature and all preceding iterates
+are interior. The returned point is the positive boundary intersection of
+the current ray, no later than the full step when curvature is positive. -/
+def IsSteihaugTointBoundaryStop (H : E →ₗ[ℝ] E) (g : E) (Δ : ℝ) (x : E) : Prop :=
+  ∃ k : ℕ, ∃ σ : ℝ,
+    (∀ j < k, 0 < ⟪H (CG.iterate H (-g) 0 j).p, (CG.iterate H (-g) 0 j).p⟫) ∧
+    (∀ j ≤ k, ‖(CG.iterate H (-g) 0 j).x‖ < Δ) ∧
+    (CG.iterate H (-g) 0 k).r ≠ 0 ∧
+    0 < σ ∧ x = steihaugRay H g k σ ∧ ‖x‖ = Δ ∧
+    (⟪H (CG.iterate H (-g) 0 k).p, (CG.iterate H (-g) 0 k).p⟫ ≤ 0 ∨
+      σ ≤ CG.alpha H (CG.iterate H (-g) 0 k))
+
+private theorem cgHalfDecrease_on_ray_of_coercive [FiniteDimensional ℝ E]
+    (B : E →L[ℝ] E) (hB : B.toLinearMap.IsSymmetricCoercive)
+    (g : E) {Δ : ℝ} (hΔ : 0 < Δ) {x y : E} (hy : ‖y‖ ≤ Δ)
+    {k : ℕ} (hr : (CG.iterate B.toLinearMap (-g) 0 k).r ≠ 0)
+    {σ : ℝ} (hσ : 0 ≤ σ)
+    (hα : 0 < CG.alpha B.toLinearMap (CG.iterate B.toLinearMap (-g) 0 k))
+    (hσα : σ ≤ CG.alpha B.toLinearMap (CG.iterate B.toLinearMap (-g) 0 k))
+    (hx : x = steihaugRay B.toLinearMap g k σ) (hxΔ : ‖x‖ = Δ) :
+    Subproblem.quadModel g B x ≤ (1 / 2) * Subproblem.quadModel g B y := by
+  let α := CG.alpha B.toLinearMap (CG.iterate B.toLinearMap (-g) 0 k)
+  let t := (k : ℝ) + σ / α
+  have ht : t ∈ Set.Icc (k : ℝ) ((k : ℝ) + 1) :=
+    ⟨le_add_of_nonneg_right (div_nonneg hσ hα.le),
+      add_le_add le_rfl ((div_le_one hα).mpr hσα)⟩
+  apply cg_half_decrease_of_path_coercive B hB g hΔ hy
+    (cg_index_lt_grade_of_coercive_residual B.toLinearMap hB g hr) ht _ hxΔ
+  have hd : (CG.iterate B.toLinearMap (-g) 0 (k + 1)).x -
+        (CG.iterate B.toLinearMap (-g) 0 k).x =
+      α • (CG.iterate B.toLinearMap (-g) 0 k).p := by
+    rw [CG.iterate_succ_x, add_sub_cancel_left]
+  have hta : t - (k : ℝ) = σ / α := by dsimp [t]; ring
+  rw [hta, hd, smul_smul]
+  change x = (CG.iterate B.toLinearMap (-g) 0 k).x +
+    (σ / α * α) • (CG.iterate B.toLinearMap (-g) 0 k).p
+  rw [div_mul_cancel₀ _ hα.ne']
+  exact hx
+
+private theorem cg_orthogonal_projection_direction_end [FiniteDimensional ℝ E]
+    (H : E →L[ℝ] E) (hH : H.toLinearMap.IsSymmetric) (g : E) {k : ℕ}
+    (hpos : ∀ j < k, 0 < ⟪H (CG.iterate H.toLinearMap (-g) 0 j).p,
+      (CG.iterate H.toLinearMap (-g) 0 j).p⟫) :
+    let K := Krylov.subspace H.toLinearMap (-g) k
+    Kᗮ.starProjection (CG.iterate H.toLinearMap (-g) 0 k).p =
+      (CG.iterate H.toLinearMap (-g) 0 k).r := by
+  let K := Krylov.subspace H.toLinearMap (-g) k
+  let r := (CG.iterate H.toLinearMap (-g) 0 k).r
+  have hr : r ∈ Kᗮ := by
+    have hgal := CG.isGalerkinIterate_of_pos_prefix (-g) 0 hH hpos
+    have ho := hgal.orth
+    simpa only [r, K, CG.residual_eq, map_zero, sub_zero] using ho
+  have hPr : Kᗮ.starProjection r = r := (Submodule.starProjection_eq_self_iff).mpr hr
+  rcases k with _ | k
+  · simpa only [CG.direction_zero] using hPr
+  have hp : (CG.iterate H.toLinearMap (-g) 0 k).p ∈ K := by
+    simpa only [K, map_zero, sub_zero] using
+      CG.direction_mem_subspace (-g) 0 (A := H.toLinearMap) k
+  have hPp : Kᗮ.starProjection (CG.iterate H.toLinearMap (-g) 0 k).p = 0 :=
+    (Submodule.starProjection_apply_eq_zero_iff Kᗮ).mpr (K.le_orthogonal_orthogonal hp)
+  change Kᗮ.starProjection (CG.iterate H.toLinearMap (-g) 0 (k + 1)).p = r
+  rw [CG.iterate_succ_p, map_add, map_smul, hPp, smul_zero, add_zero]
+  exact hPr
+
+/-- Theorem 7.5.9 for the convex quadratic model, including a boundary stop
+along a null-curvature ray. Every feasible comparison point gives the
+half-decrease bound, in particular an exact trust-region minimizer.
+A positive perturbation on the orthogonal complement of the traversed
+Krylov subspace preserves the current state and makes the operator coercive.
+On a null-curvature ray, its full step length tends to infinity as the
+perturbation tends to zero. -/
+theorem theorem_7_5_9 [FiniteDimensional ℝ E] (H : E →L[ℝ] E)
+    (hH : H.toLinearMap.IsPositive) (g : E) {Δ : ℝ} (hΔ : 0 < Δ)
+    {x y : E} (hy : ‖y‖ ≤ Δ) (hx : H x = -g ∨ IsSteihaugTointBoundaryStop H.toLinearMap g Δ x) :
+    Subproblem.quadModel g H x ≤ (1 / 2) * Subproblem.quadModel g H y := by
+  rcases hx with hs | ⟨k, σ, hp, _, hr, hσ, hx, hxΔ, hcut⟩
+  · exact theorem_7_5_9_stationary H hH g x y hs
+  let s := CG.iterate H.toLinearMap (-g) 0 k
+  let c := ⟪H s.p, s.p⟫
+  by_cases hc : 0 < c
+  · have hσα := hcut.resolve_left (not_le.mpr hc)
+    have hp' (j : ℕ) (hj : j < k + 1) :
+        0 < ⟪H (CG.iterate H.toLinearMap (-g) 0 j).p,
+          (CG.iterate H.toLinearMap (-g) 0 j).p⟫ := by
+      rcases lt_or_eq_of_le (Nat.le_of_lt_succ hj) with hl | rfl
+      · exact hp j hl
+      · exact hc
+    let K := Krylov.subspace H.toLinearMap (-g) (k + 1)
+    let P := Kᗮ.starProjection
+    apply quadModel_half_decrease_of_perturbations H P g x y (ε₀ := 1) zero_lt_one
+    intro ε hε _
+    let B := H + ε • P
+    have hB := cg_orthogonal_shift_coercive H hH g (k + 1) hp' hε
+    have he : CG.iterate B.toLinearMap (-g) 0 k = s :=
+      cg_iterates_eq_of_orthogonal_shift H g (k + 1) ε k (Nat.le_succ _)
+    have hsK : s.p ∈ K := by
+      simpa only [s, K, map_zero, sub_zero] using
+        CG.direction_mem_subspace (-g) 0 (A := H.toLinearMap) k
+    have hPp : P s.p = 0 :=
+      (Submodule.starProjection_apply_eq_zero_iff Kᗮ).mpr (K.le_orthogonal_orthogonal hsK)
+    have hBp : B s.p = H s.p := by simp [B, hPp]
+    have hα : CG.alpha B.toLinearMap (CG.iterate B.toLinearMap (-g) 0 k) =
+        CG.alpha H.toLinearMap s := by
+      rw [he]
+      change ⟪s.r, s.r⟫ / ⟪B s.p, s.p⟫ = _
+      rw [hBp]
+      rfl
+    have hαpos : 0 < CG.alpha H.toLinearMap s := by
+      rw [CG.alpha, real_inner_self_eq_norm_sq]
+      exact div_pos (sq_pos_of_pos (norm_pos_iff.mpr hr)) hc
+    have hxB : x = steihaugRay B.toLinearMap g k σ := by
+      unfold steihaugRay at hx ⊢
+      rw [he]
+      exact hx
+    exact cgHalfDecrease_on_ray_of_coercive B hB g hΔ hy
+      (by rw [he]; exact hr) hσ.le (hα ▸ hαpos) (hα ▸ hσα) hxB hxΔ
+  · have hc0 : c = 0 := le_antisymm (le_of_not_gt hc) (hH.inner_nonneg_left s.p)
+    have hHp : H s.p = 0 := hH.apply_eq_zero_of_inner_eq_zero hc0
+    let K := Krylov.subspace H.toLinearMap (-g) k
+    let P := Kᗮ.starProjection
+    have hPp : P s.p = s.r := cg_orthogonal_projection_direction_end H hH.isSymmetric g hp
+    have hdiag : ⟪s.r, s.p⟫ = ⟪s.r, s.r⟫ :=
+      CG.inner_residual_direction_self_of_pos_prefix (-g) 0 hH.isSymmetric hp
+    have hrr : 0 < ⟪s.r, s.r⟫ := by
+      rw [real_inner_self_eq_norm_sq]
+      exact sq_pos_of_pos (norm_pos_iff.mpr hr)
+    apply quadModel_half_decrease_of_perturbations H P g x y (ε₀ := 1 / σ)
+      (one_div_pos.mpr hσ)
+    intro ε hε hεσ
+    let B := H + ε • P
+    have hB := cg_orthogonal_shift_coercive H hH g k hp hε
+    have he : CG.iterate B.toLinearMap (-g) 0 k = s :=
+      cg_iterates_eq_of_orthogonal_shift H g k ε k le_rfl
+    have hBp : B s.p = ε • s.r := by simp [B, hHp, hPp]
+    have hα : CG.alpha B.toLinearMap (CG.iterate B.toLinearMap (-g) 0 k) = 1 / ε := by
+      rw [he]
+      change ⟪s.r, s.r⟫ / ⟪B s.p, s.p⟫ = _
+      rw [hBp, real_inner_smul_left, hdiag]
+      field_simp
+    have hσα : σ ≤ 1 / ε := by
+      apply (le_div_iff₀ hε).mpr
+      rw [mul_comm]
+      exact (le_div_iff₀ hσ).mp hεσ
+    have hxB : x = steihaugRay B.toLinearMap g k σ := by
+      unfold steihaugRay at hx ⊢
+      rw [he]
+      exact hx
+    exact cgHalfDecrease_on_ray_of_coercive B hB g hΔ hy
+      (by rw [he]; exact hr) hσ.le (hα ▸ one_div_pos.mpr hε) (hα ▸ hσα) hxB hxΔ
+
+
+/-- The exact stopping rules of Algorithm 7.5.1 produce a feasible point
+in finite dimension. If no earlier ray meets the boundary, the Galerkin
+residual vanishes by the Krylov grade. -/
+theorem exists_steihaugToint_stop [FiniteDimensional ℝ E] (H : E →ₗ[ℝ] E)
+    (hH : H.IsSymmetric) (g : E) {Δ : ℝ} (hΔ : 0 < Δ) :
+    ∃ x, ‖x‖ ≤ Δ ∧ (H x = -g ∨ IsSteihaugTointBoundaryStop H g Δ x) := by
+  let done := ∃ x, ‖x‖ ≤ Δ ∧ (H x = -g ∨ IsSteihaugTointBoundaryStop H g Δ x)
+  let s := CG.iterate H (-g) 0
+  have hscan (k : ℕ) : done ∨
+      (∀ j < k, 0 < ⟪H (s j).p, (s j).p⟫) ∧ (∀ j ≤ k, ‖(s j).x‖ < Δ) := by
+    induction k with
+    | zero =>
+      right
+      refine ⟨fun j hj => (Nat.not_lt_zero j hj).elim, ?_⟩
+      intro j hj
+      have hj0 : j = 0 := Nat.eq_zero_of_le_zero hj
+      subst j
+      simpa [s, CG.init] using hΔ
+    | succ k ih =>
+      rcases ih with hd | ⟨hp, hi⟩
+      · exact Or.inl hd
+      by_cases hr : (s k).r = 0
+      · left
+        refine ⟨(s k).x, (hi k le_rfl).le, Or.inl ?_⟩
+        have h := CG.residual_eq H (-g) 0 k
+        change (s k).r = -g - H (s k).x at h
+        rw [hr] at h
+        exact (sub_eq_zero.mp h.symm).symm
+      obtain ⟨σ, ⟨hσ, hσΔ⟩, _⟩ := steihaugRay_boundary_unique H hH g hp hr (hi k le_rfl)
+      by_cases hc : 0 < ⟪H (s k).p, (s k).p⟫
+      · have hα : 0 < CG.alpha H (s k) := by
+          rw [CG.alpha, real_inner_self_eq_norm_sq]
+          exact div_pos (sq_pos_of_pos (norm_pos_iff.mpr hr)) hc
+        by_cases hn : ‖(s (k + 1)).x‖ < Δ
+        · right
+          constructor
+          · intro j hj
+            rcases lt_or_eq_of_le (Nat.le_of_lt_succ hj) with hlt | rfl
+            · exact hp j hlt
+            · exact hc
+          · intro j hj
+            rcases lt_or_eq_of_le hj with hlt | rfl
+            · exact hi j (Nat.le_of_lt_succ hlt)
+            · exact hn
+        · let F (t : ℝ) := ‖steihaugRay H g k t‖
+          have hcF : Continuous F := by
+            change Continuous (fun t : ℝ => ‖(s k).x + t • (s k).p‖)
+            exact (continuous_const.add (continuous_id.smul continuous_const)).norm
+          have hF0 : F 0 < Δ := by simpa [F, steihaugRay, s] using hi k le_rfl
+          have hFα : Δ ≤ F (CG.alpha H (s k)) := by
+            have he : (s (k + 1)).x = steihaugRay H g k (CG.alpha H (s k)) :=
+              CG.iterate_succ_x H (-g) 0 k
+            change Δ ≤ ‖steihaugRay H g k (CG.alpha H (s k))‖
+            rw [← he]
+            exact le_of_not_gt hn
+          obtain ⟨τ, ht, htΔ⟩ := intermediate_value_Icc hα.le hcF.continuousOn
+            (show Δ ∈ Set.Icc (F 0) (F (CG.alpha H (s k))) from ⟨hF0.le, hFα⟩)
+          have ht0 : 0 < τ := lt_of_le_of_ne ht.1 fun h => hF0.ne (h ▸ htΔ)
+          exact Or.inl ⟨steihaugRay H g k τ, htΔ.le, Or.inr
+            ⟨k, τ, hp, hi, hr, ht0, rfl, htΔ, Or.inr ht.2⟩⟩
+      · exact Or.inl ⟨steihaugRay H g k σ, hσΔ.le, Or.inr
+          ⟨k, σ, hp, hi, hr, hσ, rfl, hσΔ, Or.inl (le_of_not_gt hc)⟩⟩
+  let k := grade H (-g)
+  rcases hscan k with hd | ⟨hp, hi⟩
+  · exact hd
+  have hg := CG.isGalerkinIterate_of_pos_prefix (-g) 0 hH hp
+  have he : grade H (-g - H 0) ≤ k := by simp [k]
+  exact ⟨(s k).x, (hi k le_rfl).le, Or.inl (hg.apply_eq_of_grade_le he)⟩
+
 end TruncatedCG
 
 /-- Theorem 7.5.10. The preconditioned Lanczos relation and the shifted reduced

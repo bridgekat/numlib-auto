@@ -65,9 +65,10 @@ For Theorem 7.3.4, the convergence phases are formalized separately. A fixed lef
 eigenvector and a continuous boundary correction give vector convergence in the hard case.
 The original direction-selection guarantee and the complete safeguarded algorithm remain open.
 Weighted subproblems use the M-inner product or the explicit coordinate transformation.
-The nonnegative index in Lemma 7.5.8 is k. Theorem 7.5.9 is proved for
-stationary stops and for positive-definite boundary stops, including a zero
-multiplier. The singular positive-semidefinite boundary case remains open.
+The nonnegative index in Lemma 7.5.8 is k. Theorem 7.5.9 covers stationary
+stops and both positive- and zero-curvature boundary stops for convex
+quadratics. At zero curvature, the model decreases affinely along the
+last search ray.
 
 
 In Algorithm 9.1.1, the selected trial can reset the reference while the original
