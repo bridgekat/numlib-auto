@@ -119,3 +119,7 @@ source = "Conn–Gould–Toint, Theorem 15.4.19 with uniform trial-segment contr
 [[node]]
 id = "corollary_15_4_20"
 source = "Conn–Gould–Toint, Corollary 15.4.20"
+
+[[node]]
+id = "lemma_15_4_21"
+source = "Conn–Gould–Toint, Lemma 15.4.21 with corrected singular-value factor"

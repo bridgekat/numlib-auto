@@ -1063,4 +1063,76 @@ theorem corollary_15_4_20 (c : ℕ → F) (a : ℕ → E) {m : ℝ} (hm : 0 < m)
       exact hrank k))
   · simpa only [zero_div] using ha.div_const m
 
+/-- Lemma 15.4.21. Uniform rank and the range/null-space balance control
+the normal step by the residual. The rank lower bound is used in both
+factors of the Cauchy estimate, including the second entry of its minimum. -/
+theorem lemma_15_4_21 [CompleteSpace E]
+    {Z W : Type*} [NormedAddCommGroup Z] [InnerProductSpace ℝ Z] [CompleteSpace Z]
+    [NormedAddCommGroup W] [NormedSpace ℝ W]
+    (c : ℕ → Z) (A : ℕ → E →L[ℝ] Z) (N : ℕ → W →L[ℝ] E)
+    (n : ℕ → E) (r : ℕ → Z) (z : ℕ → W) (Δ : ℕ → ℝ)
+    {B M J m μ κ ξ β : ℝ} (hB : 0 < B) (hM : 0 ≤ M) (hJ : 0 ≤ J)
+    (hm : 0 < m) (hμ : 0 < μ) (hκ : 0 < κ) (hξ : 0 ≤ ξ) (hβ : 0 < β)
+    (hΔ : ∀ k, 0 ≤ Δ k)
+    (hA : ∀ k, ‖(A k).adjoint‖ ≤ B) (hN : ∀ k, ‖N k‖ ≤ M)
+    (hpart : ∀ k, n k = (A k).adjoint (r k) + N k (z k))
+    (hnull : ∀ k, A k (N k (z k)) = 0) (hbal : ∀ k, ‖z k‖ ≤ J * ‖r k‖)
+    (hrank : ∀ k, m * ‖c k‖ ≤ ‖(A k).adjoint (c k)‖)
+    (hrank₂ : ∀ k, μ * ‖r k‖ ≤ ‖A k ((A k).adjoint (r k))‖)
+    (hstep : ∀ k, ‖n k‖ ≤ ξ * Δ k)
+    (hcauchy : ∀ k, κ * (‖(A k).adjoint (c k)‖ / ‖c k‖) *
+      min (ξ * Δ k) (‖(A k).adjoint (c k)‖ / β) ≤
+        sqpNormalModel (c k) (A k) 0 - sqpNormalModel (c k) (A k) (n k)) :
+    ∃ a > 0, ∀ k, let d := sqpNormalModel (c k) (A k) 0 - sqpNormalModel (c k) (A k) (n k)
+      a * ‖n k‖ ≤ d ∧ d ≤ ‖c k‖ := by
+  let C := (B + M * J) * (2 / μ)
+  have hC : 0 < C := by dsimp [C]; positivity
+  let p := min 1 (m / (β * C))
+  have hp : 0 < p := lt_min zero_lt_one (by positivity)
+  refine ⟨κ * m * p, by positivity, fun k => ?_⟩
+  have hc := hcauchy k
+  simp only [sqpNormalModel, map_zero, add_zero] at hc ⊢
+  refine ⟨?_, sub_le_self _ (norm_nonneg _)⟩
+  have hd := (show 0 ≤ κ * (‖(A k).adjoint (c k)‖ / ‖c k‖) *
+    min (ξ * Δ k) (‖(A k).adjoint (c k)‖ / β) by positivity [hΔ k]).trans hc
+  have hAn : ‖A k (n k)‖ ≤ 2 * ‖c k‖ := by
+    calc
+      _ = ‖(c k + A k (n k)) - c k‖ := by rw [add_sub_cancel_left]
+      _ ≤ ‖c k + A k (n k)‖ + ‖c k‖ := norm_sub_le _ _
+      _ ≤ _ := by linarith
+  have hr := hrank₂ k
+  rw [← add_zero (A k ((A k).adjoint (r k))), ← hnull k, ← map_add, ← hpart k] at hr
+  have hr' : ‖r k‖ ≤ (2 / μ) * ‖c k‖ := by
+    rw [div_mul_eq_mul_div]
+    exact (le_div_iff₀ hμ).mpr (by linarith only [hr.trans hAn])
+  have hn : ‖n k‖ ≤ C * ‖c k‖ := calc
+    _ ≤ ‖(A k).adjoint (r k)‖ + ‖N k (z k)‖ := by
+      nth_rw 1 [hpart k]
+      exact norm_add_le _ _
+    _ ≤ B * ‖r k‖ + M * (J * ‖r k‖) := add_le_add
+      (((A k).adjoint.le_opNorm _).trans (mul_le_mul_of_nonneg_right (hA k) (norm_nonneg _)))
+      (((N k).le_opNorm _).trans
+        (mul_le_mul (hN k) (hbal k) (norm_nonneg _) hM))
+    _ = (B + M * J) * ‖r k‖ := by ring
+    _ ≤ _ := by
+      dsimp [C]
+      rw [mul_assoc]
+      exact mul_le_mul_of_nonneg_left hr' (by positivity)
+  by_cases hz : c k = 0
+  · have hh : ‖n k‖ = 0 := le_antisymm (by simpa only [hz, norm_zero, mul_zero] using hn)
+      (norm_nonneg _)
+    simpa only [hh, mul_zero] using hd
+  have hcp : 0 < ‖c k‖ := norm_pos_iff.mpr hz
+  have hratio : m ≤ ‖(A k).adjoint (c k)‖ / ‖c k‖ := (le_div_iff₀ hcp).mpr (hrank k)
+  have hmin : p * ‖n k‖ ≤ min (ξ * Δ k) (‖(A k).adjoint (c k)‖ / β) := by
+    refine le_min ((mul_le_of_le_one_left (norm_nonneg _) (min_le_left _ _)).trans (hstep k)) ?_
+    calc
+      _ ≤ (m / (β * C)) * (C * ‖c k‖) :=
+        mul_le_mul (min_le_right _ _) hn (norm_nonneg _) (by positivity)
+      _ = (m * ‖c k‖) / β := by field_simp
+      _ ≤ _ := div_le_div_of_nonneg_right (hrank k) hβ.le
+  rw [mul_assoc]
+  exact (mul_le_mul (mul_le_mul_of_nonneg_left hratio hκ.le) hmin
+    (mul_nonneg hp.le (norm_nonneg _)) (by positivity)).trans hc
+
 end ConnGouldToint.Chapter15
