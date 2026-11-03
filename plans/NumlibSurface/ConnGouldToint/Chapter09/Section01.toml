@@ -1,0 +1,12 @@
+namespace = "ConnGouldToint.Chapter09"
+
+[[node]]
+id = "modelValidOnBall"
+source = "Conn–Gould–Toint, (9.1.1)–(9.1.2)"
+
+[[node]]
+id = "theorem_9_1_1"
+source = "Conn–Gould–Toint, Theorem 9.1.1"
+
+[[node]]
+id = "zero_radius_counterexample"

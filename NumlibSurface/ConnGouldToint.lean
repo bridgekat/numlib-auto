@@ -4,6 +4,7 @@ import NumlibSurface.ConnGouldToint.Chapter05
 import NumlibSurface.ConnGouldToint.Chapter06
 import NumlibSurface.ConnGouldToint.Chapter07
 import NumlibSurface.ConnGouldToint.Chapter08
+import NumlibSurface.ConnGouldToint.Chapter09
 import NumlibSurface.ConnGouldToint.Chapter10
 import NumlibSurface.ConnGouldToint.Chapter12
 import NumlibSurface.ConnGouldToint.Chapter14
@@ -40,16 +41,19 @@ tridiagonals. The sphere and ball characterizations require a positive radius. T
 expresses the exclusion of the hard case through eigenvector nonorthogonality. Theorem 7.5.16
 uses the preconditioner inner-product coordinates.
 
+Theorem 9.1.1 requires a positive ball radius. A radius-zero counterexample shows that
+validity at the center alone gives no gradient bound.
+
 Chapter 10 covers cumulative model decrease for the nonmonotone acceptance rule.
 The reference schedule in (10.1.2) requires strict decrease only when the reference changes.
 
-Section 12.1 covers box projection, the projected-gradient path, and the criticality measure. In (12.1.3), the radial projection
-formula applies outside the closed ball, and points inside project to themselves.
+Section 12.1 covers box projection, the projected-gradient path, and the criticality measure.
+In (12.1.3), the radial formula applies outside the closed ball. Points inside project to themselves.
 
 Chapter 14 covers the quadratic penalty and first-order multiplier estimate. In (14.2.3),
 both derivatives in the stationarity condition are evaluated at the feasible point.
 
 Chapter 16 covers the uniform least-squares Hessian bound, exact minimization of the scalar
 epigraph merit function, and the Fischer–Burmeister residual formulation of complementarity.
-Equation (16.2.24) gives a real minimum value. The argmin is formalized as the singleton set containing that value.
+Equation (16.2.24) gives a real minimum value. The argmin is the singleton containing that value.
 -/
