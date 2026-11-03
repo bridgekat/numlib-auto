@@ -172,6 +172,32 @@ theorem lemma_6_5_3 {P : BTRParams} {f : E → ℝ}
     (f := f) (x := x k) (s := s k) hp (by rwa [hfit])
   simpa [btrRatio] using h
 
+/-- Once all later iterations are very successful, the radius is bounded
+below by the minimum of its positive finite prefix. -/
+theorem BTRRun.exists_delta_lower_bound_of_eventually_verySuccessful
+    {P : BTRParams} {f : E → ℝ} {sufficient : ℕ → (E → ℝ) → E → E → Prop}
+    (run : BTRRun f P sufficient) (hv : ∀ᶠ k in atTop, k ∈ run.verySuccessful) :
+    ∃ δ > 0, ∀ k, δ ≤ run.Δ k := by
+  obtain ⟨N, hN⟩ := eventually_atTop.mp hv
+  have hprefix (n : ℕ) : ∃ δ > 0, ∀ k ≤ n, δ ≤ run.Δ k := by
+    induction n with
+    | zero =>
+      exact ⟨run.Δ 0, run.delta_pos 0, fun k hk ↦ by simp [Nat.eq_zero_of_le_zero hk]⟩
+    | succ n ih =>
+      obtain ⟨δ, hδ, hδn⟩ := ih
+      refine ⟨min δ (run.Δ (n + 1)), lt_min hδ (run.delta_pos _), fun k hk ↦ ?_⟩
+      rcases Nat.lt_or_eq_of_le hk with h | rfl
+      · exact (min_le_left _ _).trans (hδn k (Nat.le_of_lt_succ h))
+      · exact min_le_right _ _
+  obtain ⟨δ, hδ, hδN⟩ := hprefix N
+  refine ⟨δ, hδ, fun k ↦ ?_⟩
+  induction k with
+  | zero => exact hδN 0 (Nat.zero_le _)
+  | succ k ih =>
+    by_cases hk : N ≤ k
+    · exact ih.trans ((run.radius_update k).very_successful (hN k hk))
+    · exact hδN (k + 1) (Nat.succ_le_of_lt (lt_of_not_ge hk))
+
 /-- Corrected Lemma 6.5.4. Once the ratio estimate is valid on the full
 sequence, radius updates give a positive lower bound, including the finite prefix. -/
 theorem lemma_6_5_4 {P : BTRParams} {f : E → ℝ}
@@ -192,25 +218,7 @@ theorem lemma_6_5_4 {P : BTRParams} {f : E → ℝ}
     (∀ᶠ k in atTop, k ∈ run.verySuccessful) ∧ ∃ δ > 0, ∀ k, δ ≤ run.Δ k := by
   have hv : ∀ᶠ k in atTop, k ∈ run.verySuccessful :=
     lemma_6_5_3 (P := P) (j := id) tendsto_id hκ hf hm hDm hval hgrad hcrit hagree hFvar hMvar hdec
-  obtain ⟨N, hN⟩ := eventually_atTop.mp hv
-  have hprefix (n : ℕ) : ∃ δ > 0, ∀ k ≤ n, δ ≤ run.Δ k := by
-    induction n with
-    | zero =>
-      exact ⟨run.Δ 0, run.delta_pos 0, fun k hk ↦ by simp [Nat.eq_zero_of_le_zero hk]⟩
-    | succ n ih =>
-      obtain ⟨δ, hδ, hδn⟩ := ih
-      refine ⟨min δ (run.Δ (n + 1)), lt_min hδ (run.delta_pos _), fun k hk ↦ ?_⟩
-      rcases Nat.lt_or_eq_of_le hk with h | rfl
-      · exact (min_le_left _ _).trans (hδn k (Nat.le_of_lt_succ h))
-      · exact min_le_right _ _
-  obtain ⟨δ, hδ, hδN⟩ := hprefix N
-  refine ⟨hv, δ, hδ, fun k ↦ ?_⟩
-  induction k with
-  | zero => exact hδN 0 (Nat.zero_le _)
-  | succ k ih =>
-    by_cases hk : N ≤ k
-    · exact ih.trans ((run.radius_update k).very_successful (hN k hk))
-    · exact hδN (k + 1) (Nat.succ_le_of_lt (lt_of_not_ge hk))
+  exact ⟨hv, run.exists_delta_lower_bound_of_eventually_verySuccessful hv⟩
 
 /-- A derivative that is bounded below at a stationary point stays linearly
 bounded below in the distance to that point in a neighborhood. -/

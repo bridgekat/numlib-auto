@@ -31,3 +31,11 @@ source = "Conn–Gould–Toint, Lemma 12.3.5"
 [[node]]
 id = "lemma_12_3_6"
 source = "Conn–Gould–Toint, Lemma 12.3.6"
+
+[[node]]
+id = "relaxedCriticality_lower_bound_of_nearby"
+source = "Conn–Gould–Toint, corrected relaxed comparison in (12.3.15)–(12.3.16)"
+
+[[node]]
+id = "missing_active_local_criticality_counterexample"
+source = "Counterexample to the pointwise comparison in the proof of Theorem 12.3.4"

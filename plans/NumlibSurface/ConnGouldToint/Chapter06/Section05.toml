@@ -42,3 +42,7 @@ source = "Conn–Gould–Toint, local derivative lower bound in Theorems 6.5.2 a
 [[node]]
 id = "tendsto_of_local_step_bound"
 source = "Conn–Gould–Toint, neighborhood trapping argument in Theorems 6.5.2 and 8.4.8"
+
+[[node]]
+id = "BTRRun.exists_delta_lower_bound_of_eventually_verySuccessful"
+source = "Conn–Gould–Toint, radius floor in Lemma 6.5.4 and Theorem 12.4.5"

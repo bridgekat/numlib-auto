@@ -58,6 +58,32 @@ theorem theorem_6_6_1_quadraticModel {F : Type*} [NormedAddCommGroup F] [InnerPr
       (show -(1 / 2 : ℝ) * κ * τ * (stepNormRatio p u) ^ 2 * Δ ^ 2 =
           -(1 / 2 : ℝ) * κ * τ * ‖u‖ ^ 2 by rw [← he, mul_pow]; ring).le.trans hdec)
 
+/-- A geometric search that accepts every sufficiently short trial
+terminates. Its first accepted length is at least the smaller of the
+initial length and the acceptance threshold times the contraction factor. -/
+theorem exists_first_eigenTrial_of_small_length {q U a : ℝ}
+    (hq : 0 < q) (hq' : q < 1) (ha : 0 < a) {accept : ℕ → Prop}
+    (haccept : ∀ j, eigenTrialTime q j * U ≤ a → accept j) :
+    ∃ j, accept j ∧ (∀ i < j, ¬ accept i) ∧ min U (q * a) ≤ eigenTrialTime q j * U := by
+  have ht : Tendsto (fun j : ℕ ↦ eigenTrialTime q j * U) atTop (𝓝 0) := by
+    simpa only [eigenTrialTime, zero_mul] using
+      (tendsto_pow_atTop_nhds_zero_of_lt_one hq.le hq').mul_const U
+  obtain ⟨i, hi⟩ := (ht.eventually_lt_const ha).exists
+  have hex : ∃ j, accept j := ⟨i, haccept i hi.le⟩
+  classical
+  let j := Nat.find hex
+  have hfirst (k : ℕ) (hk : k < j) : ¬ accept k := Nat.find_min hex hk
+  refine ⟨j, Nat.find_spec hex, hfirst, ?_⟩
+  cases hj : j with
+  | zero => simp [eigenTrialTime]
+  | succ k =>
+    have hk : a < eigenTrialTime q k * U :=
+      lt_of_not_ge (fun h ↦ hfirst k (hj ▸ Nat.lt_succ_self k) (haccept k h))
+    have hh := mul_lt_mul_of_pos_left hk hq
+    apply (min_le_right U (q * a)).trans
+    simp only [eigenTrialTime, pow_succ] at hh ⊢
+    nlinarith only [hh]
+
 /-- Theorem 6.6.2 with the ray Taylor estimate. The first accepted trial
 has a model decrease bounded uniformly in the curvature and the ray length. -/
 theorem theorem_6_6_2_of_taylor_bound {ray : ℝ → ℝ} {q b κ τ U R g h : ℝ}
@@ -82,33 +108,19 @@ theorem theorem_6_6_2_of_taylor_bound {ray : ℝ → ℝ} {q b κ τ U R g h : �
     have hlin := mul_nonpos_of_nonneg_of_nonpos ht.1.le hg
     have hcube := mul_le_mul_of_nonneg_right hs (sq_nonneg (t * U))
     exact (hray t ht).trans (by dsimp [margin] at hcube; nlinarith only [hcurv, hlin, hcube])
-  have hex : ∃ j, EigenTrialAccepted ray q b τ U j := by
-    have ht : Tendsto (fun j : ℕ ↦ R * (eigenTrialTime q j * U)) atTop (𝓝 0) := by
-      simpa [eigenTrialTime] using
-        ((tendsto_pow_atTop_nhds_zero_of_lt_one hq.le hq').mul_const U).const_mul R
-    obtain ⟨j, hj⟩ := (ht.eventually (gt_mem_nhds (mul_pos hm (neg_pos.mpr hτ)))).exists
-    exact ⟨j, haccept j (le_of_lt hj)⟩
-  classical
-  let j := Nat.find hex
-  have hj : EigenTrialAccepted ray q b τ U j := Nat.find_spec hex
-  have hfirst (i : ℕ) (hi : i < j) : ¬ EigenTrialAccepted ray q b τ U i :=
-    Nat.find_min hex hi
+  let a := margin * (-τ) / R
+  have ha : 0 < a := div_pos (mul_pos hm (neg_pos.mpr hτ)) hR
+  obtain ⟨j, hj, hfirst, hlength⟩ := exists_first_eigenTrial_of_small_length hq hq' ha
+    (fun i hi ↦ haccept i (by
+      have hh := (le_div_iff₀ hR).mp hi
+      linarith only [hh, show R * (eigenTrialTime q i * U) = (eigenTrialTime q i * U) * R
+        by ring]))
   refine ⟨j, hj, hfirst, ?_⟩
   let c := q * margin / R
   have hc : 0 < c := div_pos (mul_pos hq hm) hR
-  have hlength : min U (c * (-τ)) ≤ eigenTrialTime q j * U := by
-    cases hji : j with
-    | zero => simp [eigenTrialTime]
-    | succ i =>
-      have hi : margin * (-τ) < R * (eigenTrialTime q i * U) :=
-        lt_of_not_ge (fun hs ↦ hfirst i (hji ▸ Nat.lt_succ_self i) (haccept i hs))
-      have hi' : c * (-τ) < eigenTrialTime q (i + 1) * U := by
-        rw [show c * (-τ) = q * margin * (-τ) / R by dsimp [c]; ring]
-        apply (div_lt_iff₀ hR).mpr
-        simp only [eigenTrialTime, pow_succ]
-        unfold eigenTrialTime at hi
-        nlinarith only [mul_lt_mul_of_pos_left hi hq]
-      exact (min_le_right _ _).trans hi'.le
+  have hlength' : min U (c * (-τ)) ≤ eigenTrialTime q j * U := by
+    have heq : c * (-τ) = q * a := by dsimp [c, a]; ring
+    simpa only [heq] using hlength
   have hscale : min 1 c * min U (-τ) ≤ min U (c * (-τ)) := by
     have hmin : 0 ≤ min U (-τ) := le_min hU.le (neg_nonneg.mpr hτ.le)
     apply le_min
@@ -116,7 +128,7 @@ theorem theorem_6_6_2_of_taylor_bound {ray : ℝ → ℝ} {q b κ τ U R g h : �
     · exact mul_le_mul (min_le_right 1 c) (min_le_right U (-τ)) hmin hc.le
   have hsquare := pow_le_pow_left₀
     (mul_nonneg (le_min zero_le_one hc.le) (le_min hU.le (neg_nonneg.mpr hτ.le)))
-    (hscale.trans hlength) 2
+    (hscale.trans hlength') 2
   have hminτ : (min U (-τ)) ^ 2 = min (τ ^ 2) (U ^ 2) := by
     rcases le_total U (-τ) with h | h
     · rw [min_eq_left h, min_eq_right (by nlinarith)]

@@ -1,0 +1,57 @@
+namespace = "ConnGouldToint.Chapter12"
+
+[[node]]
+id = "faceLagrangianModel"
+source = "Conn–Gould–Toint, fixed-multiplier model (12.4.3)"
+
+[[node]]
+id = "faceLagrangianModel_eq_of_active"
+source = "Conn–Gould–Toint, (12.4.2)–(12.4.3)"
+
+[[node]]
+id = "lemma_12_4_1"
+source = "Conn–Gould–Toint, Lemma 12.4.1"
+
+[[node]]
+id = "lemma_12_4_2"
+source = "Conn–Gould–Toint, Lemma 12.4.2 in product form and its nonzero-step quotient"
+
+[[node]]
+id = "lemma_12_4_4"
+source = "Conn–Gould–Toint, Lemma 12.4.4 with uniform feasible extension on the face"
+
+[[node]]
+id = "fderiv_faceLagrangianModel_eq_tangent"
+source = "Conn–Gould–Toint, projected Lagrangian gradient (12.4.1)"
+
+[[node]]
+id = "extendStep_mem_of_linear_active_face"
+source = "Conn–Gould–Toint, uniform face extension used in corrected Lemma 12.4.4"
+
+[[node]]
+id = "theorem_12_4_3"
+source = "Conn–Gould–Toint, Theorem 12.4.3 with identified-face local trapping hypotheses"
+
+[[node]]
+id = "theorem_12_4_5"
+source = "Conn–Gould–Toint, Theorem 12.4.5 with the segment Hessian estimate (12.4.7)"
+
+[[node]]
+id = "ProjectedEigenTrialAccepted"
+source = "Conn–Gould–Toint, corrected acceptance test (12.4.14)"
+
+[[node]]
+id = "theorem_12_4_6"
+source = "Conn–Gould–Toint, Theorem 12.4.6 with explicit projection geometry and corrected signs"
+
+[[node]]
+id = "eigenTrial_printed_sign_counterexample"
+source = "Counterexample to the printed sign in Conn–Gould–Toint, (12.4.14)"
+
+[[node]]
+id = "projectedRay_taylor_upper_of_face"
+source = "Conn–Gould–Toint, projection correction estimates (12.4.19)–(12.4.22)"
+
+[[node]]
+id = "theorem_12_4_3_of_lagrangian"
+source = "Conn–Gould–Toint, Theorem 12.4.3 via the step bound in Lemma 12.4.2"

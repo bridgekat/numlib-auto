@@ -251,6 +251,82 @@ theorem theorem_12_3_3 [Fintype ι] {S Ω : Set E} {x : ℕ → E}
       (Metric.cthickening_subset_of_subset δ hKT hy)
   exact hεsub i hye hi
 
+open Optimization in
+/-- The relaxed comparison (12.3.15)–(12.3.16). The endpoint feasible
+after dropping a constraint can be compared with criticality on the
+relaxed set. Moving the base point also shifts the displacement. -/
+theorem relaxedCriticality_lower_bound_of_nearby [CompleteSpace E]
+    {R : Set E} {f : E → ℝ} {x z d : E}
+    (hd : z + d ∈ R) (hdnorm : ‖d‖ ≤ 1 / 2) (hxz : ‖z - x‖ ≤ 1 / 2) :
+    ⟪-gradient f z, d⟫ - ‖gradient f x - gradient f z‖ * ‖d‖ -
+        ‖gradient f x‖ * ‖z - x‖ ≤ criticality R f x 1 := by
+  let w := d + (z - x)
+  have hw : x + w = z + d := by dsimp [w]; abel
+  have hn : ‖w‖ ≤ 1 := (norm_add_le _ _).trans (by linarith)
+  have hχ := inner_le_linearDecrease (v := -gradient f x) (hw ▸ hd) hn
+  have h₁ := neg_abs_le (⟪gradient f z - gradient f x, d⟫)
+  have h₁' := abs_real_inner_le_norm (gradient f z - gradient f x) d
+  rw [norm_sub_rev] at h₁'
+  have h₂ := neg_abs_le (⟪-gradient f x, z - x⟫)
+  have h₂' := abs_real_inner_le_norm (-gradient f x) (z - x)
+  rw [norm_neg] at h₂'
+  change ⟪-gradient f x, w⟫ ≤ criticality R f x 1 at hχ
+  rw [show w = d + (z - x) from rfl, inner_add_right] at hχ
+  simp only [inner_sub_left] at h₁ h₁'
+  simp only [inner_neg_left] at h₂ h₂' hχ ⊢
+  linarith only [h₁, h₁', h₂, h₂', hχ]
+
+open Optimization in
+/-- Missing an active constraint at a generalized Cauchy trial does not
+itself bound the full feasible criticality away from zero. On the
+nonnegative half-line the radius-boundary Cauchy trial is strictly
+positive while both the base point and criticality can tend to zero.
+This example concerns the local comparison, without a radius-update run. -/
+theorem missing_active_local_criticality_counterexample
+    (P : GeneralizedCauchyParams) {x : ℝ} (hx : 0 < x) (hx₁ : x ≤ 1) :
+    IsApproxGeneralizedCauchyPoint P (Set.Ici (0 : ℝ)) id id x (x / 2) (x / 2) ∧
+      activeConstraintSet (fun _ : Unit ↦ id) 0 ≠
+        activeConstraintSet (fun _ : Unit ↦ id) (x / 2) ∧
+      cappedCriticality (Set.Ici (0 : ℝ)) id x = x := by
+  let C := Set.Ici (0 : ℝ)
+  have hg : gradient (id : ℝ → ℝ) x = 1 := by rw [gradient_eq_deriv', deriv_id]
+  have hhalf : 0 < x / 2 := half_pos hx
+  have hdiff : ‖x / 2 - x‖ = x / 2 := by
+    rw [Real.norm_eq_abs, abs_of_neg (by linarith : x / 2 - x < 0)]
+    ring
+  have hpath : projectedGradientPath C id x (x / 2) = x / 2 := by
+    unfold projectedGradientPath
+    change bestApprox C (x + (x / 2) • (-gradient (id : ℝ → ℝ) x)) = x / 2
+    rw [hg, smul_eq_mul, show x + x / 2 * (-1) = x / 2 by ring]
+    exact (bestApprox_eq_iff ⟨0, by simp⟩ isClosed_Ici (convex_Ici _)).mpr
+      ⟨hhalf.le, by simp⟩
+  refine ⟨⟨x / 2, hhalf, hpath.symm, hdiff.le, ?_, Or.inl ?_⟩, ?_, ?_⟩
+  · simp only [id_eq, hg, Real.inner_apply, one_mul]
+    have h := mul_nonneg (sub_nonneg.mpr (P.slope_order.trans P.lower_lt_one).le) hhalf.le
+    nlinarith only [h]
+  · rw [hdiff]
+    exact mul_le_of_le_one_left hhalf.le P.fraction_lt_one.le
+  · intro he
+    have h0 : () ∈ activeConstraintSet (fun _ : Unit ↦ id) (0 : ℝ) := rfl
+    have hn := he ▸ h0
+    exact hhalf.ne' hn
+  · have hχ : criticality C id x 1 = x := by
+      unfold criticality
+      rw [hg]
+      apply le_antisymm
+      · apply linearDecrease_le (show x ∈ C from hx.le) zero_le_one
+        intro d hd _
+        change 0 ≤ x + d at hd
+        simp only [Real.inner_apply]
+        linarith only [hd]
+      · have hnorm : ‖-x‖ ≤ (1 : ℝ) := by
+          simpa only [norm_neg, Real.norm_eq_abs, abs_of_pos hx] using hx₁
+        have h := inner_le_linearDecrease (v := (-1 : ℝ))
+          (show x + -x ∈ C by simp [C]) hnorm
+        simpa only [Real.inner_apply, neg_mul_neg, one_mul, neg_mul, mul_neg, mul_one,
+          neg_neg] using h
+    rw [cappedCriticality, hχ, min_eq_right hx₁]
+
 open ConnGouldToint.Chapter06 in
 /-- Lemma 12.3.5. The small-radius acceptance estimate with the capped
 criticality measure and the model decrease condition AA.1b. -/

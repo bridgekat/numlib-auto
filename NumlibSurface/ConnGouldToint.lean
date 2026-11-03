@@ -148,6 +148,10 @@ A critical starting point can be returned before computing the initial trial
 parameter. The generalized Cauchy decrease includes the tangent stopping test.
 Lemma 12.3.1 uses local constancy to cover connected sets. Lemma 12.3.6
 approximates the negative gradient by normal directions at nearby points.
+The local comparison in the proof of Theorem 12.3.4 uses the relaxed
+feasible set and a shifted displacement. A half-line example shows why
+the comparison cannot give the full-feasible bound from the trial
+conditions alone. The full run-based identification result remains open.
 Section 12.4 makes the identified-face trapping, feasible extension, and
 trial-segment Hessian agreement explicit. The corrected generalized eigenpoint
 test and decrease bound use the sign appropriate to negative curvature.
