@@ -1,0 +1,5 @@
+namespace = "ConnGouldToint.Chapter12"
+
+[[node]]
+id = "theorem_12_3_8_iterate_identification_counterexample"
+source = "Conn–Gould–Toint, counterexample to eventual iterate active-set identification in Theorem 12.3.8"

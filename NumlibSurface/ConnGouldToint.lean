@@ -214,8 +214,10 @@ tangent qualification. The bounded-positive-trial-time version also allows
 nonvanishing radii for convergent runs. Vanishing successive displacements
 force a common active set across the compact limit set. An interval run
 with alternating radii refutes eventual Cauchy-point identification in the
-printed Theorem 12.3.8. Identification of the iterates in general compact
-runs remains open.
+printed Theorem 12.3.8. A three-dimensional run with constant radii and
+only very successful steps refutes iterate identification as well. Its
+remote Cauchy point has a degenerate active constraint even though the
+active gradients at the limit are independent.
 Section 12.4 makes the identified-face trapping, feasible extension, and
 trial-segment Hessian agreement explicit. The corrected generalized eigenpoint
 test and decrease bound use the sign appropriate to negative curvature.
