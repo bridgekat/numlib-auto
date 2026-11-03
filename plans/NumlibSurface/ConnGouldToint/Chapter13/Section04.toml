@@ -127,3 +127,23 @@ source = "Conn–Gould–Toint, coordinate transfer for Theorem 13.4.2 under loc
 [[node]]
 id = "PrimalBarrierInnerRun.euclidean_clearance_of_global_lower"
 source = "Conn–Gould–Toint, corrected uniform boundary clearance for the inner runs of Theorem 13.4.2"
+
+[[node]]
+id = "PrimalBarrierEscapeTrial"
+source = "Conn–Gould–Toint, two-coordinate run data for Algorithm 13.2.1 and Theorem 13.4.2"
+
+[[node]]
+id = "theorem_13_4_2_unbounded_run_counterexample"
+source = "Conn–Gould–Toint, counterexample to the printed primal finite stopping theorem"
+
+[[node]]
+id = "theorem_13_4_2_unbounded_primal_inner_run"
+source = "Conn–Gould–Toint, actual acceptance and radius updates in the counterexample to Theorem 13.4.2"
+
+[[node]]
+id = "escapeModel_adequate_decrease"
+source = "Conn–Gould–Toint, AA.1 and AA.2 for the actual Euclidean quadratic counterexample model"
+
+[[node]]
+id = "escapeModel_source_models"
+source = "Conn–Gould–Toint, verification of AM.1–AM.4i and AM.6 for the primal counterexample models"

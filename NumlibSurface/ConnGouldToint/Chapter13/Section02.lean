@@ -498,19 +498,35 @@ end GlobalLowerBound
 private def barrierProjection (i : Fin 2) : (Fin 2 → ℝ) →L[ℝ] ℝ :=
   ContinuousLinearMap.proj i
 
-private noncomputable def barrierBilinearObjective (x : Fin 2 → ℝ) : ℝ := x 0 * x 1
+/-- The bilinear objective for the unbounded logarithmic barrier examples. -/
+noncomputable def barrierBilinearObjective (x : Fin 2 → ℝ) : ℝ := x 0 * x 1
+
+private theorem barrierBilinearObjective_fderiv (x : Fin 2 → ℝ) :
+    fderiv ℝ barrierBilinearObjective x =
+      x 0 • barrierProjection 1 + x 1 • barrierProjection 0 :=
+  ((barrierProjection 0).hasFDerivAt.mul (barrierProjection 1).hasFDerivAt).fderiv
+
+/-- The derivative of the bilinear objective in an arbitrary direction. -/
+theorem barrierBilinearObjective_fderiv_apply (x d : Fin 2 → ℝ) :
+    fderiv ℝ barrierBilinearObjective x d = x 0 * d 1 + x 1 * d 0 := by
+  rw [barrierBilinearObjective_fderiv]
+  rfl
 
 private theorem barrierBilinearObjective_hessian (x : Fin 2 → ℝ) :
     fderiv ℝ (fderiv ℝ barrierBilinearObjective) x =
       (barrierProjection 0).smulRight (barrierProjection 1) +
         (barrierProjection 1).smulRight (barrierProjection 0) := by
-  have hd (y : Fin 2 → ℝ) : fderiv ℝ barrierBilinearObjective y =
-      y 0 • barrierProjection 1 + y 1 • barrierProjection 0 := by
-    exact ((barrierProjection 0).hasFDerivAt.mul (barrierProjection 1).hasFDerivAt).fderiv
-  rw [funext hd]
+  rw [funext barrierBilinearObjective_fderiv]
   have h := ((barrierProjection 0).hasFDerivAt (x := x) |>.smul_const (barrierProjection 1)).add
     ((barrierProjection 1).hasFDerivAt (x := x) |>.smul_const (barrierProjection 0))
   exact h.fderiv
+
+/-- The bilinear example satisfies AF.1 and AF.3 on the full space. -/
+theorem barrierBilinearObjective_smooth_bounded_hessian :
+    ContDiff ℝ 2 barrierBilinearObjective ∧
+      ∃ H, ∀ x, ‖fderiv ℝ (fderiv ℝ barrierBilinearObjective) x‖ ≤ H :=
+  ⟨by unfold barrierBilinearObjective; fun_prop,
+    ⟨_, fun x ↦ (congrArg norm (barrierBilinearObjective_hessian x)).le⟩⟩
 
 /-- AF.1, AF.3, and AW.2 as printed in Theorem 13.4.2 do not imply
 uniform clearance of log-barrier sublevels. For the bilinear objective

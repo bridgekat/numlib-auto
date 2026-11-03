@@ -56,12 +56,13 @@ theorem logBarrierModel_eq_taylor {x : ι → ℝ} (hx : ∀ i, 0 < x i) (s : ι
 
 
 /-- A quadratic model with symmetric bilinear term has affine derivative. -/
-theorem barrierQuadratic_hasFDerivAt {a : ℝ}
-    {g : (ι → ℝ) →L[ℝ] ℝ} {H : (ι → ℝ) →L[ℝ] (ι → ℝ) →L[ℝ] ℝ}
-    (hs : ∀ d e, H d e = H e d) (s : ι → ℝ) :
+theorem barrierQuadratic_hasFDerivAt {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    {a : ℝ}
+    {g : E →L[ℝ] ℝ} {H : E →L[ℝ] E →L[ℝ] ℝ}
+    (hs : ∀ d e, H d e = H e d) (s : E) :
     HasFDerivAt (fun d ↦ a + g d + (1 / 2 : ℝ) * H d d) (g + H s) s := by
   have hquad₀ := H.hasFDerivAt.clm_apply (hasFDerivAt_id s)
-  have heq : (H s).comp (ContinuousLinearMap.id ℝ (ι → ℝ)) + H.flip s = (2 : ℝ) • H s := by
+  have heq : (H s).comp (ContinuousLinearMap.id ℝ E) + H.flip s = (2 : ℝ) • H s := by
     ext d
     simp only [add_apply, ContinuousLinearMap.comp_apply,
       ContinuousLinearMap.id_apply, ContinuousLinearMap.flip_apply,
@@ -69,7 +70,7 @@ theorem barrierQuadratic_hasFDerivAt {a : ℝ}
     ring
   simp only [id_eq] at hquad₀
   rw [heq] at hquad₀
-  have hquad : HasFDerivAt (fun d : ι → ℝ ↦ H d d) ((2 : ℝ) • H s) s := by
+  have hquad : HasFDerivAt (fun d : E ↦ H d d) ((2 : ℝ) • H s) s := by
     exact hquad₀
   have hmodel₀ := (g.hasFDerivAt.const_add a).add
     (hquad.const_smul (1 / 2 : ℝ))
@@ -967,5 +968,781 @@ theorem logBarrierCounterRegularized_convergent_stops :
   by_cases hi : i = 0 <;> simp [hi]
 
 end StrongCounterexample
+
+section PrimalEscape
+
+open Set
+
+private noncomputable def escapeGap (p : ℝ) : ℝ := p - Real.log p
+
+private theorem escapeGap_drop {u : ℝ} (hu : 0 < u) (hu1 : u ≤ 1) :
+    u ^ 2 / 8 ≤ escapeGap (1 + u) - escapeGap (1 + u / 2) := by
+  let f (p : ℝ) := escapeGap p - (u / 4) * p
+  have ha : 1 + u / 2 ≤ 1 + u := by linarith
+  have hD (p : ℝ) (hp : 0 < p) :
+      HasDerivAt f (1 - p⁻¹ - u / 4) p := by
+    have hd := ((hasDerivAt_id p).sub (Real.hasDerivAt_log hp.ne')).sub
+      ((hasDerivAt_id p).const_mul (u / 4))
+    change HasDerivAt f (1 - p⁻¹ - u / 4 * 1) p at hd
+    simpa only [mul_one] using hd
+  have hm : MonotoneOn f (Icc (1 + u / 2) (1 + u)) := by
+    apply monotoneOn_of_deriv_nonneg (convex_Icc _ _)
+    · exact fun p hp ↦ (hD p (by linarith [hp.1])).continuousAt.continuousWithinAt
+    · intro p hp
+      have hp' := interior_subset hp
+      exact (hD p (by linarith [hp'.1])).differentiableAt.differentiableWithinAt
+    · intro p hp
+      have hp' := interior_subset hp
+      have hpos : 0 < p := by linarith [hp'.1]
+      rw [(hD p hpos).deriv]
+      have hinv : p⁻¹ ≤ 1 - u / 4 := by
+        rw [← one_div]
+        apply (div_le_iff₀ hpos).mpr
+        have hmul := mul_le_mul_of_nonneg_right hp'.2 hu.le
+        nlinarith [hp'.1, hmul, mul_nonneg hu.le (sub_nonneg.mpr hu1)]
+      linarith
+  have hh := hm ⟨le_rfl, ha⟩ ⟨ha, le_rfl⟩ ha
+  unfold f at hh
+  nlinarith
+
+private noncomputable def escapeY (u : ℝ) : ℝ := u + u ^ 2
+
+private noncomputable def escapeQ (u : ℝ) : ℝ := -(2 + 3 * u) / (4 * (1 + u))
+
+private noncomputable def escapeA (u : ℝ) : ℝ :=
+  -2 * (u * (1 + escapeQ u) + (1 + u) * escapeQ u + (escapeQ u) ^ 2 / 2 + u ^ 2 / 16)
+
+/-- The coordinate data of an accepted two-dimensional trial of the first
+primal inner algorithm at parameter one. The true objective is `x*y`,
+the barrier model is the exact logarithmic Taylor quadratic, and the
+objective model adds a centered quadratic to the bilinear objective.
+The decrease tests use a curvature bound and the least quadratic curvature. -/
+structure PrimalBarrierEscapeTrial (u : ℝ) : Prop where
+  parameter_pos : 0 < u
+  parameter_le_half : u ≤ 1 / 2
+  trial_inside :
+    let x := 1 / u
+    let y := escapeY u
+    let x' := 2 * x
+    let y' := escapeY (u / 2)
+    0 < x' ∧ 0 < y' ∧ (1 / 4 : ℝ) * min x y ≤ min x' y' ∧
+      (x' - x) ^ 2 + (y' - y) ^ 2 ≤ (2 * x) ^ 2
+  model_matches :
+    let x := 1 / u
+    let y := escapeY u
+    let a := (escapeA u - 1) * u ^ 2
+    let g₁ := u ^ 2
+    let g₂ := 1 / (1 + u)
+    ∀ s t : ℝ,
+      ((x + s) * (y + t) + a * s ^ 2 / 2 +
+        (-Real.log x - Real.log y - s / x - t / y +
+          (s ^ 2 / x ^ 2 + t ^ 2 / y ^ 2) / 2)) =
+      escapeGap (1 + u) + g₁ * s + g₂ * t +
+        ((escapeA u * u ^ 2) * s ^ 2 + 2 * s * t + t ^ 2 / y ^ 2) / 2
+  objective_model_bound : |(escapeA u - 1) * u ^ 2| ≤ 9
+  predicted_decrease :
+    let x := 1 / u
+    let y := escapeY u
+    let s := x
+    let t := escapeY (u / 2) - y
+    show Prop from -(u ^ 2 * s + (1 / (1 + u)) * t +
+      ((escapeA u * u ^ 2) * s ^ 2 + 2 * s * t + t ^ 2 / y ^ 2) / 2) = u ^ 2 / 16
+  sufficient_decrease :
+    let g := Real.sqrt ((u ^ 2) ^ 2 + (1 / (1 + u)) ^ 2)
+    let y := escapeY u
+    ∀ β τ : ℝ, 1 / y ^ 2 ≤ β → -(12 * u ^ 2) ≤ τ →
+      (1 / 32768 : ℝ) * max (g * min (g / β) (2 / u))
+        (-τ * min (τ ^ 2) ((2 / u) ^ 2)) ≤ u ^ 2 / 16
+  curvature_lower :
+    let y := escapeY u
+    ∀ s t : ℝ, -(12 * u ^ 2) * (s ^ 2 + t ^ 2) ≤
+      (escapeA u * u ^ 2) * s ^ 2 + 2 * s * t + t ^ 2 / y ^ 2
+  actual_decrease : u ^ 2 / 8 ≤ escapeGap (1 + u) - escapeGap (1 + u / 2)
+  fails_gradient_stop : 1 / 4 < 1 / (1 + u)
+
+private theorem escapeQ_bounds {u : ℝ} (hu : 0 < u) (hu1 : u ≤ 1 / 2) :
+    -1 ≤ escapeQ u ∧ escapeQ u ≤ 0 := by
+  have hpos : 0 < 4 * (1 + u) := by positivity
+  unfold escapeQ
+  exact ⟨(le_div_iff₀ hpos).mpr (by linarith), div_nonpos_of_nonpos_of_nonneg (by linarith) hpos.le⟩
+
+private theorem escapeA_bound {u : ℝ} (hu : 0 < u) (hu1 : u ≤ 1 / 2) :
+    |escapeA u| ≤ 8 := by
+  obtain ⟨hq₁, hq₂⟩ := escapeQ_bounds hu hu1
+  have hq3 : (escapeQ u) ^ 2 ≤ 1 := by nlinarith [mul_nonneg (sub_nonneg.mpr hq₂) (show 0 ≤ 1 + escapeQ u by linarith)]
+  unfold escapeA
+  apply abs_le.mpr
+  constructor <;> nlinarith [mul_nonneg hu.le (show 0 ≤ 1 + escapeQ u by linarith),
+    mul_nonneg hu.le (neg_nonneg.mpr hq₂), mul_nonneg hu.le (sub_nonneg.mpr hu1),
+    sq_nonneg (escapeQ u), sq_nonneg u]
+
+private theorem escape_trial {u : ℝ} (hu : 0 < u) (hu1 : u ≤ 1 / 2) :
+    PrimalBarrierEscapeTrial u := by
+  have hu0 := hu.ne'
+  have hp : 0 < 1 + u := by positivity
+  have hy : 0 < escapeY u := by unfold escapeY; positivity
+  have hy' : 0 < escapeY (u / 2) := by unfold escapeY; positivity
+  have hY : escapeY u = u * (1 + u) := by unfold escapeY; ring
+  have hQ : escapeY (u / 2) - escapeY u = escapeY u * escapeQ u := by
+    rw [hY, escapeQ]
+    unfold escapeY
+    field_simp [hp.ne']
+    ring
+  have hA := abs_le.mp (escapeA_bound hu hu1)
+  refine ⟨hu, hu1, ?_, ?_, ?_, ?_, ?_, ?_, escapeGap_drop hu (by linarith), ?_⟩
+  · dsimp only
+    refine ⟨by positivity, hy', ?_, ?_⟩
+    · apply le_min
+      · exact ((mul_le_mul_of_nonneg_left (min_le_left _ _) (by norm_num)).trans
+          (by nlinarith [div_pos zero_lt_one hu]))
+      · exact ((mul_le_mul_of_nonneg_left (min_le_right _ _) (by norm_num)).trans
+          (by unfold escapeY; nlinarith))
+    · have hyub : escapeY u ≤ 1 := by unfold escapeY; nlinarith [mul_nonneg hu.le (sub_nonneg.mpr hu1)]
+      have hyt : escapeY (u / 2) ≤ escapeY u := by
+        unfold escapeY
+        nlinarith
+      have hxs : (1 : ℝ) ≤ 1 / u := (le_div_iff₀ hu).mpr (by linarith)
+      have ht1 : |escapeY (u / 2) - escapeY u| ≤ 1 := by
+        rw [abs_of_nonpos (sub_nonpos.mpr hyt)]
+        linarith
+      have ht2 := (sq_le_sq₀ (abs_nonneg _) (zero_le_one : (0 : ℝ) ≤ 1)).mpr ht1
+      rw [sq_abs] at ht2
+      have hx2 := (sq_le_sq₀ zero_le_one (zero_le_one.trans hxs)).mpr hxs
+      nlinarith
+  · dsimp only
+    intro s t
+    have hxy : (1 / u) * escapeY u = 1 + u := by rw [hY]; field_simp [hu0]
+    have hlog := Real.log_mul (show (1 / u : ℝ) ≠ 0 by positivity) hy.ne'
+    rw [hxy] at hlog
+    unfold escapeGap
+    rw [hlog]
+    rw [hY]
+    field_simp [hu0, hp.ne']
+    ring
+  · have hh : |escapeA u - 1| ≤ 9 := by
+      apply abs_le.mpr
+      constructor <;> linarith [hA.1, hA.2]
+    rw [abs_mul, abs_of_nonneg (sq_nonneg u)]
+    exact (mul_le_mul_of_nonneg_right hh (sq_nonneg u)).trans
+      (by nlinarith [mul_nonneg hu.le (sub_nonneg.mpr hu1)])
+  · dsimp only
+    rw [hQ, hY, escapeA]
+    field_simp [hu0, hp.ne']
+    ring
+  · dsimp only
+    intro β τ hβ hτ
+    have hβp := (show 0 < 1 / escapeY u ^ 2 by positivity).trans_le hβ
+    have hYb : escapeY u ≤ 2 * u := by
+      unfold escapeY
+      nlinarith [mul_nonneg hu.le (sub_nonneg.mpr hu1)]
+    have hβinv : β⁻¹ ≤ 4 * u ^ 2 := calc
+      _ ≤ (1 / escapeY u ^ 2)⁻¹ := inv_anti₀ (by positivity) hβ
+      _ = escapeY u ^ 2 := by simp
+      _ ≤ _ := by
+        have h := (sq_le_sq₀ hy.le (by positivity : 0 ≤ 2 * u)).mpr hYb
+        nlinarith
+    let g := Real.sqrt ((u ^ 2) ^ 2 + (1 / (1 + u)) ^ 2)
+    have hg : 0 ≤ g := Real.sqrt_nonneg _
+    have hg2 : g ^ 2 ≤ 2 := by
+      dsimp only [g]
+      rw [Real.sq_sqrt (by positivity)]
+      have hu2 : u ^ 2 ≤ 1 := by nlinarith [mul_nonneg hu.le (sub_nonneg.mpr hu1)]
+      have hi : 1 / (1 + u) ≤ 1 := (div_le_one hp).mpr (by linarith)
+      have h₁ := (sq_le_sq₀ (sq_nonneg u) zero_le_one).mpr hu2
+      have h₂ := (sq_le_sq₀ (by positivity : 0 ≤ 1 / (1 + u)) zero_le_one).mpr hi
+      linarith
+    have hfirst : g * min (g / β) (2 / u) ≤ 8 * u ^ 2 := calc
+      _ ≤ g * (g / β) := mul_le_mul_of_nonneg_left (min_le_left _ _) hg
+      _ = g ^ 2 * β⁻¹ := by rw [div_eq_mul_inv]; ring
+      _ ≤ _ := by
+        have h := mul_le_mul hg2 hβinv (inv_nonneg.mpr hβp.le) (by norm_num : (0 : ℝ) ≤ 2)
+        nlinarith
+    have hsecond : -τ * min (τ ^ 2) ((2 / u) ^ 2) ≤ 1728 * u ^ 2 := by
+      by_cases ht : 0 ≤ τ
+      · exact (mul_nonpos_of_nonpos_of_nonneg (neg_nonpos.mpr ht)
+          (le_min (sq_nonneg _) (sq_nonneg _))).trans (by positivity)
+      · have hneg : 0 ≤ -τ := by linarith
+        have ha : -τ ≤ 12 * u ^ 2 := by linarith
+        have h₁ := mul_le_mul_of_nonneg_left (min_le_left (τ ^ 2) ((2 / u) ^ 2)) hneg
+        have h₂ : (-τ) ^ 3 ≤ (12 * u ^ 2) ^ 3 := pow_le_pow_left₀ hneg ha 3
+        have hu2 : u ^ 2 ≤ 1 := by nlinarith [mul_nonneg hu.le (sub_nonneg.mpr hu1)]
+        have hu4 : (u ^ 2) ^ 2 ≤ 1 := by
+          simpa using (sq_le_sq₀ (sq_nonneg u) zero_le_one).mpr hu2
+        have h₃ := mul_le_mul_of_nonneg_right hu4 (sq_nonneg u)
+        exact h₁.trans (by nlinarith [h₂, h₃])
+    change (1 / 32768 : ℝ) * max (g * min (g / β) (2 / u)) _ ≤ _
+    have hmax : max (g * min (g / β) (2 / u)) (-τ * min (τ ^ 2) ((2 / u) ^ 2)) ≤ 1728 * u ^ 2 :=
+      max_le (hfirst.trans (by nlinarith [sq_nonneg u])) hsecond
+    nlinarith [hmax, sq_nonneg u]
+  · dsimp only
+    intro s t
+    have h₁ : -8 * u ^ 2 ≤ escapeA u * u ^ 2 :=
+      mul_le_mul_of_nonneg_right hA.1 (sq_nonneg u)
+    have hYb : escapeY u ≤ 2 * u := by
+      unfold escapeY
+      nlinarith [mul_nonneg hu.le (sub_nonneg.mpr hu1)]
+    have h₂ : escapeY u ^ 2 ≤ 4 * u ^ 2 := by
+      have h := (sq_le_sq₀ hy.le (by positivity : 0 ≤ 2 * u)).mpr hYb
+      nlinarith
+    have hsq : 0 ≤ (escapeY u * s + t / escapeY u) ^ 2 := sq_nonneg _
+    have hcross : -(escapeY u ^ 2) * s ^ 2 ≤ 2 * s * t + t ^ 2 / escapeY u ^ 2 := by
+      have he : (escapeY u * s + t / escapeY u) ^ 2 =
+          escapeY u ^ 2 * s ^ 2 + 2 * s * t + t ^ 2 / escapeY u ^ 2 := by
+        field_simp [hy.ne']
+        ring
+      rw [he] at hsq
+      linarith
+    have h₃ := mul_le_mul_of_nonneg_right h₁ (sq_nonneg s)
+    have h₄ := mul_le_mul_of_nonneg_right h₂ (sq_nonneg s)
+    nlinarith [mul_nonneg (sq_nonneg u) (sq_nonneg t)]
+  · apply (lt_div_iff₀ hp).mpr
+    linarith
+
+/-- The printed hypotheses of Theorem 13.4.2 permit a scalar-parameter
+sequence of accepted two-coordinate trials with no first-order stop.
+The coordinates are `(1/u, u+u²)` with `u=2⁻(j+1)`. The radius doubles,
+the actual-to-predicted reduction ratio is at least two, the objective
+models have a uniform Hessian bound, and the second component of the
+barrier gradient stays above the stopping tolerance. -/
+theorem theorem_13_4_2_unbounded_run_counterexample :
+    ∃ u : ℕ → ℝ,
+      Tendsto u atTop (𝓝 0) ∧
+      (∀ j, u (j + 1) = u j / 2) ∧
+      (∀ j, PrimalBarrierEscapeTrial (u j)) ∧
+      (∀ j, 2 ≤ (escapeGap (1 + u j) - escapeGap (1 + u (j + 1))) / (u j ^ 2 / 16)) ∧
+      (∀ μ > 0, ∃ A : ℝ, ∀ x y : ℝ, 0 < x → 0 < y →
+        A ≤ x * y - μ * (Real.log x + Real.log y)) := by
+  let u (j : ℕ) := (1 / 2 : ℝ) ^ (j + 1)
+  have hu (j : ℕ) : 0 < u j := by dsimp [u]; positivity
+  have hu1 (j : ℕ) : u j ≤ 1 / 2 := by
+    simp only [u, pow_succ]
+    exact mul_le_of_le_one_left (by norm_num) (pow_le_one₀ (by norm_num) (by norm_num))
+  have hup (j : ℕ) : u (j + 1) = u j / 2 := by
+    simp only [u, pow_succ]
+    ring
+  refine ⟨u, ?_, hup, fun j ↦ escape_trial (hu j) (hu1 j), ?_, ?_⟩
+  · simpa only [u, pow_succ, zero_mul] using
+      (tendsto_pow_atTop_nhds_zero_of_lt_one (by norm_num : (0 : ℝ) ≤ 1 / 2)
+        (by norm_num : (1 / 2 : ℝ) < 1)).mul_const (1 / 2 : ℝ)
+  · intro j
+    rw [hup]
+    exact (le_div_iff₀ (by positivity)).mpr (by
+      linarith [escapeGap_drop (hu j) (show u j ≤ 1 by linarith [hu1 j])])
+  · intro μ hμ
+    refine ⟨μ - μ * Real.log μ, fun x y hx hy ↦ ?_⟩
+    rw [← Real.log_mul hx.ne' hy.ne']
+    have hp := mul_pos hx hy
+    have hl := Real.log_le_sub_one_of_pos (div_pos hp hμ)
+    rw [Real.log_div hp.ne' hμ.ne'] at hl
+    have hm := mul_le_mul_of_nonneg_left hl hμ.le
+    simp only [mul_sub, mul_div_cancel₀ _ hμ.ne', mul_one] at hm
+    linarith
+
+private abbrev EscapeSpace := EuclideanSpace ℝ (Fin 2)
+
+private noncomputable def escapePoint (u : ℝ) : EscapeSpace :=
+  WithLp.toLp 2 ![1 / u, escapeY u]
+
+private def escapeOrthant : Set EscapeSpace :=
+  WithLp.ofLp ⁻¹' Optimization.nonnegativeOrthant (Fin 2)
+
+private noncomputable def escapeObjective (p : EscapeSpace) : ℝ :=
+  escapeGap (p.ofLp 0 * p.ofLp 1)
+
+private noncomputable def escapeModel (u : ℝ) (p : EscapeSpace) : ℝ :=
+  let s := p.ofLp 0 - 1 / u
+  let t := p.ofLp 1 - escapeY u
+  escapeGap (1 + u) + u ^ 2 * s + (1 / (1 + u)) * t +
+    ((escapeA u * u ^ 2) * s ^ 2 + 2 * s * t + t ^ 2 / (escapeY u) ^ 2) / 2
+
+private theorem escapeOrthant_interior {p : EscapeSpace}
+    (hp : ∀ i, 0 < p.ofLp i) : p ∈ interior escapeOrthant := by
+  let T := (PiLp.continuousLinearEquiv 2 ℝ (fun _ : Fin 2 ↦ ℝ)).toHomeomorph
+  change p ∈ interior (T ⁻¹' Optimization.nonnegativeOrthant (Fin 2))
+  rw [← T.preimage_interior]
+  change p.ofLp ∈ interior (Set.univ.pi (fun _ : Fin 2 ↦ Ici (0 : ℝ)))
+  rw [interior_pi_set Set.finite_univ]
+  simpa only [Set.mem_pi, Set.mem_univ, true_implies, interior_Ici, Set.mem_Ioi] using hp
+
+private theorem escape_norm_sq (v : EscapeSpace) :
+    ‖v‖ ^ 2 = (v.ofLp 0) ^ 2 + (v.ofLp 1) ^ 2 := by
+  rw [EuclideanSpace.norm_eq, Real.sq_sqrt]
+  · simp only [Fin.sum_univ_two, Real.norm_eq_abs, sq_abs]
+  · exact Finset.sum_nonneg fun _ _ ↦ sq_nonneg _
+
+private theorem escape_coord_abs_le_norm (v : EscapeSpace) (i : Fin 2) :
+    |v.ofLp i| ≤ ‖v‖ := by
+  apply (sq_le_sq₀ (abs_nonneg _) (norm_nonneg _)).mp
+  rw [sq_abs, escape_norm_sq]
+  fin_cases i
+  · change (v.ofLp 0) ^ 2 ≤ (v.ofLp 0) ^ 2 + (v.ofLp 1) ^ 2
+    linarith [sq_nonneg (v.ofLp 1)]
+  · change (v.ofLp 1) ^ 2 ≤ (v.ofLp 0) ^ 2 + (v.ofLp 1) ^ 2
+    linarith [sq_nonneg (v.ofLp 0)]
+
+private theorem escapeOrthant_boundary_dist {p : EscapeSpace} (hp : ∀ i, 0 < p.ofLp i) :
+    infDist p (frontier escapeOrthant) = min (p.ofLp 0) (p.ofLp 1) := by
+  let T := (PiLp.continuousLinearEquiv 2 ℝ (fun _ : Fin 2 ↦ ℝ)).toHomeomorph
+  have hfront : frontier escapeOrthant =
+      T ⁻¹' frontier (Optimization.nonnegativeOrthant (Fin 2)) := (T.preimage_frontier _).symm
+  have hz : (0 : EscapeSpace) ∈ frontier escapeOrthant := by
+    rw [hfront]
+    exact Optimization.mem_frontier_nonnegativeOrthant.mpr ⟨fun _ ↦ le_rfl, 0, rfl⟩
+  apply le_antisymm
+  · by_cases h : p.ofLp 0 ≤ p.ofLp 1
+    · let z : EscapeSpace := WithLp.toLp 2 ![0, p.ofLp 1]
+      have hz' : z ∈ frontier escapeOrthant := by
+        rw [hfront]
+        apply Optimization.mem_frontier_nonnegativeOrthant.mpr
+        refine ⟨?_, 0, rfl⟩
+        intro i
+        fin_cases i
+        · exact le_rfl
+        · exact (hp 1).le
+      have hdist : dist p z ≤ p.ofLp 0 := by
+        rw [dist_eq_norm]
+        apply (sq_le_sq₀ (norm_nonneg _) (hp 0).le).mp
+        rw [escape_norm_sq]
+        change (p.ofLp 0 - 0) ^ 2 + (p.ofLp 1 - p.ofLp 1) ^ 2 ≤ _
+        ring_nf
+        exact le_rfl
+      exact (infDist_le_dist_of_mem hz').trans (hdist.trans_eq (min_eq_left h).symm)
+    · let z : EscapeSpace := WithLp.toLp 2 ![p.ofLp 0, 0]
+      have hz' : z ∈ frontier escapeOrthant := by
+        rw [hfront]
+        apply Optimization.mem_frontier_nonnegativeOrthant.mpr
+        refine ⟨?_, 1, rfl⟩
+        intro i
+        fin_cases i
+        · exact (hp 0).le
+        · exact le_rfl
+      have hdist : dist p z ≤ p.ofLp 1 := by
+        rw [dist_eq_norm]
+        apply (sq_le_sq₀ (norm_nonneg _) (hp 1).le).mp
+        rw [escape_norm_sq]
+        change (p.ofLp 0 - p.ofLp 0) ^ 2 + (p.ofLp 1 - 0) ^ 2 ≤ _
+        ring_nf
+        exact le_rfl
+      exact (infDist_le_dist_of_mem hz').trans (hdist.trans_eq (min_eq_right (le_of_not_ge h)).symm)
+  · apply (le_infDist ⟨0, hz⟩).mpr
+    intro z hz'
+    rw [hfront] at hz'
+    obtain ⟨_, i, hi⟩ := Optimization.mem_frontier_nonnegativeOrthant.mp hz'
+    have hi' : z.ofLp i = 0 := hi
+    have hnorm := escape_coord_abs_le_norm (p - z) i
+    rw [WithLp.ofLp_sub, Pi.sub_apply, hi', sub_zero, abs_of_pos (hp i)] at hnorm
+    rw [dist_eq_norm]
+    fin_cases i
+    · exact (min_le_left _ _).trans hnorm
+    · exact (min_le_right _ _).trans hnorm
+
+private theorem escapePoint_positive {u : ℝ} (hu : 0 < u) :
+    ∀ i, 0 < (escapePoint u).ofLp i := by
+  intro i
+  fin_cases i
+  · change 0 < 1 / u
+    positivity
+  · change 0 < escapeY u
+    unfold escapeY
+    positivity
+
+private theorem escapeObjective_at_point {u : ℝ} (hu : 0 < u) :
+    escapeObjective (escapePoint u) = escapeGap (1 + u) := by
+  change escapeGap ((1 / u) * escapeY u) = _
+  congr 1
+  unfold escapeY
+  field_simp [hu.ne']
+
+private theorem escapeModel_predicted {u : ℝ} (h : PrimalBarrierEscapeTrial u) :
+    escapeModel u (escapePoint u) - escapeModel u (escapePoint (u / 2)) = u ^ 2 / 16 := by
+  have he : 1 / (u / 2) - 1 / u = 1 / u := by
+    field_simp [h.parameter_pos.ne']
+    ring
+  have hcenter : escapeModel u (escapePoint u) = escapeGap (1 + u) := by
+    simp [escapeModel, escapePoint]
+  rw [hcenter]
+  change escapeGap (1 + u) -
+    (escapeGap (1 + u) + u ^ 2 * (1 / (u / 2) - 1 / u) +
+      1 / (1 + u) * (escapeY (u / 2) - escapeY u) +
+      ((escapeA u * u ^ 2) * (1 / (u / 2) - 1 / u) ^ 2 +
+        2 * (1 / (u / 2) - 1 / u) * (escapeY (u / 2) - escapeY u) +
+        (escapeY (u / 2) - escapeY u) ^ 2 / (escapeY u) ^ 2) / 2) = _
+  rw [he]
+  have hp := h.predicted_decrease
+  dsimp only at hp
+  linarith
+
+private def escapeL (i : Fin 2) : EscapeSpace →L[ℝ] ℝ :=
+  (ContinuousLinearMap.proj i).comp
+    (PiLp.continuousLinearEquiv 2 ℝ (fun _ : Fin 2 ↦ ℝ)).toContinuousLinearMap
+
+private noncomputable def escapeG (u : ℝ) : EscapeSpace →L[ℝ] ℝ :=
+  (u ^ 2) • escapeL 0 + (1 / (1 + u)) • escapeL 1
+
+private noncomputable def escapeH (u : ℝ) : EscapeSpace →L[ℝ] EscapeSpace →L[ℝ] ℝ :=
+  (escapeA u * u ^ 2) • (escapeL 0).smulRight (escapeL 0) +
+    (escapeL 0).smulRight (escapeL 1) + (escapeL 1).smulRight (escapeL 0) +
+    (1 / (escapeY u) ^ 2) • (escapeL 1).smulRight (escapeL 1)
+
+private theorem escapeH_apply (u : ℝ) (v w : EscapeSpace) :
+    escapeH u v w = (escapeA u * u ^ 2) * v.ofLp 0 * w.ofLp 0 +
+      v.ofLp 0 * w.ofLp 1 + v.ofLp 1 * w.ofLp 0 +
+      (1 / (escapeY u) ^ 2) * v.ofLp 1 * w.ofLp 1 := by
+  simp [escapeH, escapeL, mul_assoc]
+
+private theorem escapeModel_fderiv (u : ℝ) (p : EscapeSpace) :
+    fderiv ℝ (escapeModel u) p = escapeG u + escapeH u (p - escapePoint u) := by
+  let m (d : EscapeSpace) := escapeGap (1 + u) + escapeG u d + (1 / 2 : ℝ) * escapeH u d d
+  have he : escapeModel u = fun p ↦ m (p - escapePoint u) := by
+    funext v
+    unfold m
+    rw [escapeH_apply]
+    have hL (i : Fin 2) (p : EscapeSpace) : escapeL i p = p.ofLp i := rfl
+    simp only [escapeModel, escapeG, add_apply, smul_apply, smul_eq_mul, hL,
+      WithLp.ofLp_sub, Pi.sub_apply]
+    have hx0 : (escapePoint u).ofLp 0 = 1 / u := rfl
+    have hx1 : (escapePoint u).ofLp 1 = escapeY u := rfl
+    simp only [hx0, hx1]
+    ring
+  have hs (v w : EscapeSpace) : escapeH u v w = escapeH u w v := by
+    simp only [escapeH_apply]
+    ring
+  rw [he]
+  have hd := (barrierQuadratic_hasFDerivAt (a := escapeGap (1 + u)) (g := escapeG u) hs
+    (p - escapePoint u)).comp p ((hasFDerivAt_id p).sub_const (escapePoint u))
+  change HasFDerivAt (fun v ↦ m (v - escapePoint u)) _ p at hd
+  rw [hd.fderiv, ContinuousLinearMap.comp_id]
+
+private theorem escapeModel_hessian (u : ℝ) (p : EscapeSpace) :
+    fderiv ℝ (fderiv ℝ (escapeModel u)) p = escapeH u := by
+  rw [funext (escapeModel_fderiv u)]
+  have hd := ((escapeH u).hasFDerivAt (x := p - escapePoint u)).comp p
+    ((hasFDerivAt_id p).sub_const (escapePoint u))
+  have hd' := (hd.const_add (escapeG u)).fderiv
+  change fderiv ℝ (fun v ↦ escapeG u + escapeH u (v - escapePoint u)) p = _ at hd'
+  simpa only [ContinuousLinearMap.comp_id] using hd'
+
+private theorem escapeModel_gradient_norm (u : ℝ) :
+    ‖gradient (escapeModel u) (escapePoint u)‖ =
+      Real.sqrt ((u ^ 2) ^ 2 + (1 / (1 + u)) ^ 2) := by
+  let g : EscapeSpace := WithLp.toLp 2 ![u ^ 2, 1 / (1 + u)]
+  have hg : gradient (escapeModel u) (escapePoint u) = g := by
+    apply (InnerProductSpace.toDual ℝ EscapeSpace).injective
+    ext d
+    change inner ℝ (gradient (escapeModel u) (escapePoint u)) d = inner ℝ g d
+    rw [inner_gradient_left, escapeModel_fderiv, sub_self, map_zero, add_zero,
+      EuclideanSpace.inner_eq_star_dotProduct]
+    simp [escapeG, escapeL, g, dotProduct, Fin.sum_univ_two]
+    ring
+  rw [hg, EuclideanSpace.norm_eq]
+  simp [g, Fin.sum_univ_two, Real.norm_eq_abs, sq_abs]
+
+/-- The Euclidean gradient and actual model Hessian satisfy the first-
+and second-order decrease conditions on the unbounded accepted path. -/
+theorem escapeModel_adequate_decrease {u : ℝ} (h : PrimalBarrierEscapeTrial u) :
+    let x := escapePoint u
+    let s := escapePoint (u / 2) - x
+    let H := fderiv ℝ (fderiv ℝ (escapeModel u)) x
+    let β := 1 + ‖H‖
+    let τ := min 0 (Chapter06.leastUnitCurvature H)
+    Chapter06.HasSufficientModelDecrease (escapeModel u) x s
+      (gradient (escapeModel u) x) β (2 / u) (1 / 32768) ∧
+    Chapter06.HasNegativeCurvatureDecrease (escapeModel u) x s τ (2 / u) (1 / 32768) := by
+  dsimp only
+  rw [escapeModel_hessian]
+  let e : EscapeSpace := WithLp.toLp 2 ![0, 1]
+  have he : ‖e‖ = 1 := by simp [e, EuclideanSpace.norm_eq, Fin.sum_univ_two]
+  have hYe : 1 / (escapeY u) ^ 2 ≤ ‖escapeH u‖ := by
+    have h₁ := ((escapeH u) e).le_opNorm e
+    have h₂ := (escapeH u).le_opNorm e
+    rw [he, mul_one] at h₁ h₂
+    have hq : escapeH u e e = 1 / (escapeY u) ^ 2 := by simp [e, escapeH_apply]
+    rw [hq, Real.norm_of_nonneg (by positivity)] at h₁
+    exact h₁.trans h₂
+  have hβ : 1 / (escapeY u) ^ 2 ≤ 1 + ‖escapeH u‖ := hYe.trans (by linarith)
+  have ht : -(12 * u ^ 2) ≤ min 0 (Chapter06.leastUnitCurvature (escapeH u)) := by
+    let : Nonempty (sphere (0 : EscapeSpace) 1) :=
+      ⟨⟨e, mem_sphere_zero_iff_norm.mpr he⟩⟩
+    apply le_min (by nlinarith [sq_nonneg u])
+    apply le_ciInf
+    intro v
+    have hb := h.curvature_lower ((v : EscapeSpace).ofLp 0) ((v : EscapeSpace).ofLp 1)
+    rw [← escape_norm_sq, norm_eq_of_mem_sphere v, one_pow, mul_one] at hb
+    rw [escapeH_apply]
+    convert hb using 1
+    ring
+  have hdec := h.sufficient_decrease _ _ hβ ht
+  have hpred : escapeModel u (escapePoint u) -
+      escapeModel u (escapePoint u + (escapePoint (u / 2) - escapePoint u)) = u ^ 2 / 16 := by
+    rw [show escapePoint u + (escapePoint (u / 2) - escapePoint u) = escapePoint (u / 2) by abel]
+    exact escapeModel_predicted h
+  constructor
+  · refine ⟨⟨by norm_num, by norm_num⟩, ?_⟩
+    rw [hpred, mul_assoc, escapeModel_gradient_norm]
+    exact (mul_le_mul_of_nonneg_left (le_max_left _ _) (by norm_num)).trans hdec
+  · refine ⟨by norm_num, fun ht ↦ ?_⟩
+    rw [hpred, abs_of_neg ht, mul_assoc]
+    exact (mul_le_mul_of_nonneg_left (le_max_right _ _) (by norm_num)).trans hdec
+
+private noncomputable def escapeFModel (u a : ℝ) (p : EscapeSpace) : ℝ :=
+  barrierBilinearObjective p.ofLp + a * (p.ofLp 0 - 1 / u) ^ 2 / 2
+
+private noncomputable def escapeFCross : EscapeSpace →L[ℝ] EscapeSpace →L[ℝ] ℝ :=
+  (escapeL 0).smulRight (escapeL 1) + (escapeL 1).smulRight (escapeL 0)
+
+private noncomputable def escapeFDiagonal : EscapeSpace →L[ℝ] EscapeSpace →L[ℝ] ℝ :=
+  (escapeL 0).smulRight (escapeL 0)
+
+private noncomputable def escapeFH (a : ℝ) : EscapeSpace →L[ℝ] EscapeSpace →L[ℝ] ℝ :=
+  escapeFCross + a • escapeFDiagonal
+
+private noncomputable def escapeFG (u : ℝ) : EscapeSpace →L[ℝ] ℝ :=
+  escapeY u • escapeL 0 + (1 / u) • escapeL 1
+
+private theorem escapeFModel_fderiv (u a : ℝ) (p : EscapeSpace) :
+    fderiv ℝ (escapeFModel u a) p = escapeFG u + escapeFH a (p - escapePoint u) := by
+  let m (s : EscapeSpace) := (1 / u) * escapeY u + escapeFG u s +
+    (1 / 2 : ℝ) * escapeFH a s s
+  have he : escapeFModel u a = fun p ↦ m (p - escapePoint u) := by
+    funext v
+    have hx0 : (escapePoint u).ofLp 0 = 1 / u := rfl
+    have hx1 : (escapePoint u).ofLp 1 = escapeY u := rfl
+    simp [m, escapeFModel, barrierBilinearObjective, escapeFG, escapeFH, escapeFCross,
+      escapeFDiagonal, escapeL, hx0, hx1]
+    ring
+  have hs (v w : EscapeSpace) : escapeFH a v w = escapeFH a w v := by
+    simp [escapeFH, escapeFCross, escapeFDiagonal, escapeL]
+    ring
+  rw [he]
+  have hd := (barrierQuadratic_hasFDerivAt (a := (1 / u) * escapeY u) (g := escapeFG u) hs
+    (p - escapePoint u)).comp p ((hasFDerivAt_id p).sub_const (escapePoint u))
+  change HasFDerivAt (fun v ↦ m (v - escapePoint u)) _ p at hd
+  rw [hd.fderiv, ContinuousLinearMap.comp_id]
+
+private theorem escapeFModel_hessian (u a : ℝ) (p : EscapeSpace) :
+    fderiv ℝ (fderiv ℝ (escapeFModel u a)) p = escapeFH a := by
+  rw [funext (escapeFModel_fderiv u a)]
+  have hd := ((escapeFH a).hasFDerivAt (x := p - escapePoint u)).comp p
+    ((hasFDerivAt_id p).sub_const (escapePoint u))
+  have hd' := (hd.const_add (escapeFG u)).fderiv
+  change fderiv ℝ (fun v ↦ escapeFG u + escapeFH a (v - escapePoint u)) p = _ at hd'
+  simpa only [ContinuousLinearMap.comp_id] using hd'
+
+/-- The objective model in the counterexample has the correct value and
+gradient at the center and uniformly bounded Hessian. The total model
+Hessian is constant throughout the trust region. The other model term
+is the quadratic Taylor model of the logarithmic barrier. -/
+theorem escapeModel_source_models :
+    ∃ B : ℝ, ∀ u, PrimalBarrierEscapeTrial u → ∃ mf : EscapeSpace → ℝ,
+      ContDiff ℝ 2 mf ∧
+      mf (escapePoint u) = barrierBilinearObjective (escapePoint u).ofLp ∧
+      fderiv ℝ mf (escapePoint u) =
+        fderiv ℝ (fun p : EscapeSpace ↦ barrierBilinearObjective p.ofLp) (escapePoint u) ∧
+      (∀ p, ‖fderiv ℝ (fderiv ℝ mf) p‖ ≤ B) ∧
+      (∀ p q, fderiv ℝ (fderiv ℝ (escapeModel u)) p =
+        fderiv ℝ (fderiv ℝ (escapeModel u)) q) ∧
+      ∀ p, escapeModel u p = mf p +
+        logBarrierModel (escapePoint u).ofLp (p - escapePoint u).ofLp 1 := by
+  refine ⟨‖escapeFCross‖ + 9 * ‖escapeFDiagonal‖, fun u h ↦ ?_⟩
+  let a := (escapeA u - 1) * u ^ 2
+  have hx0 : (escapePoint u).ofLp 0 = 1 / u := rfl
+  have hx1 : (escapePoint u).ofLp 1 = escapeY u := rfl
+  refine ⟨escapeFModel u a, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · unfold escapeFModel barrierBilinearObjective
+    have h₀ : ContDiff ℝ 2 (escapeL 0) := (escapeL 0).contDiff
+    have h₁ : ContDiff ℝ 2 (escapeL 1) := (escapeL 1).contDiff
+    have hc : ContDiff ℝ 2 (fun p : EscapeSpace ↦ a * ((escapeL 0) p - 1 / u) ^ 2 / 2) :=
+      (contDiff_const.mul ((h₀.sub contDiff_const).pow 2)).div_const 2
+    exact (h₀.mul h₁).add hc
+  · simp [escapeFModel, hx0]
+  · have hf : (fun p : EscapeSpace ↦ barrierBilinearObjective p.ofLp) = escapeFModel u 0 := by
+      funext p
+      simp [escapeFModel]
+    rw [hf, escapeFModel_fderiv, escapeFModel_fderiv, sub_self, map_zero, map_zero]
+  · intro p
+    rw [escapeFModel_hessian, escapeFH]
+    have ha : |a| ≤ 9 := h.objective_model_bound
+    have hd : ‖a • escapeFDiagonal‖ ≤ |a| * ‖escapeFDiagonal‖ := by
+      simpa only [Real.norm_eq_abs] using ContinuousLinearMap.opNorm_smul_le a escapeFDiagonal
+    calc
+      ‖escapeFCross + a • escapeFDiagonal‖ ≤ ‖escapeFCross‖ + ‖a • escapeFDiagonal‖ :=
+        norm_add_le escapeFCross (a • escapeFDiagonal)
+      _ ≤ ‖escapeFCross‖ + 9 * ‖escapeFDiagonal‖ :=
+        add_le_add le_rfl (hd.trans (mul_le_mul_of_nonneg_right ha (norm_nonneg escapeFDiagonal)))
+  · intro p q
+    rw [escapeModel_hessian, escapeModel_hessian]
+  · intro p
+    have hh := h.model_matches (p.ofLp 0 - 1 / u) (p.ofLp 1 - escapeY u)
+    dsimp only at hh
+    have h0 : 1 / u + (p.ofLp 0 - 1 / u) = p.ofLp 0 := by ring
+    have h1 : escapeY u + (p.ofLp 1 - escapeY u) = p.ofLp 1 := by ring
+    rw [h0, h1] at hh
+    unfold escapeModel escapeFModel barrierBilinearObjective logBarrierModel
+    simp only [hx0, hx1, WithLp.ofLp_sub, Pi.sub_apply, Fin.sum_univ_two, logBarrier,
+      Optimization.logBarrier, one_mul]
+    simp only [div_eq_mul_inv, ← inv_pow] at hh ⊢
+    linear_combination -hh
+
+private theorem escapePoint_no_first_order_stop {u εE : ℝ} (h : PrimalBarrierEscapeTrial u) :
+    ¬ BarrierSecondOrderStop barrierBilinearObjective (escapePoint u).ofLp 1 (1 / 4) εE := by
+  intro hstop
+  let y := (escapePoint u).ofLp
+  have hg : barrierCoordinateGradient barrierBilinearObjective y 1 - 1 / y 1 = 1 / (1 + u) := by
+    unfold barrierCoordinateGradient
+    rw [barrierBilinearObjective_fderiv_apply]
+    simp only [Pi.single_eq_same, Pi.single_eq_of_ne (show (0 : Fin 2) ≠ 1 by decide),
+      mul_zero, mul_one, add_zero]
+    change 1 / u - 1 / escapeY u = _
+    unfold escapeY
+    field_simp [h.parameter_pos.ne', show 1 + u ≠ 0 by linarith [h.parameter_pos]]
+    ring
+  have hsum := Finset.single_le_sum (s := Finset.univ)
+    (fun i _ ↦ sq_nonneg (barrierCoordinateGradient barrierBilinearObjective y i - 1 / y i))
+    (Finset.mem_univ (1 : Fin 2))
+  have hs := hsum.trans hstop.2.1
+  rw [hg] at hs
+  exact (not_lt_of_ge ((sq_le_sq₀
+    (div_nonneg zero_le_one (by linarith [h.parameter_pos])) (by norm_num)).mp hs))
+    h.fails_gradient_stop
+
+/-- The unbounded trial certificate yields an actual run of Algorithm
+13.2.1 in the Euclidean orthant. Its ratios are computed from the true
+logarithmic barrier and the certified model, and every trial is very
+successful. At each iterate the certified gradient fails the tolerance. -/
+theorem theorem_13_4_2_unbounded_primal_inner_run :
+    ∃ r : PrimalBarrierInnerRun Chapter06.defaultBTRParams escapeOrthant (1 / 4) escapeObjective,
+      (∀ p ∈ interior escapeOrthant,
+        escapeObjective p = logBarrierObjective barrierBilinearObjective p.ofLp 1) ∧
+      ContDiff ℝ 2 barrierBilinearObjective ∧
+      (∃ H, ∀ p, ‖fderiv ℝ (fderiv ℝ barrierBilinearObjective) p‖ ≤ H) ∧
+      (∀ μ > 0, ∃ A : ℝ, ∀ p : Fin 2 → ℝ, (∀ i, 0 < p i) →
+        A ≤ logBarrierObjective barrierBilinearObjective p μ) ∧
+      (∀ j εE, ¬ BarrierSecondOrderStop barrierBilinearObjective (r.x j).ofLp 1 (1 / 4) εE) ∧
+      (¬ Tendsto (fun j ↦ ‖gradient (r.model j) (r.x j)‖) atTop (𝓝 0)) ∧
+      (∀ j,
+        let H := fderiv ℝ (fderiv ℝ (r.model j)) (r.x j)
+        let β := 1 + ‖H‖
+        let τ := min 0 (Chapter06.leastUnitCurvature H)
+        Chapter06.HasSufficientModelDecrease (r.model j) (r.x j) (r.s j)
+          (gradient (r.model j) (r.x j)) β (r.Δ j) (1 / 32768) ∧
+        Chapter06.HasNegativeCurvatureDecrease (r.model j) (r.x j) (r.s j) τ (r.Δ j) (1 / 32768)) ∧
+      ∃ u : ℕ → ℝ, Tendsto u atTop (𝓝 0) ∧ (∀ j, PrimalBarrierEscapeTrial (u j)) ∧
+        (∀ j, r.x j = escapePoint (u j) ∧ r.Δ j = 2 / u j ∧ r.model j = escapeModel (u j)) ∧
+        (∀ j, 2 ≤ primalBarrierRatio escapeOrthant (1 / 4) escapeObjective
+          (r.model j) (r.x j) (r.s j)) := by
+  obtain ⟨u, hu, hup, htrial, hratio, hAW⟩ := theorem_13_4_2_unbounded_run_counterexample
+  let x (j : ℕ) := escapePoint (u j)
+  let s (j : ℕ) := x (j + 1) - x j
+  let Δ (j : ℕ) := 2 / u j
+  let m (j : ℕ) := escapeModel (u j)
+  have hxpos (j : ℕ) : ∀ i, 0 < (x j).ofLp i := escapePoint_positive (htrial j).parameter_pos
+  have hstep (j : ℕ) : x j + s j = x (j + 1) := by dsimp [s]; abel
+  have hdouble (j : ℕ) : (1 : ℝ) / u (j + 1) = 2 * (1 / u j) := by
+    rw [hup]
+    field_simp [(htrial j).parameter_pos.ne']
+  have ha (j : ℕ) : BarrierAdmissibleTrial escapeOrthant (1 / 4) (x j) (x j + s j) := by
+    rw [hstep]
+    refine ⟨escapeOrthant_interior (hxpos _), ?_⟩
+    rw [escapeOrthant_boundary_dist (hxpos _), escapeOrthant_boundary_dist (hxpos _)]
+    change (1 / 4 : ℝ) * min (1 / u j) (escapeY (u j)) ≤
+      min (1 / u (j + 1)) (escapeY (u (j + 1)))
+    rw [hdouble, hup]
+    exact (htrial j).trial_inside.2.2.1
+  have hp (j : ℕ) : m j (x j) - m j (x j + s j) = u j ^ 2 / 16 := by
+    rw [hstep]
+    change escapeModel (u j) (escapePoint (u j)) -
+      escapeModel (u j) (escapePoint (u (j + 1))) = _
+    rw [hup]
+    exact escapeModel_predicted (htrial j)
+  have hr (j : ℕ) : 2 ≤ primalBarrierRatio escapeOrthant (1 / 4) escapeObjective (m j) (x j) (s j) := by
+    rw [primalBarrierRatio, ite_eq_left (ha j), Chapter06.btrRatio, Optimization.reductionRatio, hp j,
+      hstep, escapeObjective_at_point (htrial j).parameter_pos,
+      escapeObjective_at_point (htrial (j + 1)).parameter_pos]
+    exact hratio j
+  have hη (j : ℕ) : Chapter06.defaultBTRParams.η₂ ≤
+      primalBarrierRatio escapeOrthant (1 / 4) escapeObjective (m j) (x j) (s j) :=
+    (Chapter06.defaultBTRParams.eta₂_lt_one.le.trans (by norm_num)).trans (hr j)
+  let r : PrimalBarrierInnerRun Chapter06.defaultBTRParams escapeOrthant (1 / 4) escapeObjective :=
+    { x := x
+      s := s
+      Δ := Δ
+      model := m
+      initial_interior := escapeOrthant_interior (hxpos 0)
+      initial_radius_pos := div_pos (by norm_num) (htrial 0).parameter_pos
+      step_feasible := fun j ↦ by
+        apply (sq_le_sq₀ (norm_nonneg _) (div_nonneg (by norm_num) (htrial j).parameter_pos.le)).mp
+        rw [escape_norm_sq]
+        change (1 / u (j + 1) - 1 / u j) ^ 2 +
+          (escapeY (u (j + 1)) - escapeY (u j)) ^ 2 ≤ (2 / u j) ^ 2
+        rw [hdouble, hup]
+        have h := (htrial j).trial_inside.2.2.2
+        convert h using 1
+        ring
+      predicted_pos := fun j ↦ by rw [hp]; positivity [(htrial j).parameter_pos]
+      iterate_update := fun j ↦ by
+        rw [ite_eq_left (Chapter06.defaultBTRParams.eta₁_le_eta₂.trans (hη j)), hstep]
+      radius_update := fun j ↦
+        ⟨fun _ ↦ by
+          have h : Δ (j + 1) = 2 * Δ j := by
+            dsimp [Δ]
+            rw [hup]
+            field_simp [(htrial j).parameter_pos.ne']
+          rw [h]
+          linarith [div_pos (show (0 : ℝ) < 2 by norm_num) (htrial j).parameter_pos]
+        , fun _ h ↦ (h.not_ge (hη j)).elim
+        , fun h ↦ (h.not_ge (Chapter06.defaultBTRParams.eta₁_le_eta₂.trans (hη j))).elim⟩ }
+  obtain ⟨hf, hH⟩ := barrierBilinearObjective_smooth_bounded_hessian
+  have hbar : ∀ μ > 0, ∃ A : ℝ, ∀ p : Fin 2 → ℝ, (∀ i, 0 < p i) →
+      A ≤ logBarrierObjective barrierBilinearObjective p μ := by
+    intro μ hμ
+    obtain ⟨A, hA⟩ := hAW μ hμ
+    refine ⟨A, fun p hp ↦ ?_⟩
+    change A ≤ p 0 * p 1 + (-μ) * (∑ i, Real.log (p i))
+    rw [Fin.sum_univ_two]
+    linarith [hA (p 0) (p 1) (hp 0) (hp 1)]
+  have hnograd : ¬ Tendsto (fun j ↦ ‖gradient (r.model j) (r.x j)‖) atTop (𝓝 0) := by
+    intro ht
+    obtain ⟨j, hj⟩ := (ht.eventually (gt_mem_nhds (by norm_num : (0 : ℝ) < 1 / 4))).exists
+    change ‖gradient (escapeModel (u j)) (escapePoint (u j))‖ < (1 / 4 : ℝ) at hj
+    rw [escapeModel_gradient_norm] at hj
+    have hpos : 0 ≤ 1 / (1 + u j) := by
+      have := (htrial j).parameter_pos
+      positivity
+    have hle : 1 / (1 + u j) ≤ Real.sqrt (((u j) ^ 2) ^ 2 + (1 / (1 + u j)) ^ 2) := by
+      calc
+        _ = Real.sqrt ((1 / (1 + u j)) ^ 2) := (Real.sqrt_sq hpos).symm
+        _ ≤ _ := Real.sqrt_le_sqrt (by linarith [sq_nonneg ((u j) ^ 2)])
+    exact hj.not_ge ((htrial j).fails_gradient_stop.le.trans hle)
+  have had (j : ℕ) :
+      let H := fderiv ℝ (fderiv ℝ (r.model j)) (r.x j)
+      Chapter06.HasSufficientModelDecrease (r.model j) (r.x j) (r.s j)
+        (gradient (r.model j) (r.x j)) (1 + ‖H‖) (r.Δ j) (1 / 32768) ∧
+      Chapter06.HasNegativeCurvatureDecrease (r.model j) (r.x j) (r.s j)
+        (min 0 (Chapter06.leastUnitCurvature H)) (r.Δ j) (1 / 32768) := by
+    have hh : s j = escapePoint (u j / 2) - escapePoint (u j) := by
+      change escapePoint (u (j + 1)) - escapePoint (u j) = _
+      rw [hup]
+    change Chapter06.HasSufficientModelDecrease _ _ (s j) _ _ _ _ ∧
+      Chapter06.HasNegativeCurvatureDecrease _ _ (s j) _ _ _
+    rw [hh]
+    exact escapeModel_adequate_decrease (htrial j)
+  refine ⟨r, ?_, hf, hH, hbar, fun j _ ↦ escapePoint_no_first_order_stop (htrial j),
+    hnograd, had, u, hu, htrial, fun _ ↦ ⟨rfl, rfl, rfl⟩, hr⟩
+  intro p hp
+  have hp' : p.ofLp ∈ interior (Optimization.nonnegativeOrthant (Fin 2)) := by
+    let T := (PiLp.continuousLinearEquiv 2 ℝ (fun _ : Fin 2 ↦ ℝ)).toHomeomorph
+    change p ∈ interior (T ⁻¹' Optimization.nonnegativeOrthant (Fin 2)) at hp
+    rw [← T.preimage_interior] at hp
+    exact hp
+  change p.ofLp ∈ interior (Set.univ.pi (fun _ : Fin 2 ↦ Ici (0 : ℝ))) at hp'
+  rw [interior_pi_set Set.finite_univ] at hp'
+  have hpos : ∀ i, 0 < p.ofLp i := by
+    simpa only [Set.mem_pi, Set.mem_univ, true_implies, interior_Ici, Set.mem_Ioi] using hp'
+  change p.ofLp 0 * p.ofLp 1 - Real.log (p.ofLp 0 * p.ofLp 1) =
+    p.ofLp 0 * p.ofLp 1 + (-1 : ℝ) * ∑ i, Real.log (p.ofLp i)
+  rw [Fin.sum_univ_two, Real.log_mul (hpos 0).ne' (hpos 1).ne']
+  ring
+
+end PrimalEscape
 
 end ConnGouldToint.Chapter13

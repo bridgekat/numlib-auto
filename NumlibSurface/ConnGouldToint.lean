@@ -220,8 +220,11 @@ first- and second-order inner limits are proved
 directly for the guarded ratio under uniform clearance and local model
 estimates. A global lower bound on the objective, together with the
 objective Hessian bound and AW.2 at a larger parameter, supplies
-clearance. A bilinear example rules out deducing clearance from the
-printed assumptions alone. The unconditional inner limit argument remains open.
+clearance. For the printed assumptions alone, a bilinear objective
+gives an unbounded run of Algorithm 13.2.1 with exact logarithmic
+Taylor models, ratios at least two, and a gradient component above the
+stopping tolerance at every iterate. This refutes finite stopping in
+the printed Theorem 13.4.2.
 The strong-criticality counterexample in Section 13.4 uses a smooth cutoff
 to meet the lower-boundedness requirement that the printed quadratic fails.
 On an unbounded approach to the boundary, a growing coordinate can cancel a vanishing one.

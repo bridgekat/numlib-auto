@@ -99,3 +99,15 @@ source = "Conn–Gould–Toint, local Hessian agreement in the curvature argumen
 [[node]]
 id = "PrimalBarrierInnerRun.gradient_norm_variation_of_hessian_bound"
 source = "Conn–Gould–Toint, first-order variation estimate on the separated layer for Algorithm 13.2.1"
+
+[[node]]
+id = "barrierBilinearObjective"
+source = "Conn–Gould–Toint, bilinear objective of the unbounded log-barrier counterexample"
+
+[[node]]
+id = "barrierBilinearObjective_fderiv_apply"
+source = "Conn–Gould–Toint, gradient of the bilinear counterexample objective"
+
+[[node]]
+id = "barrierBilinearObjective_smooth_bounded_hessian"
+source = "Conn–Gould–Toint, verification of AF.1 and AF.3 for the bilinear counterexample"
