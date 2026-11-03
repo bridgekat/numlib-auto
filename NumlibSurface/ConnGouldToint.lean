@@ -11,6 +11,7 @@ import NumlibSurface.ConnGouldToint.Chapter11
 import NumlibSurface.ConnGouldToint.Chapter12
 import NumlibSurface.ConnGouldToint.Chapter13
 import NumlibSurface.ConnGouldToint.Chapter14
+import NumlibSurface.ConnGouldToint.Chapter15
 import NumlibSurface.ConnGouldToint.Chapter16
 import NumlibSurface.ConnGouldToint.Chapter17
 
@@ -92,6 +93,10 @@ Section 13.12 covers first-order and weak second-order stationarity under affine
 
 Chapter 14 covers the quadratic penalty and first-order multiplier estimate. In (14.2.3),
 both derivatives in the stationarity condition are evaluated at the feasible point.
+
+Chapter 15 covers local SQP convergence. Theorem 15.2.1(i) needs supplied multipliers
+to stay near the root multiplier from the first iteration. A convergent multiplier
+sequence can otherwise make the first stationary subproblem inconsistent.
 
 Chapter 16 covers the uniform least-squares Hessian bound, exact minimization of the scalar
 epigraph merit function, and the Fischer–Burmeister residual formulation of complementarity.

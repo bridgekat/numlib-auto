@@ -1,0 +1,41 @@
+namespace = "ConnGouldToint.Chapter15"
+
+[[node]]
+id = "sqpKKT"
+source = "Conn, Gould and Toint, Trust-Region Methods, (15.2.1)"
+
+[[node]]
+id = "sqpResidual"
+source = "Conn, Gould and Toint, Trust-Region Methods, (15.2.2)"
+
+[[node]]
+id = "IsSQPCorrection"
+source = "Conn, Gould and Toint, Trust-Region Methods, (15.2.5)"
+
+[[node]]
+id = "isSQPCorrection_iff_newton"
+source = "Conn, Gould and Toint, Trust-Region Methods, (15.2.3)–(15.2.5)"
+
+[[node]]
+id = "sqp_unrestricted_multiplier_counterexample"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 15.2.1(i), erratum"
+
+[[node]]
+id = "theorem_15_2_1_ii"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 15.2.1(ii)"
+
+[[node]]
+id = "theorem_15_2_1_i"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 15.2.1(i), corrected"
+
+[[node]]
+id = "sqpExternalStep"
+source = "Conn, Gould and Toint, Trust-Region Methods, (15.2.5)"
+
+[[node]]
+id = "sqpExternalStep_reference_independent"
+source = "Conn, Gould and Toint, Trust-Region Methods, (15.2.5)"
+
+[[node]]
+id = "hasFDerivAt_sqpResidual"
+source = "Conn, Gould and Toint, Trust-Region Methods, (15.2.1)–(15.2.3)"
