@@ -1,0 +1,33 @@
+namespace = "ConnGouldToint.Chapter07"
+
+[[node]]
+id = "linpackSign"
+source = "Conn–Gould–Toint, §7.3.7 (corrected magnitude comparison)"
+
+[[node]]
+id = "abs_linpackSign"
+source = "Conn–Gould–Toint, §7.3.7 (sign choice)"
+
+[[node]]
+id = "one_le_abs_linpackSign_sub"
+source = "Conn–Gould–Toint, §7.3.7 (greedy row bound)"
+
+[[node]]
+id = "linpackCurvature"
+source = "Conn–Gould–Toint, §7.3.7 (Rayleigh quotient of the back solve)"
+
+[[node]]
+id = "linpackCurvature_bound"
+source = "Conn–Gould–Toint, §7.3.7 (curvature bound from the corrected direction selection)"
+
+[[node]]
+id = "linpackCurvature_tendsto_zero"
+source = "Conn–Gould–Toint, (7.3.16) (corrected direction selection)"
+
+[[node]]
+id = "linpackCurvature_eq_of_normalization"
+source = "Conn–Gould–Toint, §7.3.7 (unit normalization)"
+
+[[node]]
+id = "linpackDirection_limit"
+source = "Conn–Gould–Toint, (7.3.16) (distance to the leftmost eigenspace and vanishing curvature)"

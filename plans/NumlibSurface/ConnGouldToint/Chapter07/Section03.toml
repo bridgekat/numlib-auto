@@ -119,3 +119,11 @@ source = "Conn–Gould–Toint, Algorithm 7.3.4, boundary equation in Step 3b(ii
 [[node]]
 id = "moreSorensen_hard_bracket_then_exact_correction"
 source = "Conn–Gould–Toint, Theorem 7.3.4, corrected hard phase using an exact leftmost eigenvector"
+
+[[node]]
+id = "moreSorensenSafeguardedStep"
+source = "Conn–Gould–Toint, Algorithm 7.3.4, Steps 1–3 and 5 (multiplier update with a certified lower-bound input)"
+
+[[node]]
+id = "moreSorensenSafeguardedStep_of_positive_phi"
+source = "Conn–Gould–Toint, Algorithm 7.3.4, Steps 5a–b (positive secular value)"

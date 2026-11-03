@@ -89,7 +89,10 @@ The Moré–Sorensen iteration allows exact arrival at the root. The sufficient 
 acceptance coefficient in the stopping rules is an upper bound on the chosen coefficient.
 For Theorem 7.3.4, the convergence phases are formalized separately. A fixed leftmost
 eigenvector and a continuous boundary correction give vector convergence in the hard case.
-The original direction-selection guarantee and the complete safeguarded algorithm remain open.
+The LINPACK direction guarantee compares magnitudes in the sign rule. A
+rank-one counterexample shows failure of the printed signed rule. The
+nonzero-gradient Newton and fallback updates are verified with a supplied
+lower bound. The complete safeguarded run remains open.
 Weighted subproblems use the M-inner product or the explicit coordinate transformation.
 The nonnegative index in Lemma 7.5.8 is k. Theorem 7.5.9 covers stationary
 stops and both positive- and zero-curvature boundary stops for convex

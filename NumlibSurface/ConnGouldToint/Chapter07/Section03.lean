@@ -412,6 +412,50 @@ theorem acceptable_of_hard_stopping_rule {μ Δ κ κopt κtr : ℝ} (hμ : 0 �
 /-- The safeguarded geometric trial multiplier in (7.3.14). -/
 noncomputable abbrev moreSorensenTrial (θ lo hi : ℝ) : ℝ := bracketEstimate 1 θ lo hi
 
+/-- The multiplier update in Algorithm 7.3.4 for a nonzero gradient.
+Here `b` is the lower-bound estimate from the Cholesky direction or partial
+factorization. The test against the pole represents the positive definite
+factorization test. The return value contains the new lower and upper
+endpoints and the next trial. Termination and the step correction are separate. -/
+noncomputable def moreSorensenSafeguardedStep (g : E) (H : E →L[ℝ] E)
+    (pole Δ θ lo hi x b : ℝ) : ℝ × ℝ × ℝ :=
+  if pole < x then
+    let x' := moreSorensenNewtonStep g H Δ x
+    if 0 < phi g H Δ x then
+      let lo' := max lo b
+      if pole < x' then (lo', x, x')
+      else
+        let lo'' := max lo' x'
+        (lo'', x, moreSorensenTrial θ lo'' x)
+    else (max lo x, hi, x')
+  else
+    let lo' := max (max lo x) b
+    (lo', hi, moreSorensenTrial θ lo' hi)
+
+/-- From a positive secular value the safeguarded update either enters the
+Newton interval or strengthens the lower endpoint with the failed candidate.
+The supplied lower bound may be used in either branch. -/
+theorem moreSorensenSafeguardedStep_of_positive_phi (hg : g ≠ 0)
+    {Δ θ lo hi x b r : ℝ} (hΔ : 0 < Δ)
+    {sM : E} (hsM : ‖sM‖ ≤ Δ) (hmul : IsTrustRegionMultiplier g H Δ sM r)
+    (hx : -leftmost hH < x) (hpos : 0 < phi g H Δ x) (hb : b ≤ r)
+    (hlo : 0 ≤ lo) (hlr : lo ≤ r) (hrx : r ≤ x) (hθ : θ ∈ Icc (0 : ℝ) 1) :
+    let s := moreSorensenSafeguardedStep g H (-leftmost hH) Δ θ lo hi x b
+    let x' := moreSorensenNewtonStep g H Δ x
+    s.1 ≤ r ∧ s.2.1 = x ∧
+      ((s.2.2 = x' ∧ -leftmost hH < x' ∧ phi g H Δ x' ≤ 0 ∧ x' ≤ r) ∨
+        (x' ≤ -leftmost hH ∧ x' ≤ s.1 ∧ s.2.2 ∈ Icc s.1 s.2.1)) := by
+  have hN := lemma_7_3_3 hg hΔ hsM hmul hx hpos
+  dsimp only at hN ⊢
+  rcases hN.2.2 with hgood | hbad
+  · simp only [moreSorensenSafeguardedStep, ite_eq_left hx, ite_eq_left hpos, ite_eq_left hgood.1]
+    exact ⟨max_le hlr hb, trivial, Or.inl ⟨trivial, hgood.1, hgood.2, hN.2.1⟩⟩
+  · simp only [moreSorensenSafeguardedStep, ite_eq_left hx, ite_eq_left hpos, ite_eq_right (not_lt.mpr hbad)]
+    have hnew := max_le (max_le hlr hb) hN.2.1
+    exact ⟨hnew, trivial, Or.inr ⟨hbad, le_max_right _ _,
+      bracketEstimate_mem_Icc (hlo.trans ((le_max_left _ _).trans (le_max_left _ _)))
+        (hnew.trans hrx) (by simp) hθ⟩⟩
+
 /-- The spectral bounds (7.3.18) on the multiplier of a boundary solution. -/
 theorem multiplier_bounds_of_boundary {μ Δ : ℝ} {s : E} (hΔ : 0 < Δ)
     (hμ : -leftmost hH ≤ μ)
