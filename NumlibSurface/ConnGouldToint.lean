@@ -126,6 +126,8 @@ At a residual root in Theorem 16.1.4, the Jacobian must be injective for positiv
 definiteness. Even with regular roots of a square system and exact residual models, a BTR
 run can alternate between roots. The eventual model-root result uses convergence
 of the iterates and a trust region containing a fixed positive-radius ball.
+In (16.2.15), the epigraph Lagrangian Hessian sums over residual components,
+or equivalently weights the Hessians of the affine branches.
 Equation (16.2.24) gives a real minimum value. The argmin is the singleton containing that value.
 
 Chapter 17 covers parameter and initial-radius choices. In (17.1.3), the factor

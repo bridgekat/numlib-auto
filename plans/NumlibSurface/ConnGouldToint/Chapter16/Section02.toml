@@ -7,3 +7,79 @@ source = "Conn–Gould–Toint, (16.2.23)"
 [[node]]
 id = "lemma_16_2_3"
 source = "Conn–Gould–Toint, Lemma 16.2.3"
+
+[[node]]
+id = "affineResidualBranch"
+source = "Conn–Gould–Toint, (16.2.2)"
+
+[[node]]
+id = "polyhedralAffineMaximum"
+source = "Conn–Gould–Toint, (16.2.1)"
+
+[[node]]
+id = "polyhedralResidualValue"
+source = "Conn–Gould–Toint, (16.2.3)"
+
+[[node]]
+id = "polyhedralResidualModel"
+source = "Conn–Gould–Toint, (16.2.4)"
+
+[[node]]
+id = "IsPolyhedralModelSolution"
+source = "Conn–Gould–Toint, (16.2.5)"
+
+[[node]]
+id = "polyhedralEpigraphFeasible"
+source = "Conn–Gould–Toint, (16.2.9)"
+
+[[node]]
+id = "mem_polyhedralEpigraphFeasible"
+source = "Conn–Gould–Toint, (16.2.9)"
+
+[[node]]
+id = "isMinOn_polyhedralEpigraph_iff"
+source = "Conn–Gould–Toint, (16.2.9)–(16.2.10)"
+
+[[node]]
+id = "EpigraphMultiplier"
+source = "Conn–Gould–Toint, (16.2.11)–(16.2.14), (16.2.17)–(16.2.18)"
+
+[[node]]
+id = "epigraphCriticalCone"
+source = "Conn–Gould–Toint, critical directions following (16.2.15)"
+
+[[node]]
+id = "mem_epigraphCriticalCone_iff"
+source = "Conn–Gould–Toint, (16.2.19)–(16.2.20)"
+
+[[node]]
+id = "epigraphSecondOrder_iff_activeBranch"
+source = "Conn–Gould–Toint, (16.2.8), (16.2.15), (16.2.19)"
+
+[[node]]
+id = "IsActiveBranchCombination"
+source = "Conn–Gould–Toint, (16.2.16)–(16.2.18)"
+
+[[node]]
+id = "isActiveBranchCombination_iff_mem_convexHull"
+source = "Conn–Gould–Toint, (16.2.16)–(16.2.18)"
+
+[[node]]
+id = "fderiv_affineResidualBranch"
+source = "Conn–Gould–Toint, (16.2.11)"
+
+[[node]]
+id = "fderiv_fderiv_affineResidualBranch"
+source = "Conn–Gould–Toint, (16.2.7), corrected (16.2.15)"
+
+[[node]]
+id = "polyhedralEpigraphLagrangian"
+source = "Conn–Gould–Toint, Lagrangian of (16.2.9)"
+
+[[node]]
+id = "fderiv_fderiv_polyhedralEpigraphLagrangian"
+source = "Conn–Gould–Toint, corrected (16.2.15)"
+
+[[node]]
+id = "theorem_16_2_2"
+source = "Conn–Gould–Toint, Theorem 16.2.2"
