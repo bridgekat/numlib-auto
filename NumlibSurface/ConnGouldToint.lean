@@ -111,6 +111,10 @@ sequence can otherwise make the first stationary subproblem inconsistent.
 
 Chapter 16 covers the uniform least-squares Hessian bound, exact minimization of the scalar
 epigraph merit function, and the Fischer–Burmeister residual formulation of complementarity.
+At a residual root in Theorem 16.1.4, the Jacobian must be injective for positive
+definiteness. Even with regular square roots and exact residual models, a BTR
+run can alternate between roots. The eventual model-root result uses convergence
+of the iterates and a trust region containing a fixed positive-radius ball.
 Equation (16.2.24) gives a real minimum value. The argmin is the singleton containing that value.
 
 Chapter 17 covers parameter and initial-radius choices. In (17.1.3), the factor

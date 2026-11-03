@@ -1,12 +1,17 @@
 import Mathlib.Analysis.Calculus.ContDiff.Bounds
-import Mathlib.Analysis.InnerProductSpace.PiL2
+import Mathlib.Analysis.Calculus.InverseFunctionTheorem.ApproximatesLinearOn
+import Mathlib.Analysis.Calculus.MeanValue
 import Mathlib.Analysis.InnerProductSpace.Calculus
+import Mathlib.Analysis.InnerProductSpace.PiL2
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Deriv
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Inverse
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.NormNum
+import NumlibSurface.ConnGouldToint.Chapter06.Section03
 
 /-! # Nonlinear equations and nonlinear least squares -/
 
-open scoped BigOperators
+open scoped BigOperators NNReal
 
 namespace ConnGouldToint.Chapter16
 
@@ -360,5 +365,252 @@ theorem theorem_16_1_2_unbounded_radii_counterexample :
         using hl.trans (by simpa [v] using hK k k hball)
     have hlt := (le_max_left K 1).trans_lt hk
     nlinarith [mul_nonneg (sub_nonneg.mpr hk₁.le) hk₀]
+
+/-- At a residual root, the positive-definiteness premise used in Theorem 16.1.4
+is equivalent to injectivity of the Jacobian. -/
+theorem theorem_16_1_4_root_hessian_iff [Fintype ι] {c : E → EuclideanSpace ℝ ι} {x : E}
+    (hc : ContDiffAt ℝ 2 c x) (hroot : c x = 0) :
+    (∀ v : E, v ≠ 0 → 0 < iteratedFDeriv ℝ 2 (leastSquaresObjective c) x (fun _ ↦ v)) ↔
+      Function.Injective (fderiv ℝ c x) := by
+  have hdiag (v : E) :
+      iteratedFDeriv ℝ 2 (leastSquaresObjective c) x (fun _ ↦ v) = ‖fderiv ℝ c x v‖ ^ 2 := by
+    rw [leastSquares_hessian_apply hc, hroot, EuclideanSpace.norm_sq_eq]
+    apply Finset.sum_congr rfl
+    intro i _
+    simp [Real.norm_eq_abs, sq]
+  rw [injective_iff_map_eq_zero]
+  constructor
+  · intro h v hv
+    by_contra hne
+    simpa [hdiag v, hv] using h v hne
+  · intro h v hv
+    rw [hdiag]
+    exact pow_pos (norm_pos_iff.mpr fun hz ↦ hv (h v hz)) 2
+
+/-- A full-row-rank Jacobian can have a degenerate least-squares Hessian.
+The residual here is projection onto the first coordinate. -/
+theorem theorem_16_1_4_surjective_counterexample :
+    ∃ c : ℝ × ℝ → EuclideanSpace ℝ (Fin 1), ContDiff ℝ 2 c ∧ c 0 = 0 ∧
+      Function.Surjective (fderiv ℝ c 0) ∧
+      ¬ (∀ v : ℝ × ℝ, v ≠ 0 →
+        0 < iteratedFDeriv ℝ 2 (leastSquaresObjective c) 0 (fun _ ↦ v)) := by
+  let e := (PiLp.continuousLinearEquiv 2 ℝ (fun _ : Fin 1 ↦ ℝ)).symm
+  let A : ℝ × ℝ →L[ℝ] EuclideanSpace ℝ (Fin 1) :=
+    (e : (Fin 1 → ℝ) →L[ℝ] EuclideanSpace ℝ (Fin 1)).comp
+      (ContinuousLinearMap.pi fun _ ↦ ContinuousLinearMap.fst ℝ ℝ ℝ)
+  have hA : fderiv ℝ (A : ℝ × ℝ → EuclideanSpace ℝ (Fin 1)) 0 = A := A.fderiv
+  refine ⟨A, A.contDiff, A.map_zero, ?_, ?_⟩
+  · rw [hA]
+    intro y
+    refine ⟨(e.symm y 0, 0), ?_⟩
+    apply e.symm.injective
+    simp only [A, ContinuousLinearMap.comp_apply, ContinuousLinearEquiv.coe_coe,
+      ContinuousLinearEquiv.symm_apply_apply]
+    funext i
+    fin_cases i
+    rfl
+  · rw [theorem_16_1_4_root_hessian_iff A.contDiff.contDiffAt A.map_zero, hA]
+    intro h
+    have hz : A (0, 1) = A (0, 0) := rfl
+    have heq := congrArg Prod.snd (h hz)
+    norm_num at heq
+
+open Filter Topology in
+/-- The model-root conclusion of Theorem 16.1.4. The centers converge to a regular root
+and each model agrees to first order there. A uniform Lipschitz bound on model Jacobians
+on a fixed-radius Euclidean ball gives roots inside those balls for all sufficiently
+large indices. A uniform bound on the model second derivatives gives that Lipschitz
+bound by the mean value theorem. -/
+theorem theorem_16_1_4_eventually_model_root [CompleteSpace E] [Fintype ι]
+    {c : E → EuclideanSpace ℝ ι} {m : ℕ → E → EuclideanSpace ℝ ι}
+    {x : ℕ → E} {xStar : E} (hx : Tendsto x atTop (𝓝 xStar))
+    (hc : ContDiffAt ℝ 1 c xStar) (hroot : c xStar = 0)
+    (e : E ≃L[ℝ] EuclideanSpace ℝ ι) (he : (e : E →L[ℝ] EuclideanSpace ℝ ι) =
+      fderiv ℝ c xStar) {R L : ℝ} (hR : 0 < R) (hL : 0 ≤ L)
+    (hmodel : ∀ k y, y ∈ Metric.closedBall (x k) R → DifferentiableAt ℝ (m k) y)
+    (hlip : ∀ k y, y ∈ Metric.closedBall (x k) R →
+      ‖fderiv ℝ (m k) y - fderiv ℝ (m k) (x k)‖ ≤ L * ‖y - x k‖)
+    (hval : ∀ k, m k (x k) = c (x k))
+    (hjac : ∀ k, fderiv ℝ (m k) (x k) = fderiv ℝ c (x k)) :
+    ∀ᶠ k in atTop, ∃ y ∈ Metric.closedBall (x k) R, m k y = 0 := by
+  let A : E →L[ℝ] EuclideanSpace ℝ ι := e
+  let inv : A.NonlinearRightInverse := {
+    toFun := e.symm
+    nnnorm := ‖(e.symm : EuclideanSpace ℝ ι →L[ℝ] E)‖₊ + 1
+    bound' := fun y ↦ (ContinuousLinearMap.le_opNorm
+      (e.symm : EuclideanSpace ℝ ι →L[ℝ] E) y).trans (by
+        push_cast
+        gcongr
+        linarith)
+    right_inv' := e.apply_symm_apply }
+  let C : ℝ≥0 := inv.nnnorm⁻¹ / 2
+  have hi : 0 < (inv.nnnorm : ℝ) := by
+    change 0 < ‖(e.symm : EuclideanSpace ℝ ι →L[ℝ] E)‖ + 1
+    positivity
+  have hC : 0 < (C : ℝ) := by
+    change 0 < (↑(inv.nnnorm⁻¹ / 2) : ℝ)
+    push_cast
+    positivity
+  have hgap : 0 < (inv.nnnorm : ℝ)⁻¹ - C := by
+    change 0 < (inv.nnnorm : ℝ)⁻¹ - ↑(inv.nnnorm⁻¹ / 2)
+    push_cast
+    linarith [inv_pos.mpr hi]
+  let r := min R ((C : ℝ) / (2 * (L + 1)))
+  have hr : 0 < r := lt_min hR (div_pos hC (by positivity))
+  have hrR : r ≤ R := min_le_left _ _
+  have hLr : L * r ≤ (C : ℝ) / 2 := by
+    have h := (le_div_iff₀ (by positivity : 0 < 2 * (L + 1))).mp
+      (min_le_right R ((C : ℝ) / (2 * (L + 1))))
+    nlinarith
+  have hA : Tendsto (fun k ↦ fderiv ℝ c (x k)) atTop (𝓝 A) := by
+    change Tendsto _ _ (𝓝 (e : E →L[ℝ] EuclideanSpace ℝ ι))
+    rw [he]
+    exact (hc.continuousAt_fderiv (by norm_num)).tendsto.comp hx
+  have hsmallA := hA.eventually (Metric.ball_mem_nhds A (half_pos hC))
+  have hsmallC : Tendsto (fun k ↦ c (x k)) atTop (𝓝 0) := by
+    rw [← hroot]
+    exact hc.continuousAt.tendsto.comp hx
+  filter_upwards [hsmallA, hsmallC.eventually (Metric.ball_mem_nhds 0 (mul_pos hgap hr))]
+    with k hkA hkC
+  have hsub := Metric.closedBall_subset_closedBall hrR (x := x k)
+  have hclose (y : E) (hy : y ∈ Metric.closedBall (x k) r) :
+      ‖fderiv ℝ (m k) y - A‖ ≤ (C : ℝ) := by
+    have hy' : ‖y - x k‖ ≤ r := by
+      simpa [Metric.mem_closedBall, dist_eq_norm] using hy
+    have hcenter : ‖fderiv ℝ (m k) (x k) - A‖ ≤ (C : ℝ) / 2 := by
+      rw [hjac k]
+      simpa only [dist_eq_norm] using (Metric.mem_ball.mp hkA).le
+    calc
+      _ ≤ ‖fderiv ℝ (m k) y - fderiv ℝ (m k) (x k)‖ +
+          ‖fderiv ℝ (m k) (x k) - A‖ := norm_sub_le_norm_sub_add_norm_sub _ _ _
+      _ ≤ L * r + (C : ℝ) / 2 :=
+        add_le_add ((hlip k y (hsub hy)).trans (mul_le_mul_of_nonneg_left hy' hL)) hcenter
+      _ ≤ _ := by linarith
+  have happ : ApproximatesLinearOn (m k) A (Metric.closedBall (x k) r) C := by
+    intro y hy z hz
+    have h := Convex.norm_image_sub_le_of_norm_hasFDerivWithin_le
+      (fun w hw ↦ ((hmodel k w (hsub hw)).hasFDerivAt.sub A.hasFDerivAt).hasFDerivWithinAt)
+      hclose (convex_closedBall (x k) r) hz hy
+    simpa [map_sub, sub_sub_sub_comm] using h
+  have hzero : (0 : EuclideanSpace ℝ ι) ∈
+      Metric.closedBall (m k (x k)) (((inv.nnnorm : ℝ)⁻¹ - C) * r) := by
+    rw [Metric.mem_closedBall, hval k, dist_comm]
+    exact (Metric.mem_ball.mp hkC).le
+  obtain ⟨y, hy, hmy⟩ :=
+    happ.surjOn_closedBall_of_nonlinearRightInverse inv hr.le Set.Subset.rfl hzero
+  exact ⟨y, hsub hy, hmy⟩
+
+open Filter Topology Chapter06 in
+/-- Exact models alone cannot force convergence to a particular regular root under AA.1.
+Here the residual is sine, the radius is fixed at `π`, and the iterates alternate between
+the two inverse-sine branches while the residual is halved at each accepted step. -/
+theorem theorem_16_1_4_exact_model_counterexample :
+    ContDiff ℝ 2 Real.sin ∧ (Real.sin 0 = 0 ∧ deriv Real.sin 0 = 1) ∧
+    (∀ z : ℝ, |Real.sin z| ≤ 1 ∧ |deriv Real.sin z| ≤ 1 ∧
+      |deriv (deriv Real.sin) z| ≤ 1) ∧
+    ∃ run : BTRRun (leastSquaresObjective Real.sin) defaultBTRParams (fun _ _ _ _ ↦ True),
+      (∀ k, run.model k = leastSquaresObjective Real.sin) ∧
+      (∀ k, k ∈ run.successful) ∧
+      (∀ k β, 1 ≤ β → HasSufficientModelDecrease (run.model k) (run.x k) (run.s k)
+        (gradient (leastSquaresObjective Real.sin) (run.x k)) β (run.Δ k) (1 / 4)) ∧
+      Tendsto (fun k ↦ run.x (2 * k)) atTop (𝓝 0) ∧
+      Tendsto (fun k ↦ run.x (2 * k + 1)) atTop (𝓝 Real.pi) := by
+  refine ⟨Real.contDiff_sin, ⟨Real.sin_zero, by simp⟩, ?_, ?_⟩
+  · intro z
+    simpa only [Real.deriv_sin, Real.deriv_cos, abs_neg] using
+      ⟨Real.abs_sin_le_one z, Real.abs_cos_le_one z, Real.abs_sin_le_one z⟩
+  let r (k : ℕ) : ℝ := (1 / 2) ^ (k + 1)
+  let a (k : ℕ) := Real.arcsin (r k)
+  let x (k : ℕ) := if k % 2 = 0 then a k else Real.pi - a k
+  let s (k : ℕ) := x (k + 1) - x k
+  let f := leastSquaresObjective Real.sin
+  have hnext (k : ℕ) : x k + s k = x (k + 1) := by simp [s]
+  have hr (k : ℕ) : 0 < r k := by dsimp [r]; positivity
+  have hr₁ (k : ℕ) : r k ≤ 1 := pow_le_one₀ (by norm_num) (by norm_num)
+  have hsin (k : ℕ) : Real.sin (x k) = r k := by
+    have h := Real.sin_arcsin (show -1 ≤ r k by linarith [hr k]) (hr₁ k)
+    simp only [x]
+    split <;> simp_all [a, Real.sin_pi_sub]
+  have hxrange (k : ℕ) : x k ∈ Set.Icc (0 : ℝ) Real.pi := by
+    have ha₀ : 0 ≤ a k := (Real.arcsin_nonneg.mpr (hr k).le)
+    have haπ : a k ≤ Real.pi := (Real.arcsin_le_pi_div_two _).trans (by linarith [Real.pi_pos])
+    simp only [x]
+    split <;> exact ⟨by linarith, by linarith⟩
+  have hdec (k : ℕ) : f (x k) - f (x k + s k) = (3 / 8) * r k ^ 2 := by
+    have hrec : r (k + 1) = r k * (1 / 2) := by simp only [r, pow_succ _ (k + 1)]
+    simp only [f, leastSquaresObjective, hnext, hsin]
+    rw [Real.norm_of_nonneg (hr k).le, Real.norm_of_nonneg (hr (k + 1)).le, hrec]
+    ring
+  have hpos (k : ℕ) : 0 < f (x k) - f (x k + s k) := by
+    rw [hdec]
+    positivity
+  have hratio (k : ℕ) : btrRatio f f (x k) (s k) = 1 := by
+    unfold btrRatio Optimization.reductionRatio
+    exact div_self (hpos k).ne'
+  let run : BTRRun f defaultBTRParams (fun _ _ _ _ ↦ True) := {
+    x := x
+    s := s
+    Δ := fun _ ↦ Real.pi
+    p := fun _ ↦ normSeminorm ℝ ℝ
+    norm_separates := fun _ _ h ↦ norm_eq_zero.mp h
+    model := fun _ ↦ f
+    delta_initial_pos := Real.pi_pos
+    feasible := fun k ↦ by
+      rw [mem_trustRegion, hnext]
+      change |x (k + 1) - x k| ≤ Real.pi
+      exact abs_le.mpr ⟨by linarith [(hxrange (k + 1)).1, (hxrange k).2],
+        by linarith [(hxrange (k + 1)).2, (hxrange k).1]⟩
+    sufficient_decrease := fun _ ↦ trivial
+    predicted_pos := hpos
+    iterate_update := fun k ↦ by
+      unfold Optimization.acceptStep
+      change x (k + 1) = if defaultBTRParams.η₁ ≤ btrRatio f f (x k) (s k)
+        then x k + s k else x k
+      rw [hratio k, ite_eq_left (defaultBTRParams.eta₁_le_eta₂.trans
+        defaultBTRParams.eta₂_lt_one.le), hnext]
+    radius_update := fun k ↦ by
+      rw [hratio]
+      exact ⟨fun _ ↦ le_rfl, by norm_num [defaultBTRParams], by norm_num [defaultBTRParams]⟩ }
+  have ha : Tendsto a atTop (𝓝 0) := by
+    have ht := (tendsto_pow_atTop_nhds_zero_of_lt_one
+      (by norm_num : (0 : ℝ) ≤ 1 / 2) (by norm_num : (1 : ℝ) / 2 < 1)).comp
+      (tendsto_add_atTop_nat 1)
+    simpa [a, r, Function.comp_def] using Real.continuous_arcsin.continuousAt.tendsto.comp ht
+  refine ⟨run, fun _ ↦ rfl, ?_, ?_, ?_, ?_⟩
+  · intro k
+    change defaultBTRParams.η₁ ≤ btrRatio f f (x k) (s k)
+    rw [hratio]
+    exact (defaultBTRParams.eta₁_le_eta₂.trans defaultBTRParams.eta₂_lt_one.le)
+  · intro k β hβ
+    change HasSufficientModelDecrease f (x k) (s k) (gradient f (x k)) β Real.pi (1 / 4)
+    have hgrad : ‖gradient f (x k)‖ ≤ r k := by
+      have hfun : f = fun y ↦ Real.sin y ^ 2 / 2 := by
+        funext y
+        simp [f, leastSquaresObjective, Real.norm_eq_abs, sq_abs]
+      have hd := (((Real.hasDerivAt_sin (x k)).pow 2).div_const 2).deriv
+      change deriv (fun y ↦ Real.sin y ^ 2 / 2) (x k) = _ at hd
+      rw [hfun, gradient_eq_deriv', hd]
+      simp only [Nat.reduceSub, Nat.cast_ofNat, pow_one, Real.norm_eq_abs, hsin]
+      have heq : (2 * r k * Real.cos (x k)) / 2 = r k * Real.cos (x k) := by ring
+      rw [heq, abs_mul, abs_of_pos (hr k)]
+      simpa using mul_le_mul_of_nonneg_left (Real.abs_cos_le_one (x k)) (hr k).le
+    refine ⟨by norm_num, ?_⟩
+    rw [hdec]
+    have hquot : ‖gradient f (x k)‖ / β ≤ ‖gradient f (x k)‖ := by
+      rw [div_le_iff₀ (zero_lt_one.trans_le hβ)]
+      exact le_mul_of_one_le_right (norm_nonneg _) hβ
+    calc
+      _ ≤ (1 / 4 : ℝ) * ‖gradient f (x k)‖ * ‖gradient f (x k)‖ :=
+        mul_le_mul_of_nonneg_left ((min_le_left _ _).trans hquot) (by positivity)
+      _ ≤ (1 / 4 : ℝ) * r k * r k := by gcongr
+      _ ≤ _ := by nlinarith [sq_nonneg (r k)]
+  · change Tendsto (fun k ↦ x (2 * k)) atTop (𝓝 0)
+    have hidx : Tendsto (fun k : ℕ ↦ 2 * k) atTop atTop :=
+      tendsto_atTop_mono (fun k ↦ by change k ≤ _; omega) tendsto_id
+    simpa [x, Function.comp_def] using ha.comp hidx
+  · change Tendsto (fun k ↦ x (2 * k + 1)) atTop (𝓝 Real.pi)
+    have hidx : Tendsto (fun k : ℕ ↦ 2 * k + 1) atTop atTop :=
+      tendsto_atTop_mono (fun k ↦ by change k ≤ _; omega) tendsto_id
+    simpa [x, Function.comp_def] using (ha.comp hidx).const_sub Real.pi
 
 end ConnGouldToint.Chapter16

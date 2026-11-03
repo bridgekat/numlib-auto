@@ -43,3 +43,19 @@ source = "Conn–Gould–Toint, (16.1.9)"
 [[node]]
 id = "theorem_16_1_2_unbounded_radii_counterexample"
 source = "Conn–Gould–Toint, Theorem 16.1.2"
+
+[[node]]
+id = "theorem_16_1_4_root_hessian_iff"
+source = "Conn–Gould–Toint, Theorem 16.1.4"
+
+[[node]]
+id = "theorem_16_1_4_surjective_counterexample"
+source = "Conn–Gould–Toint, Theorem 16.1.4"
+
+[[node]]
+id = "theorem_16_1_4_eventually_model_root"
+source = "Conn–Gould–Toint, Theorem 16.1.4"
+
+[[node]]
+id = "theorem_16_1_4_exact_model_counterexample"
+source = "Conn–Gould–Toint, Theorem 16.1.4"
