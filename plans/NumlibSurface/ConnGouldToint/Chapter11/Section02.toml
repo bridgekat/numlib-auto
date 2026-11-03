@@ -1,0 +1,41 @@
+namespace = "ConnGouldToint.Chapter11"
+desc = "Normalized model errors, compact-parameter uniformity under equicontinuity, and the success ratio for sufficiently small radii."
+
+[[node]]
+id = "normalizedModelError"
+source = "Conn–Gould–Toint, (11.2.2)"
+
+[[node]]
+id = "lemma_11_2_1"
+source = "Conn–Gould–Toint, Lemma 11.2.1"
+
+[[node]]
+id = "UniformNormalizedModelAgreementAt"
+source = "Conn–Gould–Toint, corrected (11.2.1) for uniform estimates"
+
+[[node]]
+id = "ModelErrorEquicontinuousAt"
+
+[[node]]
+id = "lemma_11_2_2"
+source = "Conn–Gould–Toint, corrected Lemma 11.2.2"
+
+[[node]]
+id = "lemma_11_2_3"
+source = "Conn–Gould–Toint, corrected Lemma 11.2.3"
+
+[[node]]
+id = "compactPerturbedModel"
+source = "Counterexample to Lemmas 11.2.2 and 11.2.3"
+
+[[node]]
+id = "compactPerturbedModel_matches"
+
+[[node]]
+id = "compactPerturbedModel_pointwise"
+
+[[node]]
+id = "compactPerturbedModel_not_uniform"
+
+[[node]]
+id = "compactPerturbedModel_rejected"

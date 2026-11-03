@@ -298,7 +298,8 @@ private theorem oscillatoryObjective_subgradient_zero :
   · rintro rfl d
     linarith
 
-private theorem oscillatoryObjective_minimumNorm :
+/-- At zero the quadratic example has minimum-norm subgradient `-1`. -/
+theorem oscillatoryObjective_minimumNorm :
     minimumNormSubgradient oscillatoryObjective 0 = -1 := by
   unfold minimumNormSubgradient
   rw [oscillatoryObjective_subgradient_zero]

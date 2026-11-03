@@ -69,6 +69,9 @@ Chapter 11 covers Clarke steepest descent using the support identity proved in (
 Pointwise smooth model matching does not give the uniform decrease in Lemma 11.1.3
 or Corollary 11.1.4. The corrected results require a uniform one-sided first-order
 model estimate near a nonstationary point.
+Lemmas 11.2.2 and 11.2.3 also require uniform control of the normalized error. A compact
+parameter counterexample shows that pointwise agreement alone permits small-radius rejections.
+
 
 
 Section 12.1 covers box projection, the projected-gradient path, and the criticality measure.
