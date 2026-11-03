@@ -1,3 +1,4 @@
+import Mathlib.Analysis.Calculus.ContDiff.WithLp
 import Mathlib.Analysis.Calculus.Deriv.Slope
 import Mathlib.Analysis.Calculus.Gradient.Basic
 import Mathlib.Analysis.Calculus.ImplicitContDiff
@@ -1099,6 +1100,263 @@ theorem theorem_3_2_7_strict_minimizer_branch
         | inl i => exact hkkt'.feasible_eq i
         | inr j => exact hactive j
     exact congrArg Prod.fst (((hbranch p hp).2 _ hwW).mp hFzero)
+
+
+/-- Joint smoothness of the objective and constraint functions supplies the smooth
+active residual, its block derivative, and the continuous Jacobian and Hessian
+used in the sensitivity theorem. -/
+theorem theorem_3_2_7_joint_smooth_data
+    {f : P → V → ℝ} {h : ι → P → V → ℝ} {g : κ ⊕ ν → P → V → ℝ}
+    (hf : ContDiff ℝ 2 (Function.uncurry f))
+    (hh : ∀ i, ContDiff ℝ 2 (Function.uncurry (h i)))
+    (hg : ∀ j, ContDiff ℝ 2 (Function.uncurry (g j))) :
+    ∃ (F : P × (V × ActiveDual ι κ) → V × ActiveDual ι κ)
+      (A : P → V → V →L[ℝ] ActiveDual ι κ)
+      (H : P → V × ActiveDual ι κ → V →L[ℝ] V),
+      ContDiff ℝ 1 F ∧
+      Continuous (fun w : P × (V × ActiveDual ι κ) ↦ A w.1 w.2.1) ∧
+      Continuous (Function.uncurry H) ∧
+      (∀ p z, (fderiv ℝ F (p, z)).comp (inr ℝ P (V × ActiveDual ι κ)) =
+        activeKKTLinearization (A p z.1) (H p z)) ∧
+      (∀ p z, (F (p, z)).1 = gradient (f p) z.1 + (A p z.1).adjoint z.2) ∧
+      (∀ p z i, (F (p, z)).2 i = Sum.elim (fun i ↦ h i p z.1)
+        (fun j ↦ g (.inl j) p z.1) i) ∧
+      (∀ p x d i, A p x d i = Sum.elim (fun i ↦ fderiv ℝ (h i p) x d)
+        (fun j ↦ fderiv ℝ (g (.inl j) p) x d) i) ∧
+      ∀ p z d, ⟪H p z d, d⟫ =
+        iteratedFDeriv ℝ 2 (kktLagrangian (f p) (fun i ↦ h i p) (fun j ↦ g j p)
+          (fun i ↦ z.2 (.inl i)) (Sum.elim (fun j ↦ z.2 (.inr j)) (fun _ ↦ 0))) z.1
+          (fun _ ↦ d) := by
+  let C (p : P) (x : V) : ActiveDual ι κ :=
+    WithLp.toLp 2 (Sum.elim (fun i ↦ h i p x) (fun j ↦ g (.inl j) p x))
+  have hC : ContDiff ℝ 2 (Function.uncurry C) := contDiff_piLp' 2 fun i ↦ by
+    cases i with
+    | inl i => exact hh i
+    | inr j => exact hg (.inl j)
+  let A (p : P) (x : V) := fderiv ℝ (C p) x
+  have hA : ContDiff ℝ 1 (Function.uncurry A) :=
+    (hC.comp ((contDiff_fst.comp contDiff_fst).prodMk contDiff_snd)).fderiv
+      (g := Prod.snd) contDiff_snd (by norm_num)
+  let Q := P × ActiveDual ι κ
+  let L (q : Q) := kktLagrangian (f q.1) (fun i ↦ h i q.1) (fun j ↦ g j q.1)
+    (fun i ↦ q.2 (.inl i)) (Sum.elim (fun j ↦ q.2 (.inr j)) (fun _ ↦ 0))
+  let coord (i : ι ⊕ κ) : ActiveDual ι κ →L[ℝ] ℝ :=
+    PiLp.proj 2 (fun _ : ι ⊕ κ ↦ ℝ) i
+  have hL : ContDiff ℝ 2 (Function.uncurry L) := by
+    have hpr : ContDiff ℝ 2 (fun w : Q × V ↦ (w.1.1, w.2)) :=
+      (contDiff_fst.comp contDiff_fst).prodMk contDiff_snd
+    change ContDiff ℝ 2 (fun w : Q × V ↦ L w.1 w.2)
+    simp only [L, kktLagrangian_apply]
+    apply ((hf.comp hpr).add ?_).add ?_
+    · exact ContDiff.sum fun i _ ↦
+        ((coord (.inl i)).contDiff.comp (contDiff_snd.comp contDiff_fst)).mul
+          ((hh i).comp hpr)
+    · refine ContDiff.sum fun j _ ↦ ?_
+      cases j with
+      | inl j =>
+        exact ((coord (.inr j)).contDiff.comp (contDiff_snd.comp contDiff_fst)).mul
+          ((hg (.inl j)).comp hpr)
+      | inr j => exact contDiff_const.mul ((hg (.inr j)).comp hpr)
+  let G (q : Q) (x : V) := gradient (L q) x
+  have hG : ContDiff ℝ 1 (Function.uncurry G) :=
+    (InnerProductSpace.toDual ℝ V).symm.toContinuousLinearEquiv.contDiff.comp
+      ((hL.comp ((contDiff_fst.comp contDiff_fst).prodMk contDiff_snd)).fderiv
+        (g := Prod.snd) contDiff_snd (by norm_num))
+  let H (p : P) (z : V × ActiveDual ι κ) := fderiv ℝ (G (p, z.2)) z.1
+  have hswap : ContDiff ℝ 1 (fun w : P × (V × ActiveDual ι κ) ↦ ((w.1, w.2.2), w.2.1)) :=
+    (contDiff_fst.prodMk (contDiff_snd.comp contDiff_snd)).prodMk
+      (contDiff_fst.comp contDiff_snd)
+  let F (w : P × (V × ActiveDual ι κ)) := (G (w.1, w.2.2) w.2.1, C w.1 w.2.1)
+  have hF : ContDiff ℝ 1 F := (hG.comp hswap).prodMk
+    ((hC.of_le (by norm_num : (1 : WithTop ℕ∞) ≤ 2)).comp
+      (contDiff_fst.prodMk (contDiff_fst.comp contDiff_snd)))
+  have hrow (p : P) (x d : V) (i : ι ⊕ κ) :
+      A p x d i = Sum.elim (fun i ↦ fderiv ℝ (h i p) x d)
+        (fun j ↦ fderiv ℝ (g (.inl j) p) x d) i := by
+    have hc : DifferentiableAt ℝ (C p) x :=
+      ((hC.comp (contDiff_const.prodMk contDiff_id)).differentiable (by norm_num)) x
+    let proj : ActiveDual ι κ →L[ℝ] ℝ := PiLp.proj 2 (fun _ : ι ⊕ κ ↦ ℝ) i
+    have hp := (proj.hasFDerivAt.comp x hc.hasFDerivAt).fderiv
+    have he := congrArg (fun T : V →L[ℝ] ℝ ↦ T d) hp
+    cases i <;> exact he.symm
+  have hstation (p : P) (z : V × ActiveDual ι κ) :
+      (F (p, z)).1 = gradient (f p) z.1 + (A p z.1).adjoint z.2 := by
+    have diff {u : P → V → ℝ} (hu : ContDiff ℝ 2 (Function.uncurry u)) :
+        DifferentiableAt ℝ (u p) z.1 :=
+      (hu.comp (contDiff_const.prodMk contDiff_id)).differentiable (by norm_num) _
+    apply ext_inner_right ℝ
+    intro d
+    change ⟪gradient (L (p, z.2)) z.1, d⟫ = _
+    rw [inner_gradient_left, (hasFDerivAt_kktLagrangian (diff hf).hasFDerivAt
+      (fun i ↦ (diff (hh i)).hasFDerivAt) (fun j ↦ (diff (hg j)).hasFDerivAt)).fderiv]
+    simp only [inner_add_left, inner_gradient_left, adjoint_inner_left,
+      PiLp.inner_apply, RCLike.inner_apply, conj_trivial, hrow, Fintype.sum_sum_type,
+      Sum.elim_inl, Sum.elim_inr, add_apply, sum_apply, smul_apply, smul_eq_mul,
+      zero_mul, Finset.sum_const_zero, add_zero]
+    simp only [mul_comm, add_assoc]
+  have hHp : ContDiff ℝ 0 (fun w : Q × V ↦ fderiv ℝ (G w.1) w.2) :=
+    (hG.comp ((contDiff_fst.comp contDiff_fst).prodMk contDiff_snd)).fderiv
+      (g := Prod.snd) contDiff_snd (by norm_num)
+  refine ⟨F, A, H, hF,
+    (hA.comp (contDiff_fst.prodMk (contDiff_fst.comp contDiff_snd))).continuous,
+    (hHp.comp (hswap.of_le zero_le)).continuous, ?_, hstation, fun _ _ _ ↦ rfl, hrow, ?_⟩
+  · intro p z
+    let D := (fderiv ℝ F (p, z)).comp (inr ℝ P (V × ActiveDual ι κ))
+    have hDF : HasFDerivAt F (fderiv ℝ F (p, z)) (p, z) :=
+      (hF.differentiable one_ne_zero _).hasFDerivAt
+    have hd₁ : HasFDerivAt (fun x : V ↦ F (p, (x, z.2)))
+        (D.comp (inl ℝ V (ActiveDual ι κ))) z.1 := by
+      have he : HasFDerivAt (fun x : V ↦ (p, (x, z.2)))
+          ((0 : V →L[ℝ] P).prod ((ContinuousLinearMap.id ℝ V).prod 0)) z.1 :=
+        (hasFDerivAt_const p z.1).prodMk
+          ((hasFDerivAt_id z.1).prodMk (hasFDerivAt_const z.2 z.1))
+      convert hDF.comp z.1 he using 1
+      · rfl
+      · apply ContinuousLinearMap.ext
+        intro d
+        simp [D]
+    have hd₂ : HasFDerivAt (fun m : ActiveDual ι κ ↦ F (p, (z.1, m)))
+        (D.comp (inr ℝ V (ActiveDual ι κ))) z.2 := by
+      have he : HasFDerivAt (fun m : ActiveDual ι κ ↦ (p, (z.1, m)))
+          ((0 : ActiveDual ι κ →L[ℝ] P).prod
+            (ContinuousLinearMap.prod 0 (ContinuousLinearMap.id ℝ (ActiveDual ι κ)))) z.2 :=
+        (hasFDerivAt_const p z.2).prodMk
+          ((hasFDerivAt_const z.1 z.2).prodMk (hasFDerivAt_id z.2))
+      convert hDF.comp z.2 he using 1
+      · rfl
+      · apply ContinuousLinearMap.ext
+        intro d
+        simp [D]
+    have hGdiff : DifferentiableAt ℝ (G (p, z.2)) z.1 :=
+      ((hG.comp (contDiff_const.prodMk contDiff_id)).differentiable one_ne_zero) z.1
+    have hCdiff : DifferentiableAt ℝ (C p) z.1 :=
+      ((hC.comp (contDiff_const.prodMk contDiff_id)).differentiable (by norm_num)) z.1
+    have hd₁' : HasFDerivAt (fun x : V ↦ F (p, (x, z.2)))
+        ((H p z).prod (A p z.1)) z.1 :=
+      hGdiff.hasFDerivAt.prodMk hCdiff.hasFDerivAt
+    have hd₂' : HasFDerivAt (fun m : ActiveDual ι κ ↦ F (p, (z.1, m)))
+        (((A p z.1).adjoint).prod 0) z.2 := by
+      have hlin := ((hasFDerivAt_const (gradient (f p) z.1) z.2).add
+        (A p z.1).adjoint.hasFDerivAt).prodMk (hasFDerivAt_const (C p z.1) z.2)
+      rw [zero_add] at hlin
+      convert hlin using 1
+      funext m
+      exact Prod.ext (hstation p (z.1, m)) rfl
+    have he₁ := hd₁.unique hd₁'
+    have he₂ := hd₂.unique hd₂'
+    apply ContinuousLinearMap.ext
+    intro v
+    change D v = _
+    calc
+      D v = D (v.1, 0) + D (0, v.2) := by rw [← map_add]; simp
+      _ = _ := by
+        simpa using congrArg₂ (· + ·)
+          (congrArg (fun T : V →L[ℝ] (V × ActiveDual ι κ) ↦ T v.1) he₁)
+          (congrArg (fun T : ActiveDual ι κ →L[ℝ] (V × ActiveDual ι κ) ↦ T v.2) he₂)
+  · intro p z d
+    let q : Q := (p, z.2)
+    let e := (InnerProductSpace.toDual ℝ V).symm.toContinuousLinearEquiv
+    have hd : DifferentiableAt ℝ (fderiv ℝ (L q)) z.1 :=
+      (((hL.comp (contDiff_const.prodMk contDiff_id)).fderiv_right
+        (by norm_num : (1 : WithTop ℕ∞) + 1 ≤ 2)).differentiable one_ne_zero) _
+    have he := (e.hasFDerivAt.comp z.1 hd.hasFDerivAt).fderiv
+    change ⟪fderiv ℝ (G q) z.1 d, d⟫ = iteratedFDeriv ℝ 2 (L q) z.1 (fun _ ↦ d)
+    rw [show fderiv ℝ (G q) z.1 = e.toContinuousLinearMap.comp
+      (fderiv ℝ (fderiv ℝ (L q)) z.1) from he, comp_apply, iteratedFDeriv_two_apply]
+    exact InnerProductSpace.toDual_symm_apply
+
+/-- Theorem 3.2.7 and its differentiable variant from the notes. For jointly
+$C^2$ data, the local minimizer and its multipliers continue along a $C^1$
+branch with the same active set. The active Jacobian is described by its rows. -/
+theorem theorem_3_2_7
+    {f : P → V → ℝ} {h : ι → P → V → ℝ} {g : κ ⊕ ν → P → V → ℝ}
+    {p₀ : P} {z₀ : V × ActiveDual ι κ}
+    (hf : ContDiff ℝ 2 (Function.uncurry f))
+    (hh : ∀ i, ContDiff ℝ 2 (Function.uncurry (h i)))
+    (hg : ∀ j, ContDiff ℝ 2 (Function.uncurry (g j)))
+    (hkkt : IsKKTPoint (fderiv ℝ (f p₀)) (fun i ↦ h i p₀) (fun i ↦ fderiv ℝ (h i p₀))
+      (fun j ↦ g j p₀) (fun j ↦ fderiv ℝ (g j p₀)) z₀.1 (fun i ↦ z₀.2 (.inl i))
+      (Sum.elim (fun j ↦ z₀.2 (.inr j)) (fun _ ↦ 0)))
+    (hstrict : ∀ j : κ, 0 < z₀.2 (.inr j))
+    (hinactive : ∀ j : ν, g (.inr j) p₀ z₀.1 < 0)
+    (hRank : ∀ b : ActiveDual ι κ, ∃ d : V, ∀ i,
+      Sum.elim (fun i ↦ fderiv ℝ (h i p₀) z₀.1 d)
+        (fun j ↦ fderiv ℝ (g (.inl j) p₀) z₀.1 d) i = b i)
+    (hpos : ∀ d : V, (∀ i, fderiv ℝ (h i p₀) z₀.1 d = 0) →
+      (∀ j : κ, fderiv ℝ (g (.inl j) p₀) z₀.1 d = 0) → d ≠ 0 →
+      0 < iteratedFDeriv ℝ 2 (kktLagrangian (f p₀) (fun i ↦ h i p₀) (fun j ↦ g j p₀)
+        (fun i ↦ z₀.2 (.inl i)) (Sum.elim (fun j ↦ z₀.2 (.inr j)) (fun _ ↦ 0))) z₀.1
+        (fun _ ↦ d)) :
+    ∃ z : P → V × ActiveDual ι κ, ContDiffAt ℝ 1 z p₀ ∧ z p₀ = z₀ ∧
+      ∃ X : Set V, IsOpen X ∧ z₀.1 ∈ X ∧ ∀ᶠ p in 𝓝 p₀,
+        (z p).1 ∈ X ∧
+        (∀ j : κ ⊕ ν, g j p (z p).1 = 0 ↔ ∃ i : κ, j = .inl i) ∧
+        (∀ j : κ, 0 < (z p).2 (.inr j)) ∧
+        (∀ b : ActiveDual ι κ, ∃ d : V, ∀ i,
+          Sum.elim (fun i ↦ fderiv ℝ (h i p) (z p).1 d)
+            (fun j ↦ fderiv ℝ (g (.inl j) p) (z p).1 d) i = b i) ∧
+        (∀ d : V, (∀ i, fderiv ℝ (h i p) (z p).1 d = 0) →
+          (∀ j : κ, fderiv ℝ (g (.inl j) p) (z p).1 d = 0) → d ≠ 0 →
+          0 < iteratedFDeriv ℝ 2 (kktLagrangian (f p) (fun i ↦ h i p) (fun j ↦ g j p)
+            (fun i ↦ (z p).2 (.inl i)) (Sum.elim (fun j ↦ (z p).2 (.inr j)) (fun _ ↦ 0)))
+            (z p).1 (fun _ ↦ d)) ∧
+        IsKKTPoint (fderiv ℝ (f p)) (fun i ↦ h i p) (fun i ↦ fderiv ℝ (h i p))
+          (fun j ↦ g j p) (fun j ↦ fderiv ℝ (g j p)) (z p).1 (fun i ↦ (z p).2 (.inl i))
+          (Sum.elim (fun j ↦ (z p).2 (.inr j)) (fun _ ↦ 0)) ∧
+        Optimization.IsStrictLocalMinOn (f p) (feasible (fun i ↦ h i p) (fun j ↦ g j p)) (z p).1 ∧
+        (∀ l μ, IsKKTPoint (fderiv ℝ (f p)) (fun i ↦ h i p) (fun i ↦ fderiv ℝ (h i p))
+          (fun j ↦ g j p) (fun j ↦ fderiv ℝ (g j p)) (z p).1 l μ →
+          l = (fun i ↦ (z p).2 (.inl i)) ∧
+          μ = Sum.elim (fun j ↦ (z p).2 (.inr j)) (fun _ ↦ 0)) ∧
+        ∀ w ∈ X, w ∈ feasible (fun i ↦ h i p) (fun j ↦ g j p) →
+          IsLocalMinOn (f p) (feasible (fun i ↦ h i p) (fun j ↦ g j p)) w → w = (z p).1 := by
+  obtain ⟨F, A, H, hF, hAcont, hHcont, hB, hstat, hfeas, hrow, hH⟩ :=
+    theorem_3_2_7_joint_smooth_data hf hh hg
+  have hzero : F (p₀, z₀) = 0 := by
+    apply Prod.ext
+    · rw [hstat]
+      exact (active_kkt_stationary_iff (hrow p₀ z₀.1)).mpr hkkt.stationary
+    · ext i
+      rw [hfeas]
+      cases i with
+      | inl i => exact hkkt.feasible_eq i
+      | inr j => exact (mul_eq_zero.mp (hkkt.complementary (.inl j))).resolve_left (hstrict j).ne'
+  have hA₀ : Function.Surjective (A p₀ z₀.1) := by
+    intro b
+    obtain ⟨d, hd⟩ := hRank b
+    exact ⟨d, by ext i; rw [hrow]; exact hd i⟩
+  have hH₀ (d : V) (hd : A p₀ z₀.1 d = 0) (hne : d ≠ 0) : 0 < ⟪H p₀ z₀ d, d⟫ := by
+    rw [hH]
+    apply hpos d _ _ hne
+    · intro i
+      simpa only [hrow, Sum.elim_inl, PiLp.zero_apply] using congrArg (fun m : ActiveDual ι κ ↦ m (.inl i)) hd
+    · intro j
+      simpa only [hrow, Sum.elim_inr, PiLp.zero_apply] using congrArg (fun m : ActiveDual ι κ ↦ m (.inr j)) hd
+  have slice {u : P → V → ℝ} (hu : ContDiff ℝ 2 (Function.uncurry u)) (p : P) (x : V) :
+      ContDiffAt ℝ 2 (u p) x :=
+    (hu.comp (contDiff_const.prodMk contDiff_id)).contDiffAt
+  have inactiveCont (j : ν) :
+      ContinuousAt (fun w : P × (V × ActiveDual ι κ) ↦ g (.inr j) w.1 w.2.1) (p₀, z₀) :=
+    ((hg (.inr j)).continuous.comp (continuous_fst.prodMk
+      (continuous_fst.comp continuous_snd))).continuousAt
+  obtain ⟨z, hz, hz₀, X, hX, hx₀, hzX⟩ := theorem_3_2_7_strict_minimizer_branch
+    hF.contDiffAt hzero (hB p₀ z₀) hA₀ hH₀ hAcont.continuousAt hHcont.continuousAt
+    inactiveCont hstrict hinactive (slice hf) (fun p x i ↦ slice (hh i) p x)
+    (fun p x j ↦ slice (hg j) p x) hstat hfeas hrow hH
+  refine ⟨z, hz, hz₀, X, hX, hx₀, hzX.mono fun p ⟨hmem, hact, hstr, hsurj, hpd, hrest⟩ ↦
+    ⟨hmem, hact, hstr, ?_, ?_, hrest⟩⟩
+  · intro b
+    obtain ⟨d, hd⟩ := hsurj b
+    exact ⟨d, fun i ↦ (hrow p (z p).1 d i).symm.trans
+      (congrArg (fun m : ActiveDual ι κ ↦ m i) hd)⟩
+  · intro d hd₁ hd₂ hne
+    rw [← hH]
+    apply hpd d _ hne
+    ext i
+    rw [hrow]
+    cases i with
+    | inl i => exact hd₁ i
+    | inr j => exact hd₂ j
 
 end MixedKKTSensitivity
 

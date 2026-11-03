@@ -38,7 +38,7 @@ Separate examples show why the printed continuity claims need these changes.
 The normal and positive tangent cones in Theorem 3.2.10 are continuous on
 fixed active faces in the bounded-section sense. Theorem 3.2.7 has the
 locally unique strict-local-minimizer branch with mixed active-set persistence.
-The proof assumes an explicit smooth active KKT residual and its block derivative.
+Joint C² regularity supplies the smooth active KKT residual and its block derivative.
 Theorem 3.2.15 uses local Lipschitz outer functions and a strict Clarke
 descent direction for an active constraint. A boundary example shows why
 the printed outer-domain conditions are insufficient.

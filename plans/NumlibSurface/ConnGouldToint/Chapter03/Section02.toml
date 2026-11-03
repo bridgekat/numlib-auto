@@ -143,3 +143,11 @@ source = "Conn–Gould–Toint, Theorems 3.2.7 and 15.2.2"
 [[node]]
 id = "active_surjective_licq"
 source = "Conn–Gould–Toint, Theorems 3.2.7 and 15.2.2"
+
+[[node]]
+id = "theorem_3_2_7_joint_smooth_data"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.7"
+
+[[node]]
+id = "theorem_3_2_7"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.7 and notes"
