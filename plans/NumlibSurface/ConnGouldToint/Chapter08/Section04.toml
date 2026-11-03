@@ -35,3 +35,15 @@ source = "Conn–Gould–Toint, Theorem 8.4.7, convergence under AM.4f"
 [[node]]
 id = "theorem_8_4_8"
 source = "Conn–Gould–Toint, Theorem 8.4.8, corrected neighborhood-local model convexity hypothesis"
+
+[[node]]
+id = "localHessianTolerance"
+source = "Conn–Gould–Toint, (8.4.33)"
+
+[[node]]
+id = "localEntryRadius"
+source = "Conn–Gould–Toint, (8.4.35)"
+
+[[node]]
+id = "exists_localHessianEntryBounds"
+source = "Conn–Gould–Toint, (8.4.33), (8.4.35) and (8.4.36)"

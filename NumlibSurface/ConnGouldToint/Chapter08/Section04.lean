@@ -574,6 +574,44 @@ theorem theorem_8_4_7 [NormedSpace ℝ E] {P : BTRParams} {f : E → ℝ}
   have hgzero := (lemma_8_4_1 he₁ herr).mpr hfzero
   simpa only [sub_zero] using tendsto_iff_norm_sub_tendsto_zero.mp hgzero
 
+/-- The local Hessian variation tolerance (8.4.33). -/
+noncomputable def localHessianTolerance (σ κ : ℝ) : ℝ := min 1 (min σ κ) / 4
+
+/-- The smaller entry radius (8.4.35) used in the local convergence proof. -/
+noncomputable def localEntryRadius (σ κ δ : ℝ) : ℝ :=
+  κ * δ / (4 * localHessianTolerance σ κ + κ)
+
+/-- Continuity and subsequence convergence give the objective Hessian,
+iterate and gradient bounds used to enter the local regime. -/
+theorem exists_localHessianEntryBounds {F : Type*} [NormedAddCommGroup F]
+    {H : E → F} {x : E} {y g : ℕ → E} {σ κ : ℝ}
+    (hH : ContinuousAt H x) (hy : Tendsto y atTop (𝓝 x)) (hg : Tendsto g atTop (𝓝 0))
+    (hσ : 0 < σ) (hκ : 0 < κ) :
+    ∃ δ > 0, (∀ z, ‖z - x‖ ≤ δ → ‖H z - H x‖ ≤ localHessianTolerance σ κ) ∧
+      0 < localEntryRadius σ κ δ ∧ localHessianTolerance σ κ * localEntryRadius σ κ δ < δ ∧
+      ∀ᶠ i in atTop, ‖y i - x‖ ≤ localEntryRadius σ κ δ ∧
+        ‖g i‖ ≤ localHessianTolerance σ κ * localEntryRadius σ κ δ := by
+  let a := localHessianTolerance σ κ
+  have ha : 0 < a := div_pos (lt_min zero_lt_one (lt_min hσ hκ)) (by norm_num)
+  have ha₁ : a ≤ 1 / 4 :=
+    div_le_div_of_nonneg_right (min_le_left _ _) (by norm_num)
+  obtain ⟨r, hr, hbound⟩ := Metric.continuousAt_iff.mp hH a ha
+  let δ := r / 2
+  let b := localEntryRadius σ κ δ
+  have hδ : 0 < δ := half_pos hr
+  have hb : 0 < b := div_pos (mul_pos hκ hδ) (by positivity)
+  have hbδ : b ≤ δ := (div_le_iff₀ (by positivity)).mpr (by nlinarith)
+  have hab : a * b < δ := by
+    nlinarith [mul_le_mul_of_nonneg_right ha₁ hb.le]
+  refine ⟨δ, hδ, fun z hz ↦ ?_, hb, hab, ?_⟩
+  · have hz' : dist z x < r := by
+      rw [dist_eq_norm]
+      exact hz.trans_lt (by dsimp [δ]; linarith)
+    simpa only [dist_eq_norm] using (hbound hz').le
+  · have h₁ := (Metric.tendsto_nhds.mp hy b hb).mono fun i hi ↦ hi.le
+    have h₂ := (Metric.tendsto_nhds.mp hg (a * b) (mul_pos ha hb)).mono fun i hi ↦ hi.le
+    simpa only [dist_eq_norm, sub_zero] using h₁.and h₂
+
 /-- Corrected Theorem 8.4.8. Near the nondegenerate limit point, eventual model
 convexity must control every trial segment used in the neighborhood trapping
 argument. Convexity only along the convergent subsequence supplies no such

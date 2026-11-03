@@ -1,4 +1,5 @@
 import Mathlib.Basic.Real.Basic
+import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 import Numlib.Krylov.Lanczos
 import Numlib.Analysis.Matrix.ToEuclideanLin
 
@@ -364,5 +365,67 @@ theorem preconditioned_lanczos_run_relations_5_2_52_53
     (lanczosBasisMatrix Hbar rbar k) (Lanczos.tridiag A b (k + 1))
     (ofLp (Arnoldi.vec A b (k + 1))) (Pi.single (Fin.last k) 1) (Lanczos.beta A b k)
     hL hR (lanczos_relation_5_2_14 hsym rbar k) horth hperp
+
+section ConjugateBasis
+
+open Matrix
+
+variable {n k : Type*} [Fintype n] [Fintype k] [DecidableEq k]
+
+/-- The factor (5.2.29) combines the triangular factor and the
+orthonormal eigenvectors of the pivot blocks. -/
+def lanczosBlockFactor (L U : Matrix k k ℝ) : Matrix k k ℝ := L * U
+
+/-- The columns in (5.2.31), obtained from the Lanczos basis by
+the inverse transpose of the block factor. -/
+noncomputable def lanczosConjugateBasis (Q : Matrix n k ℝ) (M : Matrix k k ℝ) :
+    Matrix n k ℝ :=
+  Q * Mᵀ⁻¹
+
+/-- Diagonalizing the pivot blocks gives (5.2.28). The inverse-transpose
+basis satisfies (5.2.32), diagonalizes the projected quadratic form,
+and spans the same space as the Lanczos columns. -/
+theorem lanczos_conjugate_basis_relations
+    (H : Matrix n n ℝ) (Q : Matrix n k ℝ) (T L B U D : Matrix k k ℝ)
+    (hT : Qᵀ * H * Q = T) (hLDL : T = L * B * Lᵀ)
+    (hdiag : B = U * D * Uᵀ) (hL : IsUnit L.det) (hU : Uᵀ * U = 1) :
+    let M := lanczosBlockFactor L U
+    let S := lanczosConjugateBasis Q M
+    T = M * D * Mᵀ ∧ S * Mᵀ = Q ∧ Sᵀ * H * S = D ∧
+      Set.range S.mulVec = Set.range Q.mulVec := by
+  let M := lanczosBlockFactor L U
+  let S := lanczosConjugateBasis Q M
+  have hUdet : IsUnit U.det := by
+    have hdet := congrArg Matrix.det hU
+    rw [det_mul, det_one] at hdet
+    exact isUnit_of_mul_isUnit_right (hdet ▸ isUnit_one)
+  have hM : IsUnit M.det := by
+    dsimp [M, lanczosBlockFactor]
+    rw [det_mul]
+    exact hL.mul hUdet
+  have hMt : IsUnit Mᵀ.det := isUnit_det_transpose M hM
+  have hdec : T = M * D * Mᵀ := by
+    rw [hLDL, hdiag]
+    simp only [M, lanczosBlockFactor, transpose_mul, Matrix.mul_assoc]
+  have hrecover : S * Mᵀ = Q := by
+    exact nonsing_inv_mul_cancel_right Mᵀ Q hMt
+  have hconj : Sᵀ * H * S = D := by
+    calc
+      Sᵀ * H * S = M⁻¹ * (Qᵀ * H * Q) * Mᵀ⁻¹ := by
+        simp [S, lanczosConjugateBasis, transpose_mul, transpose_nonsing_inv,
+          transpose_transpose, Matrix.mul_assoc]
+      _ = D := by
+        rw [hT, hdec, ← Matrix.mul_assoc M⁻¹ (M * D) Mᵀ, ← Matrix.mul_assoc M⁻¹ M D,
+          nonsing_inv_mul _ hM, Matrix.one_mul, mul_nonsing_inv_cancel_right _ _ hMt]
+  refine ⟨hdec, hrecover, hconj, ?_⟩
+  apply Set.Subset.antisymm
+  · rintro _ ⟨v, rfl⟩
+    refine ⟨Mᵀ⁻¹ *ᵥ v, ?_⟩
+    change Q *ᵥ (Mᵀ⁻¹ *ᵥ v) = (Q * Mᵀ⁻¹) *ᵥ v
+    rw [mulVec_mulVec]
+  · rintro _ ⟨v, rfl⟩
+    exact ⟨Mᵀ *ᵥ v, by rw [mulVec_mulVec, hrecover]⟩
+
+end ConjugateBasis
 
 end ConnGouldToint.Chapter05

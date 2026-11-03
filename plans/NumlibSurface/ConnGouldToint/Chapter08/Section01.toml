@@ -131,3 +131,11 @@ source = "Conn–Gould–Toint, Theorem 8.1.5, least eigenvalue liminf along the
 [[node]]
 id = "theorem_8_1_5_directional"
 source = "Conn–Gould–Toint, Theorem 8.1.5, objective curvature independent of local persistence"
+
+[[node]]
+id = "modifiedCauchyNormFactor"
+source = "Conn–Gould–Toint, (8.1.50)"
+
+[[node]]
+id = "modifiedCauchyNormFactor_mul_le"
+source = "Conn–Gould–Toint, (8.1.48)–(8.1.49)"

@@ -760,6 +760,23 @@ theorem theorem_8_1_9_counterexample :
       exact div_le_div_of_nonneg_left zero_le_one (by norm_num) hpg
     linarith
 
+/-- The Euclidean-to-trust-region norm ratio (8.1.50) for the
+modified Cauchy direction. -/
+noncomputable def modifiedCauchyNormFactor (p : Seminorm ℝ E) (d : E) : ℝ :=
+  ‖d‖ / p d
+
+/-- Dividing the gradient-angle inequality by the trust-region norm
+gives (8.1.49). -/
+theorem modifiedCauchyNormFactor_mul_le (p : Seminorm ℝ E) {g d : E} {ε : ℝ}
+    (hd : 0 < p d) (hangle : ε * ‖g‖ * ‖d‖ ≤ |inner ℝ g d|) :
+    modifiedCauchyNormFactor p d * ε * ‖g‖ ≤ |inner ℝ g d| / p d := by
+  apply (le_div_iff₀ hd).mpr
+  unfold modifiedCauchyNormFactor
+  calc
+    ‖d‖ / p d * ε * ‖g‖ * p d = ε * ‖g‖ * ‖d‖ := by
+      field_simp
+    _ ≤ _ := hangle
+
 /-- Corollary 8.1.11. A gradient-related direction and uniform norm
 comparison convert the accepted trust-region length to the Euclidean
 parameter bound. The displayed constant is conservative. -/

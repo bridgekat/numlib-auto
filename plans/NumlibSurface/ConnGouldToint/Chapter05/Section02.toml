@@ -39,3 +39,15 @@ source = "Conn–Gould–Toint, (5.2.17)"
 [[node]]
 id = "preconditioned_lanczos_run_relations_5_2_52_53"
 source = "Conn–Gould–Toint, (5.2.52)–(5.2.53) from the transformed recurrence"
+
+[[node]]
+id = "lanczosBlockFactor"
+source = "Conn–Gould–Toint, (5.2.29)"
+
+[[node]]
+id = "lanczosConjugateBasis"
+source = "Conn–Gould–Toint, (5.2.31)"
+
+[[node]]
+id = "lanczos_conjugate_basis_relations"
+source = "Conn–Gould–Toint, (5.2.28)–(5.2.32) and the resulting conjugate basis"

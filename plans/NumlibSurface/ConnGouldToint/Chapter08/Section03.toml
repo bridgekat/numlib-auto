@@ -1,0 +1,13 @@
+namespace = "ConnGouldToint.Chapter08"
+
+[[node]]
+id = "hilbertRayleighFloor"
+source = "Conn–Gould–Toint, (8.3.3)"
+
+[[node]]
+id = "hilbertRayleighFloor_le_iff"
+source = "Conn–Gould–Toint, lower bounds for the Rayleigh infimum in (8.3.3)"
+
+[[node]]
+id = "exists_unit_direction_below_of_hilbertRayleighFloor_lt"
+source = "Conn–Gould–Toint, using (8.3.3) to choose an approximate eigenpoint direction"
