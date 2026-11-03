@@ -1,0 +1,33 @@
+namespace = "ConnGouldToint.Chapter17"
+
+[[node]]
+id = "cgModelChange"
+source = "Conn–Gould–Toint, (17.4.1)"
+
+[[node]]
+id = "gradientSmall"
+source = "Conn–Gould–Toint, (17.4.2)"
+
+[[node]]
+id = "constraintViolation"
+source = "Conn–Gould–Toint, (17.4.4)"
+
+[[node]]
+id = "projectedStationarityResidual"
+source = "Conn–Gould–Toint, (17.4.7)"
+
+[[node]]
+id = "projectedStationarityResidual_eq_zero_iff"
+source = "Conn–Gould–Toint, (17.4.7)"
+
+[[node]]
+id = "projectedLagrangianResidual"
+source = "Conn–Gould–Toint, corrected (17.4.9)"
+
+[[node]]
+id = "projectedLagrangianResidual_eq_zero_iff"
+source = "Conn–Gould–Toint, corrected (17.4.9)"
+
+[[node]]
+id = "printedProjectionSign_counterexample"
+source = "Conn–Gould–Toint, counterexample to printed (17.4.9)"

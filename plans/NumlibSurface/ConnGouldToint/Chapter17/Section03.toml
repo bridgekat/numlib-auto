@@ -1,0 +1,17 @@
+namespace = "ConnGouldToint.Chapter17"
+
+[[node]]
+id = "cauchyQuadratic"
+source = "Conn–Gould–Toint, (17.3.1)"
+
+[[node]]
+id = "projectedCauchyPath"
+source = "Conn–Gould–Toint, (17.3.2)"
+
+[[node]]
+id = "cauchySegment"
+source = "Conn–Gould–Toint, (17.3.3)"
+
+[[node]]
+id = "cauchyQuadratic_on_segment"
+source = "Conn–Gould–Toint, (17.3.4)–(17.3.5)"
