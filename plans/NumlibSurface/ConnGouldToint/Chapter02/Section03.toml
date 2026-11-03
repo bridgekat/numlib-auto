@@ -1,0 +1,41 @@
+namespace = "ConnGouldToint.Chapter02"
+
+[[node]]
+id = "dualNorm"
+source = "Conn, Gould and Toint, Trust-Region Methods, (2.3.1)"
+
+[[node]]
+id = "dualNorm_eq_iSup"
+source = "Conn, Gould and Toint, Trust-Region Methods, (2.3.1)"
+
+[[node]]
+id = "hNorm"
+source = "Conn, Gould and Toint, Trust-Region Methods, (2.3.2)"
+
+[[node]]
+id = "hNorm_eq_sqrt"
+source = "Conn, Gould and Toint, Trust-Region Methods, (2.3.2)"
+
+[[node]]
+id = "matrix_norms_2_3_3"
+source = "Conn, Gould and Toint, Trust-Region Methods, (2.3.3)"
+
+[[node]]
+id = "frobenius_bounds_2_3_4"
+source = "Conn, Gould and Toint, Trust-Region Methods, (2.3.4)"
+
+[[node]]
+id = "IsConsistentMatrixNorm"
+source = "Conn, Gould and Toint, Trust-Region Methods, (2.3.5)"
+
+[[node]]
+id = "isConsistentMatrixNorm_lp"
+source = "Conn, Gould and Toint, Trust-Region Methods, (2.3.5)"
+
+[[node]]
+id = "isConsistentMatrixNorm_frobenius"
+source = "Conn, Gould and Toint, Trust-Region Methods, (2.3.5)"
+
+[[node]]
+id = "symmetric_norms_2_3_6"
+source = "Conn, Gould and Toint, Trust-Region Methods, (2.3.6)"

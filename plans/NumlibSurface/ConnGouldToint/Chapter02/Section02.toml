@@ -1,0 +1,45 @@
+namespace = "ConnGouldToint.Chapter02"
+
+[[node]]
+id = "IsEigenpair"
+source = "Conn, Gould and Toint, Trust-Region Methods, (2.2.1)"
+
+[[node]]
+id = "spectral_decomposition_2_2_2"
+source = "Conn, Gould and Toint, Trust-Region Methods, (2.2.2)"
+
+[[node]]
+id = "symmetricAbs"
+source = "Conn, Gould and Toint, Trust-Region Methods, (2.2.3)"
+
+[[node]]
+id = "singular_value_decomposition_2_2_4"
+source = "Conn, Gould and Toint, Trust-Region Methods, (2.2.4)"
+
+[[node]]
+id = "rayleigh_bounds_2_2_5"
+source = "Conn, Gould and Toint, Trust-Region Methods, (2.2.5)"
+
+[[node]]
+id = "gershgorin_union"
+source = "Conn, Gould and Toint, Trust-Region Methods, (2.2.6, preceding prose)"
+
+[[node]]
+id = "gershgorin_bounds_2_2_6"
+source = "Conn, Gould and Toint, Trust-Region Methods, (2.2.6)"
+
+[[node]]
+id = "IsGeneralizedEigenpair"
+source = "Conn, Gould and Toint, Trust-Region Methods, (2.2.7)"
+
+[[node]]
+id = "svd_solution_2_2_8"
+source = "Conn, Gould and Toint, Trust-Region Methods, (2.2.8)"
+
+[[node]]
+id = "gershgorin_intersection_counterexample"
+source = "Conn, Gould and Toint, Trust-Region Methods, (2.2.6), preceding prose, erratum"
+
+[[node]]
+id = "svd_leastSquares_2_2_8"
+source = "Conn, Gould and Toint, Trust-Region Methods, (2.2.8), following prose"

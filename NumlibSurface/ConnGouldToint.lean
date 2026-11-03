@@ -1,3 +1,4 @@
+import NumlibSurface.ConnGouldToint.Chapter02
 import NumlibSurface.ConnGouldToint.Chapter03
 import NumlibSurface.ConnGouldToint.Chapter05
 import NumlibSurface.ConnGouldToint.Chapter06
@@ -15,6 +16,10 @@ The surface library for Andrew R. Conn, Nicholas I. M. Gould, and Philippe L. To
 *Trust-Region Methods* [conn2000trust]. The book develops trust-region methods for unconstrained
 and constrained optimization, together with methods for solving the subproblems and applications
 to nonlinear equations.
+
+Chapter 2 covers eigenpairs, matrix decompositions, and vector and matrix norms. The
+Gershgorin discs cover the spectrum by their union. A diagonal counterexample rules out
+the printed intersection claim.
 
 Chapter 3 covers Taylor estimates, unconstrained optimality, and convergence rates. The Q-rate
 definitions use the successor error to the limit, correcting the printed successive difference.
