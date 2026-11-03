@@ -334,6 +334,7 @@ noncomputable def reducedPenaltyHessian (H : G →L[ℝ] G) :
   N.adjoint.comp (H.comp N)
 
 omit [CompleteSpace F] [FiniteDimensional ℝ G] in
+/-- Compressing a symmetric Hessian to the constraint kernel preserves symmetry. -/
 theorem reducedPenaltyHessian_symmetric {H : G →L[ℝ] G} (hH : H.toLinearMap.IsSymmetric) :
     (reducedPenaltyHessian A H).toLinearMap.IsSymmetric := by
   intro v w
