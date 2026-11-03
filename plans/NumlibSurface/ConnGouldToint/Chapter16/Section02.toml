@@ -1,0 +1,9 @@
+namespace = "ConnGouldToint.Chapter16"
+
+[[node]]
+id = "epigraphMerit"
+source = "Conn–Gould–Toint, (16.2.23)"
+
+[[node]]
+id = "lemma_16_2_3"
+source = "Conn–Gould–Toint, Lemma 16.2.3"

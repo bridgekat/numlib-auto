@@ -1,0 +1,10 @@
+namespace = "Numlib.Optimization"
+
+[[node]]
+id = "epigraphPenalty"
+
+[[node]]
+id = "le_epigraphPenalty"
+
+[[node]]
+id = "epigraphPenalty_eq_iff"
