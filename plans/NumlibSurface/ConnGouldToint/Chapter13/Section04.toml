@@ -19,3 +19,87 @@ source = "Conn–Gould–Toint, Lemma 13.4.1 (AC.4c)"
 [[node]]
 id = "logBarrierModel_eq_taylor"
 source = "Conn–Gould–Toint, (13.4.2)"
+
+[[node]]
+id = "barrierCoordinateGradient"
+source = "Conn–Gould–Toint, (13.4.3)"
+
+[[node]]
+id = "BarrierSecondOrderStop"
+source = "Conn–Gould–Toint, (13.4.3)–(13.4.5)"
+
+[[node]]
+id = "AsymptoticallyActive"
+source = "Conn–Gould–Toint, definition before Theorem 13.4.3"
+
+[[node]]
+id = "ConsistentlyActive"
+source = "Conn–Gould–Toint, definition before Theorem 13.4.3"
+
+[[node]]
+id = "theorem_13_4_3"
+source = "Conn–Gould–Toint, Theorem 13.4.3 and (13.4.9)–(13.4.11)"
+
+[[node]]
+id = "corollary_13_4_4"
+source = "Conn–Gould–Toint, Corollary 13.4.4"
+
+[[node]]
+id = "theorem_13_4_2_of_inner_limits"
+source = "Conn–Gould–Toint, finite stopping implication in Theorem 13.4.2"
+
+[[node]]
+id = "theorem_13_4_3_consistentlyActive"
+source = "Conn–Gould–Toint, Theorem 13.4.3 (13.4.10)–(13.4.11)"
+
+[[node]]
+id = "logBarrierModel_fderiv_center"
+source = "Conn–Gould–Toint, Lemma 13.4.1 (AM.3)"
+
+[[node]]
+id = "logBarrierModel_fderiv_fderiv"
+source = "Conn–Gould–Toint, Lemma 13.4.1 (AM.5c and AC.6b)"
+
+[[node]]
+id = "logBarrierModel_contDiff"
+source = "Conn–Gould–Toint, Lemma 13.4.1 (AM.1)"
+
+[[node]]
+id = "logBarrierModel_zero"
+source = "Conn–Gould–Toint, Lemma 13.4.1 (AM.2)"
+
+[[node]]
+id = "logBarrierModel_hessian_bounded"
+source = "Conn–Gould–Toint, Lemma 13.4.1 (AM.4h)"
+
+[[node]]
+id = "logBarrierCounterHessian"
+source = "Conn–Gould–Toint, (13.4.14) in dimension four"
+
+[[node]]
+id = "logBarrierCounterObjective"
+source = "Conn–Gould–Toint, (13.4.13) in dimension four"
+
+[[node]]
+id = "logBarrierCounterObjective_stops_and_negative_direction"
+source = "Conn–Gould–Toint, (13.4.18)–(13.4.19) and counterexample after Corollary 13.4.4"
+
+[[node]]
+id = "logBarrierCounterRegularized"
+source = "Bounded-below repair of the example after Conn–Gould–Toint, Corollary 13.4.4"
+
+[[node]]
+id = "logBarrierCounterRegularized_example"
+source = "Bounded-below repair of the example after Conn–Gould–Toint, Corollary 13.4.4"
+
+[[node]]
+id = "barrierCoordinateGradient_logBarrierObjective"
+source = "Conn–Gould–Toint, gradient formula in (13.4.3)"
+
+[[node]]
+id = "logBarrierObjective_hessian_apply"
+source = "Conn–Gould–Toint, Hessian formula in (13.4.4)"
+
+[[node]]
+id = "logBarrierCounterRegularized_convergent_stops"
+source = "Bounded-below repair of the limit counterexample after Conn–Gould–Toint, Corollary 13.4.4"

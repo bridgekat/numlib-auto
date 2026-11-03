@@ -130,6 +130,10 @@ A critical starting point can be returned before computing the initial trial
 parameter. The generalized Cauchy decrease includes the tangent stopping test.
 
 Chapter 13 covers the logarithmic barrier. AC.8 holds for uniformly bounded positive paths.
+The curvature limit superior in Theorem 13.4.2 supplies arbitrarily late
+qualifying indices. The full inner-algorithm justification remains open.
+The strong-criticality counterexample in Section 13.4 uses a smooth cutoff
+to meet the lower-boundedness requirement that the printed quadratic fails.
 On an unbounded approach to the boundary, a growing coordinate can cancel a vanishing one.
 The log-barrier Hessian is diagonal and uniformly bounded away from the boundary.
 The quadratic model uses the exact second-order Taylor data.
