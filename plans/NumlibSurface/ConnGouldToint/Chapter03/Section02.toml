@@ -151,3 +151,19 @@ source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.7"
 [[node]]
 id = "theorem_3_2_7"
 source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.7 and notes"
+
+[[node]]
+id = "theorem_3_2_5_of_constraint_qualifications"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.5"
+
+[[node]]
+id = "AO1"
+source = "Conn, Gould and Toint, Trust-Region Methods, Assumption AO.1"
+
+[[node]]
+id = "AO2"
+source = "Conn, Gould and Toint, Trust-Region Methods, Assumption AO.2"
+
+[[node]]
+id = "ao1_ao2_of_isRegularPointIneq"
+source = "Conn, Gould and Toint, Trust-Region Methods, §3.2.2"

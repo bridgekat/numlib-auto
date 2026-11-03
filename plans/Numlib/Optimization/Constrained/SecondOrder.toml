@@ -23,3 +23,15 @@ source = "Cartis–Gould–Toint, Theorems 1.1.3–1.1.4 (second-order necessary
 [[node]]
 id = "IsRegularPoint.isRegularPointIneq"
 source = "Cartis–Gould–Toint, Theorem 1.1.3"
+
+[[node]]
+id = "stronglyActiveFeasible"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.5"
+
+[[node]]
+id = "secondOrder_necessary_of_isKKTPoint_of_tangent"
+source = "Conn, Gould and Toint, Trust-Region Methods, Theorem 3.2.5"
+
+[[node]]
+id = "criticalCone_subset_tangent_stronglyActiveFeasible_of_isRegularPointIneq"
+source = "Conn, Gould and Toint, Trust-Region Methods, §3.2.2"

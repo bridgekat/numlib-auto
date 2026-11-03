@@ -31,6 +31,8 @@ Chapter 3 covers Taylor estimates, unconstrained optimality, and convergence rat
 definitions use the successor error to the limit, correcting the printed successive difference.
 Theorem 3.3.2 includes the Kantorovich ball condition. A small correction can otherwise
 take the first step outside the domain.
+Theorem 3.2.5 uses the two tangent qualifications. Linear independence of
+the active derivatives supplies both qualifications.
 The Clarke composite rule in Corollary 3.2.13 uses the outer support bound.
 Theorem 3.2.8 uses nonempty compact feasible fibers and gives continuity of
 the minimum value and upper hemicontinuity of the optimizer correspondence.

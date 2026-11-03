@@ -555,6 +555,55 @@ open Constrained
 
 variable {ι κ : Type*} [Fintype ι] [Fintype κ] [FiniteDimensional ℝ E]
 
+
+omit [Fintype ι] [Fintype κ] [FiniteDimensional ℝ E] in
+/-- First-order constraint qualification AO.1. Every direction satisfying the
+linearized constraints is tangent to the feasible set. -/
+def AO1 (h : ι → E → ℝ) (g : κ → E → ℝ) (x : E) : Prop :=
+  ∀ d : E, (∀ i, fderiv ℝ (h i) x d = 0) →
+    (∀ j ∈ activeSet g x, fderiv ℝ (g j) x d ≤ 0) → d ∈ posTangentConeAt (feasible h g) x
+
+omit [Fintype ι] [Fintype κ] [FiniteDimensional ℝ E] in
+/-- Second-order constraint qualification AO.2. Directions in the critical
+cone are tangent to the feasible set with strongly active constraints kept active.
+A nonnegative multiplier vector supported on the active set specifies which
+constraints are strongly active. -/
+def AO2 (h : ι → E → ℝ) (g : κ → E → ℝ) (x : E) : Prop :=
+  ∀ μ : κ → ℝ, (∀ j, 0 ≤ μ j) → (∀ j, 0 < μ j → j ∈ activeSet g x) →
+    criticalCone (fun i ↦ fderiv ℝ (h i)) g (fun j ↦ fderiv ℝ (g j)) x μ ⊆
+      posTangentConeAt (stronglyActiveFeasible h g μ) x
+
+/-- Linear independence of the active constraint derivatives supplies AO.1
+and AO.2. -/
+theorem ao1_ao2_of_isRegularPointIneq {h : ι → E → ℝ} {g : κ → E → ℝ} {x : E}
+    (hreg : IsRegularPointIneq h (fun i ↦ fderiv ℝ (h i)) g (fun j ↦ fderiv ℝ (g j)) x)
+    (hh : ∀ i, HasStrictFDerivAt (h i) (fderiv ℝ (h i) x) x)
+    (hg : ∀ j, HasStrictFDerivAt (g j) (fderiv ℝ (g j) x) x) :
+    AO1 h g x ∧ AO2 h g x :=
+  ⟨fun _ ↦ mem_posTangentConeAt_of_isRegularPointIneq hreg hh hg,
+    fun _ ↦ criticalCone_subset_tangent_stronglyActiveFeasible_of_isRegularPointIneq hreg hh hg⟩
+
+/-- Theorem 3.2.5 under the two tangent inclusion qualifications AO.1 and AO.2.
+The inequalities use the `g ≤ 0` convention. -/
+theorem theorem_3_2_5_of_constraint_qualifications
+    {f : E → ℝ} {h : ι → E → ℝ} {g : κ → E → ℝ} {x : E}
+    (hf : ContDiffAt ℝ 2 f x) (hh : ∀ i, ContDiffAt ℝ 2 (h i) x)
+    (hg : ∀ j, ContDiffAt ℝ 2 (g j) x)
+    (hx : x ∈ feasible h g) (hQ₁ : AO1 h g x) (hQ₂ : AO2 h g x)
+    (hmin : IsLocalMinOn f (feasible h g) x) :
+    ∃ (l : ι → ℝ) (μ : κ → ℝ),
+      IsKKTPoint (fderiv ℝ f) h (fun i ↦ fderiv ℝ (h i)) g (fun j ↦ fderiv ℝ (g j)) x l μ ∧
+      ∀ d ∈ criticalCone (fun i ↦ fderiv ℝ (h i)) g (fun j ↦ fderiv ℝ (g j)) x μ,
+        0 ≤ iteratedFDeriv ℝ 2 (kktLagrangian f h g l μ) x (fun _ ↦ d) := by
+  have hfd := (hf.differentiableAt (by norm_num)).hasFDerivAt
+  obtain ⟨l, μ, hkkt⟩ := exists_kkt_of_linearized_feasible_directions hx
+    (fun d hd₁ hd₂ ↦ hmin.hasFDerivWithinAt_nonneg hfd.hasFDerivWithinAt (hQ₁ d hd₁ hd₂))
+  have hact (j : κ) (hj : 0 < μ j) : j ∈ activeSet g x :=
+    mem_activeSet.mpr ((mul_eq_zero.mp (hkkt.complementary j)).resolve_left hj.ne')
+  exact ⟨l, μ, hkkt, secondOrder_necessary_of_isKKTPoint_of_tangent hkkt hmin hf hh hg hfd
+    (fun i ↦ ((hh i).differentiableAt (by norm_num)).hasFDerivAt)
+    (fun j ↦ ((hg j).differentiableAt (by norm_num)).hasFDerivAt) (hQ₂ μ hkkt.nonneg hact)⟩
+
 /-- Theorem 3.2.5 under LICQ, which supplies both constraint qualifications.
 The inequalities are written as `g ≤ 0`, so the inequality part of the
 Lagrangian is added. Negating the textbook's constraints yields this convention. -/

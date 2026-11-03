@@ -23,6 +23,8 @@ constraints (`κ = Empty`).
 * `Constrained.secondOrder_necessary_of_isKKTPoint`: at a regular local minimizer, for any
   Karush–Kuhn–Tucker multipliers, `∇²ℒ(x)[d]² ≥ 0` on the critical cone ((1.1.14), (1.1.17));
   `Constrained.secondOrder_necessary_ineq` is the form with existence of the multipliers;
+* `Constrained.secondOrder_necessary_of_isKKTPoint_of_tangent`: second-order necessity under
+  the tangent qualification for the feasible set with strongly active constraints held active;
 * `Constrained.isStrictLocalMinOn_of_secondOrder_sufficient`: a Karush–Kuhn–Tucker point with
   `∇²ℒ(x)[d]² > 0` for nonzero `d` of the critical cone is a strict local minimizer ((1.1.15),
   (1.1.18)); no constraint qualification is needed;
@@ -32,14 +34,12 @@ constraints (`κ = Empty`).
 
 ## Implementation notes
 
-The necessary conditions are proved under LICQ, as is the first-order theory
-`Constrained.exists_kkt_of_isLocalMinOn`. The sufficient conditions (1.1.15) and (1.1.18) quantify
-over the nonzero `d` of the cone (for `d = 0` the strict inequality fails).
-
-The necessary condition uses the feasible arcs of `Constrained.exists_contDiff_feasible_arc` and
-needs only their differentiability at `0`: along the arc `γ` the
-Lagrangian equals `f`, so `ℒ(γ(t)) ≥ ℒ(x)`, and since `∇ℒ(x) = 0` the second-order expansion of
-`ℒ` gives `(ℒ(γ(t)) - ℒ(x)) / t² → ½ ∇²ℒ(x)[d]²` without involving `γ''(0)`.
+The tangent qualification for second-order necessity places the critical directions in the
+positive tangent cone of the strongly active feasible set. On that set the Lagrangian equals the
+objective, so a second-order expansion of the stationary Lagrangian along tangent sequences yields
+nonnegative curvature. The feasible arcs of `Constrained.exists_contDiff_feasible_arc` establish
+this qualification under LICQ. The sufficient conditions (1.1.15) and (1.1.18) require positive
+curvature on the nonzero directions of the critical cone.
 -/
 
 open Filter Set Topology
@@ -181,6 +181,89 @@ private theorem hasStrictFDerivAt_of_contDiffAt_two {c : E → ℝ} {c' : E →L
   have := hc.hasStrictFDerivAt two_ne_zero
   rwa [hc'.fderiv] at this
 
+/-- The feasible points that keep every inequality with a positive multiplier
+active. -/
+def stronglyActiveFeasible (h : ι → E → ℝ) (g : κ → E → ℝ) (μ : κ → ℝ) : Set E :=
+  {y ∈ feasible h g | ∀ j, 0 < μ j → g j y = 0}
+
+/-- Second-order necessity under tangent inclusion for the strongly active
+feasible set. This is the second-order constraint qualification in
+[conn2000trust], Theorem 3.2.5. -/
+theorem secondOrder_necessary_of_isKKTPoint_of_tangent {f : E → ℝ}
+    {f' : E → E →L[ℝ] ℝ} {h : ι → E → ℝ} {h' : ι → E → E →L[ℝ] ℝ} {g : κ → E → ℝ}
+    {g' : κ → E → E →L[ℝ] ℝ} {x : E} {l : ι → ℝ} {μ : κ → ℝ}
+    (hkkt : IsKKTPoint f' h h' g g' x l μ) (hmin : IsLocalMinOn f (feasible h g) x)
+    (hf : ContDiffAt ℝ 2 f x) (hh : ∀ i, ContDiffAt ℝ 2 (h i) x) (hg : ∀ j, ContDiffAt ℝ 2 (g j) x)
+    (hf' : HasFDerivAt f (f' x) x) (hh' : ∀ i, HasFDerivAt (h i) (h' i x) x)
+    (hg' : ∀ j, HasFDerivAt (g j) (g' j x) x)
+    (hQ : criticalCone h' g g' x μ ⊆ posTangentConeAt (stronglyActiveFeasible h g μ) x) :
+    ∀ d ∈ criticalCone h' g g' x μ,
+      0 ≤ iteratedFDeriv ℝ 2 (kktLagrangian f h g l μ) x (fun _ ↦ d) := by
+  intro d hd
+  by_cases hd0 : d = 0
+  · simp [hd0, iteratedFDeriv_two_apply]
+  obtain ⟨I, F, hF, a, w, hw, hfeas, hdir⟩ := exists_fun_of_mem_tangentConeAt (hQ hd)
+  let : F.NeBot := hF
+  let L := kktLagrangian f h g l μ
+  have hL : ContDiffAt ℝ 2 L x := contDiffAt_kktLagrangian hf hh hg
+  have hL0 : fderiv ℝ L x = 0 := (hkkt.hasFDerivAt_kktLagrangian hf' hh' hg').fderiv
+  have ha : ∀ᶠ n in F, 0 < (a n : ℝ) := by
+    filter_upwards [hdir.eventually ((isClosed_singleton (x := (0 : E))).isOpen_compl.mem_nhds
+      (show d ∈ ({0} : Set E)ᶜ from hd0))] with n hn
+    change a n • w n ≠ 0 at hn
+    exact lt_of_le_of_ne (a n).coe_nonneg (by
+      intro h
+      exact hn (by simp [NNReal.smul_def, ← h]))
+  have hnear : Tendsto (fun n ↦ x + w n) F (𝓝[feasible h g] x) := by
+    apply tendsto_nhdsWithin_of_tendsto_nhds_of_eventually_within
+    · simpa using tendsto_const_nhds.add hw (a := x)
+    · exact hfeas.mono fun _ hy ↦ hy.1
+  have hge : ∀ᶠ n in F, L x ≤ L (x + w n) := by
+    filter_upwards [hfeas, hnear.eventually hmin] with n hy hfy
+    rw [show L x = f x from hkkt.kktLagrangian_eq]
+    refine hfy.trans (le_of_eq ?_)
+    refine (kktLagrangian_eq hy.1.1 fun j ↦ ?_).symm
+    rcases (hkkt.nonneg j).eq_or_lt with h0 | hp
+    · rw [← h0, zero_mul]
+    · rw [hy.2 j hp, mul_zero]
+  have hlim := Optimization.tendsto_sub_div_sq_of_contDiffAt hL
+    (ha.mono fun _ hn ↦ inv_pos.mpr hn) hw
+    (show Tendsto (fun n ↦ ((a n : ℝ)⁻¹)⁻¹ • w n) F (𝓝 d) by
+      simpa [NNReal.smul_def] using hdir)
+  simp only [hL0, zero_apply, sub_zero] at hlim
+  have hnonneg := ge_of_tendsto hlim
+    (hge.mono fun _ hn ↦ div_nonneg (sub_nonneg.mpr hn) (sq_nonneg _))
+  linarith
+
+/-- LICQ implies the tangent inclusion for the strongly active feasible set. -/
+theorem criticalCone_subset_tangent_stronglyActiveFeasible_of_isRegularPointIneq
+    [FiniteDimensional ℝ E] {h : ι → E → ℝ} {h' : ι → E → E →L[ℝ] ℝ}
+    {g : κ → E → ℝ} {g' : κ → E → E →L[ℝ] ℝ} {x : E} {μ : κ → ℝ}
+    (hx : IsRegularPointIneq h h' g g' x)
+    (hh : ∀ i, HasStrictFDerivAt (h i) (h' i x) x)
+    (hg : ∀ j, HasStrictFDerivAt (g j) (g' j x) x)
+    (hμ : ∀ j, 0 ≤ μ j)
+    (hactive : ∀ j, 0 < μ j → j ∈ activeSet g x) :
+    criticalCone h' g g' x μ ⊆ posTangentConeAt (stronglyActiveFeasible h g μ) x := by
+  intro d hd
+  obtain ⟨γ, hγ0, hγ, -, hfeas⟩ := exists_contDiff_feasible_arc hx hh hg hd.1 fun j hj ↦ by
+    rcases (hμ j).eq_or_lt with h0 | hp
+    · exact hd.2.2 j hj h0.symm
+    · exact (hd.2.1 j hj hp).le
+  have hγlim : Tendsto (fun t ↦ γ t - x) (𝓝[>] (0 : ℝ)) (𝓝 0) := by
+    have ht := (hγ.continuousAt.tendsto.mono_left (nhdsWithin_le_nhds (s := Ioi 0))).sub_const x
+    rwa [hγ0, sub_self] at ht
+  refine mem_tangentConeAt_of_seq (𝓝[>] (0 : ℝ)) (fun t ↦ Real.toNNReal t⁻¹)
+    (fun t ↦ γ t - x) hγlim (hfeas.mono fun t ht ↦ ?_) ?_
+  · simpa only [add_sub_cancel] using
+      (show γ t ∈ stronglyActiveFeasible h g μ from ⟨ht.1, fun j hp ↦ by
+        rw [ht.2 j (hactive j hp), hd.2.1 j (hactive j hp) hp, mul_zero]⟩)
+  · have hslope := hγ.tendsto_slope_zero_right
+    simp only [zero_add, hγ0] at hslope
+    refine hslope.congr' ?_
+    filter_upwards [self_mem_nhdsWithin] with t ht
+    rw [NNReal.smul_def, Real.coe_toNNReal _ (inv_nonneg.mpr (le_of_lt ht))]
+
 /-- **Second-order necessary condition for given multipliers** ([cartis2022evaluation],
 Theorems 1.1.3 and 1.1.4, (1.1.14) and (1.1.17); Nocedal–Wright Theorem 12.5), under LICQ. In
 finite dimension, let `x` be a local minimizer of `f` on the feasible set, a regular point of the
@@ -197,50 +280,11 @@ theorem secondOrder_necessary_of_isKKTPoint [FiniteDimensional ℝ E] {f : E →
     (hg' : ∀ j, HasFDerivAt (g j) (g' j x) x) :
     ∀ d ∈ criticalCone h' g g' x μ,
       0 ≤ iteratedFDeriv ℝ 2 (kktLagrangian f h g l μ) x (fun _ => d) := by
-  intro d hd
-  have hhs : ∀ i, HasStrictFDerivAt (h i) (h' i x) x := fun i =>
-    hasStrictFDerivAt_of_contDiffAt_two (hh i) (hh' i)
-  have hgs : ∀ j, HasStrictFDerivAt (g j) (g' j x) x := fun j =>
-    hasStrictFDerivAt_of_contDiffAt_two (hg j) (hg' j)
-  set L := kktLagrangian f h g l μ
-  have hL : ContDiffAt ℝ 2 L x := contDiffAt_kktLagrangian hf hh hg
-  have hL0 : fderiv ℝ L x = 0 := (hkkt.hasFDerivAt_kktLagrangian hf' hh' hg').fderiv
-  obtain ⟨γ, hγ0, hγ, -, hγfeas⟩ := exists_contDiff_feasible_arc hx hhs hgs hd.1 fun j hj => by
-      rcases (hkkt.nonneg j).eq_or_lt with h0 | hpos
-      · exact hd.2.2 j hj h0.symm
-      · exact (hd.2.1 j hj hpos).le
-  -- `L (γ t) ≥ L x` for small `t > 0`
-  have hγlim : Tendsto γ (𝓝[>] 0) (𝓝[feasible h g] x) := by
-    refine tendsto_nhdsWithin_of_tendsto_nhds_of_eventually_within _ ?_
-      (hγfeas.mono fun t ht => ht.1)
-    have := hγ.continuousAt.tendsto.mono_left (nhdsWithin_le_nhds (s := Ioi 0))
-    rwa [hγ0] at this
-  have hge : ∀ᶠ t in 𝓝[>] (0 : ℝ), L x ≤ L (γ t) := by
-    have hLx : L x = f x := hkkt.kktLagrangian_eq
-    filter_upwards [hγfeas, hγlim.eventually hmin] with t ht hft
-    rw [hLx]
-    refine hft.trans (le_of_eq ?_)
-    refine (Constrained.kktLagrangian_eq ht.1.1 fun j => ?_).symm
-    by_cases hj : j ∈ activeSet g x
-    · rcases (hkkt.nonneg j).eq_or_lt with h0 | hpos
-      · rw [← h0, zero_mul]
-      · rw [ht.2 j hj, hd.2.1 j hj hpos, mul_zero, mul_zero]
-    · rw [hkkt.eq_zero_of_notMem_activeSet hj, zero_mul]
-  -- the second-order expansion of `L` along the arc
-  have hw : Tendsto (fun t => γ t - x) (𝓝[>] (0 : ℝ)) (𝓝 0) := by
-    have := (hγ.continuousAt.tendsto.mono_left (nhdsWithin_le_nhds (s := Ioi 0))).sub_const x
-    rwa [hγ0, sub_self] at this
-  have hwd : Tendsto (fun t => t⁻¹ • (γ t - x)) (𝓝[>] (0 : ℝ)) (𝓝 d) := by
-    have := hγ.tendsto_slope_zero_right
-    simpa [hγ0] using this
-  have hr : ∀ᶠ t in 𝓝[>] (0 : ℝ), 0 < t := self_mem_nhdsWithin
-  have hlim := Optimization.tendsto_sub_div_sq_of_contDiffAt hL hr hw hwd
-  simp only [add_sub_cancel, hL0, zero_apply, sub_zero] at hlim
-  have : 0 ≤ iteratedFDeriv ℝ 2 L x (fun _ => d) / 2 := by
-    refine ge_of_tendsto hlim ?_
-    filter_upwards [hge] with t ht
-    exact div_nonneg (sub_nonneg.2 ht) (sq_nonneg _)
-  linarith
+  apply secondOrder_necessary_of_isKKTPoint_of_tangent hkkt hmin hf hh hg hf' hh' hg'
+  exact criticalCone_subset_tangent_stronglyActiveFeasible_of_isRegularPointIneq hx
+    (fun i ↦ hasStrictFDerivAt_of_contDiffAt_two (hh i) (hh' i))
+    (fun j ↦ hasStrictFDerivAt_of_contDiffAt_two (hg j) (hg' j)) hkkt.nonneg
+    (fun j hj ↦ (mem_activeSet).mpr ((mul_eq_zero.mp (hkkt.complementary j)).resolve_left hj.ne'))
 
 /-- **Second-order necessary condition** ([cartis2022evaluation], Theorems 1.1.3 and 1.1.4,
 (1.1.14) and (1.1.17); Nocedal–Wright Theorem 12.5), under LICQ. In finite dimension, let `x` be a
