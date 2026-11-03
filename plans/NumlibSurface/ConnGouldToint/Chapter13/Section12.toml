@@ -208,3 +208,51 @@ source = "Conn–Gould–Toint, corrected equivalence of (13.12.33) and (13.12.3
 [[node]]
 id = "tramSubproblem_iff"
 source = "Conn–Gould–Toint, slack elimination from (13.12.31)–(13.12.33) to (13.12.34)–(13.12.35)"
+
+[[node]]
+id = "ColemanLiVersion"
+source = "Conn–Gould–Toint, Algorithms 13.12.1 and 13.12.2"
+
+[[node]]
+id = "colemanLiScaledNorm"
+source = "Conn–Gould–Toint, Algorithm 13.12.1, Step 1, norm of the trust region"
+
+[[node]]
+id = "colemanLiTrialRatio"
+source = "Conn–Gould–Toint, (13.12.10) and (13.12.24)"
+
+[[node]]
+id = "colemanLiAcceptedPoint"
+source = "Conn–Gould–Toint, Step 3 of Algorithms 13.12.1 and 13.12.2"
+
+[[node]]
+id = "ColemanLiRun"
+source = "Conn–Gould–Toint, Algorithms 13.12.1 and 13.12.2, corrected strict trial feasibility"
+
+[[node]]
+id = "ColemanLiRun.interior_iterate"
+source = "Conn–Gould–Toint, strict feasibility under the corrected (13.12.9)"
+
+[[node]]
+id = "ColemanLiRun.radius_pos"
+source = "Conn–Gould–Toint, Algorithm 13.12.1, Step 4"
+
+[[node]]
+id = "ColemanLiRun.toBTRRun"
+source = "Conn–Gould–Toint, Algorithm 13.12.1 as a BTR run with the scaled norm"
+
+[[node]]
+id = "ColemanLiRun.toBTRRun_norm"
+source = "Conn–Gould–Toint, equality of the trust-region norms in Algorithm 13.12.1"
+
+[[node]]
+id = "ColemanLiRun.objective_antitone"
+source = "Conn–Gould–Toint, accepted reductions in Algorithms 13.12.1 and 13.12.2"
+
+[[node]]
+id = "colemanLi_unsigned_clearance_counterexample"
+source = "Conn–Gould–Toint, counterexample to strict feasibility from (13.12.9) alone"
+
+[[node]]
+id = "ColemanLiRun.toBTRRun_model"
+source = "Conn–Gould–Toint, equality of the displacement models in Algorithm 13.12.1"

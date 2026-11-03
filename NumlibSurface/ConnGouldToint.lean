@@ -296,6 +296,9 @@ projected-normal coordinates, with an explicit feasibility check.
 Section 13.11 states the scaled gradient convergence theorem with the
 uniform scaled-curvature bound expressed directly.
 Section 13.12 covers first-order and weak second-order stationarity under affine scaling.
+Algorithms 13.12.1 and 13.12.2 require a strictly feasible trial alongside
+the printed boundary-distance test. Both preserve strict feasibility and
+objective nonincrease with their respective acceptance ratios.
 The corrected Cauchy decrease in Theorem 13.12.3 includes a fraction-to-boundary cap.
 A one-dimensional example violates the printed bound for every positive criticality cap.
 Theorem 13.12.5 gives positive decrease at the eigenpoint, with a feasibility cap

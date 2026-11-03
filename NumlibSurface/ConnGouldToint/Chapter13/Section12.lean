@@ -648,6 +648,250 @@ theorem colemanLiAcceptanceRatio_sub_one (f : (ι → ℝ) → ℝ) (x g s : ι 
   simp [unscaledModel, affineQuadraticModel, Matrix.add_mulVec, dotProduct_add]
   ring
 
+/-- The second Coleman–Li algorithm changes the trial ratio while retaining
+the first version's scaled model, step tests, and radius rules. -/
+inductive ColemanLiVersion
+  | first
+  | second
+
+/-- The Coleman–Li step norm, written as the Euclidean norm after applying
+the inverse diagonal scaling at a strictly interior iterate. -/
+noncomputable def colemanLiScaledNorm (x g s : ι → ℝ) : ℝ :=
+  ‖WithLp.toLp 2 (fun i ↦ s i / Real.sqrt |scalingVector x g i|)‖
+
+/-- The ordinary ratio (13.12.10) or the correction-adjusted ratio (13.12.24).
+The model denominator is identical in both versions. -/
+noncomputable def colemanLiTrialRatio (version : ColemanLiVersion)
+    (f : (ι → ℝ) → ℝ) (x g s : ι → ℝ) (H : Matrix ι ι ℝ) : ℝ :=
+  match version with
+  | .first => (f x - f (x + s)) / (unscaledModel (f x) x g H 0 - unscaledModel (f x) x g H s)
+  | .second => colemanLiAcceptanceRatio f x g s H
+
+/-- Step 3 of Algorithms 13.12.1 and 13.12.2. -/
+noncomputable def colemanLiAcceptedPoint (version : ColemanLiVersion) (P : Chapter06.BTRParams)
+    (f : (ι → ℝ) → ℝ) (x g s : ι → ℝ) (H : Matrix ι ι ℝ) : ι → ℝ :=
+  if P.η₁ ≤ colemanLiTrialRatio version f x g s H then x + s else x
+
+private def colemanLiUnitDirections : Set (ι → ℝ) :=
+  {w | ‖WithLp.toLp 2 w‖ = 1}
+
+/-- A run of Algorithm 13.12.1 or its version-2 replacement of Step 3.
+The trial must stay in the positive orthant, since the unsigned boundary
+distance in (13.12.9) alone also admits exterior points. The Rayleigh
+quotients for AA.1b and AA.2b use Euclidean unit directions after scaling.
+Each trial in the run has positive predicted decrease. -/
+structure ColemanLiRun (version : ColemanLiVersion) (P : Chapter06.BTRParams)
+    (f : (ι → ℝ) → ℝ) where
+  x : ℕ → ι → ℝ
+  s : ℕ → ι → ℝ
+  g : ℕ → ι → ℝ
+  H : ℕ → Matrix ι ι ℝ
+  Δ : ℕ → ℝ
+  σ : ℕ → ℝ
+  σmax : ℝ
+  ε : ℝ
+  κmdc : ℝ
+  κsod : ℝ
+  cap : ℝ
+  initial_interior : ∀ i, 0 < x 0 i
+  initial_radius_pos : 0 < Δ 0
+  fraction_max : σmax ∈ Set.Ioo (0 : ℝ) 1
+  fraction : ∀ k, σ k ∈ Set.Ioc (0 : ℝ) σmax
+  epsilon_pos : 0 < ε
+  cauchy_constant : κmdc ∈ Set.Ioo (0 : ℝ) 1
+  curvature_constant : κsod ∈ Set.Ioo (0 : ℝ) (1 / 2)
+  cap_pos : 0 < cap
+  objective_differentiable : ∀ k, DifferentiableAt ℝ f (x k)
+  gradient_eq : ∀ k v, fderiv ℝ f (x k) v = g k ⬝ᵥ v
+  hessian_symmetric : ∀ k, (H k).IsSymm
+  trust_region : ∀ k, colemanLiScaledNorm (x k) (g k) (s k) ≤ Δ k
+  trial_interior : ∀ k i, 0 < (x k + s k) i
+  trial_clearance : ∀ k, σ k * orthantBoundaryDistance (x k) ≤
+    orthantBoundaryDistance (x k + s k)
+  predicted_pos : ∀ k, 0 < unscaledModel (f (x k)) (x k) (g k) (H k) 0 -
+    unscaledModel (f (x k)) (x k) (g k) (H k) (s k)
+  sufficient_decrease : ∀ k,
+    let q := fun w ↦ w ⬝ᵥ (scaledHessian (x k) (g k) (H k) *ᵥ w)
+    let β := 1 + sSup ((fun w ↦ |q w|) '' colemanLiUnitDirections)
+    let τ := sInf (q '' colemanLiUnitDirections)
+    let π := min (scaledGradientNorm (x k) (g k)) ε
+    let pred := unscaledModel (f (x k)) (x k) (g k) (H k) 0 -
+      unscaledModel (f (x k)) (x k) (g k) (H k) (s k)
+    κmdc * π * min (π / β) (Δ k) ≤ pred ∧
+      (τ < 0 → κsod * |τ| * min (min (τ ^ 2) (Δ k ^ 2)) (cap ^ 2) ≤ pred)
+  iterate_update : ∀ k,
+    x (k + 1) = colemanLiAcceptedPoint version P f (x k) (g k) (s k) (H k)
+  radius_update : ∀ k, Chapter06.BTRRadiusUpdate P
+    (colemanLiTrialRatio version f (x k) (g k) (s k) (H k)) (Δ k) (Δ (k + 1))
+
+/-- Accepting or rejecting a sufficiently feasible trial preserves interiority. -/
+theorem ColemanLiRun.interior_iterate {version : ColemanLiVersion} {P : Chapter06.BTRParams}
+    {f : (ι → ℝ) → ℝ} (r : ColemanLiRun version P f) (k : ℕ) :
+    ∀ i, 0 < r.x k i := by
+  induction k with
+  | zero => exact r.initial_interior
+  | succ k ih =>
+    rw [r.iterate_update, colemanLiAcceptedPoint]
+    split
+    · exact r.trial_interior k
+    · exact ih
+
+/-- The common radius update preserves a strictly positive radius. -/
+theorem ColemanLiRun.radius_pos {version : ColemanLiVersion} {P : Chapter06.BTRParams}
+    {f : (ι → ℝ) → ℝ} (r : ColemanLiRun version P f) (k : ℕ) : 0 < r.Δ k := by
+  induction k with
+  | zero => exact r.initial_radius_pos
+  | succ k ih => exact (r.radius_update k).pos ih
+
+/-- The unsigned boundary test in (13.12.9) can hold for an exterior point.
+In dimension one, reflection through zero preserves the boundary distance. -/
+theorem colemanLi_unsigned_clearance_counterexample :
+    ∃ x s : Fin 1 → ℝ, (∀ i, 0 < x i) ∧
+      (1 / 2 : ℝ) * orthantBoundaryDistance x ≤ orthantBoundaryDistance (x + s) ∧
+      ¬ ∀ i, 0 < (x + s) i := by
+  have hfront : frontier (Optimization.nonnegativeOrthant (Fin 1)) = {0} := by
+    ext z
+    constructor
+    · intro hz
+      obtain ⟨_, i, hi⟩ := Optimization.mem_frontier_nonnegativeOrthant.mp hz
+      exact Set.mem_singleton_iff.mpr (funext fun j ↦ (congrArg z (Subsingleton.elim j i)).trans hi)
+    · rintro hz
+      rw [Set.mem_singleton_iff.mp hz]
+      exact Optimization.mem_frontier_nonnegativeOrthant.mpr ⟨fun _ ↦ le_rfl, 0, rfl⟩
+  have hdist (a : ℝ) : orthantBoundaryDistance (fun _ : Fin 1 ↦ a) = |a| := by
+    rw [orthantBoundaryDistance, hfront, Set.image_singleton, csInf_singleton, sub_zero]
+    apply (sq_eq_sq₀ (norm_nonneg _) (abs_nonneg _)).mp
+    rw [EuclideanSpace.real_norm_sq_eq, Fin.sum_univ_one, sq_abs]
+  refine ⟨fun _ ↦ 1, fun _ ↦ -2, fun _ ↦ zero_lt_one, ?_, ?_⟩
+  · change (1 / 2 : ℝ) * orthantBoundaryDistance (fun _ : Fin 1 ↦ 1) ≤
+      orthantBoundaryDistance (fun _ : Fin 1 ↦ 1 + -2)
+    rw [hdist, hdist]
+    norm_num
+  · intro h
+    have hh := h 0
+    change (0 : ℝ) < 1 + -2 at hh
+    norm_num at hh
+
+private theorem colemanLiCorrection_nonneg (x g s : ι → ℝ) :
+    0 ≤ s ⬝ᵥ (unscaledCorrection x g *ᵥ s) := by
+  unfold unscaledCorrection dotProduct
+  apply Finset.sum_nonneg
+  intro i _
+  rw [Matrix.mulVec_diagonal]
+  rw [show s i * (max (g i) 0 / |scalingVector x g i| * s i) =
+    (max (g i) 0 / |scalingVector x g i|) * (s i) ^ 2 by ring]
+  exact mul_nonneg (div_nonneg (le_max_right _ _) (abs_nonneg _)) (sq_nonneg _)
+
+/-- Both acceptance rules preserve monotone objective decrease. In version
+two, the nonnegative model correction is deducted before testing acceptance. -/
+theorem ColemanLiRun.objective_antitone {version : ColemanLiVersion} {P : Chapter06.BTRParams}
+    {f : (ι → ℝ) → ℝ} (r : ColemanLiRun version P f) : Antitone (f ∘ r.x) := by
+  apply antitone_nat_of_succ_le
+  intro k
+  change f (r.x (k + 1)) ≤ f (r.x k)
+  rw [r.iterate_update, colemanLiAcceptedPoint]
+  split
+  · rename_i hacc
+    have hpos := mul_pos P.eta₁_pos (r.predicted_pos k)
+    cases version with
+    | first =>
+      have h := (le_div_iff₀ (r.predicted_pos k)).mp hacc
+      linarith
+    | second =>
+      have h := (le_div_iff₀ (r.predicted_pos k)).mp hacc
+      have hcorr := colemanLiCorrection_nonneg (r.x k) (r.g k) (r.s k)
+      linarith
+  · exact le_rfl
+
+private noncomputable def colemanLiPullback (x g : ι → ℝ) :
+    EuclideanSpace ℝ ι →L[ℝ] EuclideanSpace ℝ ι :=
+  (Matrix.toEuclideanCLM (n := ι) (𝕜 := ℝ)) (Matrix.diagonal fun i ↦ (Real.sqrt |scalingVector x g i|)⁻¹)
+
+private theorem colemanLiPullback_apply (x g : ι → ℝ) (v : EuclideanSpace ℝ ι) :
+    colemanLiPullback x g v = WithLp.toLp 2 (fun i ↦ v i / Real.sqrt |scalingVector x g i|) := by
+  change colemanLiPullback x g (WithLp.toLp 2 v.ofLp) = _
+  rw [colemanLiPullback, Matrix.toEuclideanCLM_toLp]
+  congr 1
+  funext i
+  rw [Matrix.mulVec_diagonal, div_eq_mul_inv, mul_comm]
+
+omit [DecidableEq ι] in
+private theorem colemanLiScaledNorm_eq_zero {x g : ι → ℝ} (hx : ∀ i, 0 < x i)
+    {v : EuclideanSpace ℝ ι} (hv : colemanLiScaledNorm x g v.ofLp = 0) : v = 0 := by
+  apply WithLp.ofLp_injective 2
+  funext i
+  have h := congrArg (fun w : EuclideanSpace ℝ ι ↦ w i) (norm_eq_zero.mp hv)
+  have hscale : 0 < |scalingVector x g i| := by
+    by_cases hgi : 0 ≤ g i
+    · simpa [scalingVector, hgi, abs_of_pos (hx i)] using hx i
+    · simp [scalingVector, hgi]
+  change v i / Real.sqrt |scalingVector x g i| = 0 at h
+  exact (div_eq_zero_iff.mp h).resolve_right (Real.sqrt_pos.mpr hscale).ne'
+
+private noncomputable def colemanLiRunModel (f : (ι → ℝ) → ℝ)
+    (x g : ι → ℝ) (H : Matrix ι ι ℝ) (v : EuclideanSpace ℝ ι) : ℝ :=
+  unscaledModel (f x) x g H (v.ofLp - x)
+
+private theorem colemanLiRunModel_sub (f : (ι → ℝ) → ℝ) (x g s : ι → ℝ)
+    (H : Matrix ι ι ℝ) :
+    colemanLiRunModel f x g H (WithLp.toLp 2 x) -
+      colemanLiRunModel f x g H (WithLp.toLp 2 x + WithLp.toLp 2 s) =
+        unscaledModel (f x) x g H 0 - unscaledModel (f x) x g H s := by
+  simp [colemanLiRunModel, WithLp.ofLp_add]
+
+/-- Version one has the ordinary BTR acceptance and radius rules with the
+inverse-scaling norm. The source-specific step and decrease tests remain
+available on the original Coleman–Li run. -/
+noncomputable def ColemanLiRun.toBTRRun {P : Chapter06.BTRParams} {f : (ι → ℝ) → ℝ}
+    (r : ColemanLiRun .first P f) :
+    Chapter06.BTRRun (fun v : EuclideanSpace ℝ ι ↦ f v.ofLp) P (fun _ _ _ _ ↦ True) where
+  x := fun k ↦ WithLp.toLp 2 (r.x k)
+  s := fun k ↦ WithLp.toLp 2 (r.s k)
+  Δ := r.Δ
+  p := fun k ↦ (normSeminorm ℝ (EuclideanSpace ℝ ι)).comp
+    (colemanLiPullback (r.x k) (r.g k)).toLinearMap
+  norm_separates := fun k v hv ↦ by
+    change ‖colemanLiPullback (r.x k) (r.g k) v‖ = 0 at hv
+    rw [colemanLiPullback_apply] at hv
+    exact colemanLiScaledNorm_eq_zero (r.interior_iterate k) hv
+  model := fun k ↦ colemanLiRunModel f (r.x k) (r.g k) (r.H k)
+  delta_initial_pos := r.initial_radius_pos
+  feasible := fun k ↦ by
+    rw [Chapter06.mem_trustRegion, add_sub_cancel_left]
+    change ‖colemanLiPullback (r.x k) (r.g k) (WithLp.toLp 2 (r.s k))‖ ≤ r.Δ k
+    rw [colemanLiPullback_apply]
+    exact r.trust_region k
+  sufficient_decrease := fun _ ↦ trivial
+  predicted_pos := fun k ↦ by
+    rw [colemanLiRunModel_sub]
+    exact r.predicted_pos k
+  iterate_update := fun k ↦ by
+    rw [colemanLiRunModel_sub, r.iterate_update]
+    by_cases h : P.η₁ ≤ colemanLiTrialRatio .first f (r.x k) (r.g k) (r.s k) (r.H k)
+    all_goals
+      simp only [colemanLiTrialRatio] at h
+      simp [colemanLiAcceptedPoint, colemanLiTrialRatio, Optimization.acceptStep,
+        Optimization.reductionRatio, WithLp.ofLp_add, h]
+  radius_update := fun k ↦ by
+    rw [Chapter06.btrRatio, colemanLiRunModel_sub]
+    exact r.radius_update k
+
+/-- The BTR representation uses the exact norm of the Coleman–Li trial. -/
+theorem ColemanLiRun.toBTRRun_norm {P : Chapter06.BTRParams} {f : (ι → ℝ) → ℝ}
+    (r : ColemanLiRun .first P f) (k : ℕ) (v : EuclideanSpace ℝ ι) :
+    r.toBTRRun.p k v = colemanLiScaledNorm (r.x k) (r.g k) v.ofLp := by
+  change ‖colemanLiPullback (r.x k) (r.g k) v‖ = _
+  rw [colemanLiPullback_apply]
+  rfl
+
+/-- The BTR representation evaluates the same model at every displacement. -/
+theorem ColemanLiRun.toBTRRun_model {P : Chapter06.BTRParams} {f : (ι → ℝ) → ℝ}
+    (r : ColemanLiRun .first P f) (k : ℕ) (v : EuclideanSpace ℝ ι) :
+    r.toBTRRun.model k (r.toBTRRun.x k + v) =
+      unscaledModel (f (r.x k)) (r.x k) (r.g k) (r.H k) v.ofLp := by
+  change colemanLiRunModel f (r.x k) (r.g k) (r.H k) (WithLp.toLp 2 (r.x k) + v) = _
+  simp [colemanLiRunModel, WithLp.ofLp_add]
+
 section OperatorNorm
 
 open scoped Matrix.Norms.L2Operator
@@ -1163,14 +1407,7 @@ theorem theorem_13_12_6_version2
   let F (k : ℕ) := f (y k)
   have hf : ∀ k ∈ S, P.η₁ * pred k ≤ F k - F (k + 1) := by
     intro k hk
-    have hcorr : 0 ≤ v k ⬝ᵥ (unscaledCorrection (y k) (g (x k)) *ᵥ v k) := by
-      unfold unscaledCorrection dotProduct
-      apply Finset.sum_nonneg
-      intro i _
-      rw [Matrix.mulVec_diagonal]
-      rw [show v k i * (max (g (x k) i) 0 / |scalingVector (y k) (g (x k)) i| * v k i) =
-        (max (g (x k) i) 0 / |scalingVector (y k) (g (x k)) i|) * (v k i) ^ 2 by ring]
-      exact mul_nonneg (div_nonneg (le_max_right _ _) (abs_nonneg _)) (sq_nonneg _)
+    have hcorr := colemanLiCorrection_nonneg (y k) (g (x k)) (v k)
     have hρ : P.η₁ ≤ ρ k := hk
     have he : ρ k = (F k - f (y k + v k) - (1 / 2) *
         (v k ⬝ᵥ (unscaledCorrection (y k) (g (x k)) *ᵥ v k))) / pred k := by
