@@ -1,3 +1,7 @@
+/-
+Copyright (c) 2026 Great Bay University. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
 import Numlib.Analysis.Matrix.SingularValues
 import Numlib.LinearAlgebra.Matrix.Polar
 import NumlibSurface.GolubVanLoan.Chapter02.Section01

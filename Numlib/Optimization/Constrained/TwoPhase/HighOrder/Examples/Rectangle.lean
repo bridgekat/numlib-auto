@@ -1,3 +1,7 @@
+/-
+Copyright (c) 2026 Great Bay University. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
 import Numlib.Optimization.Constrained.TwoPhase.HighOrder.TRqCalls
 import Numlib.Optimization.Complexity.SlowExample.TRqSaddle
 import Numlib.Optimization.ModelBased.HighOrder.TRqCall

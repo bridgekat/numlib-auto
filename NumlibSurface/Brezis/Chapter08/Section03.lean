@@ -1,3 +1,7 @@
+/-
+Copyright (c) 2026 Great Bay University. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
 import Numlib.Analysis.Sobolev.Interval
 import Numlib.Analysis.Sobolev.Interval.Dual
 import NumlibSurface.Brezis.Chapter08.Section02

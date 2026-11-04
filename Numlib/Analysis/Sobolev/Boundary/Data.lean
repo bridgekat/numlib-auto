@@ -1,3 +1,7 @@
+/-
+Copyright (c) 2026 Great Bay University. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
 import Mathlib.Analysis.InnerProductSpace.Trace
 import Numlib.Analysis.PDE.Elliptic.Dirichlet
 import Numlib.MeasureTheory.Measure.Haar.InnerProductSpace

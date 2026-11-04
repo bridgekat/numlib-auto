@@ -1,3 +1,7 @@
+/-
+Copyright (c) 2026 Great Bay University. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
 import Numlib.MeasureTheory.Function.LpInterpolation
 import Numlib.MeasureTheory.Function.LpSpace.Convergence
 import NumlibSurface.Brezis.Chapter04.Section01

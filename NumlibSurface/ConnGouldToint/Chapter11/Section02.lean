@@ -1,3 +1,7 @@
+/-
+Copyright (c) 2026 Great Bay University. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
 import NumlibSurface.ConnGouldToint.Chapter11.Section01
 import Numlib.Optimization.ModelBased.RatioTest
 import Mathlib.Analysis.SpecificLimits.Basic

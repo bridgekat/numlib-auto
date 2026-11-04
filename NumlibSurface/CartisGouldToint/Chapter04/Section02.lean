@@ -1,3 +1,7 @@
+/-
+Copyright (c) 2026 Great Bay University. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
 import Mathlib.Basic.Real.ENatENNReal
 import Numlib.Optimization.Complexity.CarmonChain
 import NumlibSurface.CartisGouldToint.Chapter04.Section01

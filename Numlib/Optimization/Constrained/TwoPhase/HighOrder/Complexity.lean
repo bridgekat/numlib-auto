@@ -1,3 +1,7 @@
+/-
+Copyright (c) 2026 Great Bay University. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
 import Numlib.Optimization.Constrained.TwoPhase.HighOrder.Basic
 import Numlib.Optimization.ModelBased.HighOrder.Orders
 import Numlib.Optimization.ModelBased.InexactTaylor

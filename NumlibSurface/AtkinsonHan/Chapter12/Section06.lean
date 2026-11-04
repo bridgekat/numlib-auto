@@ -1,3 +1,7 @@
+/-
+Copyright (c) 2026 Great Bay University. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
 import Mathlib.Analysis.Complex.Harmonic.Poisson
 import Mathlib.Analysis.InnerProductSpace.Harmonic.Constructions
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Periodic

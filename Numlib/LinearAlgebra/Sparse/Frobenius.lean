@@ -1,4 +1,8 @@
 /-
+Copyright (c) 2026 Great Bay University. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
+/-
 Upstreaming candidate: general material with no numerical-analysis-specific content, written
 to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: beside `Mathlib.LinearAlgebra.Matrix.Irreducible.Defs`.

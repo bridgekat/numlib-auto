@@ -1,3 +1,7 @@
+/-
+Copyright (c) 2026 Great Bay University. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
 import Numlib.Krylov.CGW
 import NumlibSurface.SaadSparse.Chapter01.Section11
 import NumlibSurface.SaadSparse.Chapter09.Section02

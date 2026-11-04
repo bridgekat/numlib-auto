@@ -1,4 +1,8 @@
 /-
+Copyright (c) 2026 Great Bay University. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
+/-
 Upstreaming candidate for its first section: `Matrix.offDiagNormSq` is general matrix material
 with no numerical-analysis-specific content, like the plane rotations of
 `Numlib/LinearAlgebra/Matrix/PlaneRotation` that it is used with.

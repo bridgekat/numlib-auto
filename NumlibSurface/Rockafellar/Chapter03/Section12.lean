@@ -1,3 +1,7 @@
+/-
+Copyright (c) 2026 Great Bay University. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
 import Numlib.Analysis.Convex.Duality.GaugeLike
 import Numlib.Analysis.Convex.Duality.Ops
 import NumlibSurface.Rockafellar.Chapter02.Section07

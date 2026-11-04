@@ -58,7 +58,3 @@ lake exe tracker graph > graph.json
 Both the backbone and the surface libraries are covered by structured plans in [`plans/`](plans/). They are TOML files that can either index into finished Lean code, or represent desired Lean modules/declarations not yet written.
 
 To start new plans for a formalization project or complete open items in existing plans, refer to [`CONTRIBUTING.md`](CONTRIBUTING.md).
-
-## Licence
-
-This repository carries no licence file at present, pending a move to Apache 2.0 for the project as a whole.

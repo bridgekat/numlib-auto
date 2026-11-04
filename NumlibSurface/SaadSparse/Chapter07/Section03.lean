@@ -1,3 +1,7 @@
+/-
+Copyright (c) 2026 Great Bay University. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
 import NumlibSurface.SaadSparse.Chapter06.Section05
 import NumlibSurface.SaadSparse.Chapter07.Section02
 
