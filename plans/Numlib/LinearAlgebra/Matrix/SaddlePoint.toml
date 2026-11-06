@@ -1,0 +1,19 @@
+namespace = "Matrix"
+
+[[node]]
+id = "mulVec_injective_iff_rank_eq_card"
+
+[[node]]
+id = "fromBlocks_transpose_neg_mulVec_eq_zero_iff"
+
+[[node]]
+id = "isUnit_fromBlocks_transpose_neg_iff"
+
+[[node]]
+id = "isUnit_fromBlocks_transpose_neg_of_hermitianPart"
+
+[[node]]
+id = "ker_inter_eq_bot_of_isUnit_fromBlocks"
+
+[[node]]
+id = "ranks_of_isUnit_fromBlocks_transpose_zero"
