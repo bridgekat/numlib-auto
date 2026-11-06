@@ -1,0 +1,49 @@
+namespace = "BenziGolubLiesen"
+
+[[node]]
+id = "krylovSubspace"
+source = "Benzi, Golub and Liesen, Eq. (9.2)"
+
+[[node]]
+id = "krylovSubspace_eq_span"
+source = "Benzi, Golub and Liesen, Eq. (9.2)"
+
+[[node]]
+id = "IsProjectionIterate"
+source = "Benzi, Golub and Liesen, Eqs. (9.1) and (9.3)"
+
+[[node]]
+id = "isProjectionIterate_iff"
+source = "Benzi, Golub and Liesen, Eqs. (9.1) and (9.3)"
+
+[[node]]
+id = "theorem_9_1"
+source = "Benzi, Golub and Liesen, Theorem 9.1"
+
+[[node]]
+id = "IsSYMMLQIterate"
+source = "Benzi, Golub and Liesen, Eq. (9.4)"
+
+[[node]]
+id = "isSYMMLQIterate_iff"
+source = "Benzi, Golub and Liesen, Eq. (9.4)"
+
+[[node]]
+id = "existsUnique_isSYMMLQIterate"
+source = "Benzi, Golub and Liesen, text following Eq. (9.4)"
+
+[[node]]
+id = "theorem_9_2"
+source = "Benzi, Golub and Liesen, Theorem 9.2"
+
+[[node]]
+id = "residualPolynomials"
+source = "Benzi, Golub and Liesen, Theorem 9.3"
+
+[[node]]
+id = "theorem_9_3_c"
+source = "Benzi, Golub and Liesen, Theorem 9.3(C), Eq. (9.5)"
+
+[[node]]
+id = "theorem_9_3_m"
+source = "Benzi, Golub and Liesen, Theorem 9.3(M), Eq. (9.6)"

@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import NumlibSurface.BenziGolubLiesen.Section01
 import NumlibSurface.BenziGolubLiesen.Section03.Solvability
+import NumlibSurface.BenziGolubLiesen.Section09
 
 /-!
 # Benzi, Golub and Liesen, *Numerical solution of saddle point problems*

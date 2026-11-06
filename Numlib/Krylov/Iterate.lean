@@ -126,6 +126,15 @@ theorem exists_mem_of_residual_poly (p : 𝕜[X]) (hp : p.degree ≤ m) (hp0 : p
   rw [hpg, aeval_one_sub_X_mul, residual_eq_sub_apply_sub A b x₀ (x₀ + aeval A g (b - A x₀)),
     add_sub_cancel_left]
 
+/-- For an injective system operator, a residual polynomial is also an error polynomial. -/
+theorem error_eq_aeval_of_injective (hA : Function.Injective A) {xstar y : E} (hstar : A xstar = b)
+    {p : 𝕜[X]} (hres : b - A y = aeval A p (b - A x₀)) :
+    xstar - y = aeval A p (xstar - x₀) := by
+  refine hA ?_
+  have hr : b - A x₀ = A (xstar - x₀) := by rw [map_sub, hstar]
+  have hl : b - A y = A (xstar - y) := by rw [map_sub, hstar]
+  rw [← hl, hres, hr, Module.End.aeval_apply_apply]
+
 /-- The residual of any `x ∈ x₀ + 𝒦_m` lies in `𝒦_{m+1}`. -/
 theorem residual_mem_subspace_succ (hx : x - x₀ ∈ subspace A (b - A x₀) m) :
     b - A x ∈ subspace A (b - A x₀) (m + 1) := by
@@ -355,15 +364,6 @@ theorem existsUnique_isGalerkinIterate_of_isCoercive (hA : A.IsCoercive) (b x₀
 
 namespace IsGalerkinIterate
 
-/-- For symmetric coercive `A`, a residual polynomial for `y` is an error polynomial for `y`. -/
-private theorem error_eq_aeval (hA : A.IsSymmetricCoercive) {xstar y : E} (hstar : A xstar = b)
-    {p : 𝕜[X]} (hres : b - A y = aeval A p (b - A x₀)) :
-    xstar - y = aeval A p (xstar - x₀) := by
-  refine hA.isCoercive.injective ?_
-  have hr : b - A x₀ = A (xstar - x₀) := by rw [map_sub, hstar]
-  have hl : b - A y = A (xstar - y) := by rw [map_sub, hstar]
-  rw [← hl, hres, hr, Module.End.aeval_apply_apply]
-
 /-- Energy-norm counterpart of `Krylov.IsMinResidualIterate.norm_residual_le_norm_aeval`, for
 symmetric coercive `A`: `‖x* - x‖_A ≤ ‖p(A) (x* - x₀)‖_A` for each `p` of degree at most `m` with
 `p 0 = 1`. A competitor's residual polynomial doubles as its error polynomial, because `A` commutes
@@ -375,7 +375,7 @@ theorem energyNorm_error_le_energyNorm_aeval (hA : A.IsSymmetricCoercive)
     (hp : p.degree ≤ m) (hp0 : p.eval 0 = 1) :
     energyNorm A (xstar - x) ≤ energyNorm A (aeval A p (xstar - x₀)) := by
   obtain ⟨y, hy, hres⟩ := exists_mem_of_residual_poly (A := A) (b := b) (x₀ := x₀) p hp hp0
-  rw [← error_eq_aeval hA hstar hres]
+  rw [← error_eq_aeval_of_injective hA.isCoercive.injective hstar hres]
   exact IsGalerkin.energyNorm_le hA hx hstar hy
 
 /-- [saad2003iterative], Lemma 6.28: for symmetric coercive `A`, `‖x* - x_m‖_A = min {‖p(A) (x* -
@@ -396,7 +396,7 @@ theorem energyNorm_error_eq_iInf (hA : A.IsSymmetricCoercive) (hx : IsGalerkinIt
   refine le_antisymm
     (le_ciInf fun p => energyNorm_error_le_energyNorm_aeval hA hx hstar p.1 p.2.1 p.2.2) ?_
   obtain ⟨p, hp, hp0, hres⟩ := exists_residual_poly hx.mem
-  rw [error_eq_aeval hA hstar hres]
+  rw [error_eq_aeval_of_injective hA.isCoercive.injective hstar hres]
   exact ciInf_le hbdd ⟨p, hp, hp0⟩
 
 /-- [saad2003iterative], Prop 6.7: the Galerkin residual is a multiple of the next Arnoldi vector.

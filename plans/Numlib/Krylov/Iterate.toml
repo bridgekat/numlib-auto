@@ -84,3 +84,5 @@ id = "isMinNormMinResidualIterate_iff_isMinResidualIterate"
 [[node]]
 id = "existsUnique_isGalerkinIterate_of_grade_le"
 
+[[node]]
+id = "error_eq_aeval_of_injective"
