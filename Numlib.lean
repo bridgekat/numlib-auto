@@ -803,6 +803,7 @@ import Numlib.Order.EReal
 import Numlib.Order.GaloisConnection
 import Numlib.Preconditioner.ApproximateInverse
 import Numlib.Preconditioner.Chebyshev
+import Numlib.Preconditioner.Constraint
 import Numlib.Preconditioner.ILU
 import Numlib.Preconditioner.LevelOfFill
 import Numlib.Preconditioner.Polynomial

@@ -1,0 +1,8 @@
+namespace = "BenziGolubLiesen"
+
+[[node]]
+id = "theorem_10_1"
+source = "Benzi, Golub and Liesen, Theorem 10.1"
+
+[[node]]
+id = "theorem_10_1_multiplicity_example"

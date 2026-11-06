@@ -1,0 +1,19 @@
+namespace = "Matrix"
+
+[[node]]
+id = "constraintPreconditioned"
+
+[[node]]
+id = "isUnit_nullspaceCompression"
+
+[[node]]
+id = "charpoly_constraintPreconditioned"
+
+[[node]]
+id = "constraintPreconditioned_mulVec_eq_self_iff"
+
+[[node]]
+id = "constraintPreconditioned_mulVec_eq_smul_iff"
+
+[[node]]
+id = "exists_constraintPreconditioned_eigenvectors"
