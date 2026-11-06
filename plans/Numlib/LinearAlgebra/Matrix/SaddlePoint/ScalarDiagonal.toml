@@ -1,0 +1,10 @@
+namespace = "Matrix"
+
+[[node]]
+id = "charpoly_fromBlocks_smul_one_zero"
+
+[[node]]
+id = "charpoly_fromBlocks_smul_one_transpose_zero"
+
+[[node]]
+id = "roots_charpoly_complexify_fromBlocks_smul_one_transpose_zero"

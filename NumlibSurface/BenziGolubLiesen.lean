@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import NumlibSurface.BenziGolubLiesen.Section01
 import NumlibSurface.BenziGolubLiesen.Section03.Solvability
+import NumlibSurface.BenziGolubLiesen.Section03.Spectrum
 import NumlibSurface.BenziGolubLiesen.Section09
 import NumlibSurface.BenziGolubLiesen.Section10.Constraint
 import NumlibSurface.BenziGolubLiesen.Section10.Pencil
@@ -22,6 +23,8 @@ descriptions are included where they support a numbered result.
 
 ## Corrections to the published statements
 
+* **After Theorem 3.8.** In the nonreal branch, both roots of each quadratic have real
+  part `η / 2`, as the numbered theorem's formulas imply. The prose calls them purely imaginary.
 * **Theorem 10.1.** The characteristic polynomial contains a factor `(X - 1)^(2m)` in
   addition to the characteristic polynomial of the reduced pencil. The reduced pencil
   can supply additional roots at 1. The lift of a reduced eigenvector `z` has primal

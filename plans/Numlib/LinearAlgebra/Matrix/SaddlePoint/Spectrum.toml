@@ -1,0 +1,34 @@
+namespace = "Matrix"
+
+[[node]]
+id = "hermitianPart_fromBlocks_neg_conjTranspose"
+
+[[node]]
+id = "dotProduct_fromBlocks_neg_transpose_mulVec_nonneg"
+
+[[node]]
+id = "re_nonneg_of_mem_spectrum_of_posSemidef_hermitianPart"
+
+[[node]]
+id = "re_nonneg_of_mem_spectrum_fromBlocks_neg_conjTranspose"
+
+[[node]]
+id = "re_pos_of_mem_spectrum_fromBlocks_neg_conjTranspose"
+
+[[node]]
+id = "PosDef.norm_sq_mulVec_le_l2_opNorm_mul_re_dotProduct"
+
+[[node]]
+id = "im_eq_zero_of_mem_spectrum_fromBlocks_neg_conjTranspose_zero"
+
+[[node]]
+id = "IsHermitian.posSemidef_smul_add_smul_one"
+
+[[node]]
+id = "IsHermitian.posSemidef_sub_smul_one_of_le_eigenvalues"
+
+[[node]]
+id = "IsHermitian.posSemidef_smul_one_sub_of_eigenvalues_le"
+
+[[node]]
+id = "spectrum_fromBlocks_transpose_zero_subset"

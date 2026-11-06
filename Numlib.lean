@@ -615,6 +615,8 @@ import Numlib.LinearAlgebra.Matrix.RankRevealing
 import Numlib.LinearAlgebra.Matrix.RealSchur
 import Numlib.LinearAlgebra.Matrix.SVD
 import Numlib.LinearAlgebra.Matrix.SaddlePoint
+import Numlib.LinearAlgebra.Matrix.SaddlePoint.ScalarDiagonal
+import Numlib.LinearAlgebra.Matrix.SaddlePoint.Spectrum
 import Numlib.LinearAlgebra.Matrix.Schur
 import Numlib.LinearAlgebra.Matrix.SchurComplement
 import Numlib.LinearAlgebra.Matrix.Semiseparable
