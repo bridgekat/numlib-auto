@@ -1,0 +1,23 @@
+namespace = "BenziGolubLiesen"
+
+[[node]]
+id = "IsConstraintPencilEigenvector"
+source = 'Benzi, Golub and Liesen, (10.21)'
+
+[[node]]
+id = "lemma_10_2_i"
+source = 'Benzi, Golub and Liesen, Lemma 10.2(i)'
+
+[[node]]
+id = "lemma_10_2_ii"
+source = 'Benzi, Golub and Liesen, Lemma 10.2(ii), corrected'
+
+[[node]]
+id = "lemma_10_2_iii"
+source = 'Benzi, Golub and Liesen, Lemma 10.2(iii), corrected'
+
+[[node]]
+id = "lemma_10_2_zero_multiplier_example"
+
+[[node]]
+id = "lemma_10_2_upper_endpoint_example"

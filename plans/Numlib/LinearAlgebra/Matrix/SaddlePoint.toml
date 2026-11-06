@@ -17,3 +17,6 @@ id = "ker_inter_eq_bot_of_isUnit_fromBlocks"
 
 [[node]]
 id = "ranks_of_isUnit_fromBlocks_transpose_zero"
+
+[[node]]
+id = "mulVec_injective_conjTranspose_map_ofReal_of_fullRowRank"

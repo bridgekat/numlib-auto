@@ -33,6 +33,26 @@ private theorem sumElim_zero [Zero K] :
 
 variable [Fintype n] [Fintype m]
 
+/-- A real matrix of full row rank has an injective adjoint over the complex numbers. -/
+theorem mulVec_injective_conjTranspose_map_ofReal_of_fullRowRank {B : Matrix m n ℝ}
+    (hB : B.rank = Fintype.card m) : Function.Injective (B.map Complex.ofReal)ᴴ.mulVec := by
+  have hBr : Function.Injective Bᵀ.mulVec :=
+    Matrix.mulVec_injective_iff_rank_eq_card.mpr (by rwa [rank_transpose])
+  rw [← coe_mulVecLin, ← LinearMap.ker_eq_bot, ker_mulVecLin_eq_bot_iff]
+  intro v hv
+  have hre : Bᵀ *ᵥ (fun j ↦ (v j).re) = Bᵀ *ᵥ 0 := by
+    funext i
+    have hi := congrArg Complex.re (congrFun hv i)
+    simpa [Matrix.mulVec, dotProduct, Complex.re_sum, Complex.mul_re] using hi
+  have him : Bᵀ *ᵥ (fun j ↦ (v j).im) = Bᵀ *ᵥ 0 := by
+    funext i
+    have hi := congrArg Complex.im (congrFun hv i)
+    simpa [Matrix.mulVec, dotProduct, Complex.im_sum, Complex.mul_im] using hi
+  funext i
+  apply Complex.ext
+  · exact congrFun (hBr hre) i
+  · exact congrFun (hBr him) i
+
 /-- Multiplication by a block matrix kills a vector exactly when both block equations
 vanish. -/
 theorem fromBlocks_mulVec_sumElim_eq_zero_iff [Semiring K]

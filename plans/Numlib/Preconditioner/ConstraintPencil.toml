@@ -1,0 +1,16 @@
+namespace = "Matrix"
+
+[[node]]
+id = "hasPencilEigenvector_primalBlock_zero_iff"
+
+[[node]]
+id = "finrank_ker_fromBlocks_primal"
+
+[[node]]
+id = "HasPencilEigenvector.primalBlock_eq_zero_iff"
+
+[[node]]
+id = "HasPencilEigenvector.primalBlock_eq_rayleigh"
+
+[[node]]
+id = "HasPencilEigenvector.primalBlock_mem_interval"

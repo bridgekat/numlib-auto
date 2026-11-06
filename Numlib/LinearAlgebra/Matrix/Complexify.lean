@@ -1284,6 +1284,17 @@ theorem star_dotProduct_complexify_mulVec_of_isHermitian {A : Matrix n n ℝ} (h
   · rw [Complex.ofReal_im, im_star_dotProduct_complexify_mulVec,
       hA.isSymm.dotProduct_mulVec_comm, sub_self]
 
+omit [Fintype n] [DecidableEq n] in
+/-- The complexification of a positive semidefinite real matrix is positive semidefinite. -/
+theorem PosSemidef.complexify [Finite n] {A : Matrix n n ℝ} (hA : A.PosSemidef) :
+    A.complexify.PosSemidef := by
+  let : Fintype n := Fintype.ofFinite n
+  refine .of_dotProduct_mulVec_nonneg
+    ((isHermitian_complexify_iff A).2 hA.isHermitian) fun z => ?_
+  rw [star_dotProduct_complexify_mulVec_of_isHermitian hA.isHermitian, Complex.zero_le_real]
+  exact add_nonneg (by simpa using hA.dotProduct_mulVec_nonneg (fun i => (z i).re))
+    (by simpa using hA.dotProduct_mulVec_nonneg (fun i => (z i).im))
+
 omit [DecidableEq n] in
 -- `Matrix.PosDef` is stated with finitely supported sums and needs no `Fintype n`, but the proof
 -- goes through the `dotProduct` form `Matrix.posDef_iff_dotProduct_mulVec`, which does.

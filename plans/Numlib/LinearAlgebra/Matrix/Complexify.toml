@@ -189,3 +189,6 @@ id = "complexify_mulVec_ofReal"
 [[node]]
 id = "complexSpectralRadius_diagonal"
 source = 'Golub–Van Loan, Matrix Computations, Equation (11.2.15)'
+
+[[node]]
+id = "PosSemidef.complexify"
